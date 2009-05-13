@@ -1,0 +1,719 @@
+#!/usr/bin/perl -w
+
+# IBM "hvcsadmin": HVCS driver 'helper' application
+#
+# Copyright (c) 2004, 2005 International Business Machines.
+# Common Public License Version 1.0 (see COPYRIGHT)
+#
+# Author(s): Ryan S. Arnold <rsa@us.ibm.com>
+#
+# This application provides a simple command line interface for simplifying
+# the management of hvcs.
+#
+# For further details please reference man page hvcsadmin.8
+
+use strict;
+
+use vars '$app_name';
+$app_name = "hvcsadmin";
+
+use vars '$app_version';
+$app_version = "1.0.0";
+
+use vars '$driver';
+$driver = "hvcs";
+
+use vars '$global_node_name';
+$global_node_name = "hvcs";
+
+use vars '$noisy';
+$noisy = 0;
+
+use Getopt::Long;
+
+sub verboseprint( $ ) {
+    my $output = shift;
+    if($noisy > 1) {
+        print "$output";
+    }
+}
+
+sub statusprint( $ ) {
+    my $output = shift;
+    if($noisy > 0 ) {
+        print "$output";
+    }
+}
+
+sub errorprint( $ ) {
+    my $output = shift;
+    print "$output";
+}
+# Simply output the version information about this helper application.
+sub versioninfo {
+    print "IBM ", $app_name, " version ",$app_version,"\n";
+    print "Copyright (C) 2004, IBM Corporation.\n";
+    print "Author(s) Ryan S. Arnold\n";
+}
+
+# Help information text displayed to the user when they invoke the script with
+# the -h tag.
+sub helpinfo {
+    print "Usage: ", $app_name, " [options]\n";
+    print "Options:\n";
+    print " -all";
+
+    print "\t\t\tClose all open vty-server adapter connections.\n";
+
+    print "\n";
+    print " -close </dev/", $driver, "*>";
+
+    print    "\tClose the vty-server adapter connection for the\n";
+    print "\t\t\t$driver device node specified in the option.\n";
+
+    print "\n";
+    print " -console <partition>";
+
+    print    "\tWhich /dev/$driver\* node provides the console for\n";
+    print "\t\t\tthe option specified partition?\n";
+
+    print "\n";
+    print " -help";
+
+    print "\t\t\tOutput this help text.\n";
+
+    print "\n";
+    print " -node </dev/", $driver, "*>";
+
+    print       "\tWhich vty-server adapter is mapped to the option\n";
+    print "\t\t\tspecified /dev/$driver\* node?\n";
+
+    print "\n";
+    print " -noisy";
+
+    print "\t\t\tThis is a stackable directive denoting the verbosity\n";
+    print "\t\t\tof the $app_name script.  The default noise level of\n";
+    print "\t\t\t'0' makes $app_name silent on success but verbose on\n";
+    print "\t\t\terror. A noise level of '1' will output additional\n";
+    print "\t\t\tsuccess information.  A noisy level of '2' will\n";
+    print "\t\t\toutput $app_name script trace information.\n";
+    print "\n";
+    print "\t\t\tNOTE: options for which $app_name queries data are\n";
+    print "\t\t\tnot squelched with the default noise level.\n";
+
+    print "\n";
+    print " -rescan";
+
+    print   "\t\tDirect the hvcs driver to rescan partner info\n";
+    print "\t\t\tfor all vty-server adapters.\n";
+
+    print "\n";
+    print " -status";
+
+    print   "\t\tOutput a table with each row containing a vty-server,\n";
+    print "\t\t\tadapter, its /dev/$driver\* device node mapping, and\n";
+    print "\t\t\tits connection status.  \"vterm_state:0\" means it is\n";
+    print "\t\t\tfree and \"vterm_state:1\" means the vty-server is\n";
+    print "\t\t\tconnected to its vty partner adapter.\n";
+
+    print "\n";
+    print " -version\t\tOutput the ", $app_name, " script's version number.\n";
+    print "\n";
+}
+
+sub rescan {
+    # Determine the sysfs path and driver name programatically because these can
+    # change.
+
+    my $val;
+    my $local_driver;
+    my $driver_path;
+
+    verboseprint("$app_name: initiating rescan of all vty-server adapter partners.\n");
+
+    #use systool to find the vio devices which we want to close
+    local *SYSTOOL;
+    open SYSTOOL, "systool -b vio -D -p |" or die "systool: $!";
+
+    while (my $line = <SYSTOOL>) {
+        ($val) = ($line =~ /^\s*Driver = "(.*)"\s*$/);
+        if(defined $val) {
+            $local_driver = $1;
+            $driver_path = "";
+            next;
+        }
+
+        ($val) = ($line =~ /^\s*Driver path = "(.*)"\s*$/);
+        if(defined $val) {
+            $driver_path = $1;
+            if ($local_driver eq $driver) {
+                `echo 1 > $driver_path/rescan`;
+                statusprint("$app_name: $driver driver rescan executed.\n");
+                close SYSTOOL;
+                exit;
+            }
+            next;
+        }
+    }
+
+    errorprint("$app_name: $driver sysfs entry or $driver rescan attribute not found.\n");
+    close SYSTOOL;
+}
+
+sub closeall {
+
+    # Programatically locate all the vty-server adapters and close their
+    # connections (or at least attempt to).  One or more closures may fail if
+    # there is an application using the device node that is mapped to the
+    # vty-server adapter that is being closed.
+
+    my $val;
+    my $local_driver;
+    my $local_device;
+    my $vterm_state;
+    my $device_path;
+
+    local *SYSTOOL;
+    #use systool to find the vio devices which we want to close
+    open SYSTOOL, "systool -b vio -D -A vterm_state -p |" or die "systool:  $!";
+
+    while (my $line = <SYSTOOL>) {
+        ($val) = ($line =~ /^\s*Driver = "(.*)"\s*$/);
+        if(defined $val) {
+            $local_driver = $1;
+            $local_device = "";
+            $device_path = "";
+            next;
+        }
+
+        ($val) = ($line =~ /^\s*Device path = "(.*)"\s*$/);
+        if(defined $val) {
+            $device_path = $1;
+            next;
+        }
+
+        ($val) = ($line =~ /^\s*Device = "(.*)"\s*$/);
+        if(defined $val) {
+            $local_device = $1;
+            next;
+        }
+
+        ($val) = ($line =~ /^\s*vterm_state\s*= "(.*)"\s*$/);
+        if(defined $val) {
+            $vterm_state = $1;
+            if (($local_driver eq $driver) and ($vterm_state eq "1")) {
+                `echo 0 > $device_path/vterm_state`;
+                statusprint("$app_name: closed vty-server\@$local_device partner adapter connection.\n");
+            }
+            next;
+        }
+    }
+    close SYSTOOL;
+}
+
+# This is a input validation routine which checks a user entered device path
+# to determine if the device index is in the proper range.
+sub validindex( $ ) {
+    my $dev_index = shift;
+
+    verboseprint("$app_name: is $dev_index a valid device node number? ...\n");
+
+    # We didn't find an invalid number that starts with 0 and has more digits
+    if ($dev_index =~ /(^0.+$)/) {
+        errorprint("$app_name: \"$dev_index\" is an invalid device node number.\n");
+        return -1;
+    }
+
+    verboseprint("$app_name: $dev_index is a valid device node index.\n");
+    return 0;
+}
+
+# Checks to see if the user entered device node exists in the /dev directory.
+# If this unexpectedly indicates that there is no device it may be because
+# udev is managing the /dev directory and the hvcs driver has not yet been
+# inserted.
+sub finddeventry( $ $ ) {
+    my $node_name = shift;
+    my $dev_number = shift;
+    my $device_path = "/dev/$node_name$dev_number";
+
+    verboseprint("$app_name: is $device_path in /dev? ...\n");
+
+    if(! -e "$device_path") {
+        errorprint("$app_name: $device_path not found in /dev.\n");
+        return -1;
+    }
+    verboseprint("$app_name: found $device_path in /dev.\n");
+    return 0;
+}
+
+sub is_driver_installed() {
+    my $val = "";
+    my $local_driver = "";
+    my $driver_path = "";
+
+    verboseprint("$app_name: is $driver loaded.\n");
+
+    local *SYSTOOL;
+    open SYSTOOL, "systool -b vio -D -p|" or die "systool:  $!";
+
+    while (my $line = <SYSTOOL>) {
+        ($val) = ($line =~ /^\s*Driver = "(.*)"\s*$/);
+        if(defined $val) {
+            $local_driver = $1;
+            $driver_path = "";
+            next;
+        }
+        ($val) = ($line =~ /^\s*Driver path = "(.*)"\s*$/);
+        if(defined $val) {
+            $driver_path = $1;
+            # grab only the Driver,Driver path pair for $driver
+            if ($local_driver eq $driver) {
+                verboseprint("$app_name: verified that $driver is loaded at $driver_path\.\n");
+                close SYSTOOL;
+                return $driver_path;
+            }
+            next;
+        }
+    }
+    errorprint("$app_name: $driver is not loaded.\n");
+    close SYSTOOL;
+    return "";
+}
+
+# Verify that the systools package is installed.  This package is required for
+# using this scripts because this script uses systools to make sysfs queries.
+# It then strips relevant data from the systool queries for use in additional
+# features.
+sub findsystools() {
+    #--------------- Look for the systool application -----------------------
+    local *WHICH;
+    open WHICH, "which systool|";
+    my @whicharray = <WHICH>;
+    my $whichline = join("\n", @whicharray);
+    chomp($whichline);
+    close WHICH;
+
+    verboseprint("$app_name: looking for \"systool\" application.\n");
+
+    if ($whichline eq "") {
+        errorprint("$app_name: systool is not installed or not in the path?\n");
+        errorprint("$app_name: systool is required by the $app_name script.\n");
+        return -1;
+    }
+    verboseprint("$app_name: found \"systool\" at $whichline\.\n");
+
+    return 0;
+}
+
+# This function is a helper function that is used to return a sysfs hvcs
+# device path based upon a partition number.  This function always looks for
+# the zeroeth indexed partner adapter, meaning it will always return the path
+# to the console device for the selected target partition.
+sub get_device_path_by_partition ( $ ) {
+    my $target_partition = shift;
+    my $local_driver;
+    my $found_partition;
+    my $found_slot;
+    my $device_path;
+    my $val;
+
+    verboseprint("$app_name: fetching device path for partition $target_partition\.\n");
+
+    local *SYSTOOL;
+    open SYSTOOL, "systool -b vio -D -A current_vty -p|" or die "systool:  $!";
+
+    while (my $line = <SYSTOOL>) {
+        ($val) = ($line =~ /^\s*Driver = "(.*)"\s*$/);
+        if(defined $val) {
+            $local_driver = $1;
+            $device_path = "";
+            $found_partition = "";
+            $found_slot = "";
+            next;
+        }
+
+        ($val) = ($line =~ /^\s*Device path = "(.*)"\s*$/);
+        if(defined $val) {
+            $device_path = $1;
+            next;
+        }
+
+        # Grab the partition number out of clc, e.g. the numeric index
+        # following the V, and grab the slot number, e.g. the numeric index
+        # following the C: "U9406.520.100048A-V15-C0"
+        ($val) = ($line =~ /^\s*current_vty\s*= "\w+\.\w+\.\w+-V(\d+)-C(\d+)"\s*$/);
+        if(defined $val) {
+            $found_partition = $1;
+            $found_slot = $2;
+            if (($local_driver eq $driver) 
+                and ($target_partition eq $found_partition)
+                and ($found_slot eq "0")) {
+                verboseprint("$app_name: found console device for partition $target_partition at $device_path\.\n");
+                return $device_path;
+            }
+        }
+    }
+
+    statusprint("$app_name: could not find device path for partition $target_partition\.\n");
+
+    return "";
+}
+
+# This function is a helper function that is used to return a sysfs path based
+# upon an index number.  The "index" is the number that is part of the hvcs
+# device path name.  For instance, in "/dev/hvcs2", the number '2' is refered
+# to as the "index".  Additionally, the sysfs entry keeps track of the index
+# number for the hvcs entries in sysfs so there is a correlation between the
+# data kept in the sysfs entry and the actual /dev/hvcs* entry.
+sub get_device_path_by_index ( $ ) {
+    my $target_index = shift;
+    my $device_path;
+    my $index;
+    my $local_driver;
+    my $val;
+
+
+    verboseprint("$app_name: fetching device path for index $target_index\.\n");
+
+    local *SYSTOOL;
+    open SYSTOOL, "systool -b vio -D -A index -p|" or die "systool:  $!";
+
+    while (my $line = <SYSTOOL>) {
+        ($val) = ($line =~ /^\s*Driver = "(.*)"\s*$/);
+        if(defined $val) {
+            $local_driver = $1;
+            $device_path = "";
+            $index = "";
+            next;
+        }
+
+        ($val) = ($line =~ /^\s*Device path = "(.*)"\s*$/);
+        if(defined $val) {
+            $device_path = $1;
+            next;
+        }
+
+        ($val) = ($line =~ /^\s*index\s*= "(.*)"\s*$/);
+        if(defined $val) {
+            $index = $1;
+            if (($local_driver eq $driver) and ($index eq $target_index)) {
+                verboseprint("$app_name: found device path for device index $target_index at $device_path\.\n");
+                close SYSTOOL;
+                return $device_path;
+            }
+            next;
+        }
+    }
+
+    statusprint("$app_name: /dev/$global_node_name$target_index does not map to a vty-server adapter\.\n");
+
+    close SYSTOOL;
+    return "";
+}
+
+# This function takes a sysfs path to an hvcs adapter and displays it in a
+# formatted manner.  This path is gathered using one of the previous path
+# retrieval functions.  Generally devices are displayed in a sequence and a
+# table is created out of these details though they can be displayed
+# individually as well.
+sub displaybypath( $ ) {
+    my $path = shift;
+
+    verboseprint("$app_name: displaying status information for $path\.\n");
+
+    if ($path eq "") {
+        errorprint("$app_name: displaybypath( \$ ) path parameter is empty.\n");
+        return -1;
+    }
+
+    if(! -e "$path/current_vty") {
+        errorprint("$app_name: $path/current_vty attribute does not exist.\n");
+        exit;
+    }
+
+    verboseprint("$app_name: $path/current_vty attribute exists.\n");
+
+    if(! -e "$path/index") {
+        errorprint("$app_name: $path/index attribute does not exist.\n");
+        exit;
+    }
+
+    verboseprint("$app_name: $path/index attribute exists.\n");
+
+    if(! -e "$path/vterm_state") {
+        errorprint("$app_name: $path/vterm_state attribute does not exist.\n");
+        exit;
+    }
+
+    verboseprint("$app_name: verified that $path/vterm_state attribute exists.\n");
+
+    local *CURRENT_VTY;
+    open CURRENT_VTY, "$path/current_vty";
+    chomp (my $current_vty = <CURRENT_VTY>);
+    close CURRENT_VTY;
+
+    # parse the CLC, nasty as it may be
+    my ($machine, $partition, $slot) = $current_vty =~ /(\w+\.\w+\.\w+)-V(\d+)-C(\d+)$/;
+
+    local *VTERM_STATE;
+    open VTERM_STATE, "$path/vterm_state";
+    chomp (my $vterm_state = <VTERM_STATE>);
+    close VTERM_STATE;
+
+    local *INDEX;
+    open INDEX, "$path/index";
+    chomp (my $device_index = <INDEX>);
+    close INDEX;
+
+    #/sys/devices/vio/30000005
+    my ($vty_server) = $path =~ /.+(3\d+)$/;
+
+    print "vty-server\@$vty_server partition:$partition slot:$slot /dev/$driver$device_index vterm-state:$vterm_state\n";
+}
+
+# This function simply takes a /dev/hvcs* entry and displays the relevant
+# sysfs entry data about that device node.
+sub querynode( $ ) {
+    my $dev_node = shift;
+
+    my $dev_index = getindex( $dev_node );
+    my $dev_name = getnodename( $dev_node );
+
+    verboseprint("$app_name: querying status information for node $dev_node\.\n");
+
+    if ($dev_name ne $global_node_name) {
+         errorprint("$app_name: $dev_node is an invalid device node name.\n");
+         exit;
+    }
+
+    if (validindex($dev_index)) {
+        exit;
+    }
+
+    if (finddeventry($dev_name, $dev_index)) {
+        exit;
+    }
+
+    #check modinfo version of the hvcs module?
+
+    my $path = get_device_path_by_index( $dev_index );
+    if ($path eq "") {
+        return;
+    }
+    displaybypath( $path );
+}
+
+# This function displays the sysfs information about a console to a specific
+# partition.  This function should only display output if a device is found
+# that maps to a zero slotted vty-server adapter, since only slot 0 adapters
+# are console adapters.
+sub queryconsole( $ ) {
+    my $partition = shift;
+
+    my $path = get_device_path_by_partition( $partition );
+    if ($path eq "") {
+        return;
+    }
+    displaybypath( $path );
+}
+
+sub status {
+    local *DIRHANDLE;
+    opendir(DIRHANDLE, "/dev");
+    my @allentries = sort readdir DIRHANDLE;
+    closedir DIRHANDLE;
+    my $path = "";
+
+    verboseprint("$app_name: gathering status for all vty-server adapters.\n");
+    verboseprint("$app_name: some device nodes won't be mapped to vty-server adapters.\n");
+
+    foreach my $entry (@allentries) {
+        if( $entry =~ /$global_node_name(\d)$/) {
+            $path = get_device_path_by_index( $1 );
+            if ($path ne "") {
+                displaybypath( $path )
+            }
+        }
+        $path = "";
+    }
+}
+
+sub getindex ( $ ) {
+    $_ = shift;
+    /$global_node_name([0-9]+$)/;
+    if(defined $1) {
+        return $1;
+    } else {
+        return -1;
+    }
+}
+
+sub getnodename ( $ ) {
+    $_ = shift;
+    /($global_node_name)[0-9]+$/;
+    if(defined $1) {
+        return $1;
+    } else {
+        return "";
+    }
+}
+
+sub closedevice ( $ ){
+
+    my $parameter = shift;
+    my $node_name = getnodename( $parameter );
+    my $node_index = getindex( $parameter );
+
+    #--------------- Is the specified device name valid? --------------------
+    if ($node_name ne "$global_node_name") {
+         errorprint("$app_name: $parameter is an invalid device node name.\n");
+         exit;
+    }
+
+    #--------------- Is the specified device index reasonable? --------------
+    if (validindex($node_index)) {
+        exit;
+    }
+
+    #--------------- Does the /dev/ entry exist -----------------------------
+    if (finddeventry($node_name, $node_index)) {
+        exit;
+    }
+
+    #check modinfo version of the hvcs module
+
+    #--------------- Gather sysfs info from systool -------------------------
+    my $device_path = get_device_path_by_index($node_index);
+    if ($device_path eq "") {
+        exit;
+    }
+
+    verboseprint("$app_name: vty-server adapter $device_path maps to /dev/$node_name$node_index\.\n");
+
+    if(! -e "$device_path/vterm_state"){
+        errorprint("$app_name: vterm_state attribute does not exist.\n");
+        exit;
+    }
+
+    verboseprint("$app_name: verified that $device_path/vterm_state attribute exists.\n");
+
+    local *CAT_VTERM_STATE;
+    open CAT_VTERM_STATE, "cat $device_path/vterm_state|";
+    my $catval = <CAT_VTERM_STATE>;
+    close CAT_VTERM_STATE;
+
+    if ($catval =~ /^0$/) {
+        statusprint("$app_name: vty-server adapter $device_path is already disconnected.\n");
+        exit;
+    }
+
+    verboseprint("$app_name: preparing to terminate vty-server connection at $device_path\.\n");
+
+    system("echo 0 > $device_path/vterm_state");
+
+    local *CAT_STATE;
+    open CAT_STATE, "cat $device_path/vterm_state|";
+    my $cat = <CAT_STATE>;
+    close CAT_STATE;
+
+    if ($cat !~ /^0$/) {
+        errorprint("$app_name: vty-server adapter $device_path disconnection failed.\n");
+        errorprint("$app_name: please check dmesg for further information.\n");
+        exit;
+    }
+
+    my ($vty_server) = $device_path =~ /.+(3\d+)$/;
+
+    statusprint("$app_name: /dev/node/$node_name$node_index is mapped to vty-server\@$vty_server\.\n");
+    statusprint("$app_name: closed vty-server\@$vty_server partner adapter connection.\n");
+}
+
+my $help = '';
+my $version = '';
+my $close_device = '';
+my $all = '';
+my $query_node = '';
+my $query_console = '';
+my $status = '';
+my $rescan = '';
+
+my $num_options = @ARGV;
+
+# -noisy is the only option that stacks
+GetOptions (
+                'all' => \$all,
+                'help|?' => \$help,
+                'noisy+' => \$noisy,# noisy is incremental,
+                                    # 0 : silent (except on error) [default]
+                                    # 1 : status (successes)
+                                    # 2 : verbose operation trace
+                'status' => \$status,
+                'rescan' => \$rescan,
+                'version' => \$version,
+                'node=s' => \$query_node,
+                'close=s' => \$close_device,
+                'console=s' => \$query_console,
+            );
+
+
+    # An empty invocation of this script will result in the help text being
+    # output.  If help text has been specified then this script will terminate
+    # after outputing the help text without completing further operations.
+    if ($num_options == 0 || $help) {
+        helpinfo();
+        exit;
+    }
+
+    if ($version) {
+        versioninfo();
+        exit;
+    }
+
+    verboseprint("$app_name: executing in verbose mode.\n");
+
+    # DON'T rely on the module existence to determine whether $driver is
+    # supported since it could have been built into the kernel.
+
+    #--------------- Look for the $driver module in lsmod -------------------
+    if (!is_driver_installed()) {
+        exit;
+    }
+
+    #--------------- Look for the systool application -----------------------
+    # The systool application is required for invoking most/many of these
+    # operations so we'll express it as a standard requirement.
+    if (findsystools()) {
+        exit;
+    }
+
+    if ($status) {
+        status();
+        exit;
+    }
+
+    if ($rescan) {
+        rescan();
+    }
+
+    if ($all) {
+        closeall();
+        exit;
+    }
+
+    if ($close_device) {
+        closedevice($close_device);
+        exit;
+    }
+
+    if ($query_node) {
+        querynode($query_node);
+        exit;
+    }
+
+    if ($query_console) {
+        queryconsole($query_console);
+        exit;
+    }
+
+    exit;

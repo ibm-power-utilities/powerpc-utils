@@ -1,0 +1,347 @@
+#!/usr/bin/perl -w
+
+# Copyright (C) 2007 Anton Blanchard <anton@au.ibm.com> IBM Corporation
+# Common Public License Version 1.0 (see COPYRIGHT)
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+use strict;
+use Getopt::Long;
+
+my $max_cpu = 1024;
+my $cpudir = "/sys/devices/system/cpu/cpu%d";
+
+sub is_smt_capable
+{
+	for (my $i = 0; $i < $max_cpu; $i++) {
+		my $snooze_file = sprintf("$cpudir/smt_snooze_delay", $i);
+		if (-f "$snooze_file") {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+sub get_one_smt_state
+{
+	my ($primary_thread) = @_;
+
+	my $online_file = sprintf("$cpudir/online", $primary_thread);
+	if (!(-f $online_file)) {
+		return -1;
+	}
+	
+	my $primary_online = `cat $online_file`;
+	chomp($primary_online);
+
+	$online_file = sprintf("$cpudir/online", $primary_thread + 1);
+	if (!(-f $online_file)) {
+		return -1;
+	}
+	my $secondary_online = `cat $online_file`;
+	chomp($secondary_online);
+
+	if ($primary_online == 0 && $secondary_online == 1) {
+		printf("Inconsistent state: primary thread %d offline but secondary thread %d online\n", $primary_thread, $primary_thread + 1);
+	}
+
+	if ($primary_online == 0) {
+		return -1;
+	}
+
+	if ($secondary_online == 1) {
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+sub get_smt_state
+{
+	my $state = -1;
+
+	for (my $i = 0; $i < $max_cpu; $i += 2) {
+		my $s = get_one_smt_state($i);
+		if ($s == -1) {
+			next;
+		}
+
+		if ($state == -1) {
+			$state = $s;
+		} elsif ($s != $state) {
+			printf("Inconsistent state: mix of ST and SMT cores\n");
+			exit(1);
+		}		
+	}
+
+	return $state;
+}
+
+sub set_one_smt_state
+{
+	my ($primary_thread, $state) = @_;
+
+	my $online_file = sprintf("$cpudir/online", $primary_thread);
+	if (!(-f $online_file)) {
+		return -1;
+	}
+
+	open(ONLINE_FILE, "> $online_file") ||
+		die("Could not open $online_file\n");
+	printf(ONLINE_FILE "1\n");
+	close(ONLINE_FILE);
+
+	$online_file = sprintf("$cpudir/online", $primary_thread + 1);
+	if (!(-f $online_file)) {
+		return -1;
+	}
+
+	open(ONLINE_FILE, "> $online_file") ||
+		die("Could not open $online_file\n");
+	printf(ONLINE_FILE "%d\n", $state);
+	close(ONLINE_FILE);
+}
+
+sub set_smt_state
+{
+	my ($state) = @_;
+
+	for (my $i = 0; $i < $max_cpu; $i += 2) {
+		set_one_smt_state($i, $state);
+	}
+}
+
+sub is_dscr_capable
+{
+	for (my $i = 0; $i < $max_cpu; $i++) {
+		my $dscr_file = sprintf("$cpudir/dscr", $i);
+		if (-f "$dscr_file") {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+sub set_one_smt_snooze_delay
+{
+	my ($thread, $val) = @_;
+
+	my $file = sprintf("$cpudir/smt_snooze_delay", $thread);
+	if (!(-f $file)) {
+		return -1;
+	}
+
+	open(FILE, "> $file") || die("Could not open $file\n");
+	printf(FILE "%d\n", $val);
+	close(FILE);
+}
+
+sub set_smt_snooze_delay
+{
+	my ($val) = @_;
+
+	for (my $i = 0; $i < $max_cpu; $i++) {
+		set_one_smt_snooze_delay($i, $val);
+	}
+}
+
+sub get_one_smt_snooze_delay
+{
+	my ($thread) = @_;
+
+	my $file = sprintf("$cpudir/smt_snooze_delay", $thread);
+	if (!(-f $file)) {
+		return -1;
+	}
+
+        my $snooze = `cat $file`;
+        chomp($snooze);
+
+	return $snooze;
+}
+
+sub get_smt_snooze_delay
+{
+	my $val = -1;
+
+	for (my $i = 0; $i < $max_cpu; $i++) {
+		my $v = get_one_smt_snooze_delay($i);
+		if ($v == -1) {
+			next;
+		}
+
+		if ($val == -1) {
+			$val = $v;
+		} elsif ($val != $v) {
+			printf("Inconsistent smt_snooze_val\n");
+			exit(1);
+		}
+	}
+
+	return $val;
+}
+
+sub get_one_dscr
+{
+	my ($thread) = @_;
+
+	my $file = sprintf("$cpudir/dscr", $thread);
+	if (!(-f $file)) {
+		return -1;
+	}
+
+        my $dscr = `cat $file`;
+        chomp($dscr);
+
+	return hex($dscr);
+}
+
+sub get_dscr
+{
+	my $val = -1;
+
+	for (my $i = 0; $i < $max_cpu; $i++) {
+		my $v = get_one_dscr($i);
+		if ($v == -1) {
+			next;
+		}
+
+		if ($val == -1) {
+			$val = $v;
+		} elsif ($val != $v) {
+			printf("Inconsistent DSCR\n");
+			exit(1);
+		}
+	}
+
+	return $val;
+}
+
+sub set_one_dscr
+{
+	my ($thread, $val) = @_;
+
+	my $file = sprintf("$cpudir/dscr", $thread);
+	if (!(-f $file)) {
+		return -1;
+	}
+
+	open(FILE, "> $file") || die("Could not open $file\n");
+	printf(FILE "0x%x\n", $val);
+	close(FILE);
+}
+
+sub set_dscr
+{
+	my ($val) = @_;
+
+	for (my $i = 0; $i < $max_cpu; $i++) {
+		set_one_dscr($i, $val);
+	}
+}
+
+sub usage
+{
+	print <<EOF;
+Usage:
+	ppc64_cpu --smt			# Get current SMT state
+	ppc64_cpu --smt={on|off}	# Set SMT state
+
+	ppc64_cpu --dscr		# Get current DSCR setting
+	ppc64_cpu --dscr=<val>		# Change DSCR setting
+
+	ppc64_cpu --smt-snooze-delay	# Get current smt-snooze-delay setting
+	ppc64_cpu --smt-snooze-delay=<val> # Change smt-snooze-delay setting
+
+EOF
+}
+
+sub do_smt
+{
+	my ($opt) = @_;
+
+	if (!is_smt_capable()) {
+		printf("Machine is not SMT capable\n");
+		exit(1);
+	}
+
+	if ($opt eq "on") {
+		set_smt_state(1);
+	} elsif ($opt eq "off") {
+		set_smt_state(0);
+	} elsif ($opt eq "") {
+		my $smt = get_smt_state();
+		if ($smt == 0) {
+			printf("smt is off\n");
+		} elsif ($smt == 1) {
+			printf("smt is on\n");
+		} else {
+			printf("Inconsistent state\n");
+		}
+	} else {
+		print "blah $opt\n";
+		usage();
+	}
+}
+
+sub do_dscr
+{
+	my ($opt) = @_;
+
+	if (!is_dscr_capable()) {
+		printf("Machine is not DSCR capable\n");
+		exit(1);
+	}
+
+	if ($opt eq "") {
+		my $s = get_dscr();
+		printf("dscr is %d\n", $s);
+	} elsif ($opt =~ /[0-9]+/) {
+		set_dscr($opt);
+	} else {
+		usage();
+	}
+}
+
+sub do_smt_snooze_delay
+{
+	my ($opt) = @_;
+
+	if (!is_smt_capable()) {
+		printf("Machine is not SMT capable\n");
+		exit(1);
+	}
+
+	if ($opt eq "") {
+		my $s = get_smt_snooze_delay();
+		printf("smt_snooze_delay is %d\n", $s);
+	} elsif ($opt =~ /[0-9]+/) {
+		set_smt_snooze_delay($opt);
+	} else {
+		usage();
+	}
+}
+
+
+my $smt;
+my $dscr;
+my $smt_snooze_delay;
+GetOptions(
+	"smt:s" => \$smt,
+	"dscr:s" => \$dscr,
+	"smt-snooze-delay:s" => \$smt_snooze_delay,
+);
+
+if (defined($smt)) {
+	do_smt($smt)
+} elsif (defined($dscr)) {
+	do_dscr($dscr)
+} elsif (defined($smt_snooze_delay)) {
+	do_smt_snooze_delay($smt_snooze_delay)
+} else {
+	usage();
+}

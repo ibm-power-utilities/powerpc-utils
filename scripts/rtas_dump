@@ -1,0 +1,117 @@
+#! /usr/bin/perl 
+#
+# This updated version of the rtas_dump script will
+# do everything the original rtas_dump script does except
+# it does it cleaner and without as many cmdline options.
+#
+# Copyright (C) 2004 International Business Machines
+# Common Public License Version 1.0 (see COPYRIGHT)
+#
+# Author: Nathan Fontenot <nfont@austin.ibm.com>
+# 
+
+use vars qw/ %opt /;
+
+use Getopt::Long;
+
+$re_decode = $ENV{RTAS_EVENT_DECODE} || "/usr/sbin/rtas_event_decode";
+
+#
+# usage statement
+#
+sub usage()
+{
+	print "Usage: rtas_dump [OPTIONS]\n";
+	print "Dump the contents of an RTAS event, by default RTAS events\n";
+	print "are read from stdin unless the -f flag is used.\n\n";
+	print " -d         debug flag, passed through to rtas_event_decode\n";
+	print " -f <FILE>  dump the RTAS events from <FILE>\n";
+	print " -h         print this message and exit\n";
+	print " -n <NUM>   only dump RTAS event number <NUM>\n";
+	print " -v         dump the entire RTAS event, not just the header\n";
+	print " -w <width> set the output character width\n";
+	
+	exit 1;
+}
+
+#
+# Read in the contents of an RTAS event and invoke rtas_event_decode on it.
+#
+sub handle_rtas_event()
+{
+	my ($event_no) = @_;
+
+	$re_decode_args = "$re_decode_args -n $event_no";
+	
+	# create the pipe to rtas_event_decode
+	open EVENT_DECODE, "| $re_decode $re_decode_args";
+
+	while(<$fh>) {
+		($crud, $data) = split (/RTAS/);
+		$rtas_str = $rtas_str . "RTAS" . $data;
+		if (/RTAS event end/) {
+			print EVENT_DECODE $rtas_str;
+			$rtas_str = "";
+			last;
+		}
+	}
+
+	close EVENT_DECODE;
+}
+
+#
+# Main
+#
+
+# process cmdline args
+Getopt::Long::Configure("bundling");
+GetOptions("help|h"     => \$help_flag,
+           "dump_raw|d" => \$debug_flag,
+           "file|f=s"   => \$filename,
+           "n=i"        => \$event_no,
+	   "w=i"        => \$width,
+           "verbose|v+" => \$verbose) or usage();
+           
+usage() if $help_flag;
+
+# make sure the rtas_event_decode application is available
+-e $re_decode or die "File $re_decode does not exist and is needed by rtas_dump.\n";
+
+-x $re_decode or die "File $re_decode is not executable.\n";
+
+# get a reference to our input filehandle
+if ($filename) {
+	open INPUT_FILE, $filename;
+	$fh = \*INPUT_FILE;
+	$close_input_file = 1;
+} else {
+	$fh = \*STDIN;
+}
+
+# create the arg list to rtas_event_decode
+$re_decode_args = "$re_decode_args -d" if $debug_flag;
+$re_decode_args = "$re_decode_args -v" if $verbose;
+$re_decode_args = "$re_decode_args -w $width" if $width;
+
+while (<$fh>) {
+	if (/RTAS event begin/) { 
+		# found the beginning of an RTAS event, process it.
+		($crud, $data) = split (/RTAS:/);
+		($this_event_no, $d) = split (' ', $data);
+		if ($event_no) {
+			if ($event_no == $this_event_no) {
+				$rtas_str = $rtas_str . "RTAS:" . $data;
+				&handle_rtas_event($this_event_no);
+			}
+		} else {
+			$rtas_str = $rtas_str . "RTAS:" . $data;
+			&handle_rtas_event($this_event_no);
+		}
+
+		next;
+	}
+}
+
+if ($close_input_file) {
+	close INPUT_FILE;
+}

@@ -1,0 +1,45 @@
+Changelog for powerpc-utils-papr-1.1.0
+=======================================
+o drmgr
+    - Add support for hotplug memory remove.
+    - Update drmgr memory device tree parsing for
+      ibm,dynamic-reconfiguration-memory.
+    - Log migrations events to servicelog.
+    - Make address storage 64-bits.
+    - Validate streamid for partition mobility before using.
+    - Add --capabilities option to print systems current dlpar capabilities.
+    - Only parse device tree when needed in cpu dlpar operations.
+    - Add support for memory entitlement/weight updates.
+    - remove unneeded signal handler and signal masking code.
+    - Check get_property() return codes for HEA and pci DLPAR.
+    - Correct logic when looking for cpu thread to offline.
+    - Use the O_CREAT flag when opening /var/log/drmgr.
+    - Add routine to update properties of the device tree.
+    - Update cpu_dlpar_capable() to only look at cpu* directories.
+    - Add get_drc_by_index() search routine.
+    - Validate pci slots before attempting to remove them.
+    - Handle quoted sysfs file names add_slot and remove_slot in some broken
+      kernels.
+    - Do not siliently fail slot adds if device is already in the device tree.
+    - Remove unused last_lmb variable.
+    - Support Memory add on new hardware and older kernels.  Involves munging
+      the device tree to add memory@XXX nodes.
+    - Update usage messages.
+    - Fix up memory sections of an lmb when the lmb fails to be removed.
+    - Always write debug output to /var/log/drmgr.
+    - Log multiple invocations of drmgr to /var/log/drmgr.
+    - Convert #define'ed functions to static inlines.
+
+o lsslot
+    - Add lsslot -c mem option to display mem lmbs/sections and their
+      removability.
+
+
+o sys_ident
+    - Increase buffer size to get-system-parameter RTAS calls; new requirement
+      is 4K + 2 bytes.
+
+o update_flash
+    - Add -s option for determining whether flash image management is
+      supported.
+

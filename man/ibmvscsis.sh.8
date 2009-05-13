@@ -1,0 +1,51 @@
+.\" Copyright (c) 2005 International Business Machines.
+.\" Common Public License Version 1.0 (see COPYRIGHT)
+.\"
+.\" Author(s)
+.\"     Ryan S. Arnold <rsa@us.ibm.com>
+.\"         Original version: January 14, 2005.
+.\"
+.Dd January 14, 2005
+.Os LINUX
+.Dt IBMVSCSIS.SH 8
+.Sh NAME
+.Nm /etc/init.d/ibmvscsis.sh
+.Nd virtual SCSI server init script
+.Sh SYNOPSIS
+.Nm /etc/init.d/ibmvscsis.sh restart
+.Pp
+.Nm /etc/init.d/ibmvscsis.sh start
+.Pp
+.Nm /etc/init.d/ibmvscsis.sh status
+.Pp
+.Nm /etc/init.d/ibmvscsis.sh stop
+.Pp
+.Sh DESCRIPTION
+This is the init script which can be configured to automatically configure,
+start, and stop the IBM virtual SCSI server \fBibmvscsis\fR.
+.Sh OPTIONS
+.Bl -tag -width -indent
+.It \fBrestart\fR
+Restart the vscsi server.
+.It \fBstart\fR
+Start the vscsi server if it is not already in operation.
+.It \fBstatus\fR
+Output status on the vscsi server.
+.It \fBstop\fR
+Stop the running vscsi server.
+.El
+.Sh CONFIGURATION
+Use symlinks to start and stop run levels to automate vscsis configuration,
+start, and stop.
+.Sh FILES
+This init script should exist in the following location:
+.Pp
+.Cd /etc/init.d/ibmvscsis.sh
+.Pp
+.Sh DEPENDENCIES
+This init script requires the existence of the \fBvscsisadmin\fR utility.
+.Sh SEE ALSO
+.Xr vscsisadmin 8
+.Xr ibmvscsis.conf 8
+.Sh AUTHOR(S)
+.An Ryan S. Arnold Aq rsa@us.ibm.com

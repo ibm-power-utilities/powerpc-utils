@@ -1,0 +1,118 @@
+.\" Copyright (c) 2005 International Business Machines.
+.\" Common Public License Version 1.0 (see COPYRIGHT)
+.\"
+.\" Author(s)
+.\"	Ryan S. Arnold <rsa@us.ibm.com>
+.\"		Original version: January 14, 2005.
+.\"
+.Dd January 18, 2005
+.Os LINUX
+.Dt HVCSADMIN 8
+.Sh NAME
+.Nm hvcsadmin
+.Nd hypervisor virtual console server administration utility
+.Sh SYNOPSIS
+.Nm Fl all Op Fl noisy
+.Op Fl noisy
+.Pp
+.Nm Fl close Ar hvcs<index> Op Fl noisy
+.Op Fl noisy
+.Pp
+.Nm Fl console Ar partition Op Fl noisy
+.Op Fl noisy
+.Pp
+.Nm Fl help
+.Pp
+.Nm Fl node Ar hvcs<index> Op Fl noisy
+.Op Fl noisy
+.Pp
+.Nm Fl rescan Op Fl noisy
+.Op Fl noisy
+.Pp
+.Nm Fl status Op Fl noisy
+.Op Fl noisy
+.Pp
+.Nm Fl version
+.Pp
+.Sh DESCRIPTION
+This is the IBM hypervisor virtual console server
+.Pq \fBhvcs\fR
+administration utility.
+.Sh OPTIONS
+.Bl -tag -width -indent
+.It Fl all
+Close all open vty-server adapter connections.
+.Pp
+Inclusion of a single
+.Sq Fl noisy
+flag will direct the utility to output a list of all the adapters that were
+closed.
+.It Fl close Ar hvcs<index>
+Close the vty-server adapter connection that maps to the hvcs device node
+specified in the option.
+.Pp
+By default this operation only exhibits output on error.  It is silent on
+success and silent if the adapter is already closed.  When accompanied by a
+.Sq Fl noisy
+flag this option will output the device to adapter mapping and a message
+indicating that the adapter has been closed.
+.It Fl console Ar partition
+Which /dev/hvcs<index> node provides the console for the option specified
+partition?  This option takes a partition number and returns a status string
+which contains the device node that maps to the target partition's slot zero
+vty-server adapter [A console adapter is always in slot zero].
+.Pp
+Inclusion of a single
+.Sq Fl noisy
+flag does not change the default output of this option.
+.It Fl help
+Output the utility help text.
+.It Fl node Ar hvcs<index>
+Which vty-server adapter is mapped to the option specified /dev/hvcs<index>
+node?  This option takes a device node and returns a status string which
+contains the vty-server adapter mapped to that node.
+.Pp
+Inclusion of a single
+.Sq Fl noisy
+flag does not change the default output of this option.
+.It Fl noisy
+This directive is optional.  Without a
+.Sq Fl noisy
+directive the hvcsadmin utility is in \fBsilent\fR mode by default (except in
+the case of errors and output requests).  The output verbosity of the utility
+is managed by stacking
+.Sq Fl noisy
+directives.  A single instance of
+.Sq Fl noisy
+indicates that the utility should output in \fBstatus\fR mode.  A second
+instance of
+.Sq Fl noisy
+indicates that the utility should output in \fBverbose\fR mode.  Verbose mode
+is generally used for script tracing and won't be used by a casual user unless
+problems arise.
+.It Fl rescan
+Direct the hvcs driver to rescan partner information for all vty-server
+adapters it manages.  This may expose additional adapters and partners.
+.It Fl status
+Outputs a table with each row containing a vty-server, adapter, its
+/dev/hvcs<index> device node mapping, and the adapter connection status.
+"vterm_state:0" means it is free/disconnected and "vterm_state:0" means the
+vty-server is connected to its vty partner adapter.
+.Pp
+An example of \fBhvcsadmin -status\fR output follows:
+.Pp
+.Bd -literal
+\fBvty-server@30000003 partition:1 slot:2 /dev/hvcs0 vterm-state:0
+vty-server@30000004 partition:15 slot:0 /dev/hvcs1 vterm-state:0\fR
+.Ed
+.Pp
+When this option is accompanied by a
+.Sq Fl noisy
+flag it will output a line for each hvcs device node which doesn't have a
+current vty-server adapter mapping as well as the status demonstrated above.
+.It Fl version
+Out the hvcsadmin script's version number.
+.El
+.Sh AUTHOR(S)
+.An Ryan S. Arnold Aq rsa@us.ibm.com
+

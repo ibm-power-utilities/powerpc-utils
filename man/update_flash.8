@@ -1,0 +1,91 @@
+.\"
+.\" Copyright (C) 2002 - 2004 International Business Machines
+.\" Todd Inglett <tinglett@vnet.ibm.com>
+.\" Michael Strosaker <strosake@us.ibm.com>
+.\"
+.TH UPDATE_FLASH 8 "29 October 2003" Linux "Linux on Power Service Tools"
+.SH NAME
+update_flash \- manage system and service processor firmware
+.SH SYNOPSIS
+.nf
+\fB/usr/sbin/update_flash \fR[\fB-v\fR] \fB-f \fIfirmware.img
+.B /usr/sbin/update_flash -c 
+.B /usr/sbin/update_flash -r 
+.fi
+.SH DESCRIPTION
+.P
+The
+.I update_flash 
+script is used to update, manage, and validate firmware on an IBM ppc64 system. 
+.P
+When used with only the -f option and an image file name, the script will
+attempt to update the system firmware with the given image.  If the machine has
+the ability to pre-validate the image, this will be done automatically before
+the flash.  If the machine is not capable of pre-validation, or if validation
+passes, this script will upload the firmware image into the kernel and will
+perform a 
+.B shutdown -r now 
+which will reboot the system.  The flash will occur at the end of the reboot.
+
+.B WARNING:
+The system WILL be rebooted!  Wait until the flash process has completed.  This
+can be anywhere from 2 minutes to 20 minutes (or more) depending on the system.
+The op panel display will show that the system is flashing.  Failure to wait
+may render a system inoperable.
+
+When used with the 
+.B -v 
+option, the script will ONLY perform validation of
+the image file.  Regardless of the outcome of the validation, no actual
+flash will occur.  This option is only useful on machines that support
+validation of firmware images.
+
+When used with the 
+.B -c 
+option, the script will commit the temporary image to the
+permanant side.  In order to use this, the machine must be running on the
+temporary image.  This option is only useful on machines supporting two
+firmware image areas.
+
+When used with the 
+.B -r 
+option, the script will reject the temporary image.  In
+order to use this, the machine must be running on the permanant image.  This
+option is only useful on machines supporting two firmware image areas.
+
+.SH OPTIONS
+.TP
+\fB\-f \fIfilename
+Supply the filename to flash (required).
+.TP
+.B \-v
+Validate ONLY with specified image file.
+.TP
+.B \-c
+Commit temporary image to permanant side.
+.TP
+.B \-r
+Reject temporary image.
+
+.SH EXAMPLE
+Firmware may be downloaded from the IBM website if a problem is encountered
+that requires a firmware update.  If the firmware comes with instructions for
+Linux please follow those instructions as they are more up-to-date than this
+page.
+.P
+Download the firmware image in AIX format.  The file will have a .BIN extension.
+This zip file happens to be an AIX binary, but it can be extracted with the
+unzip command (with password from the web page):
+.TP
+unzip 70286C4F.BIN
+.P
+This should produce a file with a .img extension.
+This image file is what should be flashed:
+.TP
+update_flash -f RR021024.img
+
+.SH FILES
+rtas_flash kernel module
+.P
+/proc/ppc64/rtas/firmware_flash (provided by kernel module)
+

@@ -1,0 +1,150 @@
+#!/bin/bash
+
+# IBM  "amsstat": Active Memory Sharing statistics gathering tool
+#
+# Copyright (c) 2009 International Business Machines.
+# Common Public License Version 1.0 (see COPYRIGHT)
+#
+# Authors: 
+#      Andrew Theurer <habanero@linux.vnet.ibm.com>
+#      Robert Jennings <rcj@linux.vnet.ibm.com>
+#
+# This script will gather AMS related information on supported Linux systems
+# usage:
+# amstat <interval in seconds>
+#
+# If you do not provide an interval, amsstat will display stats only once
+#
+# For further details on this tool and the fields it displays please
+# reference man page amsstat.1
+#
+# $Date: 2009/03/18 14:42:14 $
+# $Revision: 1.3 $
+# $Source: /cvsroot/powerpc-utils/powerpc-utils-papr/scripts/amsstat,v $
+
+sleep_interval=$1
+indent=-4
+devstat_data_spacing=-30
+lparcfg_data_spacing=-30
+
+function print_meminfo_stats {
+    echo "System Memory Statistics:"
+    OLD_IFS=${IFS}
+    IFS="
+"
+    for stat in `cat /proc/meminfo`; do
+    IFS=${OLD_IFS}
+        if echo $stat | grep "^MemTotal\|^MemFree\|^Buffers\|^Cached\|^Inactive\|SwapTotal\|SwapFree" >/dev/null; then
+            this_stat=`echo $stat | awk -F: '{print $1}'`
+            this_value=`echo $stat | awk -F: '{print $2}'`
+            printf "%${indent}s %${lparcfg_data_spacing}s %${lparcfg_data_spacing}s\n" " " "$this_stat:" "${this_value##\ }"
+        fi
+    done
+
+    # Include Desired Memory value from /proc/ppc64/lparcfg
+    stat=`grep "^DesMem" /proc/ppc64/lparcfg`
+    if [ ! -z "${stat}" ]; then
+        this_stat=`echo $stat | awk -F= '{print $1}'`
+        this_value=`echo $stat | awk -F= '{print $2}'`
+        printf "%${indent}s %${lparcfg_data_spacing}s %${lparcfg_data_spacing}s\n" " " "$this_stat:" "$this_value MB"
+    fi
+}
+
+function print_entitlement_data {
+    echo "Entitlement Information:"
+    for stat in `cat /proc/ppc64/lparcfg`; do
+        if echo $stat | grep "^entitled_memory\|^mapped_entitled_memory\|^entitled_memory_weight\|entitled_memory_pool_size\|^backing_memory\|^cmo_enabled\|^cmo_faults\|^cmo_fault_time_usec\|cmo_primary_psp\|^cmo_secondary_psp" >/dev/null; then
+            this_stat=`echo $stat | awk -F= '{print $1}'`
+            this_value=`echo $stat | awk -F= '{print $2}'`
+            printf "%${indent}s %${lparcfg_data_spacing}s %${lparcfg_data_spacing}s\n" " " "$this_stat:" "$this_value"
+        fi
+    done
+}
+
+function print_cmm_stats {
+    # CMM kernel parameters
+    local path=/sys/module/cmm/parameters
+    pushd $path >/dev/null
+    if [ $? -ne 0 ] ; then
+        exit 1
+    fi
+    echo "CMM Statistics:"
+    for stat in `find . -mindepth 1 -maxdepth 1 -print`; do
+        printf "%${indent}s %${devstat_data_spacing}s %${devstat_data_spacing}s\n" " " "${stat#\.\/}:" "`cat $stat`"
+    done
+    popd >/dev/null
+
+    # CMM statistics
+    local path=/sys/devices/system/cmm/cmm0
+    pushd $path >/dev/null
+    if [ $? -ne 0 ] ; then
+        exit 1
+    fi
+    for stat in `find . -mindepth 1 -maxdepth 1 -print`; do
+        printf "%${indent}s %${devstat_data_spacing}s %${devstat_data_spacing}s\n" " " "${stat#\.\/}:" "`cat $stat`"
+    done
+    popd >/dev/null
+}
+
+function print_vio_bus_stats {
+    local path=/sys/bus/vio
+    pushd $path >/dev/null
+    if [ $? -ne 0 ] ; then
+        exit 1
+    fi
+    echo "VIO Bus Statistics:"
+    for stat in `find . -mindepth 1 -maxdepth 1 -name "cmo*" -print`; do
+        printf "%${indent}s %${devstat_data_spacing}s %${devstat_data_spacing}s\n" " " "${stat#\.\/}:" "`cat $stat`"
+    done
+    popd >/dev/null
+}
+
+
+function print_vio_dev_stats {
+    local path=/sys/bus/vio/devices
+    pushd $path >/dev/null
+    if [ $? -ne 0 ] ; then
+        exit 1
+    fi
+    echo "VIO Device Statistics:"
+    for dir in `find . -mindepth 1 -print`; do
+        pushd $dir >/dev/null
+        if [ $? -ne 0 ] ; then
+            break
+        fi
+
+    # Skip printing devices that are not using entitlement
+    value=`cat cmo_entitled`
+    if [ ${value} -eq "0" ]; then
+            popd >/dev/null
+        continue
+    fi
+
+        echo "   ${dir#\.\/}:"
+        for stat in `find . -mindepth 1 -maxdepth 1 -name "cmo*" -print`; do
+            printf "%${indent}s %${devstat_data_spacing}s %${devstat_data_spacing}s\n" " " "${stat#\.\/}:" "`cat $stat`"
+        done
+        popd >/dev/null
+    done
+    popd >/dev/null
+}
+
+if [ -z $sleep_interval ]; then
+    date
+    print_meminfo_stats
+    print_entitlement_data
+    print_cmm_stats
+    print_vio_bus_stats
+    print_vio_dev_stats
+else
+    while [ 1 ]; do
+        date
+        print_meminfo_stats
+        print_entitlement_data
+        print_cmm_stats
+        print_vio_bus_stats
+        print_vio_dev_stats
+        sleep $sleep_interval
+        echo
+    done
+fi

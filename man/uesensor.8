@@ -1,0 +1,112 @@
+.\"
+.\" Copyright (C) 2004 International Business Machines
+.\" Michael Strosaker <strosake@us.ibm.com>
+.\"
+.TH UESENSOR 8 "May 2004" Linux "Linux on Power Service Tools"
+.SH NAME
+uesensor \- view the state of system environmental sensors
+.SH SYNOPSIS
+.nf
+\fB/usr/sbin/uesensor -l \fR| \fB -a
+\fB/usr/sbin/uesensor -t \fItoken \fB-i \fIindex \fR[\fB-v\fR]
+.fi
+.SH DESCRIPTION
+.P
+The \fIuesensor\fR utility is used to view the state of environmental
+sensors on PowerPC-64 machines.
+
+.P
+There are 4 types of system sensors that can be retrieved with
+\fIuesensor\fR; each sensor has an identifying token:
+
+.TP
+.B 3
+Thermal sensor
+.TP
+.B 9001
+Fan speed sensor
+.TP
+.B 9002
+Voltage sensor
+.TP
+.B 9004
+Power supply sensor
+
+.P
+Each sensor is uniquely identified by a combination of token and
+index number; index numbers start at 0 and are contiguous.  For example,
+the second fan on the system would be identified by token number 9001
+and index 1.
+
+.P
+The state of each sensor consists of a status and a measured value.
+The status value is one of the following:
+
+.TP
+.B 9
+Critical low
+.TP
+.B 10
+Warning low
+.TP
+.B 11
+Normal
+.TP
+.B 12
+Warning high
+.TP
+.B 13
+Critical high
+
+.P
+The measured value depends on the type of sensor.  Thermal sensors are
+measured in degrees Celcius; fan speed is measured in revolutions per
+minute; voltage is measured in millivolts; power supply measurements are
+defined as follows:
+
+.TP
+.B 0
+Not present
+.TP
+.B 1
+Present and not operational
+.TP
+.B 2
+Status unknown
+.TP
+.B 3
+Present and operational
+
+.P
+Each sensor is also associated with a location code; this location code
+may not be unique (for example, there may be multiple voltage sensors on
+a planar).
+
+.SH OPTIONS
+.TP
+.B \-l
+List all the sensors in human-readable format.
+.TP
+.B \-a
+List all the sensors in a tabular, numerical format.  One line will be
+printed for each sensor in the following format:
+.nf
+.I <token> <index> <status> <measured_value> <location_code>
+.fi
+.TP
+\fB\-t \fItoken
+Specify the token of a specific sensor to query.  Also requires the
+\fB\-i\fR option to be specified.
+.TP
+\fB\-i \fIindex
+Specify the index of a specific sensor to query.  Also requires the
+\fB\-t\fR option to be specified.
+.TP
+.B \-v
+Print the measured value rather than the sensor status, which is the
+default value printed.  Requires both the \fB\-t\fR and \fB-i\fR options
+to be specified.
+
+.SH "SEE ALSO"
+.BR usysident (8),
+.BR usysattn (8)

@@ -1,0 +1,41 @@
+"""Setup AMS python package.
+"""
+
+__author__ = "Robert Jennings rcj@linux.vnet.ibm.com"
+__copyright__ = "Copyright (c) 2008 IBM Corporation"
+__license__ = "Common Public License v1.0"
+
+__version__ = "$Revision: 1.2 $"
+__date__ = "$Date: 2009/01/08 17:43:16 $"
+# $Source: /cvsroot/powerpc-utils/powerpc-utils-papr/scripts/amsvis/setup.py,v $
+
+from distutils.core import setup
+import os
+
+#version = os.environ.get('AMSVIS_VERSION')
+#if version is None:
+#    raise EnvironmentError, "The AMSVIS_VERSION environment variable must be set"
+
+setup(name = "powerpcAMS",
+      version = "@VERSION@",
+      author = "Robert Jennings",
+      author_email = "rcj@linux.vnet.ibm.com",
+      packages = ["powerpcAMS"],
+      description = "Tools for gathering/transmitting/displaying AMS data.",
+      long_description = "Data regarding Active Memory Sharing (AMS) on " + \
+                         "IBM Power Systems\ncan be collected, transmitted " + \
+                         "over the network, and displayed using\n the code " + \
+                         "provided in this package.",
+      platforms = ["linux-ppc64"],
+      license = "Common Public License v1.0",
+      url = "http://powerpc-utils.ozlabs.org/",
+      classifiers = ["Environment :: X11 Applications :: GTK",
+                     "Intended Audience :: Developers",
+                     "Intended Audience :: System Administrators",
+                     "License :: OSI Approved :: Common Public License",
+                     "Natural Language :: English",
+                     "Operating System :: POSIX :: Linux",
+                     "Programming Language :: Python :: 2.5",
+                     "Topic :: System :: Hardware",
+                     "Topic :: System :: Monitoring"]
+      )

@@ -1,0 +1,89 @@
+.\"
+.\" Copyright (C) 2004 International Business Machines
+.\" Michael Strosaker <strosake@us.ibm.com>
+.\"
+.TH SET_POWERON_TIME 8 "May 2004" Linux "Power Service Tools"
+.SH NAME
+set_poweron_time \- set a time in the future for the system to be powered on
+.SH SYNOPSIS
+.nf
+\fB/usr/sbin/set_poweron_time \fR[\fB-s\fR] \fB-t \fIabsolute_time
+\fB/usr/sbin/set_poweron_time \fR[\fB-s\fR] \fB-d \fIdelta_time
+.B /usr/sbin/set_poweron_time -m
+.B /usr/sbin/set_poweron_time -h
+.fi
+.SH DESCRIPTION
+.P
+The
+.I set_poweron_time 
+utility is used to set a time in the future to power on the system.  The utility uses firmware interfaces provided by IBM ppc64 systems to provide this functionality. 
+.P
+When used with the 
+.B -t
+option, the utility will configure the system to power-on at the specified date and time.  This is usefule for specifying that the sysetm should be restarted at 6 AM on Monday morning, for example.
+
+When used with the
+.B -d
+option, the utility will treat the specified time as a delta from the present.  This is useful for specifying that the system should be restarted in 2 days, for example.
+
+Times for the
+.B -t
+and
+.B -d
+options should be specified in the following format:
+.P
+\fBY\fR<year>\fBM\fR<month>\fBD\fR<day>\fBh\fR<hour>\fBm\fR<minute>\fBs\fR<second>
+.P
+The month, if specified, should be in the range of 1-12.
+The day, if specified, should be in the range of 1-31.
+The hour, if specified, should be in the range of 0-23.
+The minute and second, if specified, should be in the range of 0-59.
+.TP
+For the -t option:
+Year, month, and day default to the current date if not specified.
+Hour, minute, and second default to 0 if not specified.
+.TP
+For the -d option:
+Year, month, day, hour, minute, and second default to 0 if not specified.
+
+.P
+When used with the 
+.B -m 
+option, the utility will print the maximum amount of time in the future that the power-on time can be set (in days).  This option cannot be used with any others.
+
+When used with the 
+.B -s 
+option, the utility will shut down the system with 
+.B shutdown -h now
+after the power-on time has been set. If the utility is unable to set the power-on time for any reason, the system will not be shut down.
+
+.SH OPTIONS
+.TP
+\fB\-t \fIabsolute_time
+specify the power-on time
+.TP
+\fB\-d \fIdelta_time
+specify the power-on time as a delta from the current time
+.TP
+.B \-m
+print the maximum amount of time in the future that the power-on time can be set (in days)
+.TP
+.B \-s
+shut down the system after setting the power-on time.  The system will not be shut down if the power-on time cannot be set for any reason.
+.TP
+.B \-h
+print a usage message with examples
+
+.SH EXAMPLES
+.nf
+Shut down the system and schedule it to restart in 12 hours
+and 10 minutes:
+
+    set_poweron_time -d h12m10 -s
+
+Schedule the system to restart at noon on June 15th of this
+year:
+
+    set_poweron_time -t M6D15h12
+.fi
+

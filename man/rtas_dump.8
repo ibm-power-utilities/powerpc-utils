@@ -1,0 +1,41 @@
+.\" Copyright (C) 2005 International Business Machines.
+.\" Common Public License Version 1.0 (see COPYRIGHT)
+.\"
+.\" Author(s)
+.\"	Nathan Fontenot <nfont@austin.ibm.com>
+.\"
+.TH RTAS_DUMP 8 "May 2005" Linux "Linux on Power Service Tools"
+.SH NAME
+rtas_dump \- dump the contents of an RTAS event.
+.SH SYNOPSIS
+.B /usr/sbin/rtas_dump
+[ options ]
+.SH DESCRIPTION
+The \fIrtas_dump\fR icommand is used to dump the contents of an RTAS event 
+into a human readable form.  The tool is able to parse the contents of 
+/var/log/messages, /var/log/platform and /var/log/boot.msg to extract dump 
+the contents of RTAS events.  RTAS events can also be read in from a specified 
+file or stdin.  The real work of de-coding RTAS events is handled by 
+\fI/usr/sbin/rtas_event_decode\fR, the rtas_dump command simply parses the 
+input and files and passes on the data to \fIrtas_event_decode\fR.
+.SH OPTIONS
+.TP
+\fB\-d\fR
+debug flag, passed through to rtas_event_decode
+.TP
+\fB\-f\fI file\fR
+dump the RTAS event(s) from \fIfile\fR 
+.TP
+\fB\-h\fI
+print the usage message and exit
+.TP
+\fB\-n\fI num\fR
+Only dump RTAS event number \fInum\fR
+.TP
+\fB\-v\fR
+dump the entire contents of the RTAS event(s), not just the header
+.TP
+\fB\-w\fR
+set the output character width
+.SH AUTHOR
+Nathan Fontenot <nfont@austin.ibm.com>

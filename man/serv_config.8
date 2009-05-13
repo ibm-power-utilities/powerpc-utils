@@ -1,0 +1,129 @@
+.\"
+.\" Copyright (C) 2004 International Business Machines
+.\" Michael Strosaker <strosake@us.ibm.com>
+.\"
+.TH SERV_CONFIG 8 "May 2004" Linux "Linux on Power Service Tools"
+.SH NAME
+serv_config \- view and configure system service policies and settings on IBM ppc64 platforms
+.SH SYNOPSIS
+.nf
+\fB/usr/sbin/serv_config \fR[\fB-b\fR] [\fB-s\fR] [\fB-r\fR] [\fB-m\fR]
+\fB/usr/sbin/serv_config -l
+\fB/usr/sbin/serv_config -z \fIfilename
+\fB/usr/sbin/serv_config -e \fIvar\fR[\fB=\fIvalue\fR]
+\fB/usr/sbin/serv_config \fR[\fB--surveillance\fR[\fB=\fIsettings\fR]]
+                      \fR[\fB--reboot-policy\fR[\fB=\fIsettings\fR]]
+                      \fR[\fB--ring-indicate\fR[\fB=\fIsettings\fR]]
+                      \fR[\fB--remote-maint\fR[\fB=\fIsettings\fR]]
+                      \fR[\fB--force\fR]
+.fi
+.SH DESCRIPTION
+.P
+The
+.I serv_config
+utility is used to view and manipulate various system service policies and
+settings on PAPR-compliant PowerPC-64 machines, such as IBM pSeries, iSeries,
+System p or System i machines.
+.P
+.I serv_config
+can be run in one of two modes; interactive mode, in which the user will be
+prompted for the value of each variable in the specified category, or macro
+mode, in which the string provided on the command line will be parsed for the
+values of the variables in the category.  Macro mode is for expert use only;
+most users should be utilizing the interactive options (\fB\-s\fR, \fB\-b\fR,
+\fB\-r\fR, and \fB\-m\fR).
+.P
+.B NOTE:
+It is recommended that the current service settings are backed up with the
+\fB\-l\fR option before the settings are manipulated with this utility.
+Should a value be mistakenly updated to an incorrect value, all the settings
+can be restored to the backed up values with the \fB\-z\fR option.
+
+.SH OPTIONS
+.TP
+.B \-l
+List all of the current service settings.  If this output is stored to a file,
+these settings can be later restored with the \fB\-z\fR option.
+.TP
+\fB\-e \fIvar\fR[\fB=\fIvalue\fR]
+If only \fIvar\fR is specified, the value of the specified service
+setting is displayed; if a \fIvalue\fR is also specified, the value
+of the specified service setting is updated to the specified value.
+.TP
+.B \-s
+Interactively update the Surveillance settings.
+.TP
+.B \-b
+Interactively update the Reboot policies.
+.TP
+.B \-r
+Interactively update the Remote Power-On settings (either Ring Indicate
+Power-On or Wake On LAN).
+.TP
+.B \-m
+Interactively update the Remote Maintenance settings.
+.TP
+.B \-z \fIfilename
+Restore the service settings that were previously stored to \fIfilename\fR
+(using the \fB\-a\fR option).
+
+.SH ADVANCED OPTIONS
+.P
+The following options are for expert users only.  They are intended to be
+used by scripts and utilities which have been designed to automate the
+retrieval/manipulation of service settings.
+.TP
+\fB\-\-surveillance\fR[\fB=\fIsettings\fR]
+View or update the Surveillance settings in macro mode.
+If the \fIsettings\fR argument is not specified, all of the Surveillance
+variables are printed along with their corresponding values.  If the
+\fIsettings\fR argument is specified, the Surveillance settings are updated
+to the specified values.  The \fIsettings\fR argument should be in the
+following format:
+.nf
+\fIsp-sen\fB,\fIsp-sti\fB,\fIsp-del\fB,\fIimmediate
+.fi
+.TP
+\fB\-\-reboot\-policy\fR[\fB=\fIsettings\fR]
+View or update the Reboot policies in macro mode.
+If the \fIsettings\fR argument is not specified, all of the Reboot policy
+variables are printed along with their corresponding values.  If the
+\fIsettings\fR argument is specified, the Reboot policies are updated
+to the specified values.  The \fIsettings\fR argument should be in the
+following format on legacy systems:
+.nf
+\fIsp-bootrt-limit\fB,\fIsp-os-plt-reboot\fB,\fIsp-plt-reboot\fB,
+\fIsp-dookc\fB,\fIsp-ac-reboot\fR
+On recent systems, the following format is used:
+\fIpartition_auto_restart\fB,\fIplatform_auto_power_restart
+.fi
+.TP
+\fB\-\-remote\-pon\fR[\fB=\fIsettings\fR]
+View or update the Remote Power-On settings in macro mode.
+If the \fIsettings\fR argument is not specified, all of the Remote
+Power-On variables are printed along with their corresponding values.  If the
+\fIsettings\fR argument is specified, the Remote Power-On settings are
+updated to the specified values.  The \fIsettings\fR argument should be in the
+following format for systems with support for Ring Indicate Power-On:
+.nf
+\fIsp-ri-pon\fB,\fIsp-rb4-pon\fR
+On systems with support for Wake On LAN, the format
+is as follows:
+\fIsp-remote-pon
+.fi
+.TP
+\fB\-\-remote\-maint\fR[\fB=\fIsettings\fR]
+View or update the Remote Maintenance settings in macro mode.
+If the \fIsettings\fR argument is not specified, all of the Remote Maintenance
+variables are printed along with their corresponding values.  If the
+\fIsettings\fR argument is specified, the Remote Maintenance settings are
+updated to the specified values.
+.TP
+.B \-\-force
+Do not prompt for confirmation before modifying system settings; only valid
+in macro mode (ignored in interactive mode).
+
+.SH "SEE ALSO"
+.BR bootlist (8),
+.BR lscfg (8),
+.BR nvram (8)

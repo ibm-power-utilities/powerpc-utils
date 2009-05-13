@@ -1,0 +1,47 @@
+.\"
+.\" Copyright (C) 2004 International Business Machines
+.\" Michael Strosaker <strosake@us.ibm.com>
+.\"
+.TH RTAS_IBM_GET_VPD 8 "May 2004" Linux "Power Service Tools"
+.SH NAME
+rtas_ibm_get_vpd \- retrieve dynamically changing Vital Product Data
+.SH SYNOPSIS
+.nf
+\fB/usr/sbin/rtas_ibm_get_vpd \-h
+\fB/usr/sbin/rtas_ibm_get_vpd \fR[\fB\-l \fIlocation_code\fR]
+.fi
+.SH DESCRIPTION
+.P
+The
+.I rtas_ibm_get_vpd 
+utility is a utility to assist inventory retrieval applications by gathering dynamically changing vital product data on IBM ppc64 systems.   The output of this utility is formatted to be parsed by other applications; as such, it is not intended for general command-line usage, though there is no reason that it should not be used in that manner.
+.SH OPTIONS
+.TP
+.B \-l \fIlocation_code
+Specify the location code of the device from which dynamic VPD should be gathered.  If this option is not specified, dynamic VPD for all appropriate devices will be gathered.
+.TP
+.B \-h
+Print a usage message.
+.SH EXIT STATUS
+.TP
+.B 0
+Success.
+.TP
+.B 1
+Usage or parameter error.
+.TP
+.B 2
+Hardware error.
+.TP
+.B 3
+The library used to invoke firmware routines, librtas, has experienced an error.
+.TP
+.B 4
+The necessary firmware routine is not available on this system.
+.TP
+.B 5
+Out of memory.
+
+.SH "SEE ALSO"
+.BR lsvpd (8),
+.BR lscfg (8)

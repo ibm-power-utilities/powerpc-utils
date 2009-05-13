@@ -1,0 +1,35 @@
+.\"
+.\" Copyright (C) 2004 International Business Machines
+.\"
+.TH ACTIVATE_FIRMWARE 8 "May 2004" Linux "Power Service Tools"
+.SH NAME
+activate_firmware - activate a firmware image that has been updated concurrently
+.SH SYNOPSIS
+\fB/usr/sbin/activate_firmware
+.SH DESCRIPTION
+The activate_firmware utility will cause a firmware image that has already
+been flashed to be activated concurrently.  This utility will be invoked
+automatically when necessary, and as such should not be manually invoked
+at the command line.
+.SH "EXIT STATUS"
+.TP
+.B 0
+Success.
+.TP
+.B 1
+This platform does not support concurrent activation of firmware.
+.TP
+.B 2
+There is no new firmware ready to activate.
+.TP
+.B 3
+You must have root authority to run this command.
+.TP
+.B 4
+Hardware failure.
+.TP
+.B 5
+Memory/resource allocation error.
+.TP
+.B 6
+General error.

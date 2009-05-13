@@ -1,0 +1,345 @@
+#!/usr/bin/perl -w
+# Copyright (c) 2003, 2004 International Business Machines
+# Common Public License Version 1.0 (see COPYRIGHT)
+#
+# Author Todd Inglett <tinglett@us.ibm.com>
+# updates by Michael Strosaker <strosake@us.ibm.com>
+
+# Snapshot system config
+# Command-line parameters:
+#    a:       all data; collect detailed information (more files and output)
+#    d dir:   specify the directory where files and output will be collected
+#               (default: /tmp/ibmsupt)
+#    h:       print this help message
+#    o file:  specify the output file (.tar required, .tar.gz optional)
+#               (default: snap.tar.gz)
+#    v:       verbose output
+#
+#  Exit codes (view with "echo $?" immediately after running):
+#    0:  snap data was successfully captured
+#    1:  invalid command line
+#    2:  other fatal error
+
+use Getopt::Std;
+
+$outdir = "/tmp/ibmsupt";	# note NO trailing /
+$outfile = "snap.tar.gz";	# in the working dir.
+
+#  Files to include in all snaps
+@snap_paths_general = (
+  "/var/log/messages",
+  "/var/log/platform",
+  "/var/log/scanoutlog.*",
+#  "/proc/bus/pci",	?? binary file
+  "/proc/cmdline",
+  "/proc/cpuinfo",
+#  "/proc/device-tree",  must summarize device-tree (a la dmpdt_chrp) instead of dumping whole thing
+  "/proc/devices",
+  "/proc/dma",
+  "/proc/filesystems",
+  "/proc/fs",
+  "/proc/ide",
+  "/proc/interrupts",
+  "/proc/iomem",
+  "/proc/ioports",
+  "/proc/loadavg",
+  "/proc/locks",
+  "/proc/mdstat",
+  "/proc/meminfo",
+  "/proc/misc",
+  "/proc/modules",
+  "/proc/mounts",
+  "/proc/net",
+  "/proc/partitions",
+  "/proc/pci",
+  "/proc/ppc64/lparcfg",
+  "/proc/ppc64/eeh",
+  "/proc/ppc64/pci",
+  "/proc/ppc64/systemcfg",
+  "/proc/scsi",
+  "/proc/slabinfo",
+  "/proc/stat",
+  "/proc/swaps",
+  "/proc/sys",
+  "/proc/sysvipc",
+  "/proc/uptime",
+  "/proc/version",
+  "/dev/nvram",
+  "/etc/fstab",
+  "/etc/raidtab",
+  "/etc/yaboot.conf",
+);
+
+#  Files to include in all snaps on SuSE systems
+@snap_paths_general_SuSE = (
+  "/etc/SuSE-release",
+  "/var/log/boot.msg",
+);
+
+#  Files to include in all snaps on RedHat systems
+@snap_paths_general_RedHat = (
+  "/etc/redhat-release",
+  "/var/log/dmesg",
+);
+
+#  Files to include only in detailed snaps (-a option)
+@snap_paths_detailed = (
+  "/proc/tty",
+  "/etc/inittab",
+  "/proc/ppc64/paca",
+  "/proc/ppc64/naca",
+  "/proc/ppc64/pmc",
+  "/proc/ppc64/pcifr",
+);
+
+#  Command output to include in all snaps
+@snap_commands_general = (
+  "lscfg -vp",
+  "ifconfig -a",
+);
+
+#  Command output to include only in detailed snaps (-a option)
+@snap_commands_detailed = (
+  "rpm -qa",
+);
+  
+
+sub recurse_dir($);		# function prototype
+
+sub error {
+	my ($fatal, $message) = @_;
+
+	if ($fatal) {
+		print "$0: $message\n";
+		exit 2;
+	}
+	else {
+		if ($opt_v) {
+			print "$0: $message\n";
+		}
+	}
+}
+
+sub print_usage {
+	print "Usage: $0 [-ahv] [-d dir] [-o file]\n\n";
+	print "  Command-line parameters:\n";
+	print "    a:       all data; collect detailed information (more files and output)\n";
+	print "    d dir:   specify the directory where files and output will be collected\n"; 
+	print "               (default: /tmp/ibmsupt)\n";
+	print "    h:       print this help message\n";
+	print "    o file:  specify the output file (.tar required, .tar.gz optional)\n";
+	print "               (default: snap.tar.gz)\n";
+	print "    v:       verbose output\n\n";
+	print "  Exit codes (view with \"echo \$?\" immediately after running):\n";
+	print "    0:  snap data was successfully captured\n";
+	print "    1:  invalid command line\n";
+	print "    2:  other fatal error\n\n";
+}
+
+sub copy {
+	my ($source, $destination) = @_;
+	my ($dir, @path, $d, $blocksize, $buffer, $length);
+
+	#print "Copying $source...";
+
+	# Create directories, if necessary
+	$dir = substr $destination, 0, rindex($destination, "/");
+	if (!(-d $dir)) {
+		@path = split /\//, $dir;
+		if (substr($dir, 0, 1) eq "/") {	# remove leading /
+			shift @path;
+		}
+		$dir = "";
+		foreach $d (@path) {
+			$dir .= "/" . $d;
+			if (!(-d $dir)) {
+				if (!mkdir($dir, 0644)) {
+					error(0, "Cannot create directory: $dir");
+					return;
+				}
+			}
+		}
+	}
+
+	# Copy file
+	if (!open(SRC, "<$source")) {
+		error(0, "Cannot open file for reading: $source");
+		return;
+	}
+	binmode SRC;
+	if (!open(DST, ">$destination")) {
+		error(0, "Cannot open file for writing: $destination");
+		goto copy_out;
+	}
+	binmode DST;
+
+	$blocksize = (stat SRC)[11] || 16384;
+	while ($length = sysread SRC, $buffer, $blocksize) {
+		if (!defined $length) {
+			next if $! =~ /^Interrupted/;	# ^Z and fg
+			error(0, "System read error while reading $source: $!");
+			goto copy_out;
+		}
+		$offset = 0;
+		while ($length) {
+			if (!defined($written = syswrite DST, $buffer, $length, $offset)) {
+				error(0, "System write error while writing $destination: $!");
+				goto copy_out;
+			}
+			$length -= $written;
+			$offset += $written;
+		}
+	}
+
+copy_out:
+	#print "done.\n";
+	close SRC;
+	close DST;
+}
+
+sub recurse_dir ($) {
+	my ($dir) = @_;
+	my ($file) = "";
+	my (@contents) = ();
+
+	if (!opendir(DIR, $dir)) {
+		error(0, "Could not open directory $dir");
+		return;
+	}
+
+	@contents = readdir DIR;
+	closedir DIR;
+
+	foreach $file (@contents) {
+		if ($file eq "." or $file eq ".." or (-l "$dir/$file")) {
+			next;
+		}
+
+		if (-d "$dir/$file") {
+			recurse_dir "$dir/$file";
+		}
+		else {
+			copy "$dir/$file", $outdir."$dir/$file";
+		}
+	}
+}
+
+sub snap_paths {
+	my ($file, $dir, $search, @contents);
+
+	foreach $file (@_) {
+		if (-d $file) {
+			recurse_dir $file;
+		}
+		else {
+			# Check for wildcard (* in last character only)
+			if (substr($file, -1) eq "*") {
+				$dir = substr $file, 0, rindex($file, "/");
+				$search = substr $file, rindex($file, "/")+1, -1;
+
+				if (!opendir(DIR, $dir)) {
+					error(0, "Could not open directory $dir");
+					return;
+				}
+
+				@contents = readdir DIR;
+				closedir DIR;
+
+				foreach $file (@contents) {
+					if (substr($file, 0, length($search)) eq $search) {
+						copy "$dir/$file", $outdir."$dir/$file";
+					}
+				}
+			}
+			else {
+				copy $file, $outdir.$file;
+			}
+		}
+	}
+}
+
+sub snap_commands {
+	my ($path, @junk, @path, $filename, $command, $exit_value);
+
+	foreach $command (@_) {
+		# Retrieve the name of the binary to run (for output file name)
+		($path, @junk) = split / /, $command;
+		@path = reverse(split /\//, $path);
+		$filename = shift @path;
+
+		system("$command > $outdir/$filename.out 2>&1");
+		if ($exit_value = $? >> 8) {
+			error(0, "\"$command\" returned $exit_value");
+		}
+	}
+}
+
+$< == 0 or error(1, "Must be executed as root");
+
+$opt_a = 0;
+$opt_d = 0;
+$opt_h = 0;
+$opt_o = 0;
+$opt_v = 0;
+if (!getopts('ad:ho:v')) {
+	print_usage;
+	exit 1;
+}
+
+if ($opt_h) {
+	print_usage;
+	exit 0;
+}
+
+if ($opt_d) {
+	$outdir = $opt_d;
+	if ($outdir eq "/") {
+		error(1, "Cannot use / as the output directory");
+	}
+	if (substr($outdir, -1) eq "/") {
+		$outdir = substr $outdir, 0, -1;
+	}
+}
+if ($opt_o) {
+	if ($opt_o !~ /.tar/) {
+		print "$0: The filename provided, $opt_o, does not contain .tar;  using default filename $outfile\n";
+	}
+	else {
+		$outfile = $opt_o;
+	}
+}
+
+snap_paths(@snap_paths_general);
+
+# Check distro
+if (-e "/etc/SuSE-release") {
+	snap_paths(@snap_paths_general_SuSE);
+}
+elsif (-e "/etc/redhat-release") {
+	snap_paths(@snap_paths_general_RedHat);
+}
+
+# Run commands and capture output
+snap_commands(@snap_commands_general);
+
+# Gather detail files if requested (-a option)
+if ($opt_a) {
+	snap_paths(@snap_paths_detailed);
+	snap_commands(@snap_commands_detailed);
+}
+
+($basefile, $extension) = split /\.tar/, $outfile;
+
+system ("tar -cf $basefile.tar $outdir 2>/dev/null");
+
+if ($extension eq ".gz") {
+	system ("gzip -f $basefile.tar");
+}
+elsif ($extension eq "") { }
+else {
+	$outfile = "$basefile.tar";
+	print "$0: Unrecognized extension $extension\n";
+}
+
+print "output written to $outfile\n";
+exit 0;

@@ -1,0 +1,178 @@
+.\" Copyright (C) 2009 International Business Machines.
+.\" Common Public License Version 1.0 (see COPYRIGHT)
+.\"
+.\" Author(s)
+.\"     Robert Jennings <rcj@linux.vnet.ibm.com>
+.\"
+.\" $Date: 2009/03/18 17:25:35 $
+.\" $Revision: 1.4 $
+.\" $Source: /cvsroot/powerpc-utils/powerpc-utils-papr/doc/amsstat.1,v $
+.\"
+.TH AMSSTAT 1 "March 2009" Linux "Linux on Power Service Tools"
+.SH NAME
+amsstat \- display a list of Active Memory Sharing (AMS) statistics.
+.SH SYNOPSIS
+.B /usr/bin/amsstat
+[\fISECONDS\fP]
+.SH DESCRIPTION
+This program captures memory statistics relevant in an Active Memory Sharing (AMS) environment.  This tool can run once or be set to run repeatedly with a specified timeout, in seconds, between instances of data collection.  Several sections are displayed for the partition, they are as follows:
+.SS System Memory Statistics
+In an AMS environment, the amount of memory available will change as memory is loaned to other partitions by the Cooperative Memory Manager (CMM) module.  This section will show how the total amount of memory provided to the partition is being utilized.
+.P
+The fields here are taken from \fI/proc/meminfo\fP.
+.TP
+MemTotal
+This value, expressed in kilobytes, is the maximum amount of memory available to the operating system.
+.TP
+MemFree
+This value, displayed in kilobytes, is the amount of memory which is unused.
+.TP
+Buffers
+The amount of memory, in kilobytes, used for file buffers. 
+.TP
+Cached
+The amount of memory, in kilobytes, used as cache memory. 
+.TP
+Inactive
+The total amount of buffer or page cache memory, in kilobytes, that are free and available. This is memory that has not been recently used and can be reclaimed for other purposes. 
+.TP
+SwapTotal
+The total amount of swap available, in kilobytes. 
+.TP
+SwapFree
+The total amount of swap free, in kilobytes. 
+.TP
+DesMem
+The desired memory field shows the amount of memory that firmware would like to to have currently assigned to the partition.  This relates to the amount of assigned memory specified in the HMC or IVM however this value can be out-of-sync withe current amount of memory assigned to the operating system if dynamic memory add or remove operations have failed.
+.SS Entitlement Information
+This information is specific to an AMS environment, the fields are taken from \fI/proc/ppc64/lparcfg\fP.
+.TP
+entitled_memory
+The \fIentitled_memory\fP is a specific amount of memory given to the operating system that will be available to be mapped for IO operations; this guarantee is maintained by the platform firmware and can be tuned through the HMC or IVM depending on the particular environment.  This value is displayed in kilobytes.  The amount of \fIentitled memory\fP is changed by the HMC or IVM in response to hot-plug events or explicit tuning.
+.TP
+mapped_entitled_memory
+The number of bytes of \fIentitled_memory\fP currently mapped for IO operations according to firmware.
+.TP
+entitled_memory_group_number
+This value is assigned to the partition by firmware and can be used by support to help correlate operating system data with firmware data.  It is not of use to the end user but is displayed for debug support.
+.TP
+entitled_memory_pool_number
+This is the identification number of the shared memory pool to which this partition belongs.
+.TP
+entitled_memory_weight
+This is the weighting that is used by firmware to help prioritize partitions for memory loaning.
+.TP
+entitled_memory_pool_size
+This is the total size of the physical memory in the memory pool to which this partition belongs and includes memory that may not presently be accessible to the operating system.
+.TP
+entitled_memory_loan_request
+The number of bytes which firmware would like the partition to give or take via the Cooperative Memory Manager (CMM).  Positive values denote a request of how much memory, in bytes, it would like the operating system to loan to firmware.  Negative values denote that the operating system may take back that number of bytes of memory for its own use.
+.TP
+backing_memory
+This is the amount of physical memory, in bytes, that is currently reserved for access by this partition.  This value does change over time based on load of all of the partitions in the shared memory pool.  Use of memory in excess of this amount incurs performance penalties as loaning and paging will need to occur.
+.TP
+cmo_enabled
+When this value is \fI1\fP the partition is running in shared memory mode.  A \fI0\fP in this field indicates that dedicated memory mode is enabled and the AMS kernel code will not be active.
+.TP
+cmo_faults
+A fault occurs when an attempt to access memory is made where the platform firmware must suspend the partition and request data from disk.  This value is a sum of the number of faults since the operating system was booted.  Increases in this value indicate contention for memory between partitions in the AMS environment.
+.TP
+cmo_fault_time_usec
+This value is a running sum of the amount of time, since boot time, that the operating system has been suspended by platform firmware to process \fIcmo_faults\fP. This value is given is microseconds (10^-6 or 0.0000001 seconds).
+.TP
+cmo_primary_psp
+This is the identification number of the primary paging storage pool (psp).
+.TP
+cmo_secondary_psp
+This is the identification number of the secondary paging storage pool (psp).
+.SS CMM Statistics
+The Cooperative Memory Manager (CMM) module loans unused memory to firmware to be used by other partitions within the shared memory pool.  The fields here are taken from \fI/sys/module/cmm/parameters\fP and \fI/sys/devices/system/cmm/cmm0\fP.
+.TP
+disable
+The CMM code is disabled when this is set to 1 and is enabled when this value is 0.  If CMM is disabled no loaning will occur.
+.TP
+debug
+Set to 1, CMM will print debug information regarding the number of pages loaned, the loan request from firmware, etc to the console or system log.
+.TP
+min_mem_mb
+This the amount of partition memory, in megabytes, which will be reserved from loaning.
+.TP
+oom_kb
+The number of kilobytes of memory taken back from firmware by the CMM module for the operating system when an out of memory signal from the kernel is caught by CMM.
+.TP
+delay
+This is the number of seconds that CMM waits between requests to firmware for the number of pages that firmware would like the operating system to loan.
+.TP
+loaned_kb
+This is the amount of memory, in kilobytes, that the operating system has given back to the platform firmware to be used by other partitions.  This value fluctuates to meet the demands of all of the partitions in the shared memory pool of an AMS environment.
+.TP
+loaned_target_kb
+This is the amount of memory, in kilobytes, that the firmware would like the operating system to loan for use by other partitions.  This value may be greater than \fIloaned_kb\fP if firmware would like additional pages to be loaned or it may be less than \fIloaned_kb\fP if firmware is providing additional pages to the operating system.
+.TP
+oom_freed_kb
+The amount of memory, in kilobytes, that is no longer being loaned by CMM as a result of out-or-memory kernel signals.
+.SS VIO Bus Statistics
+The VIO Bus manages the operating system's \fIentitled memory\fP for devices which may perform DMA operations.  The data here is found in the \fI/sys/bus/vio/\fP directory.  The use of \fIcmo\fP is a historical reference to the \fIAMS\fP feature and is used interchangeably.
+.TP
+cmo_entitled
+The \fIentitled\fP memory is a specific amount of memory given to the operating system that will be available to be mapped for IO operations; this guarantee is maintained by the platform firmware and can be tuned through the HMC or IVM depending on the particular environment.  This value is displayed in kilobytes.  The amount of \fIentitled\fP memory is changed by the HMC or IVM in response to hot-plug events or explicit tuning.
+.TP
+cmo_reserve_size
+The \fIentitled\fP memory is split into two pools, the first of which is the \fIreserve pool\fP.  This value, expressed in kilobytes, represents the amount of memory guaranteed to individual devices on the bus.
+.TP
+cmo_excess_size
+This pool contains any amount of \fIentitled\fP memory not placed in the \fIreserve pool\fP; the value is displayed in kilobytes.  Any device can map memory from this pool for IO operations, after having used up its own allocation from the \fIreserve pool\fP, until the \fIexcess pool\fP is exhausted.
+.TP
+cmo_excess_free
+This value represents the amount of memory, in kilobytes, currently available for devices to use from the \fIexcess pool\fP.
+.TP
+cmo_spare
+This value represents the amount of memory, in kilobytes, kept unused to handle hot-plug events, entitlement rebalancing between devices, and module loading.
+.TP
+cmo_min
+This value represents the current minimum amount of entitlement that the operating system could function with based on the ideal size of the \fIspare\fP allocation plus a small allocation for each device present in the system.  Requests to change system entitlement below this value will fail.  Setting entitlement to this value may impact performance, but should allow the system to make forward progress, the ideal value is displayed in \fIcmo_desired\fP below.
+.TP
+cmo_desired
+Each device in the system that requires memory for mapping IO operations will specify an amount of memory which is desired for optimal performance.  This value is the sum of the requests made by individual devices on the bus and is measured in kilobytes.
+.TP
+cmo_curr
+This value represents the amount of memory, in kilobytes, that is currently mapped by device drivers for IO operations.
+.TP
+cmo_high
+This value, measured in kilobytes, represents the largest amount of memory mapped at any one point in time since the system was booted or the field was last reset.  This value can be reset by writing a '0' to the file \fI/sys/bus/vio/cmo_high\fP.
+.SS VIO Device Statistics
+Each device that is configured and performs DMA operations will appear listed beneath this heading. The devices are displayed by their location on the VIO bus  nd the data is pulled from \fI/sys/bus/vio/devices/\fP\fB<device name>\fP\fI/*\fP.  For each device the following are shown:
+.TP
+cmo_desired
+The amount of memory, in kilobytes, that the device has requested from the bus to provide optimal performance.  The amount of \fIcmo_entitled\fP memory will not exceed this amount.  The device may receive a memory entitlement less than its desired level in cases where resources are limited.
+.TP
+cmo_entitled
+The amount of memory, in kilobytes, that the device is guaranteed that it may map for IO operations.  The allocation of this entitled memory is made to the device from the bus' \fIcmo_reserve_pool\fP.
+.TP
+cmo_allocated
+The amount of memory, in kilobytes, that the device has currently mapped for IO operations.
+.TP
+cmo_allocs_failed
+When the amount of memory allocated (\fIcmo_allocated\fP) has exhausted both the entitled memory (\fIcmo_entitled\fP) and the bus' excess pool, memory mapping failures will occur.  For each failed attempt, the value displayed here will increase by 1.  Large changes in this value would indicate resource contention that may require system tuning.  The device drivers are written such that these failures, while impacting performance, do not impede functionality.  To reset this counter, the value '0' can be written to the file \fI/sys/bus/vio/devices/\fP<device name>\fI/cmo_allocs_failed\fP.
+.SH EXAMPLES
+.TP
+.B amsstat 
+Display the AMS data for the local system, providing an update every 10 seconds.
+.P
+.TP
+.BI amsstat " 10"
+Display a list of AMS statistics and repeat every 10 seconds thereafter.
+.SH FILES
+.I /proc/sys/meminfo 
+.br
+.I /proc/ppc64/lparcfg
+.br
+.I /sys/module/cmm/parameters/*
+.br
+.I /sys/devices/system/cmm/cmm0/
+.br
+.I /sys/bus/vio/cmo_*
+.br
+.I /sys/bus/vio/devices/*/cmo_*
+.SH VERSION
+$Revision: 1.4 $

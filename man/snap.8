@@ -1,0 +1,51 @@
+.\"
+.\" Copyright (C) 2002 - 2004 International Business Machines
+.\" Todd Inglett <tinglett@vnet.ibm.com>
+.\" Michael Strosaker <strosake@us.ibm.com>
+.\"
+.TH SNAP 8 "14 November 2003" Linux "Linux on Power Service Tools"
+.SH NAME
+snap \- generate a configuration snapshot for service
+.SH SYNOPSIS
+\fB/usr/sbin/snap \fR[\fB-ahv\fR] [\fB-d \fIdir\fR] [\fB-o \fIfile\fR]
+.SH DESCRIPTION
+The
+.I snap
+script copies several system status and config files and the output of
+several commands from the system into snap.tar.gz in the current directory.
+System servicers may ask that this be run in order collect data to diagnose
+a problem.
+
+.SH OPTIONS
+.TP
+.B \-a
+All data;  collect detailed information (more files and output).
+.TP
+\fB\-d \fIdir
+Specify the directory where files and ouput will be collected (default:
+/tmp/ibmsupt).
+.TP
+.B \-h
+Print a help message.
+.TP
+\fB\-o \fIfile
+Specify the output path and filename (.tar required, .tar.gz optional)
+(default: snap.tar.gz).
+.TP
+.B \-v
+verbose output
+
+.SH FILES
+These are some of the files that are archived:
+.P
+/var/log/messages
+.br
+/var/log/platform
+.br
+/var/log/scanoutlog.*
+.br
+/proc (select files)
+.br
+/dev/nvram
+.br
+/etc/yaboot.conf

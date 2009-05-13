@@ -1,0 +1,159 @@
+.\" Copyright (C) 2008 International Business Machines.
+.\" Common Public License Version 1.0 (see COPYRIGHT)
+.\"
+.\" Author(s)
+.\"     Robert Jennings <rcj@linux.vnet.ibm.com>
+.\"
+.\" $Date: 2009/03/13 20:27:05 $
+.\" $Revision: 1.1 $
+.\" $Source: /cvsroot/powerpc-utils/powerpc-utils-papr/doc/amsvis.1,v $
+.\"
+.TH AMSVIS 1 "January 2009" Linux "Linux on Power Service Tools"
+.SH NAME
+amsvis \- view Active Memory Sharing (AMS) metrics in a GUI locally or remotely.
+.SH SYNOPSIS
+.B /usr/bin/amsvis
+\fB\-l\fP [\fB\-u\fP SEC] [\fB\-v\fP]
+.P
+.B /usr/bin/amsvis
+\fB\-r [\-c\fP] [\fB\-\-hosts\fP \fIHOSTNAME\fP[:\fIPORT\fP][,...]] [\fB\-u\fP \fISEC\fP] [\fB\-v\fP]
+.P
+.B /usr/bin/amsvis
+\fB\-r\fP \fB\-s\fP [\fB\-p\fP \fIPORT\fP] [\fB\-v\fP]
+.P
+.B /usr/bin/amsvis \-h
+.SH DESCRIPTION
+This program helps visualize operating system data as it relates to running within an Active Memory Sharing (AMS) environment.  The tool can be run both locally or remotely. Additionally, it can be run as a local data server, without a graphical user interface (GUI), to provide data for running the GUI remotely.
+.P
+When the GUI is run for a single host a number of panels will be displayed for the operating system, these are the \fISystem\fP, \fIIO Bus Memory\fP, and \fIIO Devices\fP panels.
+.P
+When the GUI is run for multiple hosts only the \fISystem Panel\fP will be displayed for each of the hosts.  This is achieved by specifying multiple systems on the command-line via the \fI--hosts\fP option.
+.SS System Panel
+In an AMS environment, the amount of memory available will change as memory is loaned to other partitions by the Cooperative Memory Manager (CMM) module.  This panel will show how the total amount of memory provided to the system is being utilized.  The graph displays a histogram showing the \fIloaned\fP, \fIused\fP, and \fIfree\fP memory; the most recent value is displayed to the right.
+.P
+For the system memory panel there are six values displays beneath the graph, they are:
+.TP
+Total
+This value, expressed in kilobytes, is the maximum amount of memory available to the operating system.  This value represents the graph's total height.
+.TP
+Loaned
+This is the amount of memory, in kilobytes, that the operating system has temporarily given back to the platform firmware to be used by other partitions.  This value fluctuates to meet the demands of all of the partitions in the shared memory pool of an AMS environment.
+.TP
+Used
+This value, displayed in kilobytes, is the amount of system memory in-use, not including buffers or cache.
+.TP
+Free
+This value, displayed in kilobytes, is the amount of system memory which is unused.
+.TP
+Faults
+A fault occurs when an attempt to access memory is made where the platform firmware must suspend the partition and request data from disk.  This value is a sum of the number of faults since the system was booted.  Increases in this value indicate contention for memory between partitions in the AMS environment.
+.TP
+Fault time
+This value is a running sum of the amount of time, since boot time, that the operating system has been suspended by platform firmware to process \fIfaults\fP.  
+.SS IO Bus Memory Panel
+This panel shows how the memory given to the operating system for IO operations is being used by the bus and the devices present on the bus.
+.P
+The graph will display a histogram for the \fIspare\fP and \fIin use\fP memory with the most recent value on the right side of the graph.  The graph is overlayed with a dashed line corresponding in color to the \fIhigh water\fP value and another dashed line for the \fIreserve pool\fP.
+.P
+For the system's IO bus memory panel there are eight values displayed beneath the graph, they are:
+.TP
+Entitled
+The \fIentitled\fP memory is a specific amount of memory given to the operating system that will be available to be mapped for IO operations; this guarantee is maintained by the platform firmware and can be tuned through the HMC or IVM depending on the particular environment.  This value is displayed in kilobytes.  The amount of \fIentitled\fP memory is changed by the HMC or IVM in response to hot-plug events or explicit tuning.  This value represents the graph's total height.
+.TP
+Desired
+Each device in the system that requires memory for mapping IO operations will specify an amount of memory which is desired for optimal performance.  This value is the sum of the requests made by individual devices on the bus and is measured in kilobytes.
+.TP
+High water
+This value, measured in kilobytes, represents the largest amount of memory mapped at any one point in time since the system was booted or the field was last reset.  This value can be reset by writing a '0' to the file \fI/sys/bus/vio/cmo_high\fP.
+.TP
+In use
+This value represents the amount of memory, in kilobytes, that is currently mapped by device drivers for IO operations.
+.TP
+Spare
+This value represents the amount of memory, in kilobytes, kept unused to handle hot-plug events, entitlement rebalancing between devices, and module loading.
+.TP
+Reserve pool
+The \fIentitled\fP memory is split into two pools, the first of which is the \fIreserve pool\fP.  This value, expressed in kilobytes, represents the amount of memory guaranteed to individual devices on the bus.
+.TP
+Excess pool
+This pool contains any amount of \fIentitled\fP memory not placed in the \fIreserve pool\fP; the value is displayed in kilobytes.  Any device can map memory from this pool for IO operations, after having used up its own allocation from the \fIreserve pool\fP, until the \fIexcess pool\fP is exhausted.
+.TP
+Excess free
+This value represents the amount of memory, in kilobytes, currently available for devices to use from the \fIexcess pool\fP.
+.SS IO Devices Panel
+There will be one panel for each VIO device present in the system that maps memory for IO operations.  Panels will be added and removed for devices as a result of DLPAR hot-plug operations and module load/unload events.
+.P
+The graph will display a histogram for the values of \fIallocated\fP memory, with the most recent value on the right side of the graph.  The graph is overlaid with a dashed line that represents the latest value of \fIentitled\fP memory.  The area of the graph above the dashed line represents the \fIexcess Pool\fP of \fIIO bus memory\fP, any portion of this area that is grayed out has been mapped by other devices and is currently unavailable to the particular device.
+.P
+For each device panel there are five values displayed beneath the graph, they are:
+.TP
+Device Name
+The name displayed for the device is its location on the bus.
+.TP
+Entitled
+The amount of memory, in kilobytes, that the device is guaranteed that it may map for IO operations.  The bus will guarantee that the device can map this number of kilobytes of memory for IO operations.  The allocation of this \fIentitled\fP memory is made to the device from the bus' \fIreserve pool\fP.
+.TP
+Desired
+The amount of memory, in kilobytes, that the device has requested from the bus to provide optimal performance.  The amount of \fIentitled\fP memory will not exceed this amount.  The device may receive a memory entitlement less than its desired level in cases where resources are limited.
+.TP
+Allocated
+The amount of memory, in kilobytes, that the device has currently mapped for IO operations.
+.TP
+Allocs failed
+When the amount of memory \fIallocated\fP has exhausted both the \fIentitled\fP memory and the bus' \fIexcess pool\fP, memory mapping failures will occur.  For each failed attempt, the value displayed here will increase by 1.  Large changes in this value would indicate resource contention that may require system tuning.  The device drivers are written such that these failures, while impacting performance, do not impede functionality.  To reset this counter, the value '0' can be written to the file \fI/sys/bus/vio/devices/\fP<device name>\fI/cmo_allocs_failed\fP.
+.SH OPTIONS
+.TP
+.B \-c, \-\-client
+When running with remote data, function as the client to display the GUI. [\fIdefault\fP]
+.TP
+.B \-h, \-\-help
+Display a help message and exit.
+.TP
+\fB\-\-hosts=\fP\fIHOSTNAME\fP[:\fIPORT\fP][,\fIHOSTNAME\fP[:\fIPORT\fP],...]
+Hostname(s) with optional port number, the default is \fIlocalhost:50000\fP.  If more than one hostname is specified, only the \fISystem Panel\fP is displayed for each host.
+.TP
+.B \-l, \-\-local
+Run on the local system to gather data and display it in a GUI. [\fIdefault\fP]
+.TP
+.BI \-p PORT ", \-\-port=" PORT
+Network port number while running as a server, the default is \fI50000\fP.
+.TP
+.B \-r, \-\-remote
+Run as a network client/server to gather data or display it in a GUI.  
+.TP
+.B \-s, \-\-server
+When running remotely, function as the server to provide AMS data to clients.  No GUI is displayed.
+.TP
+.BI "\-u" SECONDS ", \-\-update=" SECONDS
+Specify the number of seconds between updates of the GUI, the default is \fI5\fP.
+.TP
+.B \-v, \-\-verbose
+Enable verbose output.
+.SH EXAMPLES
+Running locally:
+.TP
+.BI "amsvis --local --update=" 10
+Display the AMS data for the local system, providing an update every 10 seconds.
+.P
+Running remotely:
+.TP
+.BI "amsvis --remote --server --port=" 50000
+Start a server for AMS data on port 50000.
+.TP
+.BI "amsvis --remote --client --hostname=" server.example.org " --port=" 50000 "
+Display the AMS data from the remote system, providing an update every 10 seconds.
+.BI
+.SH FILES
+.I /proc/sys/meminfo 
+.br
+.I /proc/ppc64/lparcfg
+.br
+.I /sys/devices/system/cmm/cmm0/
+.br
+.I /sys/bus/vio/cmo_*
+.br
+.I /sys/bus/vio/devices/*/cmo_*
+.SH BUGS
+Though not a bug, the name of a number of files and variables are of the form cmo* rather than Active Memory Sharing (AMS).  The kernel code for this feature was committed under the name Cooperative Memory Overcommitment (CMO).  Kernel support is enabled using the kernel config option CONFIG_PPC_SMLPAR, for shared memory logical partition support.
+.SH VERSION
+$Revision: 1.1 $

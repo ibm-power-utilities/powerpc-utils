@@ -1,0 +1,937 @@
+#! /bin/bash
+
+# Copyright (c) 2004 International Business Machines
+# Common Public License Version 1.0 (see COPYRIGHT)
+#
+# Author Nathan Fontenot <nfont@austin.ibm.com>
+
+#
+# ofpathname - This utility provides a mechanism for converting a logical
+# device name to an open firmware device path, and vice versa.
+#
+# TODO: This script doesn't handle floppy drives and token ring devices,
+#       perhaps they should be added in at some point.
+#
+
+OFPATHNAME="ofpathname"
+VERSION="0.5"
+FIND=/usr/bin/find
+CAT=/bin/cat
+
+# Find out what platfrom we are running on.  Hopefully this
+# list will get expanded with time.
+PLATFORM=$(sed /proc/cpuinfo -ne "s/^machine\t*: \(.*\)/\1/p")
+case $PLATFORM in
+    EFIKA5K2\ *)	PLATFORM=efika ;;
+esac
+
+# Usage statemnet
+usage()
+{
+    echo "Usage: $OFPATHNAME [OPTION] DEVICE"
+    echo "Provide logical device names <==> Open Firmware Device Path Conversion"
+    echo ""
+    echo "Optional arguments."
+    echo "  -l               Convert Open Firmware device pathname to"
+    echo "                   logical device name."
+    echo "  -a               Find matching Open Firmware device alias[es]."
+    echo "  -q, --quiet      Do not report failures, exit quietly"
+    echo "  -V, --version    Display version information and exit"
+    echo "  -h, --help       Display this help information and exit"
+    echo ""
+}
+
+show_version()
+{
+    echo "$OFPATHNAME: Version $VERSION"
+    echo "Written by: Nathan Fontenot <nfont@austin.ibm.com>"
+}
+
+#
+# err
+# Common routine to print error messages for ofpathname.  Since most of the
+# error messages can be generated in multiple places, we put all the text
+# here to avoid errors in duplicating the messages.
+#
+# The first and only parameteris the error message number, all of which
+# are defined below as ERR_*.
+#
+ERR_NO_OFPATH=1
+ERR_NO_SYSFS=2
+ERR_NO_SYSFS_DEVINFO=3
+ERR_NOT_CONFIG=4
+ERR_NO_LOGDEV=5
+err()
+{
+    local emsg=$1
+
+    if [[ -n $be_quiet ]]; then
+        exit 1
+    fi
+
+    case $emsg in
+        1)  echo "$OFPATHNAME: Could not retrieve Open Firmware device path"
+            echo "            for logical device \"$DEVNAME_ARG\"." ;;
+
+        2)  echo "$OFPATHNAME: sysfs (/sys) is needed and does not appear"
+            echo "            to be mounted on this system." ;;
+
+        3)  echo "$OFPATHNAME: Could not find sysfs information for logical"
+            echo "            device \"$DEVNAME_ARG\"." ;;
+
+        4)  echo "$OFPATHANME: Logical device \"$DEVNAME_ARG\" does not appear"
+            echo "            to be configured." ;;
+
+        5)  echo "$OFPATHNAME: Could not retrieve logical device name for"
+            echo "            Open Firmware path \"$DEVNAME_ARG\"."
+    esac
+
+    exit 1
+}
+
+#
+# get_link
+# return the directory path that a link points to.
+# The only parameter is the link name.
+#
+get_link()
+{
+    local ln_name=$1;
+    echo `ls -l $ln_name 2>/dev/null | awk -F"->" '{print $2}'`
+}
+
+#
+# get_hbtl
+# Given a path that ends in an HBTL (Host:Bus:Target ID:LUN), break it apart
+# into its constituent parts in the global vars HOST, BUS, TARGET and LUN
+#
+# #1 path ending in HBTL
+#
+get_hbtl()
+{
+    local hbtl
+
+    HBTL=${1##*/}
+    hbtl=$HBTL
+
+    HOST=${hbtl%%:*}
+    hbtl=${hbtl#*:}
+    BUS=${hbtl%%:*}
+    BUS=`echo "ibase=10;obase=16; $BUS" | bc | tr "[:upper:]" "[:lower:]"`
+    hbtl=${hbtl#*:}
+    ID=${hbtl%%:*}
+    ID=`echo "ibase=10;obase=16; $ID" | bc | tr "[:upper:]" "[:lower:]"`
+    LUN=${hbtl#*:}
+    LUN=`echo "ibase=10;obase=16; $LUN" | bc | tr "[:upper:]" "[:lower:]"`
+}
+
+#
+# get_vdisk_no
+# Given a path that ends in an HBTL, convert the HBTL values into a
+# virtual disk number (not sure what the real terminology is for it).
+# To do the conversion, the HBTL (A:B:C:D) is split apart and
+# calculated as;
+#     no = (0x8000 | B << 8 | C << 5 | D) * 1000000000000
+#
+# $1 path ending in HBTL
+#
+get_vdisk_no()
+{
+    get_hbtl $1
+
+    local B C D
+    typeset -i B C D
+
+    B=$((0x$ID << 8))
+    C=$((0x$BUS << 5))
+    D=$((0x$LUN))
+
+    local vdiskno vdisk
+    typeset -i vdiskno
+    vdiskno=$((0x8000 | $B | $C | $D ))
+    vdisk=${vdiskno##-}
+
+    vdisk=`echo \`bc << END
+ibase=10
+obase=16
+$vdisk
+END\``
+
+    local extrazeroes="000000000000"
+    echo $vdisk$extrazeroes
+}
+
+#
+# goto_dir
+# This looks for a given file in a given directory or any parents of the
+# given directory.
+#
+# $1 starting directory
+# $2 file to search for
+# $3 on_exit behavior on error
+goto_dir()
+{
+    local start_dir=$1
+    local fname=$2
+    local found=0
+    local on_exit=1
+
+    if [[ $# -eq 3 ]]; then
+	on_exit=$3
+    fi
+
+    cd $start_dir
+    while [[ $PWD != "/" ]]; do
+	ls $fname >/dev/null 2>&1
+        if [[ $? -eq 0 ]]; then
+            found=1
+	    break
+        fi
+        cd ..
+    done
+
+    if [[ $found -eq 0 ]]; then
+	if [[ $on_exit -eq 1 ]]; then
+	    err $ERR_NO_SYSFS_DEVINFO
+	else
+	    return 1
+	fi
+    fi
+}
+
+#
+# is_pata_dev
+# Check to see if this is a PATA device
+#
+is_pata_dev()
+{
+    local this_dir=$PWD
+    local sysfs_dir
+    local udevinfo="/usr/bin/udevinfo"
+
+    if [[ ! -a $udevinfo ]]; then
+        echo "no"
+    else
+	sysfs_dir=`get_link -f /sys/$($udevinfo -q path -n $DEVNAME)/device`
+	if [[ ! -d $sysfs_dir ]]; then
+	    echo "no"
+	else
+	    goto_dir $sysfs_dir devspec
+	    DEVTYPE=$(cat /proc/device-tree/$(cat $PWD/devspec)/device_type)
+
+	    if [[ $DEVTYPE = "ata" ]]; then
+	        echo "yes"
+	    else
+	        echo "no"
+	    fi
+	fi
+    fi
+
+    cd $this_dir
+}
+
+#
+# print_aliases
+# Print the aliases from /proc/device-tree/aliases for the specified device
+#
+print_aliases()
+{
+    dev=$1
+    local found=0
+
+    shopt -s nullglob
+    for i in /proc/device-tree/aliases/*; do
+        if sed -e "s/\x00$//g" $i | grep -qx "$dev" ; then
+	    echo ${i##*/}
+	    found=1
+	fi
+    done
+
+    if [[ $found = "0" ]]; then
+        echo "No aliases found."
+	exit 1
+    else
+	exit 0
+    fi
+}
+
+#
+# logical_to_ofpathname
+# Conversion for logical device name to an Open Firmware device path
+#
+logical_to_ofpathname()
+{
+    local is_cdrom
+
+    # follow any links to the real device name
+    while [[ -L $DEVNAME ]]; do
+        DEVNAME=`get_link $DEVNAME`
+    done
+
+    while [[ -L /dev/$DEVNAME ]]; do
+        DEVNAME=`get_link /dev/$DEVNAME`
+    done
+
+    DEVICE=${DEVNAME##*/}
+    DEVNODE=${DEVICE%%[0-9]*}
+
+    # try to determine if this is a cdrom device
+    if [[ ${DEVNAME_ARG##*/} = cdrom ]]; then
+        is_cdrom=yes
+    elif [[ `get_link /dev/cdrom` = /dev/$DEVICE ]]; then
+        is_cdrom=yes
+    else
+        is_cdrom=no
+    fi
+
+    case $DEVICE in
+        eth*)       l2of_ethernet ;;
+        sd* | sr*)  # PATA devices appear as sd*, but should be converted
+		    # using the ide logic
+		    is_pata=$(is_pata_dev $DEVNAME)
+		    if [[ $is_pata = "yes" ]]; then
+		        l2of_ide
+		    else
+			l2of_scsi
+		    fi ;;
+        hd*)        l2of_ide ;;
+        fd*)        echo "no fd support yet" ;;
+    esac
+
+    if [[ -z $OF_PATH ]]; then
+        err $ERR_NO_OFPATH
+    fi
+
+    if [[ $is_cdrom = yes ]]; then
+        OF_PATH=$OFPATH:1\\ppc\\bootinfo.txt
+    fi
+
+    if [[ $do_alias = "1" ]]; then
+        print_aliases $OF_PATH
+    else
+        echo $OF_PATH
+    fi
+}
+
+#
+# l2of_ide
+# Conversion routine for logical => OF path of ide devices
+#
+l2of_ide()
+{
+    cd /sys/block/$DEVICE
+    local link=`get_link "device"`
+    if [[ -z $link ]]; then
+        err $ERR_NO_SYSFS_DEVINFO
+    fi
+    cd $link
+
+    # get the device number
+    local devdir=${PWD##/*/}
+    local channelno=${devdir%%\.*}
+    local devno=${devdir##*\.}
+
+    goto_dir $PWD "devspec"
+
+    OF_PATH=`$CAT $PWD/devspec`
+    if [[ -z $OF_PATH ]]; then
+        err $ERR_NO_OFPATH
+    fi
+
+    # PCI ATA controller nodes (found on some Macs) have one child per IDE
+    # channel.
+    case `$CAT "/proc/device-tree/$OF_PATH/device_type"` in
+        pci-ata | pci-ide)  OF_PATH=$OF_PATH/@$channelno ;;
+    esac
+
+    # On Efika, obtained devno "0:0:0:0" doesn't match actual device.
+    # Note: according to vendor, "0,0" means primary master.  Secondary
+    # channel is not present, and primary slave is rare enough that we
+    # can reasonably ignore it.
+    if [ "$PLATFORM" = "efika" ] ; then
+        devno=0,0
+    fi
+
+    OF_PATH=$OF_PATH/disk@$devno
+}
+
+#
+# l2of_ethernet
+# Conversion routine for logical => OF path of ethernet devices
+#
+l2of_ethernet()
+{
+    local sysfs_eth=`$FIND /sys -name $DEVICE 2> /dev/null`
+    if [[ -z $sysfs_eth ]]; then
+        err $ERR_NOT_CONFIG
+    fi
+
+    OF_PATH=`$CAT $sysfs_eth/device/devspec`
+    if [[ -z $OF_PATH ]]; then
+        err $ERR_NO_OFPATH
+    fi
+}
+
+#
+# int_to_scsilun
+# Conversion routine for SCSI HBTL LUN => SCSI LUN name
+#
+int_to_scsilun()
+{
+    local lunint=$1
+    local A B C D
+
+    A=$(( ($lunint >> 8) & 0xff ))
+    B=$(($lunint & 0xff))
+    C=$(( ($lunint >> 24) & 0xff ))
+    D=$(( ($lunint >> 16) & 0xff ))
+
+    local lunstr=$(printf "%02X%02X%02X%02X00000000" $A $B $C $D)
+    echo "$lunstr"
+}
+
+get_fc_scsilun()
+{
+    local lun=$1
+    local L
+    L=`echo $lun | tr "[a-z]" "[A-Z]"`
+    L=`echo "ibase=16;obase=A; $L" | bc`
+
+    local fc_lun=`int_to_scsilun $L`
+    echo "$fc_lun"
+}
+
+get_fc_wwpn()
+{
+    local start_dir=$1
+
+    for f in `$FIND $start_dir -name port_name`; do
+        local wwpn=`$CAT $f`
+	break
+    done
+
+    # strip the leading 0x
+    wwpn=${wwpn:2}
+
+    echo "$wwpn"
+}
+
+#
+# l2of_scsi
+# Converion routine for logical => OF path of scsi devices
+#
+l2of_scsi()
+{
+    local found=0
+
+    # There may be many instances of DEVICE under /sys
+    for dir in `$FIND /sys -name $DEVICE`; do
+	# Move up until we find one with a device link
+	goto_dir $dir "device" 0
+	if [ $? -eq 0 ]; then
+	    found=1;
+	    break;
+	fi
+    done;
+
+    if [ $found -eq 0 ]; then
+        err $ERR_NOT_CONFIG
+    fi
+
+    # follow the 'device' link
+    local link=`get_link "device"`
+    if [[ -z $link ]]; then
+	# device may not be a link
+	link=device
+    fi
+
+    get_hbtl $link
+    cd $link
+
+    # save the name of the current directory, we may need it later...
+    local device_dir=${PWD##/*/}
+    local device_path=$PWD
+
+    # move up directories until we find one with devspec information
+    goto_dir $PWD "devspec"
+
+    OF_PATH=`$CAT $PWD/devspec`
+    if [[ -z $OF_PATH ]]; then
+        err $ERR_NO_OFPATH
+    fi
+
+    local vdev=${OF_PATH%/*}
+    local fc=${OF_PATH%@*}
+    fc=${fc##/*/}
+    if [[ $fc = "fibre-channel" ]]; then
+	local fc_lun=`get_fc_scsilun $LUN`
+	local wwpn=`get_fc_wwpn "$device_path/../../fc_remote_ports"`
+        OF_PATH=$(printf "%s/disk@%s,%s" $OF_PATH $wwpn $fc_lun)
+    elif [[ $vdev = "/vdevice" ]]; then
+        # get the v-device data
+        local tmp=${OF_PATH//\/vdevice/}
+        local vdevtype=${tmp%@*}
+
+        if [[ $vdevtype = "/vfc-client" ]]; then
+                local vfc_lun=`get_fc_scsilun $LUN`
+		local wwpn=`get_fc_wwpn "$device_path/../../fc_remote_ports*"`
+                OF_PATH=$(printf "%s/disk@%s,%s" $OF_PATH $wwpn $vfc_lun)
+        else
+                local i vdiskno
+                cd host*
+                cd target*
+                vdiskno=`get_vdisk_no $device_dir`
+
+                OF_PATH=$OF_PATH/disk\@$vdiskno
+        fi
+    elif [[ -d /proc/device-tree$OF_PATH/sas ]]; then
+        local B T L
+        B=`echo $BUS | tr "[a-z]" "[A-Z]"`
+        B=`echo "ibase=16;obase=A; $B" | bc`
+        T=`echo $ID | tr "[a-z]" "[A-Z]"`
+        T=`echo "ibase=16;obase=A; $T" | bc`
+        L=`echo $LUN | tr "[a-z]" "[A-Z]"`
+        L=`echo "ibase=16;obase=A; $L" | bc`
+
+	local sas_id=$(( ($B << 16) | ($T << 8) | $L ))
+	OF_PATH=$(printf "%s/sas/disk@%x" $OF_PATH $sas_id)
+        if [[ $LUN != "0" ]]; then
+            OF_PATH=$(printf "%s,%x" $OF_PATH $LUN)
+        fi
+    else
+        # make sure the "scsi" information is on the end of the path
+        local scsi_name=${OF_PATH##/*/}
+        scsi_name=${scsi_name%%@*}
+        if [[ $scsi_name != "scsi" ]]; then
+            scsi_name="scsi@$BUS"
+            OF_PATH=$OF_PATH/$scsi_name
+        fi
+
+        OF_PATH=$OF_PATH/sd@$ID,$LUN
+    fi
+}
+
+#
+# ofpathname_to_logical
+# Conversion for Open Firmware device paths to logical device names
+#
+ofpathname_to_logical()
+{
+    DEVPATH=${DEVNAME%/*}
+    DEVICE=${DEVNAME##/*/}
+    DEVTYPE=${DEVICE%\@*}
+    SAS=${DEVPATH##/*/}
+    FC=${SAS%%\@*}
+
+    if [[ $do_alias = "1" ]]; then
+        print_aliases $OF_PATH
+    fi
+
+    if [[ $DEVTYPE = "disk" && $DEVICE != ${DEVICE%:*} ]]; then
+        DEVTYPE=${DEVICE%:*}
+    fi
+
+    if [[ $DEVTYPE = "disk" && $SAS = "sas" ]]; then
+        DEVTYPE="sas"
+    fi
+
+    if [[ $DEVTYPE = "disk" && $FC = "vfc-client" ]]; then
+        DEVTYPE="vfc"
+    fi
+
+    if [[ $DEVTYPE = "disk" && $FC = "fibre-channel" ]]; then
+        DEVTYPE="fc"
+    fi
+
+    # Remove any possible cdrom data from DEVICE
+    if [[ ${DEVICE##*,} = "\ppc\bootinfo.txt" ||
+          ${DEVICE##*,} = \ppc\bootinfo.txt ]]; then
+        DEVICE=${DEVICE%,*}
+    fi
+
+    # Remove any possible yaboot suffix from DEVICE
+    if [[ ${DEVICE##*,} = "yaboot" ]]; then
+	DEVICE=${DEVICE%,*}
+    fi
+
+    case $DEVTYPE in
+        sd*           )  of2l_scsi ;;
+        sas           )  of2l_sas ;;
+        vfc           )  of2l_vfc ;;
+        fc            )  of2l_fc ;;
+        v-scsi | disk )  of2l_vscsi
+                         if [[ -z $LOGICAL_DEVNAME && $DEVTYPE = disk ]]; then
+                             of2l_ide
+                          fi ;;
+        eth* | l-lan  )  of2l_ethernet ;;
+        disk*         )  of2l_ide ;;
+    esac
+
+    if [[ -z $LOGICAL_DEVNAME ]]; then
+        err $ERR_NO_LOGDEV
+    fi
+
+    # See if this device is the cdrom
+    if [[ `get_link "/dev/cdrom"` = $LOGICAL_DEVNAME ]]; then
+        LOGICAL_DEVNAME="cdrom"
+    fi
+
+    echo $LOGICAL_DEVNAME
+}
+
+#
+# of2l_ide
+# Conversion routine for OF path => logical name for ide devices
+#
+of2l_ide()
+{
+    local dir
+
+    for dir in `$FIND /sys/block -name 'hd*'`; do
+        # get devno
+        local devno=${DEVICE##*@}
+        devno=${devno%%:*}
+
+        cd $dir
+        local link=`get_link "device"`
+        if [[ -n $link ]]; then
+            cd $link
+
+            # see if this is the correct device
+            local this_devno=${PWD##*\.}
+            if [[ $devno -eq $this_devno ]]; then
+                goto_dir $PWD "devspec"
+                local devspec=`$CAT ./devspec 2>/dev/null`
+
+                if [[ $devspec = $DEVPATH ]]; then
+                    LOGICAL_DEVNAME="${dir##*/}"
+                    break
+                fi
+            fi
+        fi
+    done
+}
+
+#
+# of2l_ethernet
+# Conversion routine for OF path => logical names of ethernet devices
+#
+of2l_ethernet()
+{
+    local dir
+
+    # strip off ip info if present
+    local devname=${DEVNAME%%:*}
+
+    for dir in `$FIND /sys/class/net -name 'eth*'`; do
+        goto_dir $dir device
+
+        local link=`get_link "device"`
+        if [[ -z $link ]]; then
+            err $ERR_NO_SYSFS_DEVINFO
+        fi
+
+        cd $link
+        local devspec=`$CAT ./devspec 2>/dev/null`
+
+        if [[ $devspec = $devname ]]; then
+            LOGICAL_DEVNAME="${dir##*/}"
+            return
+        fi
+    done
+}
+
+#
+# of2l_vscsi
+# Conversion routine for OF path => logical names of virtual scsi devices
+#
+of2l_vscsi()
+{
+    DEV_HBTL_NO=${DEVICE##*\@}
+
+    local dir
+    for dir in `$FIND /sys/block -name 's[dr]*'`; do
+        # go up to find directory with 'device' link
+        goto_dir $dir "device"
+
+        local link=`get_link "device"`
+        if [[ -n $link ]]; then
+            local vdiskno=`get_vdisk_no $link`
+
+            cd $link
+            if [[ $vdiskno = $DEV_HBTL_NO ]]; then
+                goto_dir $PWD "devspec"
+                local devspec=`$CAT ./devspec 2>/dev/null`
+
+                if [[ $devspec = $DEVPATH ]]; then
+                    LOGICAL_DEVNAME=${dir##/*/}
+                    return
+                fi
+            fi
+	fi
+    done
+}
+
+#
+# of2l_scsi
+# Conversion routine for OF path => logical names of scsi devices
+#
+of2l_scsi()
+{
+    DEV_TARGET=${DEVICE##*\@}
+    DEV_TARGET=${DEV_TARGET%%,*}
+    DEV_LUN=${DEVICE##*,}
+
+    # At this point DEV_LUN may be in the form X:Y, we're only interested
+    # in the X component.
+    DEV_LUN=${DEV_LUN%%:*}
+
+    local dir
+    for dir in `$FIND /sys/block -name 's[dr]*'`; do
+        # go up to find directory with 'device' link
+        goto_dir $dir "device"
+
+        local link=`get_link "device"`
+        if [[ -z $link ]]; then
+            err $ERR_NO_SYSFS_DEVINFO
+        fi
+
+        get_hbtl $link
+        cd $link
+
+        # save the name of the current directory, we may need it later...
+        local device_dir=${PWD##/*/}
+
+        if [[ $ID = $DEV_TARGET && $LUN = $DEV_LUN ]]; then
+            goto_dir $PWD "devspec"
+            local devspec=`$CAT ./devspec 2>/dev/null`
+
+            if [[ $devspec = $DEVPATH ]]; then
+                LOGICAL_DEVNAME="${dir##*/}"
+                return
+            fi
+
+            local scsi_name=${devspec##/*/}
+            scsi_name=${scsi_name%%@*}
+
+            if [[ $scsi_name != "scsi" ]]; then
+                scsi_name="scsi@$BUS"
+                devspec=$devspec/$scsi_name
+
+                if [[ $devspec = $DEVPATH ]]; then
+                    LOGICAL_DEVNAME="${dir##*/}"
+                    return
+                fi
+            fi
+        fi
+    done
+}
+
+#
+# of2l_sas
+# Conversion routine for OF path => logical names of sas devices
+#
+of2l_sas()
+{
+    DEV_ID=${DEVICE##*\@}
+    DEV_ID=${DEV_ID%%,*}
+
+    DEV_ID=`echo $DEV_ID | tr "[a-z]" "[A-Z]"`
+    DEV_ID=`echo "ibase=16;obase=A; $DEV_ID" | bc`
+
+    local dir
+    for dir in `$FIND /sys/block -name 's[dr]*'`; do
+        # go up to find directory with 'device' link
+        goto_dir $dir "device"
+
+        local link=`get_link "device"`
+        if [[ -z $link ]]; then
+            err $ERR_NO_SYSFS_DEVINFO
+        fi
+
+        get_hbtl $link
+        cd $link
+
+        # save the name of the current directory, we may need it later...
+        local device_dir=${PWD##/*/}
+
+        local B T L
+        B=`echo $BUS | tr "[a-z]" "[A-Z]"`
+        B=`echo "ibase=16;obase=A; $B" | bc`
+        T=`echo $ID | tr "[a-z]" "[A-Z]"`
+        T=`echo "ibase=16;obase=A; $T" | bc`
+        L=`echo $LUN | tr "[a-z]" "[A-Z]"`
+        L=`echo "ibase=16;obase=A; $L" | bc`
+        local sas_id=$((($B << 16) | ($T << 8) | $L))
+
+        if [[ $sas_id = $DEV_ID ]]; then
+            goto_dir $PWD "devspec"
+            local devspec=`$CAT ./devspec 2>/dev/null`
+
+            if [[ $devspec/sas = $DEVPATH ]]; then
+                LOGICAL_DEVNAME="${dir##*/}"
+                return
+            fi
+        fi
+    done
+}
+
+#
+# of2l_vfc
+# Conversion routine for OF path => logical names of vFC devices
+#
+of2l_vfc()
+{
+    DEV_ID=${DEVICE##*\@}
+    OF_WWPN=${DEV_ID%%,*}
+    OF_LUN=${DEV_ID##*,}
+
+    local dir
+    for dir in `$FIND /sys/block -name 's[dr]*'`; do
+        # go up to find directory with 'device' link
+        goto_dir $dir "device"
+
+        local link=`get_link "device"`
+        if [[ -z $link ]]; then
+            continue
+        fi
+
+        get_hbtl $link
+        cd $link
+        link=$PWD
+
+        local device_dir=${PWD##/*/}
+        goto_dir $PWD "devspec"
+        OF_PATH=`$CAT $PWD/devspec`
+        if [[ -z $OF_PATH ]]; then
+                err $ERR_NO_LOGDEV
+        fi
+
+        local vdev=${OF_PATH%/*}
+        local tmp=${OF_PATH//\/vdevice/}
+        local vdevtype=${tmp%@*}
+
+        if [[ $vdevtype != "/vfc-client" ]]; then
+                continue
+        fi
+
+        local vfc_lun=`get_fc_scsilun $LUN`
+	local wwpn=`get_fc_wwpn "$link/../../fc_remote_ports*"`
+
+        if [[ $vfc_lun = $OF_LUN && $wwpn = $OF_WWPN ]]; then
+            LOGICAL_DEVNAME="${dir##*/}"
+            return
+        fi
+    done
+}
+
+#
+# of2l_fc
+# Conversion routine for OF path => logical names of FC devices
+#
+of2l_fc()
+{
+    DEV_ID=${DEVICE##*\@}
+    OF_WWPN=${DEV_ID%%,*}
+    OF_LUN=${DEV_ID##*,}
+
+    local dir
+    for dir in `$FIND /sys/block -name 's[dr]*'`; do
+        # go up to find directory with 'device' link
+        goto_dir $dir "device"
+
+        local link=`get_link "device"`
+        if [[ -z $link ]]; then
+            continue
+        fi
+
+        get_hbtl $link
+        cd $link
+        link=$PWD
+
+	# find device_path, not all dirs will have a fc_remote_ports
+	goto_dir $PWD "fc_remote_ports" 0
+	if [[ $? -eq 1 ]]; then
+	    continue
+	fi
+	device_path=$PWD
+
+	cd $link
+        local device_dir=${PWD##/*/}
+        goto_dir $PWD "devspec"
+        OF_PATH=`$CAT devspec`
+        if [[ -z $OF_PATH ]]; then
+                err $ERR_NO_LOGDEV
+        fi
+
+        local fc_lun=`get_fc_scsilun $LUN`
+	local wwpn=`get_fc_wwpn "$device_path"`
+
+        if [[ $fc_lun = $OF_LUN && $wwpn = $OF_WWPN ]]; then
+            LOGICAL_DEVNAME="${dir##*/}"
+            return
+        fi
+    done
+}
+
+#
+# Main
+#
+
+if [[ "$#" -eq 0 ]]; then
+    usage
+    exit 0
+fi
+
+# default: convert logical => OFpath
+do_of2l=0
+
+# default: do not do alias lookups
+do_alias=0
+
+getopt -o "l:Vqh" -l "help,version,quiet" $@ > /dev/null 2>&1
+while [[ -n $1 ]]; do
+    case "$1" in
+	-a)		do_alias=1 ;;
+
+        -l)             do_of2l=1
+                        DEVNAME_ARG=$2
+                        shift ;;
+
+	-V | --version) show_version
+                        exit 0 ;;
+
+        -q | --quiet)   be_quiet=1 ;;
+
+        -h | --help)    usage
+                        exit 0 ;;
+	*)              DEVNAME_ARG=$1 ;;
+    esac
+
+    shift
+done
+
+DEVNAME=$DEVNAME_ARG
+
+# double check device name
+if [[ -z $DEVNAME ]]; then
+    usage
+    exit 1
+fi
+
+# We need sysfs
+if [[ ! -d "/sys" ]]; then
+    err $ERR_NO_SYSFS
+    exit 1
+fi
+
+
+if [[ $do_of2l = "0" ]]; then
+    # logical devname => OF pathname
+    logical_to_ofpathname
+else
+    # OF pathnmae => logical devname
+    ofpathname_to_logical
+fi
+
+exit 0

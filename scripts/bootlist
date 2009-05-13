@@ -1,0 +1,316 @@
+#! /bin/bash
+# Copyright (c) 2004 International Business Machines
+# Common Public License Version 1.0 (see COPYRIGHT)
+#
+# bootlist - command to display and/or update the bootlist in nvram.
+#
+# author Nathan Fontenot <nfont@austin.ibm.com>
+#
+
+OFPATHNAME=/usr/sbin/ofpathname
+NVRAM=/usr/sbin/nvram
+
+#
+# usage
+# 
+usage()
+{
+    echo "Usage: $0 -m {normal|service|both} [-o] [-r]"
+    echo "             [-f <file>] [<device_list>]"
+    echo "View and update the system boot lists"
+    echo ""
+    echo "Required argument:"
+    echo "  -m {normal|service|both}"
+    echo "                   Specify the boot mode for boolist manipulation"
+    echo "Optional arguments:"
+    echo "  -o               Display bootlist entries as logical device names"
+    echo "  -r               Display bootlist entries as Open Firmware device"
+    echo "                   path names"
+    echo "  -f file          Read the boolist device names from file"
+    echo "  -?, --help       display this help information and exit"
+    echo "  <device_list>    a space-separated list of devices, specified as"
+    echo "                   logical device names or OF device path names,"
+    echo "                   depending on whether the -o or -r option is specified"
+    echo ""
+    echo "Additional optional arguments for ethernet devices:"
+    echo " bserver=<IP address of BOOTP server>"
+    echo " gateway=<IP address of gateway>"
+    echo " client=<IP address of the client>"
+    echo " speed=<Network adapter speed>, default=auto"
+    echo " duplex=<mode of the network adapter>, default=auto"
+    echo ""
+}
+
+#
+# update_eth_dev
+# When specifying an ethernet device for the bootlist we need to also get
+# the additional parameters for ethernet devices (i.e gateway, speed, ...)
+#
+# Please NOTE:  this routine does depend on global variables
+#
+update_eth_dev()
+{
+    local speed=auto
+    local duplex=auto
+    local bserver=0.0.0.0
+    local gateway=0.0.0.0
+    local client=0.0.0.0
+    local eth_index=$[$ctr]
+    local index=$[$ctr + 1]
+    local found=1
+
+    while [[ $found -eq 1 ]]; do
+	found=0
+        case ${LOGICAL_NAMES[$index]} in
+	    speed*)		speed=${LOGICAL_NAMES[$index]##*=}
+				found=1 ;;
+
+	    duplex*)		duplex=${LOGICAL_NAMES[$index]##*=}
+				found=1 ;;
+
+	    bserver*)	 	bserver=${LOGICAL_NAMES[$index]##*=}
+				found=1 ;;
+
+	    gateway*)		gateway=${LOGICAL_NAMES[$index]##*=}
+				found=1 ;;
+
+	    client*)		client=${LOGICAL_NAMES[$index]##*=}
+				found=1 ;;
+    	esac
+
+	if [[ $found -eq 1 ]]; then
+	    index=$[$index + 1]
+	    ctr=$[$ctr + 1]
+	fi
+    done
+
+    # update the ethernet device
+    OF_DEVPATH[$eth_index]=${OF_DEVPATH[$eth_index]}:speed=$speed,duplex=$duplex,$bserver,,$client,$gateway
+}
+
+#
+# parse_eth_info
+# Ethernet read from nvram (possibly) have additional data appended to 
+# them specifying the gateway, speed, ...
+#
+# $1 ethernet device name
+# $2 ethernet device data
+# 
+parse_eth_info()
+{
+    local eth_name=$1
+    local eth_info=${2##*:}
+
+    echo $eth_name
+
+    # first the speed
+    local item=${eth_info%%,*}
+    if [[ -n $item ]]; then
+	echo "    speed = ${item##*=}"
+    fi
+
+    # then the duplex
+    eth_info=${eth_info#*,}
+    item=${eth_info%%,*}
+    if [[ -n $item ]]; then
+	echo "    duplex = ${item##*=}"
+    fi
+
+    # then the BOOTP server
+    eth_info=${eth_info#*,}
+    item=${eth_info%%,*}
+    if [[ -n $item ]]; then
+	echo "    BOOTP Server: $item"
+    fi
+    
+    # then the Mask
+    eth_info=${eth_info#*,}
+    item=${eth_info%%,*}
+    if [[ -n $item ]]; then
+	echo "    Mask: $item"
+    fi
+    
+    # then the client
+    eth_info=${eth_info#*,}
+    item=${eth_info%%,*}
+    if [[ -n $item ]]; then
+	echo "    Client: $item"
+    fi
+    
+    # then the Gateway
+    eth_info=${eth_info#*,}
+    item=${eth_info%%,*}
+    if [[ -n $item ]]; then
+	echo "    Gateway: $item"
+    fi
+} 
+ 
+#
+# show_bootlist
+# Retrieve a bootlist from nvram and print its contents
+#
+# $1 bootlist to print
+# 
+show_bootlist()
+{
+    local devlist=$1
+    local i
+
+    for i in `$NVRAM --print-config=${devlist} | sed 's/ /\n/g'`; do
+	if [[ $TRANSLATE_NAMES = "yes" ]]; then
+	    name=`$OFPATHNAME -l $i`
+	    if [[ -z $name ]]; then
+	        echo "Could not translate $i to logical device name"
+	    else
+		case $name in
+		    eth*)   parse_eth_info $name $i ;;
+		       *)   echo $name ;; 
+	        esac
+	    fi
+	else
+	    echo $i
+	fi
+    done
+}
+
+#
+# Main
+#
+
+# make sure we can parse names
+if [[ ! -a $OFPATHNAME ]]; then
+    echo "no $OFPATHNAME!!!"
+fi
+
+# make sure we can update nvram
+if [[ ! -a $NVRAM ]]; then
+    echo "no $NVRAM!!!"
+fi
+
+BOOTLIST_MODE=unknown
+
+#
+# Parse the command line arguements and put them into two parallel
+# arrays, one to hold the logical device name and one to hold the 
+# corresponding open firmware device path.
+#
+typeset -i ctr=0
+
+while [[ -n $1 ]]; do
+    if [[ $1 = "-o" ]]; then
+        DISPLAY_BOOTLIST=yes
+	TRANSLATE_NAMES=yes
+    elif [[ $1 = "-r" ]]; then
+        DISPLAY_BOOTLIST=yes
+    elif [[ $1 = "-m" ]]; then
+        shift
+        if [[ ! -n $1 ]]; then
+            echo "did not specify \"normal\" or \"service\" mode with -m"
+            usage
+            exit -1
+        fi
+
+        if [[ $1 = "normal" ]]; then
+            BOOTLIST_MODE=boot-device
+        elif [[ $1 = "service" ]]; then
+            BOOTLIST_MODE=diag-device
+        elif [[ $1 = "both" ]]; then
+            BOOTLIST_MODE=$1
+        else
+            echo "invalid mode specified with -m; must be \"normal\", \"service\" or \"both\""
+            usage
+            exit -1
+        fi
+    elif [[ $1 = "-f" ]]; then
+        # get bootlist names from specified file
+	if [[ ! -a $2 ]]; then
+	    echo "file $2 does not exist"
+	fi
+
+        for i in `cat $2 2>/dev/null`; do
+	    LOGICAL_NAMES[$ctr]=$i
+	    ctr=$[$ctr + 1]
+	done
+	shift
+    elif [[ $1 = -* ]]; then
+    	# catch any illegal flags here
+	usage
+	exit -1
+    else
+        # add this element to the array
+	LOGICAL_NAMES[$ctr]=$1
+	ctr=$[$ctr + 1]
+    fi
+
+    shift
+done
+
+if [[ ${BOOTLIST_MODE} = "unknown" ]]; then
+    echo "The boot mode must be specified with the -m option"
+    usage
+    exit -1
+fi
+
+# Now we need to convert all of the logical device names to
+# open firmware device paths.
+if [[ ${#LOGICAL_NAMES[*]} -ne 0 ]]; then
+    ctr=0
+    while [[ $ctr -lt ${#LOGICAL_NAMES[*]} ]]; do
+        OF_DEVPATH[$ctr]=`$OFPATHNAME ${LOGICAL_NAMES[$ctr]}`
+        if [[ $? -ne 0 ]]; then
+	    # Assume the name is an OF pathname
+	    OF_DEVPATH[$ctr]=${LOGICAL_NAMES[$ctr]}
+        fi
+
+	# See if this is an ethernet adapter.  If so, the next entries
+	# may be parameters for the bootlist entry.
+	ethdev=`$OFPATHNAME -l ${OF_DEVPATH[$ctr]}`
+	ethdev=${ethdev%%[0-9]*}
+	if [[ $ethdev = "eth" ]]; then
+	    update_eth_dev
+	fi
+
+        # bootlist entries cannot exceed more than 255 chars
+        if [[ ${#OF_DEVPATH[$ctr]} -gt 255 ]]; then
+            echo "Bootlist entries cannot exceed 255 characters"
+            echo "${OF_DEVPATH[$ctr]}"
+            exit -1
+        fi
+
+        ctr=$[$ctr + 1]
+    done
+
+    # We cannot have a bootlist with more than five entries
+    if [[ ${#OF_DEVPATH[*]} -gt 5 ]]; then
+        echo "More than five entries cannot be specified in the bootlist"
+        exit -1
+    fi
+
+    # update the bootlist in nvram
+    if [[ $BOOTLIST_MODE = "both" ]]; then
+        $NVRAM --update-config "boot-device=${OF_DEVPATH[*]}" -pcommon
+        if [[ $? -ne 0 ]]; then
+            echo "Could not update service-mode bootlist"
+        fi
+
+        $NVRAM --update-config "diag-device=${OF_DEVPATH[*]}" -pcommon
+        if [[ $? -ne 0 ]]; then
+            echo "Could not update normal-mode bootlist"
+        fi
+    else
+        $NVRAM --update-config "${BOOTLIST_MODE}=${OF_DEVPATH[*]}" -pcommon
+        if [[ $? -ne 0 ]]; then
+            echo "Could not update bootlist!"
+        fi
+    fi
+fi
+
+# Display the bootlist if desired
+if [[ $DISPLAY_BOOTLIST = "yes" ]]; then
+    if [[ $BOOTLIST_MODE = "both" ]]; then
+	show_bootlist "boot-device"
+	show_bootlist "diag-device"
+    else
+	show_bootlist $BOOTLIST_MODE
+    fi
+fi

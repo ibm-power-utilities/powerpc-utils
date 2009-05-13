@@ -1,0 +1,425 @@
+#!/usr/bin/env python
+"""Visualization tool for viewing AMS memory details.
+
+Display a GTK window with system, VIO bus, and VIO bus devices memory
+statistics.  Devices will be added and removed as they are added/removed
+from the system.
+"""
+
+__author__ = "Robert Jennings rcj@linux.vnet.ibm.com"
+__copyright__ = "Copyright (c) 2008 IBM Corporation"
+__license__ = "Common Public License v1.0"
+
+__version__ = "$Revision: 1.8 $"
+__date__ = "$Date: 2009/02/02 16:52:08 $"
+# $Source: /cvsroot/powerpc-utils/powerpc-utils-papr/scripts/amsvis/amsvis,v $
+
+import sys
+import re
+import gobject
+from gtk import gdk
+import logging
+from optparse import OptionParser
+from optparse import OptionGroup
+
+import powerpcAMS.amsnet as amsnet
+from powerpcAMS.amswidget import *
+import powerpcAMS.amsdata as amsdata
+
+_verbose = False
+_hosts = []
+_port_default = 50000L
+_port = 0
+_refresh = 1
+_run_locally = True
+_net_client = True
+
+_widgets = {}
+_table = None
+
+def parse_hosts(hosts, def_port=_port_default):
+    """Parse a string of IPv4 hosts of form "host[:port][,host[:port]]*"
+    
+    The result is a list of 3-tuples.  The Tuple has the full hostname,
+    port, and the short name (either the part up to the first '.' or
+    the full ip address if an address is passed).
+   
+    Example:
+     parse_hosts("bar.tar.com:40,type.great.org,182.582.3.4:40234,trophy:34")
+    would return:
+     [['bar.tar.com', 40L, 'bar'], ['type.great.org', _port_default, 'type'], \
+      ['182.582.3.4', 40234L, '182.582.3.4'], ['trophy', 34L, 'trophy']]
+     
+    Returns:
+        A list of 3-tuples.  The elements are the hostname/IP, the port, and
+        a short representation of the name (or full IP addr).
+    """
+
+    ip_pattern = re.compile("^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
+    hosts = hosts.split(',')
+    for idx in range(len(hosts)):
+        hosts[idx] = hosts[idx].split(':')
+        if len(hosts[idx]) is 1:
+            hosts[idx].append(def_port)
+        hosts[idx][1] = long(hosts[idx][1])
+        # If the IP addr was specified rather than a hostname, keep the full IP
+        if re.search(ip_pattern, hosts[idx][0]) is not None:
+            hosts[idx].append(hosts[idx][0])
+        else:
+            hosts[idx].append(hosts[idx][0].split('.')[0])
+            if hosts[idx][2] == "localhost":
+                hosts[idx][2] = "localhost:%ld" % hosts[idx][1]
+
+    return hosts
+
+def cmdline_parser():
+    global _hosts
+    global _port_default
+    global _port
+    global _refresh
+    global _verbose
+    global _run_locally
+    global _net_client
+
+    usage = "usage: %prog [options]"
+    parser = OptionParser(usage)
+    parser.add_option("-u", "--update", dest="refresh", default=5, type="int",
+                      metavar="SEC",
+                      help="Seconds between updates [default: %default]")
+    parser.add_option("-v", "--verbose", default=False, action="store_true",
+                      help="Enable verbose output")
+    parser.add_option("-l", "--local", dest="run_local", action="store_true",
+                      help="Run locally (network options are ignored [default]")
+    parser.add_option("-r", "--remote", dest="run_locally",
+                      action="store_false", help="Run over the network")
+    parser.set_defaults(run_locally=True)
+
+    network_group = OptionGroup(parser, "Network options",
+                                "Specify these options when running remotely")
+    network_group.add_option("-c", "--client", dest="net_client",
+                             action="store_true",
+                             help="Run as a network client [default]")
+    network_group.add_option("-s", "--server", dest="net_server",
+                             action="store_true",
+                             help="Run as a network server")
+    network_group.add_option("--hosts", dest="hosts", metavar="HOSTNAME",
+                             help="Hostname(s) with optional port number specified as host[:port][,host[:port]][,...] [default: %default:_port_default].")
+    network_group.add_option("-p", "--port", dest="port", default=_port_default,
+                          type="long",
+                          help="Network port number while running as a server. [default: %default]")
+    parser.add_option_group(network_group)
+    parser.set_defaults(net_client=False, net_server=False)
+    parser.set_defaults(hosts="localhost")
+
+    (options, args) = parser.parse_args()
+
+    if not options.run_locally:
+        if options.net_client and options.net_server:
+            parser.error("Specify either -c or -s, not both.")
+        if options.net_server:
+            _net_client = False
+        else:
+            _net_client = True
+
+    if options.refresh < 1:
+        parser.error("Update frequency must be greater than 0.")
+
+    if len(args) != 0:
+        parser.error("Incorrect number of arguments.")
+
+    _hosts = parse_hosts(options.hosts, 50000L)
+    _port = options.port
+    _refresh = options.refresh
+    _verbose = options.verbose
+    _run_locally = options.run_locally
+
+    if _verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+        logging.debug("Verbose output enabled")
+
+def process_devices(devices):
+    global _widgets
+    global _table
+    changed = False
+
+    if sorted(_widgets["devices"].keys()) != sorted(devices.keys()):
+        changed = True
+
+    if changed:
+        # Remove all device widgets from the table
+        for widget in _widgets["devices"].values():
+            logging.debug("Removing widget from table for " + str(widget))
+            _table.remove(widget)
+
+        # Remove reference of widgets for devices no longer in the system
+        for key in (k for k in _widgets["devices"].keys() if k not in devices):
+            logging.debug("Removing widget for " + key)
+            _widgets["devices"].pop(key)
+
+        # Create widgets for new devices
+        for key in (k for k in devices.keys() if k not in _widgets["devices"]):
+            logging.debug("Creating widget for new device " + key)
+            _widgets["devices"][key] = device_data_widget(data=devices[key])
+            devices.pop(key)
+
+
+    # Update values for devices
+    for key in devices:
+        logging.debug("Updating values for device " + key)
+        _widgets["devices"][key].update_values(devices[key])
+
+    if changed:
+        # Resize table
+        logging.debug("Resize table for %d devices" % (len(_widgets["devices"])))
+        _table.resize(1, (3 + len(_widgets["devices"])))
+
+        # Add all devices to table
+        column = 3
+        for widget in sorted(_widgets["devices"].values()):
+            logging.debug("Adding widget to table for " + str(widget))
+            _table.attach(widget, column, (column + 1), 0, 1)
+            widget.show()
+            column = column + 1
+
+def update_single_system_widgets(host="localhost", port=_port_default):
+    global _verbose
+    global _widgets
+    global _run_locally
+
+    if _run_locally:
+        data = amsdata.gather_all_data()
+        if data is not None:
+            response = {"result":"success", "data":data}
+        else:
+            response = {"result":"error", "data":""}
+    else:
+        try:
+            response = amsnet.net_get_data(host, port, amsnet.cmd_GET_ALL_DATA)
+        except:
+            gtk.main_quit()
+            raise
+
+    if response["result"] != "success":
+        logging.error("Data query was unsuccessful.")
+        logging.error(response["data"])
+        gtk.main_quit()
+        return False
+
+    (sys_data, bus_data, devices_data) = response["data"]
+
+    # Need to change the system widget to be host specific
+    _widgets["system"].update_values(sys_data)
+    _widgets["iobus"].update_values(bus_data)
+    process_devices(devices_data)
+
+    return True
+
+def update_multi_system_widgets():
+    global _hosts
+    global _verbose
+    global _widgets
+    global _run_locally
+
+    for host in _hosts:
+        try:
+            response = amsnet.net_get_data(host[0], host[1],
+                                           amsnet.cmd_GET_SYS_DATA)
+        except:
+            gtk.main_quit()
+            raise
+
+        if response["result"] != "success":
+            logging.error("Data query of %s was unsuccessful." % host[0])
+            logging.error(response["data"])
+            gtk.main_quit()
+            return False
+
+        host[4].update_values(response["data"])
+
+    return True
+
+def start_single_system_gui():
+    global _verbose
+    global _refresh
+    global _run_locally
+    global _net_client
+    global _widgets
+    global _table
+
+
+    if _run_locally:
+        data = amsdata.gather_all_data()
+        if data is not None:
+            response = {"result":"success", "data":data}
+        else:
+            response = {"result":"error", "data":""}
+    else:
+        host = _hosts[0][0]
+        port = _hosts[0][1]
+        # Attempt a connection to the server prior to building GUI
+        response = amsnet.net_get_data(host, port, amsnet.cmd_GET_ALL_DATA)
+
+    if response["result"] != "success":
+        logging.error("Data query was unsuccessful.")
+        logging.error(response["data"])
+        sys.exit(1)
+
+    (sys_data, bus_data, devices_data) = response["data"]
+
+    window = gtk.Window()
+    if _run_locally or host == "localhost":
+        window.set_title("AMSVis")
+    else:
+        window.set_title("AMSVis (@" + host + ")")
+
+    icon = window.render_icon(gtk.STOCK_DIALOG_INFO, gtk.ICON_SIZE_BUTTON)
+    window.set_icon(icon)
+
+    scroll = gtk.ScrolledWindow()
+    scroll.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_NEVER)
+    scroll.set_shadow_type(gtk.SHADOW_NONE)
+    scroll.set_placement(gtk.CORNER_TOP_LEFT)
+
+    viewport = gtk.Viewport()
+    viewport.set_shadow_type(gtk.SHADOW_NONE)
+
+    _table = gtk.Table(rows = 1, columns = (3 + len(devices_data)))
+    _table.set_row_spacings(0)
+    _table.set_col_spacings(0)
+
+    _widgets["system"] = system_memory_widget(data=sys_data)
+    _widgets["iobus"] = iobus_memory_widget(data=bus_data)
+    _widgets["device_labels"] = device_label_widget()
+    _widgets["devices"] = {}
+
+    _table.attach(_widgets["system"], 0, 1, 0, 1)
+    _table.attach(_widgets["iobus"], 1, 2, 0, 1)
+    _table.attach(_widgets["device_labels"], 2, 3, 0, 1,
+                  xoptions=gtk.FILL)
+
+    process_devices(devices_data)
+
+    # Getting the size request of the table yeilds (-1, -1) so
+    # we get the sizes of each of the components to calculate the
+    # size of the window
+    (width, height) = _widgets["system"].get_size_request()
+    (w, h) = _widgets["iobus"].get_size_request()
+    width += w
+    height = max(height, h)
+    (w, h) = _widgets["device_labels"].get_size_request()
+    width += w
+    height = max(height, h)
+    for k in _widgets["devices"]:
+        (w,h) = _widgets["devices"][k].get_size_request()
+        width += w
+        height = max(height, h)
+
+    # Set default size based size request of the widgets
+    window.set_default_size(width, height)
+
+    window.add(scroll)
+    scroll.add(viewport)
+    viewport.add(_table)
+
+    window.connect("destroy", gtk.main_quit)
+    window.show_all()
+
+    # schedule an update for once every _refresh seconds
+    if _run_locally:
+        gobject.timeout_add(int(_refresh * 1000), update_single_system_widgets)
+    else:
+        gobject.timeout_add(int(_refresh * 1000), update_single_system_widgets,
+                            host, port)
+
+    # Pass control to gtk
+    gtk.main()
+
+def start_multi_system_gui():
+    global _verbose
+    global _hosts
+    global _refresh
+    global _net_client
+    global _widgets
+    global _table
+
+
+    # Attempt a connection to the server prior to building GUI
+    for host in _hosts:
+        response = amsnet.net_get_data(host[0], host[1],
+                                       amsnet.cmd_GET_SYS_DATA)
+        if response["result"] != "success":
+            logging.error("Data query of %s was unsuccessful." % host[0])
+            logging.error(response["data"])
+            sys.exit(1)
+        host.append(system_name_widget(hostname=host[2]))
+        host.append(system_memory_widget(data=response["data"]))
+
+    window = gtk.Window()
+    window.set_title("AMSVis Multi-System Overview")
+
+    icon = window.render_icon(gtk.STOCK_DIALOG_INFO, gtk.ICON_SIZE_BUTTON)
+    window.set_icon(icon)
+
+    scroll = gtk.ScrolledWindow()
+    scroll.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_NEVER)
+    scroll.set_shadow_type(gtk.SHADOW_NONE)
+    scroll.set_placement(gtk.CORNER_TOP_LEFT)
+
+    viewport = gtk.Viewport()
+    viewport.set_shadow_type(gtk.SHADOW_NONE)
+
+    _table = gtk.Table(rows = 1, columns = len(_hosts))
+    _table.set_row_spacings(0)
+    _table.set_col_spacings(0)
+
+    col = 0
+    for host in _hosts:
+        _table.attach(host[3], col, (col + 1), 0, 1, yoptions=gtk.FILL)
+        _table.attach(host[4], col, (col + 1), 1, 2)
+        col += 1
+
+    # Getting the size request of the table yeilds (-1, -1) so
+    # we get the sizes of each of the components to calculate the
+    # size of the window
+    width, height = (0, 0)
+    for host in _hosts:
+        (w1, h1) = host[3].get_size_request()
+        (w2, h2) = host[4].get_size_request()
+        width += max(w1, w2)
+        height = max(height, (h1 + h2))
+
+    # Set default size based size request of the widgets
+    window.set_default_size(width, height)
+
+    window.add(scroll)
+    scroll.add(viewport)
+    viewport.add(_table)
+
+    window.connect("destroy", gtk.main_quit)
+    window.show_all()
+
+    # schedule an update for once every _refresh seconds
+    gobject.timeout_add(int(_refresh * 1000), update_multi_system_widgets)
+
+    # Pass control to gtk
+    gtk.main()
+
+def main():
+    global _verbose
+    global _hosts
+    global _port
+    global _run_locally
+    global _net_client
+
+    cmdline_parser()
+
+    if not _run_locally and not _net_client:
+        ret = amsnet.send_data_loop(_port)
+        sys.exit(ret)
+    elif len(_hosts) == 1:
+        start_single_system_gui()
+    else:
+        start_multi_system_gui()
+
+if __name__ == "__main__":
+    main()
