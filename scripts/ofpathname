@@ -649,7 +649,7 @@ of2l_ethernet()
     local devname=${DEVNAME%%:*}
 
     for dir in `$FIND /sys/class/net -name 'eth*'`; do
-	local devdir = `find_dir $dir device`
+	local devdir=`find_dir $dir device`
 	if [[ -z $devdir ]]; then
 	    continue
 	fi
@@ -682,7 +682,7 @@ of2l_vscsi()
     local dir
     for dir in `$FIND /sys/block -name 's[dr]*'`; do
         # go up to find directory with 'device' link
-	local devdir = `find_dir $dir device`
+	local devdir=`find_dir $dir device`
 	if [[ -z $devdir ]]; then
 	    continue
 	fi
@@ -724,7 +724,7 @@ of2l_scsi()
     local dir
     for dir in `$FIND /sys/block -name 's[dr]*'`; do
         # go up to find directory with 'device' link
-	local devdir = `find_dir $dir device`
+	local devdir=`find_dir $dir device`
 	if [[ -z $devdir ]]; then
 	    continue
 	fi
@@ -782,7 +782,7 @@ of2l_sas()
     local dir
     for dir in `$FIND /sys/block -name 's[dr]*'`; do
         # go up to find directory with 'device' link
-	local devdir = `find_dir $dir device`
+	local devdir=`find_dir $dir device`
 	if [[ -z $devdir ]]; then
 	    continue
 	fi
@@ -834,7 +834,7 @@ of2l_vfc()
     local dir
     for dir in `$FIND /sys/block -name 's[dr]*'`; do
         # go up to find directory with 'device' link
-	local devdir = `find_dir $dir device`
+	local devdir=`find_dir $dir device`
 	if [[ -z $devdir ]]; then
 	    continue
 	fi
@@ -888,7 +888,7 @@ of2l_fc()
     local dir
     for dir in `$FIND /sys/block -name 's[dr]*'`; do
         # go up to find directory with 'device' link
-	local devdir = `find_dir $dir device`
+	local devdir=`find_dir $dir device`
 	if [[ -z $devdir ]]; then
 	    continue
 	fi
