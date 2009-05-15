@@ -56,6 +56,7 @@ static void
 get_cpu_threads(struct dr_node *cpu, struct thread *all_threads)
 {
 	struct thread *thread;
+	struct thread *last = NULL;
 	int i;
 
 	for (thread = all_threads; thread; thread = thread->next) {
@@ -73,9 +74,12 @@ get_cpu_threads(struct dr_node *cpu, struct thread *all_threads)
 					continue;
 			}
 
-			thread->sibling = cpu->cpu_threads;
-			thread->sibling = cpu->cpu_threads;
-			cpu->cpu_threads = thread;
+			if (last)
+				last->sibling = thread;
+			else
+				cpu->cpu_threads = thread;
+
+			last = thread;
 			thread->cpu = cpu;
 		}
 	}
@@ -870,6 +874,13 @@ cpu_disable_smt(struct dr_node *cpu)
 	int rc = 0;
 	struct thread *t;
 	int survivor_found = 0;
+
+	/* Ensure that the first thread of the processor is the thread that is left online
+	 * when disabling SMT.
+	 */
+	t = cpu->cpu_threads;
+	if (get_thread_state(t) == OFFLINE)
+		rc |= set_thread_state(t, ONLINE);
 
 	for (t = cpu->cpu_threads; t != NULL; t = t->sibling) {
 		if (ONLINE == get_thread_state(t)) {
