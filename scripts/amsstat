@@ -113,14 +113,15 @@ function print_vio_dev_stats {
             break
         fi
 
-    # Skip printing devices that are not using entitlement
-    value=`cat cmo_entitled`
-    if [ ${value} -eq "0" ]; then
-            popd >/dev/null
-        continue
-    fi
+	# Skip printing devices that are not using entitlement
+	value=`cat cmo_entitled`
+	if [ ${value} -eq "0" ]; then
+		popd >/dev/null
+		continue
+	fi
 
-        echo "   ${dir#\.\/}:"
+	NAME=$(cat devspec)
+	echo "   ${NAME##/*/}:"
         for stat in `find . -mindepth 1 -maxdepth 1 -name "cmo*" -print`; do
             printf "%${indent}s %${devstat_data_spacing}s %${devstat_data_spacing}s\n" " " "${stat#\.\/}:" "`cat $stat`"
         done
