@@ -552,23 +552,6 @@ add_linux_devices(char *start_dir, struct dr_node *node_list)
 }
 
 /**
- * get_linux_dname
- *
- * @param sysfs_path
- * @returns
- */
-char *
-get_linux_dname(char *sysfs_path)
-{
-	char *dev_name = NULL;
-
-	if (sysfs_path)
-		dev_name = strrchr(sysfs_path, '/') + 1;
-
-	return dev_name;
-}
-
-/**
  * add_hea_node
  * @brief Add a node for an HEA adapter
  *

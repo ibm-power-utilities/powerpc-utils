@@ -64,7 +64,6 @@ int set_hp_adapter_status(uint, char *);
 int release_hp_children(char *);
 int dlpar_io_kernel_op(char *, char *);
 int cmp_drcname(char *, char *);
-char *get_linux_dname(char *);
 int acquire_hp_children(char *, int *);
 int enable_hp_children(char *);
 int disable_hp_children(char *);

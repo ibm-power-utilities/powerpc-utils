@@ -311,8 +311,9 @@ print_drslot_line(struct print_node *pnode, char *fmt)
 	char *linux_dname;
 
 	/* Print node name, description, and linux name */
-	linux_dname = get_linux_dname(node->sysfs_dev_path);
-	if (! linux_dname)
+	if (node->sysfs_dev_path[0])
+		linux_dname = strrchr(node->sysfs_dev_path, '/') + 1;
+	else
 		linux_dname = "?";
 
 	printf(fmt, node->drc_name, pnode->desc, linux_dname);
@@ -352,7 +353,6 @@ print_phpslot_line(struct print_node *pnode, char *fmt)
 {
 	struct dr_node *child;
 	struct dr_node *node = pnode->node;
-	char *linux_dname;
 
 	/* Print node name and description */
 	printf(fmt, node->drc_name, pnode->desc);
@@ -365,10 +365,10 @@ print_phpslot_line(struct print_node *pnode, char *fmt)
 		for (child = node->children; child; child = child->next) {
 			if (child != node->children)
 				printf(fmt, "", "");
-			linux_dname = get_linux_dname(child->sysfs_dev_path);
-			if (linux_dname)
-				printf("%s\n", linux_dname);
-			else if (child->ofdt_dname)
+
+			if (child->sysfs_dev_path[0])
+				printf("%s\n", strrchr(child->sysfs_dev_path, '/') + 1);
+			else if (child->ofdt_dname[0])
 				printf("%s\n", child->ofdt_dname);
 			else
 				printf("?\n");
