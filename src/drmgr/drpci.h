@@ -37,6 +37,8 @@
 #define DLPAR_REMOVE_SLOT    	"/sys/bus/pci/slots/control/remove_slot"
 #define DLPAR_REMOVE_SLOT2    	"/sys/bus/pci/slots/control/\"remove_slot\""
 
+#define IGNORE_HP_PO_PROP	"/proc/device-tree/ibm,ignore-hp-po-fails-for-dlpar"
+
 extern char *dlpar_add_slot;
 extern char *dlpar_remove_slot;
 

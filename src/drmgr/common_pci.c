@@ -1342,9 +1342,15 @@ release_hp_resource(struct dr_node *node)
 
 	rc = set_power(node->drc_power, POWER_OFF);
 	if (rc) {
+		struct stat sb;
+
 		err_msg("failed to power off for index 0x%x\n",
 			node->drc_index);
-		return -EIO;
+
+		if (!stat(IGNORE_HP_PO_PROP, &sb))
+			err_msg("Ignoring hot-plug power off failure.\n");
+		else
+			return -EIO;
 	}
 
 	return 0;
