@@ -430,7 +430,7 @@ get_fc_wwpn()
 {
     local start_dir=$1
 
-    for f in `$FIND $start_dir -name port_name`; do
+    for f in `$FIND -H $start_dir -maxdepth 2 -name port_name`; do
         local wwpn=`$CAT $f`
 	break
     done
