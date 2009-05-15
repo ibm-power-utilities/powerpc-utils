@@ -200,6 +200,31 @@ goto_dir()
 }
 
 #
+# find_dir
+# This looks for a given file in a given directory or any parents of the
+# given directory.  This differs from goto_dir in that we don't actually try
+# to cd to the directories, we just return the directory name if found.
+#
+# $1 starting directory
+# $2 file to search for
+# $3 on_exit behavior on error
+find_dir()
+{
+    local dir=$1
+    local fname=$2
+
+    while [[ -n $dir ]]; do
+	/bin/ls $dir/$fname >/dev/null 2>&1
+	if [[ $? -eq 0 ]]; then
+	    echo $dir
+	    return
+	fi
+
+	dir=${dir%/*}
+    done
+}
+
+#
 # is_pata_dev
 # Check to see if this is a PATA device
 #
@@ -624,7 +649,12 @@ of2l_ethernet()
     local devname=${DEVNAME%%:*}
 
     for dir in `$FIND /sys/class/net -name 'eth*'`; do
-        goto_dir $dir device
+	local devdir = `find_dir $dir device`
+	if [[ -z $devdir ]]; then
+	    continue
+	fi
+
+	cd $devdir
 
         local link=`get_link "device"`
         if [[ -z $link ]]; then
@@ -652,7 +682,12 @@ of2l_vscsi()
     local dir
     for dir in `$FIND /sys/block -name 's[dr]*'`; do
         # go up to find directory with 'device' link
-        goto_dir $dir "device"
+	local devdir = `find_dir $dir device`
+	if [[ -z $devdir ]]; then
+	    continue
+	fi
+
+	cd $devdir
 
         local link=`get_link "device"`
         if [[ -n $link ]]; then
@@ -689,7 +724,12 @@ of2l_scsi()
     local dir
     for dir in `$FIND /sys/block -name 's[dr]*'`; do
         # go up to find directory with 'device' link
-        goto_dir $dir "device"
+	local devdir = `find_dir $dir device`
+	if [[ -z $devdir ]]; then
+	    continue
+	fi
+
+	cd $devdir
 
         local link=`get_link "device"`
         if [[ -z $link ]]; then
@@ -742,7 +782,12 @@ of2l_sas()
     local dir
     for dir in `$FIND /sys/block -name 's[dr]*'`; do
         # go up to find directory with 'device' link
-        goto_dir $dir "device"
+	local devdir = `find_dir $dir device`
+	if [[ -z $devdir ]]; then
+	    continue
+	fi
+
+	cd $devdir
 
         local link=`get_link "device"`
         if [[ -z $link ]]; then
@@ -789,7 +834,12 @@ of2l_vfc()
     local dir
     for dir in `$FIND /sys/block -name 's[dr]*'`; do
         # go up to find directory with 'device' link
-        goto_dir $dir "device"
+	local devdir = `find_dir $dir device`
+	if [[ -z $devdir ]]; then
+	    continue
+	fi
+
+	cd $devdir
 
         local link=`get_link "device"`
         if [[ -z $link ]]; then
@@ -838,7 +888,12 @@ of2l_fc()
     local dir
     for dir in `$FIND /sys/block -name 's[dr]*'`; do
         # go up to find directory with 'device' link
-        goto_dir $dir "device"
+	local devdir = `find_dir $dir device`
+	if [[ -z $devdir ]]; then
+	    continue
+	fi
+
+	cd $devdir
 
         local link=`get_link "device"`
         if [[ -z $link ]]; then
