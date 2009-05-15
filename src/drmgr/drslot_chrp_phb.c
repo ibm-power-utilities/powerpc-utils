@@ -206,6 +206,13 @@ add_phb(struct options *opts)
 	struct dr_node *phb = NULL;
 	int rc, n_children = 0;
 
+	phb = get_node_by_name(opts->usr_drc_name, PHB_NODES);
+	if (phb) {
+		err_msg("PHB is already owned by this partition\n");
+		rc = RC_ALREADY_OWN;
+		goto phb_add_error;
+	}
+
 	rc = acquire_phb(opts->usr_drc_name, &phb);
 	if (rc)
 		return rc;
