@@ -163,7 +163,7 @@ add_cpus(struct options *opts, struct dr_info *dr_info)
 	}
 
 	dbg("Acquired %d of %d requested cpu(s).\n", count, opts->quantity);
-	return rc ? -1 : 0;
+	return rc ? 1 : 0;
 }
 
 /**
