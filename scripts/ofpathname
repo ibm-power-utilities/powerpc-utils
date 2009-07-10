@@ -905,7 +905,7 @@ of2l_fc()
         link=$PWD
 
 	# find device_path, not all dirs will have a fc_remote_ports
-	goto_dir $PWD "fc_remote_ports" 0
+	goto_dir $PWD "fc_remote_ports*" 0
 	if [[ $? -eq 1 ]]; then
 	    continue
 	fi
@@ -920,7 +920,7 @@ of2l_fc()
         fi
 
         local fc_lun=`get_fc_scsilun $LUN`
-	local wwpn=`get_fc_wwpn "$device_path"`
+	local wwpn=`get_fc_wwpn "$device_path/fc_remote_ports*"`
 
         if [[ $fc_lun = $OF_LUN && $wwpn = $OF_WWPN ]]; then
             LOGICAL_DEVNAME="${dir##*/}"
