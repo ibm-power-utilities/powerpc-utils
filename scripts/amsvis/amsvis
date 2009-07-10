@@ -10,10 +10,6 @@ __author__ = "Robert Jennings rcj@linux.vnet.ibm.com"
 __copyright__ = "Copyright (c) 2008 IBM Corporation"
 __license__ = "Common Public License v1.0"
 
-__version__ = "$Revision: 1.8 $"
-__date__ = "$Date: 2009/02/02 16:52:08 $"
-# $Source: /cvsroot/powerpc-utils/powerpc-utils-papr/scripts/amsvis/amsvis,v $
-
 import sys
 import re
 import gobject

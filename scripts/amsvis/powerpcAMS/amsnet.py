@@ -5,10 +5,6 @@ __author__ = "Robert Jennings rcj@linux.vnet.ibm.com"
 __copyright__ = "Copyright (c) 2008 IBM Corporation"
 __license__ = "Common Public License v1.0"
 
-__version__ = "$Revision: 1.3 $"
-__date__ = "$Date: 2009/01/16 16:39:10 $"
-# $Source: /cvsroot/powerpc-utils/powerpc-utils-papr/scripts/amsvis/powerpcAMS/amsnet.py,v $
-
 import socket
 import sys
 import os

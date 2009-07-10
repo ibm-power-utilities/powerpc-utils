@@ -4,10 +4,6 @@
 .\" Author(s)
 .\"     Robert Jennings <rcj@linux.vnet.ibm.com>
 .\"
-.\" $Date: 2009/03/13 20:27:05 $
-.\" $Revision: 1.1 $
-.\" $Source: /cvsroot/powerpc-utils/powerpc-utils-papr/doc/amsvis.1,v $
-.\"
 .TH AMSVIS 1 "January 2009" Linux "Linux on Power Service Tools"
 .SH NAME
 amsvis \- view Active Memory Sharing (AMS) metrics in a GUI locally or remotely.
@@ -155,5 +151,3 @@ Display the AMS data from the remote system, providing an update every 10 second
 .I /sys/bus/vio/devices/*/cmo_*
 .SH BUGS
 Though not a bug, the name of a number of files and variables are of the form cmo* rather than Active Memory Sharing (AMS).  The kernel code for this feature was committed under the name Cooperative Memory Overcommitment (CMO).  Kernel support is enabled using the kernel config option CONFIG_PPC_SMLPAR, for shared memory logical partition support.
-.SH VERSION
-$Revision: 1.1 $

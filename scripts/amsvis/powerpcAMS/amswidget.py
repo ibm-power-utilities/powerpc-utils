@@ -1,13 +1,9 @@
-"""bar.py test script for drawing a bar readout
+"""AMS widget class and subclasses for drawing AMS data
 """
 
 __author__ = "Robert Jennings rcj@linux.vnet.ibm.com"
 __copyright__ = "Copyright (c) 2008 IBM Corporation"
 __license__ = "Common Public License v1.0"
-
-__version__ = "$Revision: 1.6 $"
-__date__ = "$Date: 2009/01/21 15:38:20 $"
-# $Source: /cvsroot/powerpc-utils/powerpc-utils-papr/scripts/amsvis/powerpcAMS/amswidget.py,v $
 
 import gtk
 from gtk import gdk

@@ -1,16 +1,12 @@
 """Tooling to read/parse AMS-related data from system files in /proc and /sys.
 
-The data can be read by calling gather_all_data() and is returned as a 3-tuple of
-dictionaries for system data, bus data, and data for devices.
+The data can be read by calling gather_all_data() and is returned as a
+3-tuple of dictionaries for system data, bus data, and data for devices.
 """
 
 __author__ = "Robert Jennings rcj@linux.vnet.ibm.com"
 __copyright__ = "Copyright (c) 2008 IBM Corporation"
 __license__ = "Common Public License v1.0"
-
-__version__ = "$Revision: 1.5 $"
-__date__ = "$Date: 2009/01/20 21:28:29 $"
-# $Source: /cvsroot/powerpc-utils/powerpc-utils-papr/scripts/amsvis/powerpcAMS/amsdata.py,v $
 
 import os
 import sys

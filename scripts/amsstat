@@ -17,9 +17,6 @@
 #
 # For further details on this tool and the fields it displays please
 # reference man page amsstat.1
-#
-# $Date: 2009/04/07 21:22:38 $
-# $Revision: 1.4 $
 
 sleep_interval=$1
 indent=-4
