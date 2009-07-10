@@ -675,12 +675,12 @@ class device_data_widget(ams_widget):
     def __cmp__(self, other):
         """Compare device data widgets to other widgets (or anything).
 
-        The comparision is based on the nummerical name of the device, which
-        is the bus address for the device.
+        The comparision is based on the name of the device, which is the
+        bus address for the device.
         """
-        if (long(self.data[0]["name"])) < other:
+        if self.data[0]["name"] < other:
             return -1
-        elif (long(self.data[0]["name"])) > other:
+        elif self.data[0]["name"] > other:
             return 1
         else:
             return 0
