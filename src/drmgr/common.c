@@ -427,6 +427,7 @@ remove_device_tree_nodes(char *path)
         DIR *d;
         struct dirent *de;
         struct stat sb;
+	int found = 1;
 	int rc;
 
 	rc = lstat(path, &sb);
@@ -439,28 +440,39 @@ remove_device_tree_nodes(char *path)
 		return -1;
 	}
 
-        /* Remove any subdirectories */
-	while ((de = readdir(d)) != NULL) {
+	while (found) {
 		char subdir_name[DR_PATH_MAX];
 
-		if (is_dot_dir(de->d_name))
-			continue;
+		found = 0;
 
-		sprintf(subdir_name, "%s/%s", path, de->d_name);
-		rc = lstat(subdir_name, &sb);
-		if (!rc && (S_ISDIR(sb.st_mode)) && (! S_ISLNK(sb.st_mode)))
+		/* Remove any subdirectories */
+		while ((de = readdir(d)) != NULL) {
+			if (is_dot_dir(de->d_name))
+				continue;
+
+			sprintf(subdir_name, "%s/%s", path, de->d_name);
+			rc = lstat(subdir_name, &sb);
+			if (!rc && (S_ISDIR(sb.st_mode))
+			    && (!S_ISLNK(sb.st_mode))) {
+				found = 1;
+				break;
+			}
+		}
+
+		if (found) {
 			rc = remove_device_tree_nodes(subdir_name);
+			rewinddir(d);
+		}
 
 		if (rc)
 			break;
-        }
+	}
 
 	closedir(d);
 
-	if (rc)
-		return rc;
+	if (!rc)
+		rc = remove_node(path);
 
-	rc = remove_node(path);
         return rc;
 }
 
