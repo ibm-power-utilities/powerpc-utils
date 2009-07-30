@@ -972,6 +972,9 @@ mem_remove(struct options *opts)
 
 	dbg("Removed %d of %d requested lmb(s)\n", lmb_list->lmbs_modified,
 	    opts->quantity);
+	if (lmb_list->lmbs_modified < opts->quantity)
+		dbg("Unable to hotplug remove the remaining %d lmb(s)\n",
+		    opts->quantity - lmb_list->lmbs_modified);
 	printf("DR_TOTAL_RESOURCES=%d\n", lmb_list->lmbs_modified);
 
 	free_lmbs(lmb_list);
