@@ -5,7 +5,7 @@ SUBDIRS = drmgr
 
 sbin_PROGRAMS = activate_firmware usysident usysattn set_poweron_time \
        rtas_ibm_get_vpd serv_config uesensor rtas_event_decode sys_ident \
-       nvram lsprop
+       nvram lsprop ppc64_cpu
 
 activate_firmware_SOURCES = activate_fw.c
 activate_firmware_LDFLAGS = -lrtas
@@ -38,3 +38,6 @@ nvram_SOURCES = nvram.c nvram.h
 nvram_LDFLAGS = -ldl
 
 lsprop_SOURCES = lsprop.c
+
+ppc64_cpu_SOURCES = ppc64_cpu.c
+ppc64_cpu_LDFLAGS = -lrtas
