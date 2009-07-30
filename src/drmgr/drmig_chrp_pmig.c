@@ -608,6 +608,10 @@ drmig_chrp_pmig(struct options *opts)
 		return rc;
 
 	devtree_update();
+
+	dbg("Refreshing RMC via refrsrc\n");
+	system("/usr/sbin/rsct/bin/refrsrc IBM.ManagementServer");
+
 #ifdef HAVE_SERVICELOG
 	servicelog_update(sys_src);
 #endif
