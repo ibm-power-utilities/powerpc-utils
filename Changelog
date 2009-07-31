@@ -1,45 +1,56 @@
-Changelog for powerpc-utils-papr-1.1.0
-=======================================
-o drmgr
-    - Add support for hotplug memory remove.
-    - Update drmgr memory device tree parsing for
-      ibm,dynamic-reconfiguration-memory.
-    - Log migrations events to servicelog.
-    - Make address storage 64-bits.
-    - Validate streamid for partition mobility before using.
-    - Add --capabilities option to print systems current dlpar capabilities.
-    - Only parse device tree when needed in cpu dlpar operations.
-    - Add support for memory entitlement/weight updates.
-    - remove unneeded signal handler and signal masking code.
-    - Check get_property() return codes for HEA and pci DLPAR.
-    - Correct logic when looking for cpu thread to offline.
-    - Use the O_CREAT flag when opening /var/log/drmgr.
-    - Add routine to update properties of the device tree.
-    - Update cpu_dlpar_capable() to only look at cpu* directories.
-    - Add get_drc_by_index() search routine.
-    - Validate pci slots before attempting to remove them.
-    - Handle quoted sysfs file names add_slot and remove_slot in some broken
-      kernels.
-    - Do not siliently fail slot adds if device is already in the device tree.
-    - Remove unused last_lmb variable.
-    - Support Memory add on new hardware and older kernels.  Involves munging
-      the device tree to add memory@XXX nodes.
-    - Update usage messages.
-    - Fix up memory sections of an lmb when the lmb fails to be removed.
-    - Always write debug output to /var/log/drmgr.
-    - Log multiple invocations of drmgr to /var/log/drmgr.
-    - Convert #define'ed functions to static inlines.
-
-o lsslot
-    - Add lsslot -c mem option to display mem lmbs/sections and their
-      removability.
-
-
-o sys_ident
-    - Increase buffer size to get-system-parameter RTAS calls; new requirement
-      is 4K + 2 bytes.
-
-o update_flash
-    - Add -s option for determining whether flash image management is
-      supported.
+Nathan Fontenot (19):
+      Initial commit for the new combined powerpc-utils package from the
+         previous powerpc-utils and p;owerpc-utils-papr packages.
+      Ignore hotplug power-off failures when the devie tree property
+         "/proc/device-tree/ibm,ignore-hp-po-fails-for-dlpar" exists.
+      Return RC_ALREADY_OWN when trying to add a PHB that is already owned by
+         the partition.
+      There are instances where goto_dir() will incorrectly return success.  An
+         updated find_dir allows us to check the result before trying to cd to
+         the directory we want.
+      Update the find command in get_vfc_wwpn() to handle being passed a
+         symbolic link.  Previously this lead to an infinite loop due to the
+         possible circular nature of sysfs.
+      Change the name format for vio devices and correct indentation.
+      When disabling SMT for a processor, make sure that we leave the first
+         thread of the processor enabled and disable all the others.
+      Remove unneeded spaces to correct previous patch for find_dir()
+      Update Meta data
+      The sysfs_dev_path member of the dr_node struct is a char[] and needs to
+         be treated as such.  this fixes a bug where the sysfs_dev_path is
+         treated as a char * and returning invalid info when the buffer is
+         actually empty.
+      Cpu add failures need to return 1 instead of -1.  A return code of -1
+         causes the IVM to think there has been a really bad error and the IVM
+         will wait 15 minutes prior to re-trying the operation.
+      Logical device name to open firmware path translation for fibre-channel
+         devices can fail on systems where the fc_remote_ports file in sysfs
+         has a slightly different name.  On some systems this file appears as
+         fc_remote_ports:rport-X:Y-Z.  This patch corrects the lookup of this
+         file.
+      The amsvis command will fail if vio devices have addresses greater than
+         30000009 due to a problem with hexidecimal values attempting to be
+         sorted as long integers.  This patch changes the sort to use string
+         comparisions.
+      I'm removing the __date__, __version__, and __source fields from each of
+         the files.  They were filled in by CVS keyword expansion and won't be
+         updated by GIT.
+      s patch adds an additional output message when drmgr fails to remove all
+         of the requested lmbs in a drmgr memory remove request.  This
+         additional message is meant just to help clarify that the memory
+         remove operations didn't fail, but was unable to completely fulfill
+         the request.  This update came as a request from testers.
+      When removing nodes from the device tree in /proc the recusrsive routine
+         can fail with a bad pointer to the DIR struct.  The DIR struct should
+         be rewound after each remove to avoid this.
+      The /usr/sbin/rsct/bin/refrsrc command forces a refresh of the HMC/IVM
+         and RMC status after a migration occurs.  We should do this from the
+         drmgr command instead of assuming servicelog is installed.  A failure
+         to invoke this command can cause additional migrations to be delayed
+         for up to 10 minutes while the framework refreshes itself.
+      This is really more of a re-write than an update.  The ppc64_cpu command
+         is being ported from Perl to C to support new functionality.  This
+         update introduces two new pieces of functionality to the command.
+      This patch contains all of the additional updates needed to support the
+         new version of ppc64_cpu, removal of old script and Makefile updates.
 
