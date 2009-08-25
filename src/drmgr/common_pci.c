@@ -903,6 +903,7 @@ get_node_by_name(const char *drc_name, uint32_t node_type)
 {
 	struct dr_node *node, *all_nodes;
 	struct dr_node *prev_node = NULL;
+	int child_found = 0;
 
 	all_nodes = get_dlpar_nodes(node_type);
 	if (all_nodes == NULL) {
@@ -920,8 +921,11 @@ get_node_by_name(const char *drc_name, uint32_t node_type)
 
 		for (child = node->children; child; child = child->next) {
 			if (strcmp(drc_name, child->drc_name) == 0)
-				break;
+				child_found = 1;
 		}
+
+		if (child_found)
+			break;
 
 		prev_node = node;
 	}
