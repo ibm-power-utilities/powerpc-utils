@@ -1171,7 +1171,7 @@ print_node_list(struct dr_node *first_node)
 		    parent->drc_name, parent->loc_code);
 
 		child = parent->children;
-		while (child && child != parent->children) {
+		while (child) {
 			dbg("%s: %s\n"
 			    "\tdrc index: 0x%x        description: %s\n"
 			    "\tdrc name: %s\n\tloc code: %s\n",
