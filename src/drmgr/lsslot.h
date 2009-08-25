@@ -18,6 +18,7 @@ struct cmd_opts {
 #define PHB	2
 #define CPU	3
 #define MEM	4
+#define PORT	5
 
 	int	a_flag;
 	int	o_flag;

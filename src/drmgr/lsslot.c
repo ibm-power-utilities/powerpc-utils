@@ -410,6 +410,8 @@ parse_options(int argc, char *argv[], struct cmd_opts *opts)
 				opts->slot_type = CPU;
 			else if (! strcmp(optarg, "mem"))
 				opts->slot_type = MEM;
+			else if (! strcmp(optarg, "port"))
+				opts->slot_type = PORT;
 			else {
 				printf("\nThe specified connector type "
 				       "is invalid.\n\n");
@@ -463,6 +465,7 @@ parse_options(int argc, char *argv[], struct cmd_opts *opts)
 	/* Validate the options */
 	switch (opts->slot_type) {
 	    case SLOT:
+	    case PORT:
 		/* The a,b,o,p flags are not valid for slot */
 		if (opts->a_flag || opts->b_flag || opts->o_flag ||
 		    opts->p_flag)
@@ -748,6 +751,95 @@ lsslot_chrp_mem(void)
 	return 0;
 }
 
+/**
+ * lsslot_chrp_port
+ * @brief Print LHEA ports based on command line options
+ *
+ * @param opts
+ * @returns 0 on success, !0 otherwise
+ */
+int
+lsslot_chrp_port(struct cmd_opts *opts)
+{
+	struct dr_node *all_nodes;	/* Pointer to list of all node info */
+	struct dr_node *node;		/* Used to traverse list of node info */
+	struct dr_node *child;          /* Used to traverse list of children */
+	char	fmt[128];
+	struct print_node *p;
+	char *sheading = "LHEA port name";	/* Used in printing headers */
+	char *dheading = "Description";		/* Used in printing headers */
+	int rc = 0;
+
+	/* Set initial column sizes */
+	max_sname = MAX(max_sname, strlen(sheading));
+	max_desc = MAX(max_desc, strlen(dheading));
+
+	all_nodes = get_dlpar_nodes(HEA_NODES);
+
+	/* If nothing returned, then no hot plug node */
+	if (all_nodes == NULL) {
+		err_msg("There are no LHEA ports on this system.\n");
+		return 1;
+	}
+
+	print_node_list(all_nodes);
+
+	/* Otherwise, run through the node list looking for the nodes
+	 * we want to print
+	 */
+	for (node = all_nodes; node; node = node->next) {
+		if (node->skip)
+			continue;
+
+		for (child = node->children; child; child = child->next) {
+			if (child->skip)
+				continue;
+			/* If there is a search parameter, add matching ports.
+			 * If there is no search, add all the ports.
+			 */
+			if (opts->s_name != NULL) {
+				if (cmp_drcname(child->drc_name, opts->s_name))
+					insert_print_node(child);
+			} else
+				insert_print_node(child);
+		}
+	}
+
+	if (print_list == NULL) {
+		/* If nothing to print, display message based on if
+		 * user specified a slot or a device name.
+		 */
+		if (opts->s_name != NULL) {
+			err_msg("The specified port was not found.\n");
+			rc = 1;
+		}
+		goto lsslot_port_exit;
+	}
+
+	/* This creates a format string so that port name and description
+	 * prints out in the required field width. When the -F flag is
+	 * specified, the format string contains the delimiting character
+	 * which the user specified at the command line.
+	 */
+	if (opts->delim != NULL)
+		sprintf(fmt, "%s%s%s\n", "%s", opts->delim, "%s");
+	else {
+		sprintf(fmt, "%%-%ds%%-%ds\n", max_sname + 2, max_desc + 2);
+		/* Print out the header. */
+		printf(fmt, sheading, dheading);
+	}
+
+	/* Now run through the list of ports we actually want to print */
+	for (p = print_list; p != NULL; p = p->next) {
+		printf(fmt, p->node->drc_name, p->desc);
+	}
+
+lsslot_port_exit:
+	free_print_list();
+	free_node(all_nodes);
+	return rc;
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -787,6 +879,10 @@ main(int argc, char *argv[])
 
 	    case MEM:
 		rc = lsslot_chrp_mem();
+		break;
+
+	    case PORT:
+		rc = lsslot_chrp_port(&opts);
 		break;
 	}
 
