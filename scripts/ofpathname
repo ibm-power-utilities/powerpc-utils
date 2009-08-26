@@ -921,10 +921,14 @@ of2l_fc()
 
         local fc_lun=`get_fc_scsilun $LUN`
 	local wwpn=`get_fc_wwpn "$device_path/fc_remote_ports*"`
+	let stripped_lun=`echo "10#$fc_lun"`
+	let stripped_oflun=`echo "10#$OF_LUN"`
 
-        if [[ $fc_lun = $OF_LUN && $wwpn = $OF_WWPN ]]; then
-            LOGICAL_DEVNAME="${dir##*/}"
-            return
+        if [[ $wwpn = $OF_WWPN ]]; then
+                if [[ $fc_lun = $OF_LUN || $stripped_lun = $stripped_oflun ]]; then
+                        LOGICAL_DEVNAME="${dir##*/}"
+                        return
+                fi
         fi
     done
 }
