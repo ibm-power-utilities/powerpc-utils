@@ -53,6 +53,65 @@ int set_attribute(char *path, int value)
 	return 0;
 }
 
+int cpu_online(int thread)
+{
+	char path[SYSFS_PATH_MAX];
+	int rc, online;
+
+	sprintf(path, SYSFS_CPUDIR"/online", thread);
+	rc = get_attribute(path, &online);
+	if (rc || !online)
+		return 0;
+
+	return 1;
+}
+
+int get_system_attribute(char *attribute)
+{
+	char path[SYSFS_PATH_MAX];
+	int i, rc;
+	int system_attribute = -1;
+
+	for (i = 0; i < MAX_THREADS; i++) {
+		int cpu_attribute;
+
+		/* only check online cpus */
+		if (!cpu_online(i))
+			continue;
+
+		sprintf(path, SYSFS_CPUDIR"/%s", i, attribute);
+		rc = get_attribute(path, &cpu_attribute);
+		if (rc)
+			continue;
+
+		if (system_attribute == -1)
+			system_attribute = cpu_attribute;
+		else if (system_attribute != cpu_attribute)
+			return -1;
+	}
+
+	return system_attribute;
+}
+
+int set_system_attribute(char *attribute, int state)
+{
+	char path[SYSFS_PATH_MAX];
+	int i, rc;
+
+	for (i = 0; i < MAX_THREADS; i++) {
+		/* only set online cpus */
+		if (!cpu_online(i))
+			continue;
+
+		sprintf(path, SYSFS_CPUDIR"/%s", i, attribute);
+		rc = set_attribute(path, state);
+		if (rc)
+			return -1;
+	}
+
+	return 0;
+}
+
 int get_threads_per_cpu(void)
 {
 	DIR *d;
@@ -170,12 +229,17 @@ int set_one_smt_state(int thread, int online_threads)
 int set_smt_state(int smt_state)
 {
 	int i, rc;
+	int ssd;
+
+	ssd = get_system_attribute("smt_snooze_delay");
 
 	for (i = 0; i < MAX_THREADS; i += threads_per_cpu) {
 		rc = set_one_smt_state(i, smt_state);
 		if (rc)
 			break;
 	}
+
+	set_system_attribute("smt_snooze_delay", ssd);
 
 	return rc;
 }
@@ -191,65 +255,6 @@ int is_dscr_capable(void)
 		if (stat(path, &sb))
 			continue;
 		return 1;
-	}
-
-	return 0;
-}
-
-int cpu_online(int thread)
-{
-	char path[SYSFS_PATH_MAX];
-	int rc, online;
-
-	sprintf(path, SYSFS_CPUDIR"/online", thread);
-	rc = get_attribute(path, &online);
-	if (rc || !online)
-		return 0;
-
-	return 1;
-}
-
-int get_system_attribute(char *attribute)
-{
-	char path[SYSFS_PATH_MAX];
-	int i, rc;
-	int system_attribute = -1;
-
-	for (i = 0; i < MAX_THREADS; i++) {
-		int cpu_attribute;
-
-		/* only check online cpus */
-		if (!cpu_online(i))
-			continue;
-
-		sprintf(path, SYSFS_CPUDIR"/%s", i, attribute);
-		rc = get_attribute(path, &cpu_attribute);
-		if (rc)
-			continue;
-
-		if (system_attribute == -1)
-			system_attribute = cpu_attribute;
-		else if (system_attribute != cpu_attribute)
-			return -1;
-	}
-
-	return system_attribute;
-}
-
-int set_system_attribute(char *attribute, int state)
-{
-	char path[SYSFS_PATH_MAX];
-	int i, rc;
-
-	for (i = 0; i < MAX_THREADS; i++) {
-		/* only set online cpus */
-		if (!cpu_online(i))
-			continue;
-
-		sprintf(path, SYSFS_CPUDIR"/%s", i, attribute);
-		rc = set_attribute(path, state);
-		if (rc)
-			return -1;
 	}
 
 	return 0;
