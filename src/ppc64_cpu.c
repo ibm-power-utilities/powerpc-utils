@@ -17,6 +17,7 @@
 #include <getopt.h>
 
 #define SYSFS_CPUDIR	"/sys/devices/system/cpu/cpu%d"
+#define INTSERV_PATH	"/proc/device-tree/cpus/%s/ibm,ppc-interrupt-server#s"
 #define SYSFS_PATH_MAX	128
 #define MAX_THREADS	1024
 
@@ -68,8 +69,7 @@ int get_threads_per_cpu(void)
 			struct stat sbuf;
 			char path[128];
 
-			sprintf(path, "/proc/device-tree/cpus/%s/ibm,ppc-interrupt-server#s",
-				de->d_name);
+			sprintf(path, INTSERV_PATH, de->d_name);
 			rc = stat(path, &sbuf);
 			if (!rc)
 				nthreads = sbuf.st_size / 4;
@@ -107,7 +107,8 @@ int get_one_smt_state(int primary_thread)
 	int i, rc;
 
 	for (i = 0; i < threads_per_cpu; i++) {
-		sprintf(online_file, SYSFS_CPUDIR"/%s", primary_thread + i, "online");
+		sprintf(online_file, SYSFS_CPUDIR"/%s", primary_thread + i,
+			"online");
 		if (stat(online_file, &sb))
 			return -1;
 
@@ -148,14 +149,16 @@ int set_one_smt_state(int thread, int online_threads)
 	int i, rc;
 
 	for (i = 0; i < online_threads; i++) {
-		snprintf(path, SYSFS_PATH_MAX, SYSFS_CPUDIR"/%s", thread + i, "online");
+		snprintf(path, SYSFS_PATH_MAX, SYSFS_CPUDIR"/%s", thread + i,
+			 "online");
 		rc = set_attribute(path, 1);
 		if (rc)
 			return rc;
 	}
 
 	for (; i < threads_per_cpu; i++) {
-		snprintf(path, SYSFS_PATH_MAX, SYSFS_CPUDIR"/%s", thread + i, "online");
+		snprintf(path, SYSFS_PATH_MAX, SYSFS_CPUDIR"/%s", thread + i,
+			 "online");
 		rc = set_attribute(path, 0);
 		if (rc)
 			break;
@@ -351,9 +354,11 @@ int do_run_mode(char *run_mode)
 		rc = rtas_get_sysparm(DIAGNOSTICS_RUN_MODE, 3, mode);
 		if (rc) {
 			if (rc == -3)
-				printf("Machine does not support diagnostic run mode\n");
+				printf("Machine does not support diagnostic "
+				       "run mode\n");
 			else
-				printf("Could not retrieve current diagnostics mode\n");
+				printf("Could not retrieve current diagnostics "
+				       "mode\n");
 		} else
 			printf("run-mode=%c\n", mode[2]);
 	} else {
@@ -370,7 +375,8 @@ int do_run_mode(char *run_mode)
 		rc = rtas_set_sysparm(DIAGNOSTICS_RUN_MODE, mode);
 		if (rc) {
 			if (rc == -3)
-				printf("Machine does not support diagnostic run mode\n");
+				printf("Machine does not support diagnostic "
+				       "run mode\n");
 			else
 				printf("Could not set diagnostics mode\n");
 		}
@@ -381,15 +387,15 @@ int do_run_mode(char *run_mode)
 
 void usage(void)
 {
-	printf("\tppc64_cpu --smt			# Get current SMT state\n"
-	       "\tppc64_cpu --smt={on|off}	# Turn SMT on/off\n\n"
-	       "\tppc64_cpu --smt=X		# Set SMT state to X\n\n"
-	       "\tppc64_cpu --dscr		# Get current DSCR setting\n"
-	       "\tppc64_cpu --dscr=<val>		# Change DSCR setting\n\n"
-	       "\tppc64_cpu --smt-snooze-delay	# Get current smt-snooze-delay setting\n"
+	printf("\tppc64_cpu --smt               # Get current SMT state\n"
+	       "\tppc64_cpu --smt={on|off}      # Turn SMT on/off\n\n"
+	       "\tppc64_cpu --smt=X             # Set SMT state to X\n\n"
+	       "\tppc64_cpu --dscr              # Get current DSCR setting\n"
+	       "\tppc64_cpu --dscr=<val>        # Change DSCR setting\n\n"
+	       "\tppc64_cpu --smt-snooze-delay  # Get current smt-snooze-delay setting\n"
 	       "\tppc64_cpu --smt-snooze-delay=<val> # Change smt-snooze-delay setting\n\n"
-	       "\tppc64_cpu --run-mode		# Get current diagnostics run mode\n"
-	       "\tppc64_cpu --run-mode=<val>	# Set current diagnostics run mode\n\n");
+	       "\tppc64_cpu --run-mode          # Get current diagnostics run mode\n"
+	       "\tppc64_cpu --run-mode=<val>    # Set current diagnostics run mode\n\n");
 }
 
 struct option longopts[] = {
@@ -417,7 +423,8 @@ int main(int argc, char *argv[])
 	}
 
 	while (1) {
-		opt = getopt_long(argc, argv, "s::d::S::r::", longopts, &option_index);
+		opt = getopt_long(argc, argv, "s::d::S::r::", longopts,
+				  &option_index);
 		if (opt == -1)
 			break;
 
