@@ -193,6 +193,19 @@ int is_dscr_capable(void)
 	return 0;
 }
 
+int cpu_online(int thread)
+{
+	char path[SYSFS_PATH_MAX];
+	int rc, online;
+
+	sprintf(path, SYSFS_CPUDIR"/online", thread);
+	rc = get_attribute(path, &online);
+	if (rc || !online)
+		return 0;
+
+	return 1;
+}
+
 int get_system_attribute(char *attribute)
 {
 	char path[SYSFS_PATH_MAX];
@@ -202,8 +215,11 @@ int get_system_attribute(char *attribute)
 	for (i = 0; i < MAX_THREADS; i++) {
 		int cpu_attribute;
 
-		sprintf(path, SYSFS_CPUDIR"/%s", i, attribute);
+		/* only check online cpus */
+		if (!cpu_online(i))
+			continue;
 
+		sprintf(path, SYSFS_CPUDIR"/%s", i, attribute);
 		rc = get_attribute(path, &cpu_attribute);
 		if (rc)
 			continue;
@@ -223,6 +239,10 @@ int set_system_attribute(char *attribute, int state)
 	int i, rc;
 
 	for (i = 0; i < MAX_THREADS; i++) {
+		/* only set online cpus */
+		if (!cpu_online(i))
+			continue;
+
 		sprintf(path, SYSFS_CPUDIR"/%s", i, attribute);
 		rc = set_attribute(path, state);
 		if (rc)
