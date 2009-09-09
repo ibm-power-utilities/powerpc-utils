@@ -293,7 +293,7 @@ int do_smt(char *state)
 		else
 			smt_state = strtol(state, NULL, 0);
 
-		if ((smt_state == 0) || (smt_state > threads_per_cpu)) {
+		if ((smt_state <= 0) || (smt_state > threads_per_cpu)) {
 			printf("SMT=%s is not valid\n", state);
 			return -1;
 		}
