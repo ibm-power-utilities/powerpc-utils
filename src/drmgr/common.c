@@ -63,7 +63,7 @@ dr_init(void)
 		time_t t;
 		char tbuf[128];
 
-		/* Insert seperator between drmgr invocations */
+		/* Insert seperator at beginning of drmgr invocation */
 		time(&t);
 		strftime(tbuf, 128, "%b %d %T %G", localtime(&t));
 		dbg("\n########## %s ##########\n", tbuf);
@@ -81,11 +81,18 @@ dr_fini(void)
 	struct stat sbuf;
 	int max_dr_log_sz = 25000;
 	int rc;
+	time_t t;
+	char tbuf[128];
 
 	free_drc_info();
 
 	if (! log_fd)
 		return;
+
+	/* Insert seperator at end of drmgr invocation */
+	time(&t);
+	strftime(tbuf, 128, "%b %d %T %G", localtime(&t));
+	dbg("########## %s ##########\n", tbuf);
 
 	close(log_fd);
 

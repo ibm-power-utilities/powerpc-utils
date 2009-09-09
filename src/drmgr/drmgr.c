@@ -355,36 +355,42 @@ main(int argc, char *argv[])
 
 	if (display_capabilities) {
 		print_dlpar_capabilities();
-		return 0;
+		rc = 0;
+		goto exit;
 	}
 
 	command = get_command(&opts);
 
 	if (display_usage) {
 		command_usage(command);
-		return 0;
+		rc = 0;
+		goto exit;
 	}
 
 	/* Validate the options for the action we want to perform */
 	rc = command->validate_options(&opts);
 	if (rc)
-		return rc;
+		goto exit;
 
 	/* Validate this platform */
-	if (! valid_platform("chrp"))
-		exit(1);
+	if (! valid_platform("chrp")) {
+		rc = 1;
+		goto exit;
+	}
 
 	/* Mask signals so we do not get interrupted */
 	if (sig_setup()) {
 		err_msg("Could not mask signals to avoid interrupts\n"); 
-		return -1;
+		rc = -1;
+		goto exit;
 	}
 
 	rc = dr_lock(opts.timeout);
 	if (rc) {
 		err_msg("Unable to obtain Dynamic Reconfiguration lock. "
 			"Please try command again later.\n");
-		return -1;
+		rc = -1;
+		goto exit;
 	}
 
 	/* Log this invocation to /var/log/messages and /var/log/drmgr */
@@ -400,6 +406,7 @@ main(int argc, char *argv[])
 	rc = command->func(&opts);
 
 	dr_unlock();
+exit:
 	dr_fini();
 	return rc;
 }
