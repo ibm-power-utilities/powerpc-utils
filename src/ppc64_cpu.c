@@ -66,7 +66,7 @@ int cpu_online(int thread)
 	return 1;
 }
 
-int get_system_attribute(char *attribute)
+int get_system_attribute(char *attribute, int *value)
 {
 	char path[SYSFS_PATH_MAX];
 	int i, rc;
@@ -90,7 +90,8 @@ int get_system_attribute(char *attribute)
 			return -1;
 	}
 
-	return system_attribute;
+	*value = system_attribute;
+	return 0;
 }
 
 int set_system_attribute(char *attribute, int state)
@@ -229,9 +230,11 @@ int set_one_smt_state(int thread, int online_threads)
 int set_smt_state(int smt_state)
 {
 	int i, rc;
-	int ssd;
+	int ssd, update_ssd = 1;
 
-	ssd = get_system_attribute("smt_snooze_delay");
+	rc = get_system_attribute("smt_snooze_delay", &ssd);
+	if (rc)
+		update_ssd = 0;
 
 	for (i = 0; i < MAX_THREADS; i += threads_per_cpu) {
 		rc = set_one_smt_state(i, smt_state);
@@ -239,7 +242,8 @@ int set_smt_state(int smt_state)
 			break;
 	}
 
-	set_system_attribute("smt_snooze_delay", ssd);
+	if (update_ssd)
+		set_system_attribute("smt_snooze_delay", ssd);
 
 	return rc;
 }
@@ -310,11 +314,16 @@ int do_dscr(char *state)
 	}
 
 	if (!state) {
-		int dscr = get_system_attribute("dscr");
-		if (dscr == -1)
-			printf("Inconsistent DSCR\n");
-		else
-			printf("dscr is %d\n", dscr);
+		int dscr;
+		rc = get_system_attribute("dscr", &dscr);
+		if (rc) {
+			printf("Could not retrieve DSCR\n");
+		} else {
+			if (dscr == -1)
+				printf("Inconsistent DSCR\n");
+			else
+				printf("dscr is %d\n", dscr);
+		}
 	} else
 		rc = set_system_attribute("dscr", strtol(state, NULL, 0));
 
@@ -331,11 +340,16 @@ int do_smt_snooze_delay(char *state)
 	}
 
 	if (!state) {
-		int ssd = get_system_attribute("smt_snooze_delay");
-		if (ssd == -1)
-			printf("Inconsistent smt_snooze_delay\n");
-		else
-			printf("smt_snooze_delay is %d\n", ssd);
+		int ssd;
+		rc = get_system_attribute("smt_snooze_delay", &ssd);
+		if (rc) {
+			printf("Could not retrieve smt_snooze_delay\n");
+		} else {
+			if (ssd == -1)
+				printf("Inconsistent smt_snooze_delay\n");
+			else
+				printf("smt_snooze_delay is %d\n", ssd);
+		}
 	} else {
 		int delay;
 
