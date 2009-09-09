@@ -308,8 +308,16 @@ int do_smt_snooze_delay(char *state)
 			printf("Inconsistent smt_snooze_delay\n");
 		else
 			printf("smt_snooze_delay is %d\n", ssd);
-	} else
-		rc = set_system_attribute("smt_snooze_delay", strtol(state, NULL, 0));
+	} else {
+		int delay;
+
+		if (!strcmp(state, "off"))
+			delay = -1;
+		else
+			delay = strtol(state, NULL, 0);
+
+		rc = set_system_attribute("smt_snooze_delay", delay);
+	}
 
 	return rc;
 }
