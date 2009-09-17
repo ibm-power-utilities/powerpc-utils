@@ -608,6 +608,10 @@ drmig_chrp_pmig(struct options *opts)
 		return rc;
 
 	devtree_update();
+	rc = rtas_activate_firmware();
+	if (rc)
+		dbg("rtas_activate_firmware() returned %d\n", rc);
+	devtree_update();
 
 	dbg("Refreshing RMC via refrsrc\n");
 	system("/usr/sbin/rsct/bin/refrsrc IBM.ManagementServer");

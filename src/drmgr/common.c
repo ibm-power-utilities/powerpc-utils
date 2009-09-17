@@ -827,7 +827,7 @@ valid_platform(const char *platform)
 static int
 get_sysparm(const char *parm, unsigned long *value)
 {
-	int rc = 0;
+	int rc = -1;
 	char s[DR_BUF_SZ];
 	FILE *f;
 
@@ -841,12 +841,11 @@ get_sysparm(const char *parm, unsigned long *value)
 	while (fgets(s, sizeof(s), f)) {
 		if (! strncmp(s, parm, strlen(parm))) {
 			char *tmp = strchr(s, '=');
-			if (tmp == NULL) {
-				rc = -1;
+			if (tmp == NULL)
 				break;
-			}
 
 			tmp++;
+			rc = 0;
 			*value = strtoul(tmp, NULL, 0);
 			break;
 		}
@@ -1112,6 +1111,19 @@ pmig_capable(void)
 }
 
 int
+slb_resize_capable(void)
+{
+	unsigned long value;
+	int rc;
+
+	rc = get_sysparm("slb_size", &value);
+	if (rc == -1)
+		return 0;
+
+	return 1;
+}
+
+int
 hea_dlpar_capable(void)
 {
 	return dlpar_capable("HEA DLPAR", HEA_ADD_SLOT);
@@ -1147,7 +1159,7 @@ void
 print_dlpar_capabilities(void)
 {
 	int cpu_dlpar, mem_dlpar, slot_dlpar, phb_dlpar, hea_dlpar;
-	int pmig;
+	int pmig, slb_resize;
 	int cpu_entitled, mem_entitled;
 
 	cpu_dlpar = cpu_dlpar_capable();
@@ -1157,14 +1169,17 @@ print_dlpar_capabilities(void)
 	hea_dlpar = hea_dlpar_capable();
 
 	pmig = pmig_capable();
+	slb_resize = slb_resize_capable();
 
 	cpu_entitled = cpu_entitlement_capable();
 	mem_entitled = mem_entitlement_capable();
 
 	printf("cpu_dlpar=%s,mem_dlpar=%s,slot_dlpar=%s,phb_dlpar=%s,"
-	       "hea_dlpar=%s,pmig=%s,cpu_entitlement=%s,mem_entitlement=%s\n",
+	       "hea_dlpar=%s,pmig=%s,cpu_entitlement=%s,mem_entitlement=%s,"
+	       "slb_resize=%s\n",
 	       (cpu_dlpar ? "yes" : "no"), (mem_dlpar ? "yes" : "no"),
 	       (slot_dlpar ? "yes" : "no"), (phb_dlpar ? "yes" : "no"),
 	       (hea_dlpar ? "yes" : "no"), (pmig ? "yes" : "no"),
-	       (cpu_entitled ? "yes" : "no"), (mem_entitled ? "yes" : "no"));
+	       (cpu_entitled ? "yes" : "no"), (mem_entitled ? "yes" : "no"),
+	       (slb_resize ? "yes" : "no"));
 }
