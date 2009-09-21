@@ -1,0 +1,309 @@
+#! /bin/bash
+
+# Copyright (c) 2004 International Business Machines
+# Common Public License Version 1.0 (see COPYRIGHT)
+#
+# Author Santiago Leon <sleon@ec.ibm.com>
+#
+# lsdevinfo - This utility provides the HMC or IVM with name information for
+# 	      virtual devices so they can be matched against the VIOS names.
+#
+# TODO: Show more device info
+#	  (currently only the essential information is displayed)
+#       Show MPIO devices
+#
+
+LSDEVINFO="lsdevinfo"
+VERSION="0.1"
+OFPATHNAME="/usr/sbin/ofpathname"
+CAT="/bin/cat"
+LS="/bin/ls"
+GREP="/bin/grep"
+SED="/bin/sed"
+
+# Usage statemnet
+usage()
+{
+    echo "Usage: $LSDEVINFO [-q criteria] [-F format] [-R] [-c] [-h]"
+    echo "Provide information on Virtual devices"
+    echo ""
+    echo "Optional arguments."
+    echo "  -q criteria	     Specifies a criteria to select which devices are"
+    echo "                   to be displayed."
+    echo "  -F format	     Specifies the set of attributes to be displayed."
+    echo "  -c		     Display output as a comma separated list for"
+    echo "                   each device."
+    echo "  -V, --version    Display version information and exit"
+    echo "  -h, --help       Display this help information and exit"
+    echo ""
+}
+
+show_version()
+{
+    echo "$LSDEVINFO: Version $VERSION"
+    echo "Written by: Santiago Leon <sleon@ec.ibm.com>"
+}
+
+# check_criteria
+# Modifies $show if the the attribute in the first parameter matches the
+# criteria from the command line.
+# The operands (=, !=, and LIKE) are defined the the lsdevinfo spec.
+#
+check_criteria()
+{
+    attr=$1
+    attr_val=${!attr}
+
+    if [[ $criteria =~ "!=" ]] ; then
+	# Pull out the operands from the criteria (everything to the left of 
+	# the operand, and everything on the right of the operand)
+        crit_opd1=$(echo $criteria | $SED -e "s/[ ]*!=.*//")
+        crit_opd2=$(echo $criteria | $SED -e "s/.*!=[ ]*//")
+	# Perfom the comparison of the attribute and its value
+        if [[ $crit_opd1 == $attr && $crit_opd2 != $attr_val ]]; then
+	    show=1
+	fi
+    elif [[ $criteria =~ "=" ]]; then
+        crit_opd1=$(echo $criteria | $SED -e "s/[ ]*=.*//")
+        crit_opd2=$(echo $criteria | $SED -e "s/.*=[ ]*//")
+	if [[ $crit_opd1 == $attr && $crit_opd2 == $attr_val ]]; then
+	    show=1
+	fi
+    elif [[ $criteria =~ " LIKE " ]]; then
+        crit_opd1=$(echo $criteria | $SED -e "s/[ ]*LIKE.*//")
+        crit_opd2=$(echo $criteria | $SED -e "s/.*LIKE[ ]*//")
+	if [[ $crit_opd1 == $attr && $attr_val =~ $crit_opd2 ]]; then
+	    show=1
+	fi
+    else
+        echo "Criteria must have =, !=, or LIKE operand. Exiting."
+        exit 1
+    fi
+}
+
+# print_attr
+# Prints the attribute in the first parameter if the name of the attribute is
+# in the argument of the -F command line parameter. 
+#
+print_attr ()
+{
+    attr=$1
+    attr_val=${!attr}
+
+    if [[ $format == "" || $format =~ $attr ]]; then
+	echo -ne $separator$begin$attr=\"$attr_val\"
+    fi
+}
+
+#
+# Main
+#
+
+# default: CR separated list
+comma_sep=0
+
+# default: display all devices
+criteria=""
+
+# default: display all attributes
+format=""
+
+while getopts "cq:F:Vh" flag ; do
+    case "$flag" in
+        c) comma_sep=1;;
+
+        q) criteria=$OPTARG;;
+
+        F) format=$OPTARG;;
+ 
+        V) show_version
+                        exit 0 ;;
+
+        h)              usage
+                        exit 0 ;;
+        \?)             usage
+                        exit 1 ;;
+        :)              echo "Option -$OPTARG requires an argument."
+                        exit 1 ;;
+    esac
+done
+
+# Criteria can't have conjunctions (by the spec)
+if [[ $criteria =~ " AND " ]] ; then
+    echo "AND conjunction not supported. Exiting"
+    exit 1
+fi
+
+# Fill variables for the two display formats (regular and comma-separated) so
+# we can print the output in a single place.
+if [[ $comma_sep -eq 0 ]]; then
+    dev_begin="device:\n"
+    separator="\n"
+    begin="\t"
+    dev_end="\n\n"
+    path_begin="\n\npath:\n\tparent=\"vio\""
+    path_end="" 
+else
+    dev_begin=""
+    separator=","
+    dev_end="\n"
+    path_begin=",path=(parent=\"vio\","
+    path_end=")"
+fi
+
+
+# Look at every ibmveth (Virtual Ethernet) device 
+for dev in $($LS -d /proc/device-tree/vdevice/l-lan* 2> /dev/null); do 
+    # use ofpathname to get the device name (i.e. eth0)
+    name=$($OFPATHNAME -l $(echo $dev | $SED -e "s/\/proc\/device-tree//"))
+
+    # get the physical location 
+    physloc=$($CAT $dev/ibm,loc-code)
+
+    show=1
+    # if there is a criteria in the command line, check if this device matches
+    if [[ $criteria != "" ]] ; then
+        show=0
+        check_criteria "name"
+        check_criteria "physloc"
+    fi
+
+    # print the info only if the device matches the criteria
+    if [[ $show -ne 0 ]]; then
+	# the name attribute is always printed
+	echo -ne $dev_begin$begin"name="\"$name\"
+
+	# if there is no format in the command line or it contains "path", then
+	# print the path. Doesn't use print_attr because all of the fields in 
+	# the path attribute should be printed.
+	if [[ $format == "" || $format =~ "path" ]]; then
+	    echo -ne $path_begin
+	    echo -ne $separator$begin"physloc="$physloc
+	    echo -ne $path_end
+	fi
+	# done with this device
+	echo -ne $dev_end
+    fi
+done
+
+
+# Look at every ibmvscsi (Virtual SCSI) device
+for dev in $($LS -d /proc/device-tree/vdevice/v-scsi* 2> /dev/null) ; do
+    # pull the physical location
+    physloc=$(cat $dev/ibm,loc-code)
+
+    # find the slot so it can be used in sysfs
+    slot=$(echo $dev | $SED -e "s/\/proc\/device-tree\/vdevice\/v-scsi@//")
+
+    # there is only one host per device, assign it to the path's name
+    for host in $($LS -d /sys/devices/vio/$slot/host*) ; do
+	parent=$(echo $host/scsi_host* | $SED -e "s/.*://")
+
+	# loop through the targets for this host. 
+	for t in $($LS -d $host/target*); do
+	    target=$(echo $($LS -d $t/$($LS $t | $GREP -v uevent)))
+	    name=$(echo $($LS -d $target/block*) | $SED -e "s/.*://")
+
+	    if [[ $(cat $target/state) == "running" ]] ; then
+	         status=1
+	    else
+		 status=0
+	    fi
+
+	    show=1
+	    # if there is a criteria in the command line, check if this
+	    # device matches
+	    if [[ $criteria != "" ]] ; then
+	        show=0
+	        check_criteria "name"
+	        check_criteria "physloc"
+	        check_criteria "status"
+	        check_criteria "parent"
+	    fi
+
+	    # print the info only if the device matches the criteria
+	    if [[ $show -ne 0 ]]; then
+		# the name attribute is always printed
+		echo -ne $dev_begin$begin"name="\"$name\"
+
+		print_attr "status"
+
+		# print the path, see note for ibmveth above
+		if [[ $format == "" || $format =~ "path" ]]; then
+		    echo -ne $path_begin
+		    echo -ne $separator$begin"name="\"$parent\"
+		    echo -ne $separator$begin"physloc="$physloc
+		    echo $path_end
+		fi
+		# done with this target
+		echo -ne $dev_end
+	    fi
+	done
+    done
+done
+
+
+# Look at every ibmvfc (Virtual FibreChannel) device
+for dev in $($LS -d /proc/device-tree/vdevice/vfc-client* 2> /dev/null) ; do
+    # pull the physical location
+    physloc=$(cat $dev/ibm,loc-code)
+
+    # find the slot so it can be used in sysfs
+    slot=$(echo $dev | $SED -e "s/\/proc\/device-tree\/vdevice\/vfc-client@//")
+
+    # there is only one host per device, assign it to the path's name
+    for host in $($LS -d /sys/devices/vio/$slot/host*) ; do
+	parent=$(echo $host/scsi_host* | $SED -e "s/.*://")
+
+	# As opposed to ibmvscsi, there are multiple rports in each host
+	for rport in $($LS -d $host/rport*); do
+
+	    # in ibmvfc there are two layers of directories before getting to
+	    # the targets
+	    for t in $($LS -d $rport/target*); do
+	        for target in $($LS $t | $GREP "[0-9]*:[0-9]*:[0-9]*:[0-9]*"); do
+		    name=$(echo $($LS -d $t/$target/block*) | $SED -e "s/.*://")
+
+		    if [[ $(cat $t/$target/state) == "running" ]] ; then
+			 status=1
+		    else
+			 status=0
+		    fi
+
+		    show=1
+		    # if there is a criteria in the command line, check if this
+            	    # device matches
+		    if [[ $criteria != "" ]] ; then
+			show=0
+			check_criteria "name"
+			check_criteria "physloc"
+			check_criteria "status"
+			check_criteria "parent"
+		    fi
+
+		    # print the info only if the device matches the criteria
+		    if [[ $show -ne 0 ]]; then
+			# the name attribute is always printed
+			echo -ne $dev_begin$begin"name="\"$name\"
+
+			print_attr "status"
+
+			# print the path, see note for ibmveth above
+			if [[ $format == "" || $format =~ "path" ]]; then
+			    echo -ne $path_begin
+			    echo -ne $separator$begin"name="\"$parent\"
+		    	    echo -ne $separator$begin"physloc="$physloc
+			    echo -ne $path_end
+			fi
+			# done with this device
+			echo -ne $dev_end
+		    fi
+		done
+	    done
+	done
+    done
+done
+
+exit 0
+
+# end
