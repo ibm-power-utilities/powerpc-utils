@@ -1,4 +1,14 @@
-Nathan Fontenot (19):
+Brian King (2):
+      The OpenFirmware binding for Fibre Channel devices permits any leading
+         zeros in the LUN field to be stripped, but does not require it. Fix
+         ofpathname to handle this case when translating OF pathname to logical
+         device name.
+      According to PAPR, we need to call activate-firmware after a migration,
+         which we weren't doing. Add this call after updating the device tree.
+         Add another device tree update call after it to ensure the SLB size is
+         correctly updated in the kernel.
+
+Nathan Fontenot (26):
       Initial commit for the new combined powerpc-utils package from the
          previous powerpc-utils and p;owerpc-utils-papr packages.
       Ignore hotplug power-off failures when the devie tree property
@@ -53,4 +63,44 @@ Nathan Fontenot (19):
          update introduces two new pieces of functionality to the command.
       This patch contains all of the additional updates needed to support the
          new version of ppc64_cpu, removal of old script and Makefile updates.
+      Changelog for v1.2.0
+      The ppc64_cpu command needs to properly turn off the smt snooze delay.
+         The current code does not handle the option 'off', it should as this
+         is regarded as a delay of -1.
+      When setting or retrieving system wide attributes such as the
+         smt-snooze-delay or dscr we should only be concerned with online
+         cpus/threads.  Offline cpus/threads will not have these attributes in
+         their sysfs directory.
+      This is some minor code cleanups, no functional changes.
+      When making changes to increase the smt state, the cpus that are brought
+         online come online with the same smt-snooze-delay they had when they
+         were taken offline.  This leads to a mix of smt-snooze-delay states
+         for a system.
+      This patch updates the retrieval of a system attribute, such as
+         smt-snooze-delay or dscr, to handle a valid return value of -1.
+      The current bounds checking only validates that the specified smt setting
+         is not zero and less than or equal to the threads per cpu on the
+         system.  This causes smt settings such as 4000000000 to be converted
+         to some negative number and thus odd smt settings ensue.  This patch
+         ensures checks to make the smt setting specified is not less than or
+         equal to zero.
+
+Robert Jennings (4):
+      Add HEA ports as a new connector type to lsslot.  Ports will be sorted on
+         location code, not name, so the output might look as follows (debug
+         output included).
+      Currently, print_node_list will never print the children of a node. Just
+         correcting a small bit of the logic.
+      The logic in get_node_by_name() currently does not return when it finds a
+         child with the name being search for.  This would mean that a command
+         such as `drmgr -Q -c port -s "Port 1" -w 0 -d 3` would always return: 
+          drmgr: Port 1 not owned by partition
+      DR commands shouldn't take long to complete, but having both an entry and
+         exit timestamp eliminates the guessing and can point people in the
+         correct direction while they debug issues.
+
+Santiago Leon (1):
+      Introduce the lsdevinfo utility.  This command is used to provide the HMC
+         or IVM with name information for virtual devices so they can be
+         matched against the VIOS names.
 
