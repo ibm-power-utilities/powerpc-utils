@@ -378,8 +378,6 @@ static struct service_var other_vars[] = {
 	{"HMC 13",	TYPE_STRING, "hmc13",	NULL,	13, NO_DEFAULT, 0},
 	{"HMC 14",	TYPE_STRING, "hmc14",	NULL,	14, NO_DEFAULT, 0},
 	{"HMC 15",	TYPE_STRING, "hmc15",	NULL,	15, NO_DEFAULT, 0},
-	{"Processor CUoD Capacity Card Info",	TYPE_STRING,
-		"proc-cuod-card-info",		NULL,	18, NO_DEFAULT, 0},
 	{"Memory CUoD Capacity Card Info",	TYPE_STRING,
 		"mem-cuod-card-info",		NULL,	19, NO_DEFAULT, 0},
 	{"SPLPAR Characteristics",		TYPE_STRING,
