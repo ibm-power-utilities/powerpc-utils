@@ -77,13 +77,6 @@ lsslot:
 Tool used to determine dyanmic reconfiguration capable slots/cpus/memory
 on a partition.
 
-amsvis:
-------
-This tool helps visualize metrics associated with Active Memory
-Sharing (AMS).  The tool can be run locally but it can also be run
-remotely as either a data server or visualization client.  Documentation
-is provided in man page amsvis (8).
-
 ppc64_cpu:
 ---------
 This allows users to set the smt state, smt-snooze-delay and other settings

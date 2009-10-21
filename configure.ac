@@ -34,31 +34,5 @@ AC_FUNC_MALLOC
 AC_FUNC_MKTIME
 AC_CHECK_FUNCS([memset strchr strcspn strdup strerror strrchr strstr strtol strtoul strtoull])
 
-echo "configure: creating ./powerpc-utils.spec"
-tfile=/tmp/powerpc-utils.spec$$
-
-# See if the .egg-info file is to be created.
-PY_VERSION=`python -c "from platform import python_version; print python_version()" 2>/dev/null`
-
-if [[ -z $PY_VERSION ]]; then
-    sed "|\@PY_VERSION\@|d" powerpc-utils.spec.in > $tfile
-else
-    PY_VERSION=${PY_VERSION%.*}
-    sed "s|\@PY_VERSION\@|$PY_VERSION|g" powerpc-utils.spec.in > $tfile
-fi
-
-# Update the spec file with the correct python paths
-PY_INST_DIR=`python -c "from distutils.sysconfig import get_python_lib; print get_python_lib()"`
-sed "s|\@PYTHON_SITE_PKGS\@|$PY_INST_DIR|g" $tfile > powerpc-utils.spec
-rm $tfile
-
-# Update the prefix used in the scripts/amsvis/Makefile
-echo "configure: creating ./scripts/amsvis/Makefile"
-sed "s|\@PREFIX\@|$prefix|g" scripts/amsvis/Makefile.in > scripts/amsvis/Makefile
-
-# Update the release in scripts/amsvis/setup.py
-echo "configure: creating ./scripts/amsvis/setup.py"
-sed "s|\@VERSION\@|$PACKAGE_VERSION|g" scripts/amsvis/setup.py.in > scripts/amsvis/setup.py
-
 AC_CONFIG_FILES(Makefile src/Makefile src/drmgr/Makefile scripts/Makefile man/Makefile)
 AC_OUTPUT
