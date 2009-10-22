@@ -1,3 +1,10 @@
+Brad Peters (1):
+      When executed, serv_config is causing a partition hang.  I was able to
+         track the cause of the hang down to a single query against PHYP via
+         RTAS.  Attempting to access 'proc-cuod-card-info', the Processor CUoD
+         Capacity Card Info, seems to no longer be supported.  I've removed
+         this inquiry from the array.
+
 Brian King (2):
       The OpenFirmware binding for Fibre Channel devices permits any leading
          zeros in the LUN field to be stripped, but does not require it. Fix
@@ -8,7 +15,7 @@ Brian King (2):
          Add another device tree update call after it to ensure the SLB size is
          correctly updated in the kernel.
 
-Nathan Fontenot (26):
+Nathan Fontenot (29):
       Initial commit for the new combined powerpc-utils package from the
          previous powerpc-utils and p;owerpc-utils-papr packages.
       Ignore hotplug power-off failures when the devie tree property
@@ -84,6 +91,9 @@ Nathan Fontenot (26):
          to some negative number and thus odd smt settings ensue.  This patch
          ensures checks to make the smt setting specified is not less than or
          equal to zero.
+      Updates and prep for powerpc-utils-1.2.1 release
+      Remove the amsvis command from powerpc-utils.
+      Re-add the powerpc-utils.spec file.
 
 Robert Jennings (4):
       Add HEA ports as a new connector type to lsslot.  Ports will be sorted on
