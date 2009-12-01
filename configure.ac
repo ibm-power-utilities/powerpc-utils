@@ -1,8 +1,9 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
+m4_define([ppu_version], 1.2.2)
 
 AC_PREREQ([2.63])
-AC_INIT([powerpc-utils], [1.2.2], [nfont@austin.ibm.com])
+AC_INIT([powerpc-utils], ppu_version, [nfont@austin.ibm.com])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_SRCDIR([src/rtas_ibm_get_vpd.c])
@@ -34,6 +35,9 @@ AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
 AC_FUNC_MALLOC
 AC_FUNC_MKTIME
 AC_CHECK_FUNCS([memset strchr strcspn strdup strerror strrchr strstr strtol strtoul strtoull])
+
+echo "Configuring powerpc-utils.spec"
+sed "s|\@VERSION\@|ppu_version|g" powerpc-utils.spec.in > powerpc-utils.spec
 
 AC_CONFIG_FILES([Makefile src/Makefile src/drmgr/Makefile scripts/Makefile man/Makefile])
 AC_OUTPUT
