@@ -11,7 +11,7 @@ EXTRA_DIST = Changelog powerpc-utils.spec.in doc/activate_firmware.doxycfg doc/n
 
 IN_MAKEFILES = Makefile.in src/Makefile.in src/drmgr/Makefile.in man/Makefile.in \
 	       scripts/Makefile.in
-AC_CLEAN_FILES = aclocal.m4 depcomp install-sh missing
+AC_CLEAN_FILES = aclocal.m4
 
 really-clean: maintainer-clean
 	-rm -f powerpc-utils.spec
