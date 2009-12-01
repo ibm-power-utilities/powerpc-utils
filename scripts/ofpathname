@@ -510,15 +510,27 @@ l2of_scsi()
                 OF_PATH=$OF_PATH/disk\@$vdiskno
         fi
     elif [[ -d /proc/device-tree$OF_PATH/sas ]]; then
-        local B T L
-        B=`echo $BUS | tr "[a-z]" "[A-Z]"`
-        B=`echo "ibase=16;obase=A; $B" | bc`
-        T=`echo $ID | tr "[a-z]" "[A-Z]"`
-        T=`echo "ibase=16;obase=A; $T" | bc`
-        L=`echo $LUN | tr "[a-z]" "[A-Z]"`
-        L=`echo "ibase=16;obase=A; $L" | bc`
+        local vendor_id sas_id
 
-	local sas_id=$(( ($B << 16) | ($T << 8) | $L ))
+	vendor_id=`od -tx /proc/device-tree/$OF_PATH/vendor-id`
+	vendor_id=`echo $vendor_id | cut -d " " -f 2`
+	if [[ $vendor_id = "00001000" ]]; then
+	    local dev_id
+	    goto_dir $device_path "sas_end_device*"
+	    dev_id=${PWD##*-}
+	    sas_id=`cat /sys/class/sas_device/end_device-$dev_id/sas_address`
+	else
+            local B T L
+            B=`echo $BUS | tr "[a-z]" "[A-Z]"`
+            B=`echo "ibase=16;obase=A; $B" | bc`
+            T=`echo $ID | tr "[a-z]" "[A-Z]"`
+            T=`echo "ibase=16;obase=A; $T" | bc`
+            L=`echo $LUN | tr "[a-z]" "[A-Z]"`
+            L=`echo "ibase=16;obase=A; $L" | bc`
+
+	    sas_id=$(( ($B << 16) | ($T << 8) | $L ))
+	fi
+
 	OF_PATH=$(printf "%s/sas/disk@%x" $OF_PATH $sas_id)
         if [[ $LUN != "0" ]]; then
             OF_PATH=$(printf "%s,%x" $OF_PATH $LUN)
