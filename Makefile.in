@@ -34,7 +34,7 @@ subdir = .
 DIST_COMMON = README $(am__configure_deps) $(dist_doc_DATA) \
 	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/configure build-aux/depcomp build-aux/install-sh \
-	build-aux/missing depcomp install-sh missing
+	build-aux/missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -167,7 +167,7 @@ AUTOMAKE_OPTIONS = foreign
 SUBDIRS = src man scripts
 doc_DATA = README COPYRIGHT
 dist_doc_DATA = README COPYRIGHT
-EXTRA_DIST = Changelog powerpc-utils.spec doc/activate_firmware.doxycfg doc/nvram.doxycfg      \
+EXTRA_DIST = Changelog powerpc-utils.spec.in doc/activate_firmware.doxycfg doc/nvram.doxycfg      \
 	     doc/rtas_ibm_get_vpd.doxycfg doc/serv_config.doxycfg doc/set_poweron_time.doxycfg \
 	     doc/uesensor.doxycfg doc/usysident.doxycfg
 
