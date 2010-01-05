@@ -1062,7 +1062,7 @@ valid_mem_options(struct options *opts)
 int
 drslot_chrp_mem(struct options *opts)
 {
-	int rc;
+	int rc = -1;
 
 	if (opts->p_option) {
 		/* This is a entitlement or weight change */

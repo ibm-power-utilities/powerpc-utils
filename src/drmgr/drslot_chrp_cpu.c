@@ -66,7 +66,7 @@ get_cpu_by_name(struct dr_info *drinfo, const char *name)
 struct dr_node *
 get_available_cpu(struct options *opts, struct dr_info *dr_info)
 {
-	struct dr_node *cpu;
+	struct dr_node *cpu = NULL;
 	struct dr_node *survivor = NULL;
 	struct thread *t;
 
@@ -297,7 +297,7 @@ int
 drslot_chrp_cpu(struct options *opts)
 {
 	struct dr_info dr_info;
-	int rc;
+	int rc = -1;
 
 	if (! cpu_dlpar_capable()) {
 		err_msg("CPU DLPAR capability is not enabled on this "

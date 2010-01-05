@@ -1673,10 +1673,8 @@ main(int argc, char *argv[]) {
 		return 2;
 	}
 	rc = fread(buffer, 1, BUF_SIZE, fp);
-	buffer[rc-1] = '\0';
-	pclose(fp);
-
-	if (buffer) {
+	if (!ferror(fp)) {
+		buffer[rc] = '\0';
 		if (strstr(buffer, "ibm,setupcfg"))
 			nvram_setupcfg = 1;
 		if (strstr(buffer, "common"))
@@ -1684,6 +1682,7 @@ main(int argc, char *argv[]) {
 		if (strstr(buffer, "of-config"))
 			nvram_ofconfig = 1;
 	}
+	pclose(fp);
 
 	if (verbose > 1) {
 		printf("ibm,setupcfg NVRAM partition %s.\n",

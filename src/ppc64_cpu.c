@@ -117,7 +117,7 @@ int get_threads_per_cpu(void)
 {
 	DIR *d;
 	struct dirent *de;
-	int nthreads;
+	int nthreads = -1;
 	int rc;
 
 	d = opendir("/proc/device-tree/cpus");
@@ -427,7 +427,8 @@ struct option longopts[] = {
 
 int main(int argc, char *argv[])
 {
-	int rc, opt;
+	int rc = 0;
+	int opt;
 	int option_index;
 
 	if (argc == 1) {

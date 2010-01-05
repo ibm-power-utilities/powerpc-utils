@@ -267,7 +267,7 @@ configure_connector(int index)
 	struct of_node *first_node = NULL;
 	struct of_node *last_node = NULL;	/* Last node processed */
 	struct of_property *property;
-	struct of_property *last_property;	/* Last property processed */
+	struct of_property *last_property = NULL; /* Last property processed */
 	int *work_int;
 	int rc;
 

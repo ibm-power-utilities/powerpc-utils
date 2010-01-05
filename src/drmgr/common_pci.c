@@ -620,8 +620,8 @@ add_pci_vio_node(const char *path, int dev_type, struct dr_node **node_list)
 	struct dr_connector *drc_list;
 	struct dr_connector *drc;
 	struct dr_node *node;
-	int child_dev_type;
-	int rc;
+	int child_dev_type = 0;
+	int rc = -1;
 
 	drc_list = get_drc_info(path);
 	if (drc_list == NULL)
