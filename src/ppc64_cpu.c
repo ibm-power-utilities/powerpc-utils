@@ -19,11 +19,12 @@
 #define SYSFS_CPUDIR	"/sys/devices/system/cpu/cpu%d"
 #define INTSERV_PATH	"/proc/device-tree/cpus/%s/ibm,ppc-interrupt-server#s"
 #define SYSFS_PATH_MAX	128
-#define MAX_THREADS	1024
 
 #define DIAGNOSTICS_RUN_MODE	42
 
-int threads_per_cpu;
+int threads_per_cpu = 0;
+int cpus_in_system = 0;
+int threads_in_system = 0;
 
 int get_attribute(char *path, int *value)
 {
@@ -72,7 +73,7 @@ int get_system_attribute(char *attribute, int *value)
 	int i, rc;
 	int system_attribute = -1;
 
-	for (i = 0; i < MAX_THREADS; i++) {
+	for (i = 0; i < threads_in_system; i++) {
 		int cpu_attribute;
 
 		/* only check online cpus */
@@ -99,7 +100,7 @@ int set_system_attribute(char *attribute, int state)
 	char path[SYSFS_PATH_MAX];
 	int i, rc;
 
-	for (i = 0; i < MAX_THREADS; i++) {
+	for (i = 0; i < threads_in_system; i++) {
 		/* only set online cpus */
 		if (!cpu_online(i))
 			continue;
@@ -113,11 +114,11 @@ int set_system_attribute(char *attribute, int state)
 	return 0;
 }
 
-int get_threads_per_cpu(void)
+int get_cpu_info(void)
 {
 	DIR *d;
 	struct dirent *de;
-	int nthreads = -1;
+	int first_cpu = 1;
 	int rc;
 
 	d = opendir("/proc/device-tree/cpus");
@@ -126,20 +127,25 @@ int get_threads_per_cpu(void)
 
 	while ((de = readdir(d)) != NULL) {
 		if (!strncmp(de->d_name, "PowerPC", 7)) {
-			struct stat sbuf;
-			char path[128];
+			if (first_cpu) {
+				struct stat sbuf;
+				char path[128];
 
-			sprintf(path, INTSERV_PATH, de->d_name);
-			rc = stat(path, &sbuf);
-			if (!rc)
-				nthreads = sbuf.st_size / 4;
+				sprintf(path, INTSERV_PATH, de->d_name);
+				rc = stat(path, &sbuf);
+				if (!rc)
+					threads_per_cpu = sbuf.st_size / 4;
 
-			break;
+				first_cpu = 0;
+			}
+
+			cpus_in_system++;
 		}
 	}
 
 	closedir(d);
-	return nthreads;
+	threads_in_system = cpus_in_system * threads_per_cpu;
+	return 0;
 }
 
 int is_smt_capable(void)
@@ -148,7 +154,7 @@ int is_smt_capable(void)
 	char path[SYSFS_PATH_MAX];
 	int i;
 
-	for (i = 0; i < MAX_THREADS; i++) {
+	for (i = 0; i < threads_in_system; i++) {
 		sprintf(path, SYSFS_CPUDIR"/smt_snooze_delay", i);
 		if (stat(path, &sb))
 			continue;
@@ -187,7 +193,7 @@ int get_smt_state(void)
 	int system_state = -1;
 	int i;
 
-	for (i = 0; i < MAX_THREADS; i += threads_per_cpu) {
+	for (i = 0; i < threads_in_system; i += threads_per_cpu) {
 		int cpu_state;
 
 		cpu_state = get_one_smt_state(i);
@@ -236,7 +242,7 @@ int set_smt_state(int smt_state)
 	if (rc)
 		update_ssd = 0;
 
-	for (i = 0; i < MAX_THREADS; i += threads_per_cpu) {
+	for (i = 0; i < threads_in_system; i += threads_per_cpu) {
 		rc = set_one_smt_state(i, smt_state);
 		if (rc)
 			break;
@@ -254,7 +260,7 @@ int is_dscr_capable(void)
 	char path[SYSFS_PATH_MAX];
 	int i;
 
-	for (i = 0; i < MAX_THREADS; i++) {
+	for (i = 0; i < threads_in_system; i++) {
 		sprintf(path, SYSFS_CPUDIR"/dscr", i);
 		if (stat(path, &sb))
 			continue;
@@ -436,10 +442,10 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	threads_per_cpu = get_threads_per_cpu();
-	if (threads_per_cpu < 0) {
-		printf("Could not determine thread count\n");
-		return -1;
+	rc = get_cpu_info();
+	if (rc) {
+		printf("Could not determine system cpu/thread information.\n");
+		return rc;
 	}
 
 	while (1) {
