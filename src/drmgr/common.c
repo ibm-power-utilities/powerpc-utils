@@ -15,6 +15,7 @@
 #include <errno.h>
 #include <dirent.h>
 #include <execinfo.h>
+#include <ctype.h>
 #include "dr.h"
 #include "ofdt.h"
 
@@ -1026,6 +1027,12 @@ cpu_dlpar_capable(void)
 		if (strncmp(de->d_name, "cpu", 3))
 			continue;
 		
+		/* Ensure this is a cpu directory, i.e. cpu0, and not a
+		 * non-cpu directory, i.e. cpufreq
+		 */
+		if (!isdigit(de->d_name[3]))
+			continue;
+
 		sprintf(fname, "%s/%s/online", cpu_dir, de->d_name);
 		
 		if (stat(fname, &sbuf)) {
