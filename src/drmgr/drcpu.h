@@ -9,6 +9,9 @@
 
 #include "dr.h"
 
+#define CPU_PROBE_FILE		"/sys/devices/system/cpu/probe"
+#define CPU_RELEASE_FILE	"/sys/devices/system/cpu/release"
+
 struct cache_info {
 	char		name[DR_BUF_SZ];	/* node name */
 	char		path[DR_BUF_SZ];	/* node path */
@@ -45,7 +48,7 @@ struct cache_info * cpu_get_dependent_cache(struct dr_node *, struct dr_info *);
 struct cache_info * cache_get_dependent_cache(struct cache_info *,
 					      struct dr_info *);
 int release_cpu(struct dr_node *, struct dr_info *);
-int acquire_cpu(struct dr_node *, struct dr_info *);
+int probe_cpu(struct dr_node *, struct dr_info *);
 struct dr_node *get_available_cpu(struct options *, struct dr_info *);
 
 #endif /* _H_DRCPU */

@@ -604,7 +604,7 @@ refresh_cache_info(struct dr_info *dr_info)
  * @param drc_index
  * @returns pointer to cpu_info on success, NULL otherwise
  */
-int
+static int
 acquire_cpu(struct dr_node *cpu, struct dr_info *dr_info)
 {
 	struct of_node *of_nodes;
@@ -635,6 +635,57 @@ acquire_cpu(struct dr_node *cpu, struct dr_info *dr_info)
 	refresh_cache_info(dr_info);
 
 	return 0;
+}
+
+int
+probe_cpu(struct dr_node *cpu, struct dr_info *dr_info)
+{
+	char drc_index[DR_STR_MAX];
+	int probe_file;
+	int write_len;
+	int rc = 0;
+
+	probe_file = open(CPU_PROBE_FILE, O_WRONLY);
+	if (probe_file <= 0) {
+		/* Attempt to add cpu from user-space, this may be an older
+		 * kernel without the infrastructure to handle dlpar.
+		 */
+		rc = acquire_cpu(cpu, dr_info);
+		if (rc)
+			return rc;
+
+		rc = online_cpu(cpu, dr_info);
+		if (rc) {
+			/* Roll back the operation.  Is this the correct
+			 * behavior?
+			 */
+			dbg("Unable to online %s\n", cpu->drc_name);
+			offline_cpu(cpu);
+			release_cpu(cpu, dr_info);
+			cpu->unusable = 1;
+		}
+
+	} else {
+		memset(drc_index, 0, DR_STR_MAX);
+		write_len = sprintf(drc_index, "0x%x", cpu->drc_index);
+
+		dbg("Probing cpu 0x%x\n", cpu->drc_index);
+		rc = write(probe_file, drc_index, write_len);
+		if (rc != write_len)
+			dbg("Probe failed! rc = %x\n", rc);
+		else
+			/* reset rc to success */
+			rc = 0;
+
+		close(probe_file);
+	}
+
+	if (!rc) {
+		update_cpu_node(cpu, NULL, dr_info);
+		refresh_cache_info(dr_info);
+	}
+
+	return rc;
 }
 
 /**
@@ -688,39 +739,66 @@ release_caches(struct dr_node *cpu, struct dr_info *dr_info)
 int
 release_cpu(struct dr_node *cpu, struct dr_info *dr_info)
 {
+	int release_file;
 	int rc;
 
-	/* Should we check to make sure all threads of the cpu are offline? */
+	release_file = open(CPU_RELEASE_FILE, O_WRONLY);
+	if (release_file > 0) {
+		/* DLPAR can be done in kernel */
+		char *path = cpu->ofdt_path + strlen(OFDT_BASE);
+		int write_len = strlen(path);
 
-	rc = release_drc(cpu->drc_index, CPU_DEV);
-	if (rc) {
-		dbg("Could not release drc resources for %s\n", cpu->name);
-		return rc;
-	}
+		dbg("Releasing cpu \"%s\"\n", path);
+		rc = write(release_file, path, write_len);
+		if (rc != write_len)
+			dbg("Release failed! rc = %d\n", rc);
+		else
+			/* set rc to success */
+			rc = 0;
 
-	rc = remove_device_tree_nodes(cpu->ofdt_path);
-	if (rc) {
-		struct of_node *of_nodes;
-
-		dbg("Could not remove device tree nodes %s\n", cpu->name);
-		
-		of_nodes = configure_connector(cpu->drc_index);
-		if (of_nodes == NULL) {
-			err_msg("Call to configure_connector failed for %s. "
-				"The device tree\nmay contain invalid data "
-				"for this cpu and a re-activation of the "
-				"partition is needed to correct it.\n",
-				cpu->name);
-		} else {
-			rc = add_device_tree_nodes(CPU_OFDT_BASE, of_nodes);
-			free_of_node(of_nodes);
+		close(release_file);
+	} else {
+		/* Must do DLPAR from user-space */
+		rc = offline_cpu(cpu);
+		if (rc) {
+			err_msg("Could not offline cpu %s\n", cpu->drc_name);
+			return rc;
 		}
 
-		acquire_drc(cpu->drc_index);
-		return rc;
+		rc = release_drc(cpu->drc_index, CPU_DEV);
+		if (rc) {
+			dbg("Could not release drc resources for %s\n",
+			    cpu->name);
+			return rc;
+		}
+
+		rc = remove_device_tree_nodes(cpu->ofdt_path);
+		if (rc) {
+			struct of_node *of_nodes;
+
+			dbg("Could not remove device tree nodes %s\n",
+			    cpu->name);
+		
+			of_nodes = configure_connector(cpu->drc_index);
+			if (of_nodes == NULL) {
+				err_msg("Call to configure_connector failed "
+					"for %s. The device tree\nmay contain "
+					"invalid data for this cpu and a "
+					"re-activation of the partition is "
+					"needed to correct it.\n", cpu->name);
+			} else {
+				rc = add_device_tree_nodes(CPU_OFDT_BASE,
+							   of_nodes);
+				free_of_node(of_nodes);
+			}
+
+			acquire_drc(cpu->drc_index);
+			return rc;
+		}
+
+		release_caches(cpu, dr_info);
 	}
 
-	release_caches(cpu, dr_info);
 	return rc;
 }
 

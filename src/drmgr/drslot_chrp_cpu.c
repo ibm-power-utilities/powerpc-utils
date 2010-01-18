@@ -138,22 +138,10 @@ add_cpus(struct options *opts, struct dr_info *dr_info)
 		if (!cpu)
 			break;
 
-		rc = acquire_cpu(cpu, dr_info);
+		rc = probe_cpu(cpu, dr_info);
 		if (rc) {
 			dbg("Unable to acquire CPU with drc index %x\n",
 			    cpu->drc_index);
-			cpu->unusable = 1;
-			continue;
-		}
-
-		rc = online_cpu(cpu, dr_info);
-		if (rc) {
-			/* Roll back the operation.  Is this the correct
-			 * behavior?
-			 */
-			dbg("Unable to online %s\n", cpu->drc_name);
-			offline_cpu(cpu);
-			release_cpu(cpu, dr_info);
 			cpu->unusable = 1;
 			continue;
 		}
@@ -201,15 +189,6 @@ remove_cpus(struct options *opts, struct dr_info *dr_info)
 		if (!cpu)
 			break;
 
-		rc = offline_cpu(cpu);
-		if (rc) {
-			/* Need to online any threads we took offline */
-			online_cpu(cpu, dr_info);
-			err_msg("Could not offline cpu %s\n", cpu->drc_name);
-			cpu->unusable = 1;
-			continue;
-		}
-
 		/* cpu is invalid after release_cpu, so no recovery
 		 * steps seem feasible.  We could copy the cpu name
 		 * and look it up again if the operation fails.
@@ -217,8 +196,6 @@ remove_cpus(struct options *opts, struct dr_info *dr_info)
 		rc = release_cpu(cpu, dr_info);
 		if (rc) {
 			online_cpu(cpu, dr_info);
-			err_msg("Offlined but could not release %s\n",
-				cpu->drc_name);
 			cpu->unusable = 1;
 			continue;
 		}
