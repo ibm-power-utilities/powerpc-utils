@@ -20,6 +20,7 @@ CAT="/bin/cat"
 LS="/bin/ls"
 GREP="/bin/grep"
 SED="/bin/sed"
+TR="/usr/bin/tr"
 
 # Usage statemnet
 usage()
@@ -31,6 +32,7 @@ usage()
     echo "  -q criteria	     Specifies a criteria to select which devices are"
     echo "                   to be displayed."
     echo "  -F format	     Specifies the set of attributes to be displayed."
+    echo "  -R		     Recursively display children of selected devices"
     echo "  -c		     Display output as a comma separated list for"
     echo "                   each device."
     echo "  -V, --version    Display version information and exit"
@@ -102,15 +104,20 @@ print_attr ()
 # default: CR separated list
 comma_sep=0
 
+# default: non recursive
+recursive=0
+
 # default: display all devices
 criteria=""
 
 # default: display all attributes
 format=""
 
-while getopts "cq:F:Vh" flag ; do
+while getopts "cRq:F:Vh" flag ; do
     case "$flag" in
         c) comma_sep=1;;
+
+        R) recursive=1;;
 
         q) criteria=$OPTARG;;
 
@@ -141,13 +148,13 @@ if [[ $comma_sep -eq 0 ]]; then
     separator="\n"
     begin="\t"
     dev_end="\n\n"
-    path_begin="\n\npath:\n\tparent=\"vio\""
+    path_begin="\n\npath:\n\tparent="
     path_end="" 
 else
     dev_begin=""
     separator=","
     dev_end="\n"
-    path_begin=",path=(parent=\"vio\","
+    path_begin=",path=(parent="
     path_end=")"
 fi
 
@@ -156,9 +163,17 @@ fi
 for dev in $($LS -d /proc/device-tree/vdevice/l-lan* 2> /dev/null); do 
     # use ofpathname to get the device name (i.e. eth0)
     name=$($OFPATHNAME -l $(echo $dev | $SED -e "s/\/proc\/device-tree//"))
+    connection=$(echo $dev | $SED -e "s/\/proc\/device-tree\/vdevice\/l-lan@//")
+    parent="vio"
 
     # get the physical location 
     physloc=$($CAT $dev/ibm,loc-code)
+    uniquetype="adapter/vdevice/IBM,l-lan"
+    class="adapter"
+    subclass="vdevice"
+    type="IBM,l-lan"
+    prefix="eth"
+    driver="ibmveth"
 
     show=1
     # if there is a criteria in the command line, check if this device matches
@@ -166,6 +181,12 @@ for dev in $($LS -d /proc/device-tree/vdevice/l-lan* 2> /dev/null); do
         show=0
         check_criteria "name"
         check_criteria "physloc"
+        check_criteria "uniquetype"
+        check_criteria "class"
+        check_criteria "subclass"
+        check_criteria "type"
+        check_criteria "prefix"
+        check_criteria "driver"
     fi
 
     # print the info only if the device matches the criteria
@@ -173,12 +194,20 @@ for dev in $($LS -d /proc/device-tree/vdevice/l-lan* 2> /dev/null); do
 	# the name attribute is always printed
 	echo -ne $dev_begin$begin"name="\"$name\"
 
+	print_attr "uniquetype"
+	print_attr "class"
+	print_attr "subclass"
+	print_attr "type"
+	print_attr "prefix"
+	print_attr "driver"
+
 	# if there is no format in the command line or it contains "path", then
 	# print the path. Doesn't use print_attr because all of the fields in 
 	# the path attribute should be printed.
 	if [[ $format == "" || $format =~ "path" ]]; then
-	    echo -ne $path_begin
-	    echo -ne $separator$begin"physloc="$physloc
+	    echo -ne $path_begin\"$parent\"
+	    echo -ne $separator$begin"physloc="\"$physloc\"
+	    echo -ne $separator$begin"connection="\"$connection\"
 	    echo -ne $path_end
 	fi
 	# done with this device
@@ -191,18 +220,92 @@ done
 for dev in $($LS -d /proc/device-tree/vdevice/v-scsi* 2> /dev/null) ; do
     # pull the physical location
     physloc=$(cat $dev/ibm,loc-code)
+    hostphysloc=$physloc
+    connection=$(echo $dev | $SED -e "s/\/proc\/device-tree\/vdevice\/v-scsi@//")
 
     # find the slot so it can be used in sysfs
     slot=$(echo $dev | $SED -e "s/\/proc\/device-tree\/vdevice\/v-scsi@//")
 
     # there is only one host per device, assign it to the path's name
     for host in $($LS -d /sys/devices/vio/$slot/host*) ; do
-	parent=$(echo $host/scsi_host* | $SED -e "s/.*://")
+	parent=$(echo $host | $SED -e "s/.*\///")
+	name=$parent
+
+	uniquetype="adapter/vdevice/IBM,v-scsi"
+	class="adapter"
+	subclass="vdevice"
+	type="IBM,v-scsi"
+	prefix="host"
+	driver="ibmvscsic"
+
+	host=$($LS -d /sys/devices/vio/$slot/host*/)
+	if [[ -d $host/scsi_host ]]; then
+	     scsihost=$($LS -d $host/scsi_host/host*/)
+	else
+	     scsihost=$($LS -d $host/scsi_host*/)
+	fi
+
+	if [[ $(cat $scsihost/state) == "running" ]] ; then
+            status=1
+	else
+	    status=0
+	fi
+
+	show=1
+	# if there is a criteria in the command line, check if this
+	# device matches
+	if [[ $criteria != "" ]] ; then
+	    show=0
+	    check_criteria "name"
+	    check_criteria "physloc"
+	    check_criteria "status"
+	    check_criteria "uniquetype"
+	    check_criteria "class"
+	    check_criteria "subclass"
+	    check_criteria "type"
+	    check_criteria "prefix"
+	    check_criteria "driver"
+	fi
+
+	if [[ $show -ne 0 ]]; then
+	    # the name attribute is always printed
+	    echo -ne $dev_begin$begin"name="\"$name\"
+
+	    print_attr "uniquetype"
+	    print_attr "class"
+	    print_attr "subclass"
+	    print_attr "type"
+	    print_attr "prefix"
+	    print_attr "driver"
+	    print_attr "status"
+
+	    # print the path, see note for ibmveth above
+	    if [[ $format == "" || $format =~ "path" ]]; then
+	        echo -ne $path_begin"\"vio\""
+	        echo -ne $separator$begin"connection="\"$connection\"
+	        echo -ne $separator$begin"physloc="\"$physloc\"
+	        echo -ne $path_end
+	    fi
+	    # done with this target
+	    echo -ne $dev_end
+        fi
 
 	# loop through the targets for this host. 
 	for t in $($LS -d $host/target*); do
-	    target=$(echo $($LS -d $t/$($LS $t | $GREP -v uevent)))
-	    name=$(echo $($LS -d $target/block*) | $SED -e "s/.*://")
+	    target=$(echo $($LS -d $t/$($LS $t | $GREP -v uevent | $GREP -v power | $GREP -v subsystem)))
+	    if [[ ! -d $target/block ]]; then
+	         name=$(echo $($LS -d $target/block*) | $SED -e "s/.*://")
+	    else
+	         name=$($LS $target/block)
+	    fi
+
+	    conn=$($OFPATHNAME /dev/$name 2> /dev/null | $SED -e "s/.*disk@//")
+	    connection=${conn:0:12}
+	    uniquetype="disk/vscsi/vdisk"
+	    class="disk"
+	    subclass="vscsi"
+	    type="vdisk"
+	    physloc=$hostphysloc"-L"$conn
 
 	    if [[ $(cat $target/state) == "running" ]] ; then
 	         status=1
@@ -210,15 +313,24 @@ for dev in $($LS -d /proc/device-tree/vdevice/v-scsi* 2> /dev/null) ; do
 		 status=0
 	    fi
 
-	    show=1
-	    # if there is a criteria in the command line, check if this
-	    # device matches
-	    if [[ $criteria != "" ]] ; then
+	    # if there is a criteria in the command line, we are recursive and
+	    # the parent passed criteria, show the device
+	    if [[ $criteria != "" && $show -eq 1 && $recursive -eq 1 ]]; then
+                show=1
+	    elif [[ $criteria != "" ]] ; then
+	        # if there is a criteria in the command line, check if this
+	        # device matches
 	        show=0
 	        check_criteria "name"
-	        check_criteria "physloc"
 	        check_criteria "status"
+	        check_criteria "physloc"
 	        check_criteria "parent"
+	        check_criteria "uniquetype"
+	        check_criteria "class"
+	        check_criteria "subclass"
+	        check_criteria "type"
+	    else
+	        show=1
 	    fi
 
 	    # print the info only if the device matches the criteria
@@ -226,14 +338,20 @@ for dev in $($LS -d /proc/device-tree/vdevice/v-scsi* 2> /dev/null) ; do
 		# the name attribute is always printed
 		echo -ne $dev_begin$begin"name="\"$name\"
 
+		print_attr "uniquetype"
+		print_attr "class"
+		print_attr "subclass"
+		print_attr "type"
 		print_attr "status"
 
 		# print the path, see note for ibmveth above
 		if [[ $format == "" || $format =~ "path" ]]; then
-		    echo -ne $path_begin
-		    echo -ne $separator$begin"name="\"$parent\"
-		    echo -ne $separator$begin"physloc="$physloc
-		    echo $path_end
+		    echo -ne $path_begin\"$parent\"
+		    echo -ne $separator$begin"connection="\"$connection\"
+		    echo -ne $separator$begin"physloc="\"$physloc\"
+		    echo -ne $separator$begin"path_id="\""0"\"
+		    echo -ne $separator$begin"path_status="\"$status\"
+		    echo -ne $path_end
 		fi
 		# done with this target
 		echo -ne $dev_end
@@ -247,13 +365,75 @@ done
 for dev in $($LS -d /proc/device-tree/vdevice/vfc-client* 2> /dev/null) ; do
     # pull the physical location
     physloc=$(cat $dev/ibm,loc-code)
+    connection=$(echo $dev | $SED -e "s/\/proc\/device-tree\/vdevice\/vfc-client@//")
+    hostphysloc=$physloc
 
     # find the slot so it can be used in sysfs
     slot=$(echo $dev | $SED -e "s/\/proc\/device-tree\/vdevice\/vfc-client@//")
 
     # there is only one host per device, assign it to the path's name
     for host in $($LS -d /sys/devices/vio/$slot/host*) ; do
-	parent=$(echo $host/scsi_host* | $SED -e "s/.*://")
+	parent=$(echo $host | $SED -e "s/.*\///")
+	name=$parent
+
+	uniquetype="adapter/vdevice/IBM,vfc-client"
+	class="adapter"
+	subclass="vdevice"
+	type="IBM,vfc-client"
+	prefix="host"
+	driver="ibmvfc"
+
+	host=$($LS -d /sys/devices/vio/$slot/host*/)
+	if [[ -d $host/scsi_host ]]; then
+	     scsihost=$($LS -d $host/scsi_host/host*/)
+	else
+	     scsihost=$($LS -d $host/scsi_host*/)
+	fi
+
+	if [[ $(cat $scsihost/state) == "running" ]] ; then
+            status=1
+	else
+	    status=0
+	fi
+
+	show=1
+	# if there is a criteria in the command line, check if this
+	# device matches
+	if [[ $criteria != "" ]] ; then
+	    show=0
+	    check_criteria "name"
+	    check_criteria "physloc"
+	    check_criteria "status"
+	    check_criteria "uniquetype"
+	    check_criteria "class"
+	    check_criteria "subclass"
+	    check_criteria "type"
+	    check_criteria "prefix"
+	    check_criteria "driver"
+	fi
+
+	if [[ $show -ne 0 ]]; then
+	    # the name attribute is always printed
+	    echo -ne $dev_begin$begin"name="\"$name\"
+
+	    print_attr "uniquetype"
+	    print_attr "class"
+	    print_attr "subclass"
+	    print_attr "type"
+	    print_attr "prefix"
+	    print_attr "driver"
+	    print_attr "status"
+
+	    # print the path, see note for ibmveth above
+	    if [[ $format == "" || $format =~ "path" ]]; then
+	        echo -ne $path_begin"\"vio\""
+	        echo -ne $separator$begin"connection="\"$connection\"
+	        echo -ne $separator$begin"physloc="\"$physloc\"
+	        echo -ne $path_end
+	    fi
+	    # done with this target
+	    echo -ne $dev_end
+        fi
 
 	# As opposed to ibmvscsi, there are multiple rports in each host
 	for rport in $($LS -d $host/rport*); do
@@ -262,7 +442,18 @@ for dev in $($LS -d /proc/device-tree/vdevice/vfc-client* 2> /dev/null) ; do
 	    # the targets
 	    for t in $($LS -d $rport/target*); do
 	        for target in $($LS $t | $GREP "[0-9]*:[0-9]*:[0-9]*:[0-9]*"); do
-		    name=$(echo $($LS -d $t/$target/block*) | $SED -e "s/.*://")
+		    if [[ ! -d $t/$target/block ]]; then
+			 name=$(echo $($LS -d $t/$target/block*) | $SED -e "s/.*://")
+		    else
+			 name=$($LS $t/$target/block)
+		    fi
+
+		    connection=$($OFPATHNAME /dev/$name 2> /dev/null | $SED -e "s/.*disk@//")
+		    physloc=$hostphysloc"-W"$(echo $connection | $TR "[:lower:]" "[:upper:]" | $SED -e "s/,/-L/")
+		    uniquetype="disk/fcp/disk"
+		    class="disk"
+		    subclass="fcp"
+		    type="disk"
 
 		    if [[ $(cat $t/$target/state) == "running" ]] ; then
 			 status=1
@@ -270,15 +461,24 @@ for dev in $($LS -d /proc/device-tree/vdevice/vfc-client* 2> /dev/null) ; do
 			 status=0
 		    fi
 
-		    show=1
+		    # if there is a criteria in the command line, we are recursive and
+		    # the parent passed criteria, show the device
+		    if [[ $criteria != "" && $show -eq 1 && $recursive -eq 1 ]]; then
+                        show=1
+		    elif [[ $criteria != "" ]] ; then
 		    # if there is a criteria in the command line, check if this
-            	    # device matches
-		    if [[ $criteria != "" ]] ; then
-			show=0
+		    # device matches
+                        show=0
 			check_criteria "name"
 			check_criteria "physloc"
 			check_criteria "status"
 			check_criteria "parent"
+			check_criteria "uniquetype"
+			check_criteria "class"
+			check_criteria "subclass"
+			check_criteria "type"
+		    else
+                        show=1
 		    fi
 
 		    # print the info only if the device matches the criteria
@@ -286,13 +486,19 @@ for dev in $($LS -d /proc/device-tree/vdevice/vfc-client* 2> /dev/null) ; do
 			# the name attribute is always printed
 			echo -ne $dev_begin$begin"name="\"$name\"
 
+			print_attr "uniquetype"
+			print_attr "class"
+			print_attr "subclass"
+			print_attr "type"
 			print_attr "status"
 
 			# print the path, see note for ibmveth above
 			if [[ $format == "" || $format =~ "path" ]]; then
-			    echo -ne $path_begin
-			    echo -ne $separator$begin"name="\"$parent\"
-		    	    echo -ne $separator$begin"physloc="$physloc
+			    echo -ne $path_begin\"$parent\"
+		    	    echo -ne $separator$begin"connection="\"$connection\"
+		    	    echo -ne $separator$begin"physloc="\"$physloc\"
+		    	    echo -ne $separator$begin"path_id="\""0"\"
+		    	    echo -ne $separator$begin"path_status="\"$status\"
 			    echo -ne $path_end
 			fi
 			# done with this device
