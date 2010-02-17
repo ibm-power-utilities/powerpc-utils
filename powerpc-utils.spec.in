@@ -7,12 +7,23 @@ Version:	%{version}
 Release:	%{release}
 License:	IBM Common Public License (CPL)
 Group:		System Environment
-Source0:	N/A
+Source:		powerpc-utils-%{version}.tar.gz
 BuildRoot:	/tmp/%{name}-buildroot/
 Requires:	/bin/bash, /bin/sh, /bin/sed, /usr/bin/perl, librtas >= 1.3.0
 
 %description
 Utilities for maintaining and servicing PowerPC systems.
+
+%prep
+%setup -q
+
+%build
+%configure
+%{__make} %{?_smp_mflags}
+
+%install
+%{__rm} -rf $RPM_BULD_ROOT
+%{__make} install DESTDIR=$RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root)
@@ -49,26 +60,26 @@ Utilities for maintaining and servicing PowerPC systems.
 
 /usr/bin/amsstat
 
-/usr/share/man/man8/update_flash.8
-/usr/share/man/man8/activate_firmware.8
-/usr/share/man/man8/usysident.8
-/usr/share/man/man8/usysattn.8
-/usr/share/man/man8/set_poweron_time.8
-/usr/share/man/man8/rtas_ibm_get_vpd.8
-/usr/share/man/man8/serv_config.8
-/usr/share/man/man8/uesensor.8
-/usr/share/man/man8/hvcsadmin.8
-/usr/share/man/man8/vscsisadmin.8
-/usr/share/man/man8/ibmvscsis.sh.8
-/usr/share/man/man8/ibmvscsis.conf.8
-/usr/share/man/man8/rtas_dump.8
-/usr/share/man/man8/sys_ident.8
-/usr/share/man/man8/nvram.8
-/usr/share/man/man8/snap.8
-/usr/share/man/man8/bootlist.8
-/usr/share/man/man8/ofpathname.8
+/usr/share/man/man8/update_flash.8.gz
+/usr/share/man/man8/activate_firmware.8.gz
+/usr/share/man/man8/usysident.8.gz
+/usr/share/man/man8/usysattn.8.gz
+/usr/share/man/man8/set_poweron_time.8.gz
+/usr/share/man/man8/rtas_ibm_get_vpd.8.gz
+/usr/share/man/man8/serv_config.8.gz
+/usr/share/man/man8/uesensor.8.gz
+/usr/share/man/man8/hvcsadmin.8.gz
+/usr/share/man/man8/vscsisadmin.8.gz
+/usr/share/man/man8/ibmvscsis.sh.8.gz
+/usr/share/man/man8/ibmvscsis.conf.8.gz
+/usr/share/man/man8/rtas_dump.8.gz
+/usr/share/man/man8/sys_ident.8.gz
+/usr/share/man/man8/nvram.8.gz
+/usr/share/man/man8/snap.8.gz
+/usr/share/man/man8/bootlist.8.gz
+/usr/share/man/man8/ofpathname.8.gz
 
-/usr/share/man/man1/amsstat.1
+/usr/share/man/man1/amsstat.1.gz
 
 %post
 # Post-install script -----------------------------------------------
