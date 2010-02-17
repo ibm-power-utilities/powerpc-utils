@@ -53,12 +53,12 @@ for dev in $($LS -d /proc/device-tree/vdevice/v-scsi* 2> /dev/null) ; do
     slot=$(echo $dev | $SED -e "s/\/proc\/device-tree\/vdevice\/v-scsi@//")
 
     # there is only one host per device, assign it to the path's name
-    for host in $($LS -d /sys/devices/vio/$slot/host*) ; do
+    for host in $($LS -d /sys/devices/vio/$slot/host* 2> /dev/null) ; do
 	parent=$(echo $host | $SED -e "s/.*\///")
 	host=$($LS -d /sys/devices/vio/$slot/host*/)
 
         # loop through the targets for this host.
-	for t in $($LS -d $host/target*); do
+	for t in $($LS -d $host/target* 2> /dev/null); do
 	    target=$(echo $($LS -d $t/$($LS $t | $GREP -v uevent | $GREP -v power | $GREP -v subsystem)))
 	    if [[ ! -d $target/block ]]; then
 	         name=$(echo $($LS -d $target/block*) | $SED -e "s/.*://")
