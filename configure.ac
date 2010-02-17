@@ -16,7 +16,7 @@ AC_PROG_INSTALL
 AC_CHECK_LIB([servicelog], [servicelog_open])
 
 # Checks for header files.
-AC_CHECK_HEADERS([fcntl.h inttypes.h limits.h locale.h memory.h netinet/in.h nl_types.h stdint.h stdlib.h string.h sys/ioctl.h syslog.h unistd.h servicelog-1/servicelog.h])
+AC_CHECK_HEADERS([fcntl.h inttypes.h limits.h locale.h memory.h netinet/in.h nl_types.h stdint.h stdlib.h string.h sys/ioctl.h syslog.h unistd.h servicelog-1/servicelog.h librtas.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
