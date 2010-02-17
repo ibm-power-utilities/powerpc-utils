@@ -41,6 +41,9 @@ Utilities for maintaining and servicing PowerPC systems.
 /usr/sbin/ofpathname
 /usr/sbin/ppc64_cpu
 /usr/sbin/lsdevinfo
+/usr/sbin/ls-veth
+/usr/sbin/ls-vdev
+/usr/sbin/ls-vscsi
 
 /etc/init.d/ibmvscsis.sh
 

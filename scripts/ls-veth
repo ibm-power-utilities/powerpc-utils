@@ -1,0 +1,64 @@
+#! /bin/bash
+
+# Copyright (c) 2010 International Business Machines
+# Common Public License Version 1.0 (see COPYRIGHT)
+#
+# Author Brian King <brking@linux.vnet.ibm.com>
+#
+# ls-veth - This utility provides the HMC or IVM with name information for
+# 	    virtual ethernet devices
+#
+
+LSVETH="ls-veth"
+VERSION="0.1"
+OFPATHNAME="/usr/sbin/ofpathname"
+CAT="/bin/cat"
+LS="/bin/ls"
+SED="/bin/sed"
+
+usage()
+{
+    echo "Usage: $LSVETH [-h]"
+    echo "Provide information on Virtual Ethernet devices"
+    echo ""
+    echo "Optional arguments."
+    echo "  -V, --version    Display version information and exit"
+    echo "  -h, --help       Display this help information and exit"
+    echo ""
+}
+
+show_version()
+{
+    echo "$LSVETH: Version $VERSION"
+    echo "Written by: Brian King <brking@linux.vnet.ibm.com>"
+}
+
+
+while getopts "Vh" flag ; do
+    case "$flag" in
+        V) show_version
+                        exit 0 ;;
+
+        h)              usage
+                        exit 0 ;;
+        \?)             usage
+                        exit 1 ;;
+        :)              echo "Option -$OPTARG requires an argument."
+                        exit 1 ;;
+    esac
+done
+
+# Look at every ibmveth (Virtual Ethernet) device
+for dev in $($LS -d /proc/device-tree/vdevice/l-lan* 2> /dev/null); do
+    # use ofpathname to get the device name (i.e. eth0)
+    name=$($OFPATHNAME -l $(echo $dev | $SED -e "s/\/proc\/device-tree//"))
+
+    # get the physical location
+    physloc=$($CAT $dev/ibm,loc-code)
+
+    echo "$name $physloc"
+done
+
+exit 0
+
+# end

@@ -1,0 +1,76 @@
+#! /bin/bash
+
+# Copyright (c) 2010 International Business Machines
+# Common Public License Version 1.0 (see COPYRIGHT)
+#
+# Author Brian King <brking@linux.vnet.ibm.com>
+#
+# ls-vdev - This utility provides the HMC or IVM with name information for
+# 	    virtual scsi adapters and devices
+#
+
+LSVDEV="ls-vdev"
+VERSION="0.1"
+LS="/bin/ls"
+GREP="/bin/grep"
+SED="/bin/sed"
+
+usage()
+{
+    echo "Usage: $LSVDEV"
+    echo "Provide information on Virtual SCSI adapters and devices"
+    echo ""
+    echo "Optional arguments."
+    echo "  -V, --version    Display version information and exit"
+    echo "  -h, --help       Display this help information and exit"
+    echo ""
+}
+
+show_version()
+{
+    echo "$LSVDEV: Version $VERSION"
+    echo "Written by: Brian King <brking@linux.vnet.ibm.com>"
+}
+
+
+while getopts "Vh" flag ; do
+    case "$flag" in
+        V) show_version
+                        exit 0 ;;
+
+        h)              usage
+                        exit 0 ;;
+        \?)             usage
+                        exit 1 ;;
+        :)              echo "Option -$OPTARG requires an argument."
+                        exit 1 ;;
+    esac
+done
+
+# Look at every ibmvscsi (Virtual SCSI) device
+for dev in $($LS -d /proc/device-tree/vdevice/v-scsi* 2> /dev/null) ; do
+    # find the slot so it can be used in sysfs
+    slot=$(echo $dev | $SED -e "s/\/proc\/device-tree\/vdevice\/v-scsi@//")
+
+    # there is only one host per device, assign it to the path's name
+    for host in $($LS -d /sys/devices/vio/$slot/host*) ; do
+	parent=$(echo $host | $SED -e "s/.*\///")
+	host=$($LS -d /sys/devices/vio/$slot/host*/)
+
+        # loop through the targets for this host.
+	for t in $($LS -d $host/target*); do
+	    target=$(echo $($LS -d $t/$($LS $t | $GREP -v uevent | $GREP -v power | $GREP -v subsystem)))
+	    if [[ ! -d $target/block ]]; then
+	         name=$(echo $($LS -d $target/block*) | $SED -e "s/.*://")
+	    else
+	         name=$($LS $target/block)
+	    fi
+
+	    echo "$parent $name"
+        done
+    done
+done
+
+exit 0
+
+# end
