@@ -1,0 +1,27 @@
+powerpc-utils-sles10-addons package
+===================================
+This package is meant as an addon for the SLES 10 SP3 release to bring
+the installed powerpc-utilities up to par with the latest ppowerpc-utils
+release.  the packages installed are those that are not installed with the
+version of powerpc-utils shipped with SLES 10 SP3.
+
+This package contains utilities which are intended for maintenance of IBM
+powerpc platforms that follow the POWER Architecture Platform Reference (PAPR),
+This package requires the librtas package in order to function properly.
+All of these utilities must be run as root.
+
+drmgr
+-----
+Dynamic reconfiguration manager.  This isn't neccessarily meant to be invoked
+from the command line, but rather is the command invoked via the RMC connection
+from an HMC.
+
+lsslot:
+------
+Tool used to determine dyanmic reconfiguration capable slots/cpus/memory
+on a partition.
+
+lsdevinfo, ls-vdev, ls-veth, ls-vscsi:
+---------
+These utilities provides the HMC or IVM with name information for
+virtual devices so they can be matched against the VIOS names.
