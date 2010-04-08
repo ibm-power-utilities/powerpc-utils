@@ -490,7 +490,7 @@ l2of_scsi()
     fc=${fc##/*/}
     if [[ $fc = "fibre-channel" ]]; then
 	local fc_lun=`get_fc_scsilun $LUN`
-	local wwpn=`get_fc_wwpn "$device_path/../../fc_remote_ports"`
+	local wwpn=`get_fc_wwpn "$device_path/../../fc_remote_ports*"`
         OF_PATH=$(printf "%s/disk@%s,%s" $OF_PATH $wwpn $fc_lun)
     elif [[ $vdev = "/vdevice" ]]; then
         # get the v-device data
