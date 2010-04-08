@@ -6,7 +6,7 @@
 .SH NAME
 ofpathname \- translate between Open Firmware and logical device names
 .SH SYNOPSIS
-\fB/usr/sbin/ofpathname \fR[\fB-lq\fR] \fIname
+\fB/usr/sbin/ofpathname \fR[\fB-laqVh\fR] \fIname
 .SH DESCRIPTION
 .I Ofpathname
 provides the ability to translate logical device names to their Open Firmware
@@ -17,10 +17,16 @@ Firmware device path to its logical device name using the -l option.
 \fB\-l
 Translate the \fIname \fRparameter to the corresponding logical device name.
 .TP
+\fB\-a
+Find a matching Open Firmware device alias[es].
+.TP
 \fB\--quiet \fR(\fB\-q\fR)
 Do not report any failures, exit quietly.
 .TP
-\fB\--help \fR(\fB\-?\fR)
+\fB\--version \fR(\fB\-V\fR)
+Displat version and exit
+.TP
+\fB\--help \fR(\fB\-h\fR)
 print usage information.
 .SH AUTHOR
 Written by Nathan Fontenot
