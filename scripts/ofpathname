@@ -386,12 +386,13 @@ l2of_ide()
 #
 l2of_ethernet()
 {
-    local sysfs_eth=`$FIND /sys -name $DEVICE 2> /dev/null`
-    if [[ -z $sysfs_eth ]]; then
-        err $ERR_NOT_CONFIG
-    fi
+    for syspath in `$FIND /sys -name $DEVICE 2> /dev/null`; do
+        if [[ -e $syspath/device/devspec ]]; then
+            OF_PATH=`$CAT $syspath/device/devspec`
+            break
+        fi
+    done
 
-    OF_PATH=`$CAT $sysfs_eth/device/devspec`
     if [[ -z $OF_PATH ]]; then
         err $ERR_NO_OFPATH
     fi
