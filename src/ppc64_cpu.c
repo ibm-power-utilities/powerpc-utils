@@ -197,22 +197,12 @@ int is_smt_capable(void)
 
 int get_one_smt_state(int primary_thread)
 {
-	struct stat sb;
-	char online_file[SYSFS_PATH_MAX];
 	int thread_state;
 	int smt_state = 0;
-	int i, rc;
+	int i;
 
 	for (i = 0; i < threads_per_cpu; i++) {
-		sprintf(online_file, SYSFS_CPUDIR"/%s", primary_thread + i,
-			"online");
-		if (stat(online_file, &sb))
-			return -1;
-
-		rc = get_attribute(online_file, "%d", &thread_state);
-		if (rc)
-			return -1;
-
+		thread_state = cpu_online(primary_thread + i);
 		smt_state += thread_state;
 	}
 
