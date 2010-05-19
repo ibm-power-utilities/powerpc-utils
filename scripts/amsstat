@@ -22,6 +22,7 @@ sleep_interval=$1
 indent=-4
 devstat_data_spacing=-30
 lparcfg_data_spacing=-30
+lparcfg_file=/proc/ppc64/lparcfg
 
 function print_meminfo_stats {
     echo "System Memory Statistics:"
@@ -38,7 +39,7 @@ function print_meminfo_stats {
     done
 
     # Include Desired Memory value from /proc/ppc64/lparcfg
-    stat=`grep "^DesMem" /proc/ppc64/lparcfg`
+    stat=`grep "^DesMem" $lparcfg_file`
     if [ ! -z "${stat}" ]; then
         this_stat=`echo $stat | awk -F= '{print $1}'`
         this_value=`echo $stat | awk -F= '{print $2}'`
@@ -48,7 +49,7 @@ function print_meminfo_stats {
 
 function print_entitlement_data {
     echo "Entitlement Information:"
-    for stat in `cat /proc/ppc64/lparcfg`; do
+    for stat in `cat $lparcfg_file`; do
         if echo $stat | grep "^entitled_memory\|^mapped_entitled_memory\|^entitled_memory_weight\|entitled_memory_pool_size\|^backing_memory\|^cmo_enabled\|^cmo_faults\|^cmo_fault_time_usec\|cmo_primary_psp\|^cmo_secondary_psp" >/dev/null; then
             this_stat=`echo $stat | awk -F= '{print $1}'`
             this_value=`echo $stat | awk -F= '{print $2}'`
@@ -59,12 +60,15 @@ function print_entitlement_data {
 
 function print_cmm_stats {
     # CMM kernel parameters
-    local path=/sys/module/cmm/parameters
-    pushd $path >/dev/null
-    if [ $? -ne 0 ] ; then
-        exit 1
-    fi
     echo "CMM Statistics:"
+
+    local path=/sys/module/cmm/parameters
+    pushd $path >/dev/null 2>&1
+    if [ $? -ne 0 ] ; then
+        printf "%${indent}s Could not get CMM Statistics.\n" " "
+	return
+    fi
+
     for stat in `find . -mindepth 1 -maxdepth 1 -print`; do
         printf "%${indent}s %${devstat_data_spacing}s %${devstat_data_spacing}s\n" " " "${stat#\.\/}:" "`cat $stat`"
     done
@@ -72,9 +76,9 @@ function print_cmm_stats {
 
     # CMM statistics
     local path=/sys/devices/system/cmm/cmm0
-    pushd $path >/dev/null
+    pushd $path >/dev/null 2>&1
     if [ $? -ne 0 ] ; then
-        exit 1
+        return
     fi
     for stat in `find . -mindepth 1 -maxdepth 1 -print`; do
         printf "%${indent}s %${devstat_data_spacing}s %${devstat_data_spacing}s\n" " " "${stat#\.\/}:" "`cat $stat`"
@@ -83,33 +87,50 @@ function print_cmm_stats {
 }
 
 function print_vio_bus_stats {
-    local path=/sys/bus/vio
-    pushd $path >/dev/null
-    if [ $? -ne 0 ] ; then
-        exit 1
-    fi
     echo "VIO Bus Statistics:"
+    local found=0
+    local path=/sys/bus/vio
+    pushd $path >/dev/null 2>&1
+    if [ $? -ne 0 ] ; then
+        printf "%${indent}s Could not get VIO Bus Statistics.\n" " "
+	return
+    fi
+
     for stat in `find . -mindepth 1 -maxdepth 1 -name "cmo*" -print`; do
+        found=1
         printf "%${indent}s %${devstat_data_spacing}s %${devstat_data_spacing}s\n" " " "${stat#\.\/}:" "`cat $stat`"
     done
     popd >/dev/null
+
+    if [ "$found" -eq "0" ]; then
+        printf "%${indent}s No AMS Busses found.\n" " "
+    fi
 }
 
 
 function print_vio_dev_stats {
-    local path=/sys/bus/vio/devices
-    pushd $path >/dev/null
-    if [ $? -ne 0 ] ; then
-        exit 1
-    fi
     echo "VIO Device Statistics:"
+
+    local found=0
+    local path=/sys/bus/vio/devices
+    pushd $path >/dev/null 2>&1
+    if [ $? -ne 0 ] ; then
+        printf "%${indent}s Could not get VIO Device Statistics.\n" " "
+	return
+    fi
+
     for dir in `find . -mindepth 1 -print`; do
-        pushd $dir >/dev/null
+        pushd $dir >/dev/null 2>&1
         if [ $? -ne 0 ] ; then
             break
         fi
 
 	# Skip printing devices that are not using entitlement
+        if [ ! -e "cmo_entitled" ]; then
+            popd >/dev/null
+	    continue
+	fi
+
 	value=`cat cmo_entitled`
 	if [ ${value} -eq "0" ]; then
 		popd >/dev/null
@@ -119,12 +140,27 @@ function print_vio_dev_stats {
 	NAME=$(cat devspec)
 	echo "   ${NAME##/*/}:"
         for stat in `find . -mindepth 1 -maxdepth 1 -name "cmo*" -print`; do
+	    found=1
             printf "%${indent}s %${devstat_data_spacing}s %${devstat_data_spacing}s\n" " " "${stat#\.\/}:" "`cat $stat`"
         done
         popd >/dev/null
     done
     popd >/dev/null
+
+    if [ "$found" -eq "0" ]; then
+        printf "%${indent}s No AMS devices found.\n" " "
+    fi
 }
+
+# Verify CMO is present and enabled
+enabled=`cat $lparcfg_file | grep "^cmo_enabled" | awk -F= '{print $2}'`
+if [ -z $enabled ]; then
+        echo "This system is not capable of Active Memory Sharing."
+	exit -1
+elif [ "$enabled" -eq "0" ]; then
+        echo "Active Memory Sharing is not enabled on this system."
+        exit -1
+fi
 
 if [ -z $sleep_interval ]; then
     date
