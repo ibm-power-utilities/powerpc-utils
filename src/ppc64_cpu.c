@@ -26,7 +26,7 @@ int threads_per_cpu = 0;
 int cpus_in_system = 0;
 int threads_in_system = 0;
 
-int get_attribute(char *path, int *value)
+int get_attribute(char *path, const char *fmt, int *value)
 {
 	FILE *fp;
 
@@ -34,13 +34,13 @@ int get_attribute(char *path, int *value)
 	if (fp == NULL)
 		return -1;
 
-	fscanf(fp, "%i", value);
+	fscanf(fp, fmt, value);
 	fclose(fp);
 
 	return 0;
 }
 
-int set_attribute(char *path, int value)
+int set_attribute(const char *path, const char *fmt, int value)
 {
 	FILE *fp;
 
@@ -48,7 +48,7 @@ int set_attribute(char *path, int value)
 	if (fp == NULL)
 		return -1;
 
-	fprintf(fp, "%d", value);
+	fprintf(fp, fmt, value);
 	fclose(fp);
 
 	return 0;
@@ -60,14 +60,14 @@ int cpu_online(int thread)
 	int rc, online;
 
 	sprintf(path, SYSFS_CPUDIR"/online", thread);
-	rc = get_attribute(path, &online);
+	rc = get_attribute(path, "%d", &online);
 	if (rc || !online)
 		return 0;
 
 	return 1;
 }
 
-int get_system_attribute(char *attribute, int *value)
+int get_system_attribute(char *attribute, const char *fmt, int *value)
 {
 	char path[SYSFS_PATH_MAX];
 	int i, rc;
@@ -81,7 +81,7 @@ int get_system_attribute(char *attribute, int *value)
 			continue;
 
 		sprintf(path, SYSFS_CPUDIR"/%s", i, attribute);
-		rc = get_attribute(path, &cpu_attribute);
+		rc = get_attribute(path, fmt, &cpu_attribute);
 		if (rc)
 			continue;
 
@@ -95,7 +95,7 @@ int get_system_attribute(char *attribute, int *value)
 	return 0;
 }
 
-int set_system_attribute(char *attribute, int state)
+int set_system_attribute(char *attribute, const char *fmt, int state)
 {
 	char path[SYSFS_PATH_MAX];
 	int i, rc;
@@ -106,13 +106,44 @@ int set_system_attribute(char *attribute, int state)
 			continue;
 
 		sprintf(path, SYSFS_CPUDIR"/%s", i, attribute);
-		rc = set_attribute(path, state);
+		rc = set_attribute(path, fmt, state);
 		if (rc)
 			return -1;
 	}
 
 	return 0;
 }
+
+int set_dscr(int state)
+{
+	return set_system_attribute("dscr", "%x", state);
+}
+
+int get_dscr(int *value)
+{
+	return get_system_attribute("dscr", "%x", value);
+}
+
+int set_smt_snooze_delay(int delay)
+{
+	return set_system_attribute("smt_snooze_delay", "%d", delay);
+}
+
+int get_smt_snooze_delay(int *delay)
+{
+	return get_system_attribute("smt_snooze_delay", "%d", delay);
+}
+
+int online_thread(const char *path)
+{
+	return set_attribute(path, "%d", 1);
+}
+
+int offline_thread(const char *path)
+{
+	return set_attribute(path, "%d", 0);
+}
+
 
 int get_cpu_info(void)
 {
@@ -178,7 +209,7 @@ int get_one_smt_state(int primary_thread)
 		if (stat(online_file, &sb))
 			return -1;
 
-		rc = get_attribute(online_file, &thread_state);
+		rc = get_attribute(online_file, "%d", &thread_state);
 		if (rc)
 			return -1;
 
@@ -217,7 +248,7 @@ int set_one_smt_state(int thread, int online_threads)
 	for (i = 0; i < online_threads; i++) {
 		snprintf(path, SYSFS_PATH_MAX, SYSFS_CPUDIR"/%s", thread + i,
 			 "online");
-		rc = set_attribute(path, 1);
+		rc = online_thread(path);
 		if (rc)
 			return rc;
 	}
@@ -225,7 +256,7 @@ int set_one_smt_state(int thread, int online_threads)
 	for (; i < threads_per_cpu; i++) {
 		snprintf(path, SYSFS_PATH_MAX, SYSFS_CPUDIR"/%s", thread + i,
 			 "online");
-		rc = set_attribute(path, 0);
+		rc = offline_thread(path);
 		if (rc)
 			break;
 	}
@@ -238,7 +269,7 @@ int set_smt_state(int smt_state)
 	int i, rc;
 	int ssd, update_ssd = 1;
 
-	rc = get_system_attribute("smt_snooze_delay", &ssd);
+	rc = get_smt_snooze_delay(&ssd);
 	if (rc)
 		update_ssd = 0;
 
@@ -249,7 +280,7 @@ int set_smt_state(int smt_state)
 	}
 
 	if (update_ssd)
-		set_system_attribute("smt_snooze_delay", ssd);
+		set_smt_snooze_delay(ssd);
 
 	return rc;
 }
@@ -321,7 +352,7 @@ int do_dscr(char *state)
 
 	if (!state) {
 		int dscr;
-		rc = get_system_attribute("dscr", &dscr);
+		rc = get_dscr(&dscr);
 		if (rc) {
 			printf("Could not retrieve DSCR\n");
 		} else {
@@ -331,7 +362,7 @@ int do_dscr(char *state)
 				printf("dscr is %d\n", dscr);
 		}
 	} else
-		rc = set_system_attribute("dscr", strtol(state, NULL, 0));
+		rc = set_dscr(strtol(state, NULL, 0));
 
 	return rc;
 }
@@ -347,7 +378,7 @@ int do_smt_snooze_delay(char *state)
 
 	if (!state) {
 		int ssd;
-		rc = get_system_attribute("smt_snooze_delay", &ssd);
+		rc = get_smt_snooze_delay(&ssd);
 		if (rc) {
 			printf("Could not retrieve smt_snooze_delay\n");
 		} else {
@@ -364,7 +395,7 @@ int do_smt_snooze_delay(char *state)
 		else
 			delay = strtol(state, NULL, 0);
 
-		rc = set_system_attribute("smt_snooze_delay", delay);
+		rc = set_smt_snooze_delay(delay);
 	}
 
 	return rc;
