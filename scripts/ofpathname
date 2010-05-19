@@ -232,12 +232,23 @@ is_pata_dev()
 {
     local this_dir=$PWD
     local sysfs_dir
+    local udev_path
     local udevinfo="/usr/bin/udevinfo"
+    local udevadm="/sbin/udevadm"
 
-    if [[ ! -a $udevinfo ]]; then
+    if [[ -a $udevadm ]]; then
+        udev_path=`$udevadm info --query=path --name=$DEVNAME`
+    elif [[ -a $udevinfo ]]; then
+        udev_path=`$udevinfo -q path -n $DEVNAME`
+    else
+        echo "no"
+        return
+    fi
+
+    if [[ -z $udev_path ]]; then
         echo "no"
     else
-	sysfs_dir=`get_link -f /sys/$($udevinfo -q path -n $DEVNAME)/device`
+	sysfs_dir=`get_link -f /sys/$udev_path/device`
 	if [[ ! -d $sysfs_dir ]]; then
 	    echo "no"
 	else
