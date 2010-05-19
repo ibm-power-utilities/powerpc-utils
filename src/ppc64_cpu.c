@@ -420,7 +420,7 @@ int do_run_mode(char *run_mode)
 	} else {
 		signed char rmode = *run_mode;
 
-		if (rmode < 0 || rmode > 3) {
+		if (rmode < '0' || rmode > '3') {
 			printf("Invalid run-mode=%c\n", rmode);
 			return -1;
 		}
