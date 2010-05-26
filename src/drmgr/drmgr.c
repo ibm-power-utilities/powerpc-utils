@@ -50,6 +50,7 @@ struct command {
 #define DRSLOT_CHRP_HEA		5
 #define DRSLOT_CHRP_CPU		6
 #define DRMIG_CHRP_PMIG		7
+#define DRSLOT_CHRP_PHIB	8
 
 static struct command commands[] = {
 	{ .type = DRMGR,
@@ -99,6 +100,12 @@ static struct command commands[] = {
 	  .func = drmig_chrp_pmig,
 	  .validate_options = valid_pmig_options,
 	  .usage = pmig_usage,
+	},
+	{ .type = DRSLOT_CHRP_PHIB,
+	  .name = "drslot_chrp_phib",
+	  .func = drmig_chrp_pmig,
+	  .validate_options = valid_pmig_options,
+	  .usage = phib_usage,
 	},
 };
 
@@ -236,6 +243,10 @@ parse_options(int argc, char *argv[], struct options *opts)
 			action_cnt++;
 			break;
 		    case 'n':
+			  /* The -n option is also used to specify a number of
+			   * seconds to attempt a self-arp.  Linux ignores this
+			   * for hibernation.
+			   */
 			opts->noprompt = 1;
 			break;
 		    case 'p':
@@ -315,6 +326,11 @@ get_command(struct options *opts)
 			
 	if (! strcmp(opts->ctype, "cpu"))
 		return &commands[DRSLOT_CHRP_CPU];
+
+	if (! strcmp(opts->ctype, "phib")) {
+		opts->action = HIBERNATE;
+		return &commands[DRSLOT_CHRP_PHIB];
+	}
 			
 	/* If we make it this far, the user specified an invalid
 	 * connector type.

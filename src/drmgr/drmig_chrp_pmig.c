@@ -30,9 +30,12 @@ struct pmap_struct {
 	char			*name;
 };
 
-static struct pmap_struct *plist;
+#define SYSFS_HIBERNATION_FILE	"/sys/devices/system/power/hibernate"
 
-static char *usagestr = "-m -p {check | pre} -s <stream_id>";
+static struct pmap_struct *plist;
+static int action = 0;
+static char *pmig_usagestr = "-m -p {check | pre} -s <stream_id>";
+static char *phib_usagestr = "-m -p {check | pre} -s <stream_id> -n <self-arp secs>";
 
 /**
  * pmig_usage
@@ -41,8 +44,19 @@ static char *usagestr = "-m -p {check | pre} -s <stream_id>";
 void
 pmig_usage(char **pusage)
 {
-	*pusage = usagestr;
+	*pusage = pmig_usagestr;
 }
+
+/**
+ * phib_usage
+ *
+ */
+void
+phib_usage(char **pusage)
+{
+	*pusage = phib_usagestr;
+}
+
 /**
  * add_phandle
  *
@@ -502,12 +516,21 @@ servicelog_update(char *sys_src)
 	event.time_event = time(NULL);
 	event.severity = SL_SEV_INFO;
 
-	snprintf(refcode, 9, "#MIGRATE");
+	if (action == MIGRATE)
+		snprintf(refcode, 9, "#MIGRATE");
+	else /* hibernation */
+		snprintf(refcode, 12, "#HIBERNATION");
 	event.refcode = refcode;
 
 	get_str_attribute(OFDT_BASE, "system-id", sys_dest, 20);
-	snprintf(msg, 128, "Partition migration completed.  Source: %s "
-		 "Destination: %s", sys_src, sys_dest); /* 56 */
+
+	if (action == MIGRATE)
+		snprintf(msg, 128, "Partition migration completed.  Source: "
+			 "%s Destination: %s", sys_src, sys_dest);
+	else /* hibernation */
+		snprintf(msg, 128, "Partition hibernation completed.  Source: "
+			 "%s Destination: %s", sys_src, sys_dest);
+
 	event.description = msg;
 
 	rc = servicelog_open(&slog, 0);
@@ -530,17 +553,78 @@ servicelog_update(char *sys_src)
 int
 valid_pmig_options(struct options *opts)
 {
-	if (opts->action != MIGRATE) {
-		err_msg("The only valid action is -m\n");
-		return -1;
-	}
-
 	if (opts->p_option  == NULL) {
 		err_msg("A command must be specified\n");
 		return -1;
 	}
 
+	/* Determine if this is a migration or a hibernation request */
+	if (!strcmp(opts->ctype, "pmig")) {
+		if (opts->action != MIGRATE) {
+			/* The -m option must be specified with migrations */
+			err_msg("The -m must be specified for migrations\n");
+			return -1;
+		}
+
+		if (!pmig_capable()) {
+			err_msg("Partition Mobility is not supported.\n");
+			return -1;
+		}
+
+		action = MIGRATE;
+	} else if (!strcmp(opts->ctype, "phib")) {
+		if (!phib_capable()) {
+			err_msg("Partition Hibernation is not supported.\n");
+			return -1;
+		}
+
+		action = HIBERNATE;
+	} else {
+		err_msg("The value \"%s\" for the -c option is not valid\n",
+			opts->ctype);
+		return -1;
+	}
+
 	return 0;
+}
+
+int do_migration(uint64_t stream_val)
+{
+	int rc;
+
+	dbg("about to issue ibm,suspend-me(%llx)\n", stream_val);
+	rc = rtas_suspend_me(stream_val);
+	dbg("ibm,suspend-me() returned %d\n", rc);
+	return rc;
+}
+
+int do_hibernation(uint64_t stream_val)
+{
+	int rc, fd;
+	char buf[64];
+
+	sprintf(buf, "0x%llx\n", stream_val);
+
+	fd = open(SYSFS_HIBERNATION_FILE, O_WRONLY);
+	if (fd == -1) {
+		err_msg("Could not open \"%s\" to initiate hibernation, %m\n",
+			SYSFS_HIBERNATION_FILE);
+		return -1;
+	}
+
+	dbg("Initiating hibernation via %s with %s\n",
+	    SYSFS_HIBERNATION_FILE, buf);
+
+	rc = write(fd, buf, strlen(buf));
+	if (rc < 0) {
+		dbg("Write to hibernation file failed with rc: %d\n", rc);
+		rc = errno;
+	} else if (rc > 0)
+		rc = 0;
+	close(fd);
+	dbg("Kernel hibernation returned %d\n", rc);
+
+	return rc;
 }
 	
 int
@@ -588,22 +672,24 @@ drmig_chrp_pmig(struct options *opts)
 	
 	/* Get the ID of the original system, for later logging */
 	get_str_attribute(OFDT_BASE, "system-id", sys_src, 20);
+	sleep(5);
 
 	/* Now do the actual migration */
 	do {
-		dbg("about to issue ibm,suspend-me(%llx)\n", stream_val);
-	
-		rc = rtas_suspend_me(stream_val);
-		if (rc == NOT_SUSPENDABLE) {
-			dbg("rtas_suspend_me() returned NOT_SUSPENDABLE, "
-			    "sleeping...\n");
+		if (action == MIGRATE)
+			rc = do_migration(stream_val);
+		else if (action == HIBERNATE)
+			rc = do_hibernation(stream_val);
+		else
+			rc = -EINVAL;
+
+		if (rc == NOT_SUSPENDABLE)
 			sleep(1);
-		} else
-			dbg("ibm,suspend-me() returned %d\n", rc);
 
 	} while (rc == NOT_SUSPENDABLE);
 
-	syslog(LOG_LOCAL0 | LOG_INFO, "drmgr: ibm,suspend-me rc %d\n", rc);
+	syslog(LOG_LOCAL0 | LOG_INFO, "drmgr: %s rc %d\n",
+	       (action == MIGRATE ? "migration" : "hibernation"), rc);
 	if (rc)
 		return rc;
 

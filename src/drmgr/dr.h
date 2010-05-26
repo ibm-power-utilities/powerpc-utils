@@ -101,6 +101,7 @@ struct options {
 #define REPLACE		4
 #define IDENTIFY	5
 #define MIGRATE		6
+#define HIBERNATE	7
 
 	int     no_ident;     /* used in drslot_chrp_pci                      */
 	int    timeout;       /* used in remove operation only. Default
@@ -141,6 +142,7 @@ int mem_dlpar_capable(void);
 int slot_dlpar_capable(void);
 int phb_dlpar_capable(void);
 int pmig_capable(void);
+int phib_capable(void);
 int hea_dlpar_capable(void);
 int cpu_entitlement_capable(void);
 int mem_entitlement_capable(void);
@@ -177,5 +179,6 @@ void hea_usage(char **);
 int drmig_chrp_pmig(struct options *);
 int valid_pmig_options(struct options *);
 void pmig_usage(char **);
+void phib_usage(char **);
 
 #endif

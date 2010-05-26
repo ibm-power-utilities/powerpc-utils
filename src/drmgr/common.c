@@ -1118,6 +1118,12 @@ pmig_capable(void)
 }
 
 int
+phib_capable(void)
+{
+	return dlpar_capable("partition hibernation", "/sys/devices/system/power/hibernate");
+}
+
+int
 slb_resize_capable(void)
 {
 	unsigned long value;
@@ -1166,7 +1172,7 @@ void
 print_dlpar_capabilities(void)
 {
 	int cpu_dlpar, mem_dlpar, slot_dlpar, phb_dlpar, hea_dlpar;
-	int pmig, slb_resize;
+	int pmig, phib, slb_resize;
 	int cpu_entitled, mem_entitled;
 
 	cpu_dlpar = cpu_dlpar_capable();
@@ -1176,6 +1182,7 @@ print_dlpar_capabilities(void)
 	hea_dlpar = hea_dlpar_capable();
 
 	pmig = pmig_capable();
+	phib = phib_capable();
 	slb_resize = slb_resize_capable();
 
 	cpu_entitled = cpu_entitlement_capable();
@@ -1183,10 +1190,10 @@ print_dlpar_capabilities(void)
 
 	printf("cpu_dlpar=%s,mem_dlpar=%s,slot_dlpar=%s,phb_dlpar=%s,"
 	       "hea_dlpar=%s,pmig=%s,cpu_entitlement=%s,mem_entitlement=%s,"
-	       "slb_resize=%s\n",
+	       "slb_resize=%s,phib=%s\n",
 	       (cpu_dlpar ? "yes" : "no"), (mem_dlpar ? "yes" : "no"),
 	       (slot_dlpar ? "yes" : "no"), (phb_dlpar ? "yes" : "no"),
 	       (hea_dlpar ? "yes" : "no"), (pmig ? "yes" : "no"),
 	       (cpu_entitled ? "yes" : "no"), (mem_entitled ? "yes" : "no"),
-	       (slb_resize ? "yes" : "no"));
+	       (slb_resize ? "yes" : "no"), (phib ? "yes" : "no"));
 }
