@@ -7,21 +7,37 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <dirent.h>
 #include <librtas.h>
 #include <sys/stat.h>
-#define _GNU_SOURCE
 #include <getopt.h>
+#include <sched.h>
+#include <assert.h>
+#include <pthread.h>
+#include <sys/ioctl.h>
+#include <linux/perf_event.h>
 #include "librtas_error.h"
+#include <errno.h>
 
 #define SYSFS_CPUDIR	"/sys/devices/system/cpu/cpu%d"
 #define INTSERV_PATH	"/proc/device-tree/cpus/%s/ibm,ppc-interrupt-server#s"
-#define SYSFS_PATH_MAX	128
 
+#define SYSFS_PATH_MAX		128
+#define MAX_NR_CPUS		1024
 #define DIAGNOSTICS_RUN_MODE	42
+#define CPU_OFFLINE		-1
+
+static unsigned long long cpu_freq[MAX_NR_CPUS];
+static int counters[MAX_NR_CPUS];
+
+#ifndef __NR_perf_event_open
+#define __NR_perf_event_open	319
+#endif
 
 int threads_per_cpu = 0;
 int cpus_in_system = 0;
@@ -448,17 +464,181 @@ int do_run_mode(char *run_mode)
 	return rc;
 }
 
+static int setup_counters(void)
+{
+	int i;
+	struct perf_event_attr attr;
+
+	memset(&attr, 0, sizeof(attr));
+	attr.type = PERF_TYPE_HARDWARE;
+	attr.config = PERF_COUNT_HW_CPU_CYCLES;
+	attr.disabled = 1;
+	attr.size = sizeof(attr);
+
+	for (i = 0; i < threads_in_system; i++) {
+		if (cpu_freq[i] == CPU_OFFLINE)
+			continue;
+
+		counters[i] = syscall(__NR_perf_event_open, &attr, -1,
+				      i, -1, 0);
+
+		if (counters[i] < 0) {
+			if (errno == ENOSYS)
+				fprintf(stderr, "frequency determination "
+					"not supported with this kernel.\n");
+			else
+				perror("Could not initialize performance "
+				       "counters");
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+static void start_counters(void)
+{
+	int i;
+
+	for (i = 0; i < threads_in_system; i++) {
+		if (cpu_freq[i] == CPU_OFFLINE)
+			continue;
+
+		ioctl(counters[i], PERF_EVENT_IOC_ENABLE);
+	}
+}
+
+static void stop_counters(void)
+{
+	int i;
+
+	for (i = 0; i < threads_in_system; i++) {
+		if (cpu_freq[i] == CPU_OFFLINE)
+			continue;
+
+		ioctl(counters[i], PERF_EVENT_IOC_DISABLE);
+	}
+}
+
+static void read_counters(void)
+{
+	int i;
+
+	for (i = 0; i < threads_in_system; i++) {
+		size_t res;
+
+		if (cpu_freq[i] == CPU_OFFLINE)
+			continue;
+
+		res = read(counters[i], &cpu_freq[i],
+			   sizeof(unsigned long long));
+		assert(res == sizeof(unsigned long long));
+
+		close(counters[i]);
+	}
+}
+
+static void *soak(void *arg)
+{
+	unsigned int cpu = (long)arg;
+	cpu_set_t cpumask;
+
+	CPU_ZERO(&cpumask);
+	CPU_SET(cpu, &cpumask);
+
+	if (sched_setaffinity(0, sizeof(cpumask), &cpumask)) {
+		perror("sched_setaffinity");
+		exit(1);
+	}
+
+	while (1)
+		; /* Do Nothing */
+}
+
+int do_cpu_frequency(void)
+{
+	int i, rc;
+	unsigned long long min = -1ULL;
+	unsigned long min_cpu = -1UL;
+	unsigned long long max = 0;
+	unsigned long max_cpu = -1UL;
+	unsigned long long sum = 0;
+	unsigned long count = 0;
+
+	memset(cpu_freq, 0, sizeof(cpu_freq));
+	memset(counters, 0, sizeof(counters));
+
+	rc = setup_counters();
+	if (rc)
+		return rc;
+
+	/* Start a soak thread on each CPU */
+	for (i = 0; i < threads_in_system; i++) {
+		pthread_t tid;
+
+		if (!cpu_online(i)) {
+			cpu_freq[i] = CPU_OFFLINE;
+			continue;
+		}
+
+		if (pthread_create(&tid, NULL, soak, (void *)(long)i)) {
+			perror("pthread_create");
+			return -1;
+		}
+	}
+
+	/* Wait for soak threads to start */
+	usleep(1000000);
+
+	start_counters();
+	/* Count for 1 second */
+	usleep(1000000);
+	stop_counters();
+
+	read_counters();
+
+	for (i = 0; i < threads_in_system; i++) {
+		if (cpu_freq[i] == CPU_OFFLINE)
+			continue;
+
+		/* No result - Couldn't schedule on that cpu */
+		if (cpu_freq[i] == 0) {
+			printf("WARNING: couldn't run on cpu %d\n", i);
+			continue;
+		}
+
+		if (cpu_freq[i] < min) {
+			min = cpu_freq[i];
+			min_cpu = i;
+		}
+		if (cpu_freq[i] > max) {
+			max = cpu_freq[i];
+			max_cpu = i;
+		}
+		sum += cpu_freq[i];
+		count++;
+	}
+
+	printf("min:\t%.2f GHz (cpu %ld)\n", 1.0 * min / 1000000000ULL,
+	       min_cpu);
+	printf("max:\t%.2f GHz (cpu %ld)\n", 1.0 * max / 1000000000ULL,
+	       max_cpu);
+	printf("avg:\t%.2f GHz\n\n", 1.0 * (sum / count) / 1000000000ULL);
+	return 0;
+}
+
 void usage(void)
 {
 	printf("\tppc64_cpu --smt               # Get current SMT state\n"
-	       "\tppc64_cpu --smt={on|off}      # Turn SMT on/off\n\n"
+	       "\tppc64_cpu --smt={on|off}      # Turn SMT on/off\n"
 	       "\tppc64_cpu --smt=X             # Set SMT state to X\n\n"
 	       "\tppc64_cpu --dscr              # Get current DSCR setting\n"
 	       "\tppc64_cpu --dscr=<val>        # Change DSCR setting\n\n"
 	       "\tppc64_cpu --smt-snooze-delay  # Get current smt-snooze-delay setting\n"
 	       "\tppc64_cpu --smt-snooze-delay=<val> # Change smt-snooze-delay setting\n\n"
 	       "\tppc64_cpu --run-mode          # Get current diagnostics run mode\n"
-	       "\tppc64_cpu --run-mode=<val>    # Set current diagnostics run mode\n\n");
+	       "\tppc64_cpu --run-mode=<val>    # Set current diagnostics run mode\n\n"
+	       "\tppc64_cpu --frequency         # Determine cpu frequency.\n\n");
 }
 
 struct option longopts[] = {
@@ -466,6 +646,7 @@ struct option longopts[] = {
 	{"dscr",		optional_argument, NULL, 'd'},
 	{"smt-snooze-delay",	optional_argument, NULL, 'S'},
 	{"run-mode",		optional_argument, NULL, 'r'},
+	{"frequency",		no_argument,	   NULL, 'f'},
 	{0,0,0,0}
 };
 
@@ -487,7 +668,7 @@ int main(int argc, char *argv[])
 	}
 
 	while (1) {
-		opt = getopt_long(argc, argv, "s::d::S::r::", longopts,
+		opt = getopt_long(argc, argv, "s::d::S::r::f", longopts,
 				  &option_index);
 		if (opt == -1)
 			break;
@@ -507,6 +688,10 @@ int main(int argc, char *argv[])
 
 		    case 'r':
 			rc = do_run_mode(optarg);
+			break;
+
+		    case 'f':
+			rc = do_cpu_frequency();
 			break;
 
 		    default:

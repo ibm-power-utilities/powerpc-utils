@@ -40,4 +40,4 @@ nvram_LDFLAGS = -ldl
 lsprop_SOURCES = lsprop.c
 
 ppc64_cpu_SOURCES = ppc64_cpu.c librtas_error.c librtas_error.h
-ppc64_cpu_LDFLAGS = -lrtas
+ppc64_cpu_LDFLAGS = -lrtas -lpthread
