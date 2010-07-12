@@ -60,7 +60,7 @@ nvram_OBJECTS = $(am_nvram_OBJECTS)
 nvram_LDADD = $(LDADD)
 nvram_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(nvram_LDFLAGS) \
 	$(LDFLAGS) -o $@
-am_ppc64_cpu_OBJECTS = ppc64_cpu.$(OBJEXT)
+am_ppc64_cpu_OBJECTS = ppc64_cpu.$(OBJEXT) librtas_error.$(OBJEXT)
 ppc64_cpu_OBJECTS = $(am_ppc64_cpu_OBJECTS)
 ppc64_cpu_LDADD = $(LDADD)
 ppc64_cpu_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(ppc64_cpu_LDFLAGS) \
@@ -70,7 +70,7 @@ rtas_event_decode_OBJECTS = $(am_rtas_event_decode_OBJECTS)
 rtas_event_decode_LDADD = $(LDADD)
 rtas_event_decode_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(rtas_event_decode_LDFLAGS) $(LDFLAGS) -o $@
-am_rtas_ibm_get_vpd_OBJECTS = rtas_ibm_get_vpd.$(OBJEXT)
+am_rtas_ibm_get_vpd_OBJECTS = rtas_ibm_get_vpd.$(OBJEXT) librtas_error.$(OBJEXT)
 rtas_ibm_get_vpd_OBJECTS = $(am_rtas_ibm_get_vpd_OBJECTS)
 rtas_ibm_get_vpd_LDADD = $(LDADD)
 rtas_ibm_get_vpd_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -80,7 +80,7 @@ serv_config_OBJECTS = $(am_serv_config_OBJECTS)
 serv_config_LDADD = $(LDADD)
 serv_config_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(serv_config_LDFLAGS) $(LDFLAGS) -o $@
-am_set_poweron_time_OBJECTS = set_poweron_time.$(OBJEXT)
+am_set_poweron_time_OBJECTS = set_poweron_time.$(OBJEXT) librtas_error.$(OBJEXT)
 set_poweron_time_OBJECTS = $(am_set_poweron_time_OBJECTS)
 set_poweron_time_LDADD = $(LDADD)
 set_poweron_time_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -231,9 +231,9 @@ usysident_SOURCES = usysident.c librtas_error.c librtas_error.h
 usysident_LDFLAGS = -lrtas
 usysattn_SOURCES = usysident.c librtas_error.c librtas_error.h
 usysattn_LDFLAGS = -lrtas
-set_poweron_time_SOURCES = set_poweron_time.c
+set_poweron_time_SOURCES = set_poweron_time.c librtas_error.c librtas_error.h
 set_poweron_time_LDFLAGS = -lrtas
-rtas_ibm_get_vpd_SOURCES = rtas_ibm_get_vpd.c
+rtas_ibm_get_vpd_SOURCES = rtas_ibm_get_vpd.c librtas_error.c librtas_error.h
 rtas_ibm_get_vpd_LDFLAGS = -lrtas
 serv_config_SOURCES = serv_config.c librtas_error.c librtas_error.h
 serv_config_LDFLAGS = -lrtas
@@ -246,7 +246,7 @@ sys_ident_LDFLAGS = -lrtas
 nvram_SOURCES = nvram.c nvram.h
 nvram_LDFLAGS = -ldl
 lsprop_SOURCES = lsprop.c
-ppc64_cpu_SOURCES = ppc64_cpu.c
+ppc64_cpu_SOURCES = ppc64_cpu.c librtas_error.c librtas_error.h
 ppc64_cpu_LDFLAGS = -lrtas
 all: all-recursive
 

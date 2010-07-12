@@ -716,9 +716,15 @@ retrieve_value(struct service_var *var, char *buf, size_t size) {
 					sysparm, var->nvram_var);
 			return RC_PARAM_ERROR;
 		default:
-			librtas_error (rc, err_buf, ERR_BUF_SIZE);
-			err_msg(ERR_MSG, "Error retrieving %d (%s)\n%s\n",
+			if (is_librtas_error(rc)) {
+				librtas_error (rc, err_buf, ERR_BUF_SIZE);
+				err_msg(ERR_MSG, "Error retrieving %d (%s)\n%s\n",
 					sysparm, var->nvram_var, err_buf);
+			} else {
+				err_msg(ERR_MSG, "Error retrieving %d (%s)\n",
+					sysparm, var->nvram_var);
+			}
+
 			return RC_LIB_ERROR;
 		}
 
@@ -865,9 +871,15 @@ update_value(struct service_var *var, char *val) {
 					var->sysparm_num);
 			return 0;
 		default:
-			librtas_error (rc, err_buf, ERR_BUF_SIZE);
-			err_msg(ERR_MSG, "Error updating %d\n%s\n",
+			if (is_librtas_error(rc)) {
+				librtas_error (rc, err_buf, ERR_BUF_SIZE);
+				err_msg(ERR_MSG, "Error updating %d\n%s\n",
 					var->sysparm_num, err_buf);
+			} else {
+				err_msg(ERR_MSG, "Error updating %d\n",
+					var->sysparm_num);
+			}
+
 			return 0;
 		}
 	}

@@ -15,6 +15,7 @@
 #include <sys/stat.h>
 #define _GNU_SOURCE
 #include <getopt.h>
+#include "librtas_error.h"
 
 #define SYSFS_CPUDIR	"/sys/devices/system/cpu/cpu%d"
 #define INTSERV_PATH	"/proc/device-tree/cpus/%s/ibm,ppc-interrupt-server#s"
@@ -399,12 +400,19 @@ int do_run_mode(char *run_mode)
 	if (!run_mode) {
 		rc = rtas_get_sysparm(DIAGNOSTICS_RUN_MODE, 3, mode);
 		if (rc) {
-			if (rc == -3)
+			if (rc == -3) {
 				printf("Machine does not support diagnostic "
 				       "run mode\n");
-			else
+			} else if (is_librtas_error(rc)) {
+				char buf[1024];
+
+				librtas_error(rc, &buf[0], 1024);
+				printf("Could not retrieve current diagnostics "
+				       "mode,\n%s\n", buf);
+			} else {
 				printf("Could not retrieve current diagnostics "
 				       "mode\n");
+			}
 		} else
 			printf("run-mode=%d\n", mode[2]);
 	} else {
@@ -420,14 +428,20 @@ int do_run_mode(char *run_mode)
 
 		rc = rtas_set_sysparm(DIAGNOSTICS_RUN_MODE, mode);
 		if (rc) {
-			if (rc == -3)
+			if (rc == -3) {
 				printf("Machine does not support diagnostic "
 				       "run mode\n");
-			else if (rc == -9002)
+			} else if (rc == -9002) {
 				printf("Machine is not authorized to set "
 				       "diagnostic run mode\n");
-			else
+			} else if (is_librtas_error(rc)) {
+				char buf[1024];
+
+				librtas_error(rc, &buf[0], 1024);
+				printf("Could not set diagnostics mode,\n%s\n", buf);
+			} else {
 				printf("Could not set diagnostics mode\n");
+			}
 		}
 	}
 

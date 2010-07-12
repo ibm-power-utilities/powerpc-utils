@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <librtas.h>
+#include "librtas_error.h"
 
 #define PROC_FILE_RTAS_CALL "/proc/device-tree/rtas/ibm,get-vpd"
 #define BUF_SIZE	2048
@@ -88,55 +89,6 @@ int check_rtas_call(void)
 	}
 	close(fd);
 	return 1;
-}
-
-/**
- * librtas_error
- * @brief check for any librtas specific return codes
- *
- * This will check the error code provided to see if it matches any of
- * the librtas specific return codes and add any text explaining the error 
- * to the buffer if a match is found.
- *
- * @param error return code from librtas call
- * @param buf buffer to fill with librtas error message
- * @param size size of buffer
- */
-void librtas_error (int error, char *buf, size_t size) 
-{
-	switch (error) {
-	case RTAS_KERNEL_INT:
-		snprintf(buf, size, "No kernel interface to firmware");
-		break;
-	case RTAS_KERNEL_IMP:
-		snprintf(buf, size, "No kernel implementation of function");
-		break;
-	case RTAS_PERM:
-		snprintf(buf, size, "Non-root caller");
-		break;
-	case RTAS_NO_MEM:
-		snprintf(buf, size, "Out of heap memory");
-		break;
-	case RTAS_NO_LOWMEM:
-		snprintf(buf, size, "Kernel out of low memory");
-		break;
-	case RTAS_FREE_ERR:
-		snprintf(buf, size, "Attempt to free nonexistant RMO buffer");
-		break;
-	case RTAS_TIMEOUT:
-		snprintf(buf, size, "RTAS delay exceeded specified timeout");
-		break;
-	case RTAS_IO_ASSERT:
-		snprintf(buf, size, "Unexpected I/O error");
-		break;
-	case RTAS_UNKNOWN_OP:
-		snprintf(buf, size, "No firmware implementation of function");
-		break;
-	default:
-		snprintf(buf, size, "Unknown librtas error %d", error);
-	}
-
-	return;
 }
 
 /**
@@ -243,8 +195,13 @@ int main(int argc, char **argv)
 			return 2;
 		default:
 			delete_list(list);
-			librtas_error(rc, err_buf, ERR_BUF_SIZE);
-			fprintf(stderr, "Could not gather vpd\n%s\n", err_buf);
+			if (is_librtas_error(rc)) {
+				librtas_error(rc, err_buf, ERR_BUF_SIZE);
+				fprintf(stderr, "Could not gather vpd\n%s\n", err_buf);
+			} else {
+				fprintf(stderr, "Could not gather vpd\n");
+			}
+
 	                return 3;
         	}
 	} while(rc != SUCCESS);

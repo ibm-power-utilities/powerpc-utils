@@ -16,10 +16,10 @@ usysident_LDFLAGS = -lrtas
 usysattn_SOURCES = usysident.c librtas_error.c librtas_error.h
 usysattn_LDFLAGS = -lrtas
 
-set_poweron_time_SOURCES = set_poweron_time.c
+set_poweron_time_SOURCES = set_poweron_time.c librtas_error.c librtas_error.h
 set_poweron_time_LDFLAGS = -lrtas
 
-rtas_ibm_get_vpd_SOURCES = rtas_ibm_get_vpd.c
+rtas_ibm_get_vpd_SOURCES = rtas_ibm_get_vpd.c librtas_error.c librtas_error.h
 rtas_ibm_get_vpd_LDFLAGS = -lrtas
 
 serv_config_SOURCES = serv_config.c librtas_error.c librtas_error.h
@@ -39,5 +39,5 @@ nvram_LDFLAGS = -ldl
 
 lsprop_SOURCES = lsprop.c
 
-ppc64_cpu_SOURCES = ppc64_cpu.c
+ppc64_cpu_SOURCES = ppc64_cpu.c librtas_error.c librtas_error.h
 ppc64_cpu_LDFLAGS = -lrtas

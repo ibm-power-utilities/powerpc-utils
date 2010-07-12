@@ -57,6 +57,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <librtas.h>
+#include "librtas_error.h"
 
 #define PROC_FILE_RTAS_CALL "/proc/device-tree/rtas/set-time-for-power-on"
 #define PROC_FILE_MAX_LATENCY "/proc/device-tree/rtas/power-on-max-latency"
@@ -146,56 +147,6 @@ uint32_t get_max_latency(void) {
 		return 28;
 	else
 		return max;
-}
-
-/**
- * librtas_error
- * @brief parse a return code from librtas for librtas specific errors
- *
- * @param error return code from librtas
- * @param buf buffer to write error string into
- * @param size size of "buffer"
- */
-void librtas_error (int error, char *buf, size_t size) {
-	switch (error) {
-	case HARDWARE_ERROR:
-		snprintf(buf, size, "Hardware error");
-		break;
-	case PARAMETER_ERROR:
-		snprintf(buf, size, "Parameter error");
-		break;
-	case RTAS_KERNEL_INT:
-		snprintf(buf, size, "No kernel interface to firmware");
-		break;
-	case RTAS_KERNEL_IMP:
-		snprintf(buf, size, "No kernel implementation of function");
-		break;
-	case RTAS_PERM:
-		snprintf(buf, size, "Non-root caller");
-		break;
-	case RTAS_NO_MEM:
-		snprintf(buf, size, "Out of heap memory");
-		break;
-	case RTAS_NO_LOWMEM:
-		snprintf(buf, size, "Kernel out of low memory");
-		break;
-	case RTAS_FREE_ERR:
-		snprintf(buf, size, "Attempt to free nonexistant RMO buffer");
-		break;
-	case RTAS_TIMEOUT:
-		snprintf(buf, size, "RTAS delay exceeded specified timeout");
-		break;
-	case RTAS_IO_ASSERT:
-		snprintf(buf, size, "Unexpected I/O error");
-		break;
-	case RTAS_UNKNOWN_OP:
-		snprintf(buf, size, "No firmware implementation of function");
-		break;
-	default:
-		snprintf(buf, size, "Unknown error from librtas call: %d", error);
-	}
-
-	return;
 }
 
 /**
@@ -426,8 +377,14 @@ int main(int argc, char **argv) {
 			utc->tm_mon+1, utc->tm_mday, utc->tm_hour,
 			utc->tm_min, utc->tm_sec, 0);
         if (rc) {
-		librtas_error(rc, error_buf, ERROR_BUF_SIZE);
-		fprintf(stderr, "Could not set power-on time\n%s\n", error_buf);
+		if (is_librtas_error(rc)) {
+			librtas_error(rc, error_buf, ERROR_BUF_SIZE);
+			fprintf(stderr, "Could not set power-on time\n%s\n",
+				error_buf);
+		} else {
+			fprintf(stderr, "Could not set power-on time\n");
+		}
+
                 return 4;
         }
 
