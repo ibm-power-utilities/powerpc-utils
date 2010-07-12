@@ -281,9 +281,11 @@ int set_smt_state(int smt_state)
 		update_ssd = 0;
 
 	for (i = 0; i < threads_in_system; i += threads_per_cpu) {
-		rc = set_one_smt_state(i, smt_state);
-		if (rc)
-			break;
+		if (cpu_online(i)) {
+			rc = set_one_smt_state(i, smt_state);
+			if (rc)
+				break;
+		}
 	}
 
 	if (update_ssd)
@@ -627,11 +629,121 @@ int do_cpu_frequency(void)
 	return 0;
 }
 
+int do_cores_present(char * state)
+{
+	printf("Number of cores present = %d\n", cpus_in_system);
+	return 0;
+}
+
+int set_all_threads_off(int cpu, int smt_state)
+{
+	int i;
+	char path[SYSFS_PATH_MAX];
+	int rc = 0;
+
+	for (i = cpu + smt_state - 1; i >= cpu; i--) {
+		snprintf(path, SYSFS_PATH_MAX, SYSFS_CPUDIR"/%s", i, "online");
+		rc = offline_thread(path);
+		if (rc == -1)
+			printf("Unable to take cpu%d offline", i);
+	}
+
+	return rc;
+}
+
+int set_one_core(int smt_state, int core, int state)
+{
+	int rc = 0;
+	int cpu = core * threads_per_cpu;
+
+	if (state) {
+		rc = set_one_smt_state(cpu, smt_state);
+		if (rc == -1)
+			printf("Unable to bring core %d online\n", core);
+	} else {
+		rc = set_all_threads_off(cpu, smt_state);
+		if (rc == -1)
+			printf("Unable to take core %d offline\n", core);
+	}
+
+	return rc;
+}
+
+int do_cores_online(char *state)
+{
+	int smt_state;
+	int *core_state;
+	int cores_now_online = 0;
+	int i;
+	int number_to_have, number_to_change = 0, number_changed = 0;
+	int new_state;
+
+	smt_state = get_smt_state();
+	if (smt_state == -1) {
+		printf("Bad or inconsistent SMT state\n");
+		return -1;
+	}
+
+	core_state = malloc(sizeof(int) * cpus_in_system);
+	memset(core_state, 0, sizeof(int) * cpus_in_system);
+	for (i = 0; i < cpus_in_system ; i++) {
+		core_state[i] = cpu_online(i * threads_per_cpu);
+		if (core_state[i])
+			cores_now_online++;
+	}
+
+	if (!state) {
+		printf("Number of cores online = %d\n", cores_now_online);
+		return 0;
+	}
+
+	number_to_have = strtol(state, NULL, 0);
+	if (number_to_have == cores_now_online)
+		return 0;
+
+	if (number_to_have > cpus_in_system)
+		number_to_have = cpus_in_system;
+
+	if (number_to_have > cores_now_online) {
+		number_to_change = number_to_have - cores_now_online;
+		new_state = 1;
+	} else {
+		number_to_change = cores_now_online - number_to_have;
+		new_state = 0;
+	}
+
+	if (new_state) {
+		for (i = 0; i < cpus_in_system; i++) {
+			if (!core_state[i]) {
+				set_one_core(smt_state, i, new_state);
+				number_changed++;
+				if (number_changed >= number_to_change)
+					break;
+			}
+		}
+	} else {
+		for (i = cpus_in_system - 1; i > 0; i--) {
+			if (core_state[i]) {
+				set_one_core(smt_state, i, new_state);
+				number_changed++;
+				if (number_changed >= number_to_change)
+					break;
+			}
+		}
+	}
+
+	return 0;
+}
+
 void usage(void)
 {
 	printf("\tppc64_cpu --smt               # Get current SMT state\n"
 	       "\tppc64_cpu --smt={on|off}      # Turn SMT on/off\n"
 	       "\tppc64_cpu --smt=X             # Set SMT state to X\n\n"
+	       "\tppc64_cpu --cores-present     # Get the number of cores installed\n"
+	       "\tppc64_cpu --cores-on          # Get the number of cores currently online\n"
+	       "\tppc64_cpu --cores-on=X        # Put exactly X cores online\n\n"
+
 	       "\tppc64_cpu --dscr              # Get current DSCR setting\n"
 	       "\tppc64_cpu --dscr=<val>        # Change DSCR setting\n\n"
 	       "\tppc64_cpu --smt-snooze-delay  # Get current smt-snooze-delay setting\n"
@@ -647,6 +759,8 @@ struct option longopts[] = {
 	{"smt-snooze-delay",	optional_argument, NULL, 'S'},
 	{"run-mode",		optional_argument, NULL, 'r'},
 	{"frequency",		no_argument,	   NULL, 'f'},
+	{"cores-present",	no_argument,	   NULL, 'C'},
+	{"cores-on",		optional_argument, NULL, 'c'},
 	{0,0,0,0}
 };
 
@@ -668,7 +782,7 @@ int main(int argc, char *argv[])
 	}
 
 	while (1) {
-		opt = getopt_long(argc, argv, "s::d::S::r::f", longopts,
+		opt = getopt_long(argc, argv, "s::d::S::r::fCc::", longopts,
 				  &option_index);
 		if (opt == -1)
 			break;
@@ -694,6 +808,12 @@ int main(int argc, char *argv[])
 			rc = do_cpu_frequency();
 			break;
 
+		    case 'C':
+			rc = do_cores_present(optarg);
+			break;
+		    case 'c':
+			rc = do_cores_online(optarg);
+			break;
 		    default:
 			usage();
 			break;
