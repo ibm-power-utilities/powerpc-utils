@@ -12,5 +12,6 @@
 #define _LIBRTAS_ERROR_H
 
 void librtas_error(int, char *, size_t);
+int is_librtas_error(int);
 
 #endif

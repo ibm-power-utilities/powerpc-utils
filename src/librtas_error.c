@@ -22,8 +22,7 @@
  * @param buf buffer to fill with error string
  * @param size size of "buffer"
  */
-void
-librtas_error (int error, char *buf, size_t size) 
+void librtas_error(int error, char *buf, size_t size)
 {
 	switch (error) {
 	    case RTAS_KERNEL_INT:
@@ -60,4 +59,22 @@ librtas_error (int error, char *buf, size_t size)
 	return;
 }
 
+int is_librtas_error(int error)
+{
+	int rc = 0;
 
+	switch (error) {
+	    case RTAS_KERNEL_INT:
+	    case RTAS_KERNEL_IMP:
+	    case RTAS_PERM:
+	    case RTAS_NO_MEM:
+	    case RTAS_NO_LOWMEM:
+	    case RTAS_FREE_ERR:
+	    case RTAS_TIMEOUT:
+	    case RTAS_IO_ASSERT:
+	    case RTAS_UNKNOWN_OP:
+		rc = 1;
+	}
+
+	return rc;
+}
