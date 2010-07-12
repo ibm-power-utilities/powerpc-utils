@@ -406,12 +406,12 @@ int do_run_mode(char *run_mode)
 				printf("Could not retrieve current diagnostics "
 				       "mode\n");
 		} else
-			printf("run-mode=%c\n", mode[2]);
+			printf("run-mode=%d\n", mode[2]);
 	} else {
-		signed char rmode = *run_mode;
+		short rmode = atoi(run_mode);
 
-		if (rmode < '0' || rmode > '3') {
-			printf("Invalid run-mode=%c\n", rmode);
+		if (rmode < 0 || rmode > 3) {
+			printf("Invalid run-mode=%d\n", rmode);
 			return -1;
 		}
 
@@ -423,6 +423,9 @@ int do_run_mode(char *run_mode)
 			if (rc == -3)
 				printf("Machine does not support diagnostic "
 				       "run mode\n");
+			else if (rc == -9002)
+				printf("Machine is not authorized to set "
+				       "diagnostic run mode\n");
 			else
 				printf("Could not set diagnostics mode\n");
 		}
