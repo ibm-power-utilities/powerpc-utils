@@ -67,6 +67,23 @@ Commit temporary image to permanant side.
 .B \-r
 Reject temporary image.
 
+.SH NOTES
+Various conditions can lead to a firmware update failure.  If you receive an
+authentication-related error, such as:
+.TP
+update_flash: RTAS: validate() Partition does not have authority
+.P
+This can reflect either 1) That the permission is not set (correctable
+through the ASM interface, System -> Firmware Update Policy, or through an
+HMC if attached.
+.P
+-or-
+.P
+2) Firmware still believes an HMc is attached.  This can be corrected by
+following te steps outlined here:
+.TP
+http://publib.boulder.ibm.com/infocenter/powersys/v3r1m5/index.jsp?topic=/iphat/iphblresetserverp6.htm
+
 .SH EXAMPLE
 Firmware may be downloaded from the IBM website if a problem is encountered
 that requires a firmware update.  If the firmware comes with instructions for
