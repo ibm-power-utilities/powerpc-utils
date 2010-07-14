@@ -26,6 +26,8 @@
 #include "librtas_error.h"
 #include <errno.h>
 
+#define PPC64_CPU_VERSION	"1.1"
+
 #define SYSFS_CPUDIR	"/sys/devices/system/cpu/cpu%d"
 #define INTSERV_PATH	"/proc/device-tree/cpus/%s/ibm,ppc-interrupt-server#s"
 
@@ -776,6 +778,7 @@ struct option longopts[] = {
 	{"frequency",		no_argument,	   NULL, 'f'},
 	{"cores-present",	no_argument,	   NULL, 'C'},
 	{"cores-on",		optional_argument, NULL, 'c'},
+	{"version",		no_argument,	   NULL, 'V'},
 	{0,0,0,0}
 };
 
@@ -797,7 +800,7 @@ int main(int argc, char *argv[])
 	}
 
 	while (1) {
-		opt = getopt_long(argc, argv, "s::d::S::r::fCc::", longopts,
+		opt = getopt_long(argc, argv, "s::d::S::r::fCVc::", longopts,
 				  &option_index);
 		if (opt == -1)
 			break;
@@ -828,6 +831,9 @@ int main(int argc, char *argv[])
 			break;
 		    case 'c':
 			rc = do_cores_online(optarg);
+			break;
+		    case 'V':
+			printf("ppc64_cpu: version %s\n", PPC64_CPU_VERSION);
 			break;
 		    default:
 			usage();
