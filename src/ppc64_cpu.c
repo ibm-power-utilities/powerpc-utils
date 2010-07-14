@@ -20,7 +20,9 @@
 #include <assert.h>
 #include <pthread.h>
 #include <sys/ioctl.h>
+#ifdef HAVE_LINUX_PERF_EVENT_H
 #include <linux/perf_event.h>
+#endif
 #include "librtas_error.h"
 #include <errno.h>
 
@@ -466,6 +468,8 @@ int do_run_mode(char *run_mode)
 	return rc;
 }
 
+#ifdef HAVE_LINUX_PERF_EVENT_H
+
 static int setup_counters(void)
 {
 	int i;
@@ -628,6 +632,17 @@ int do_cpu_frequency(void)
 	printf("avg:\t%.2f GHz\n\n", 1.0 * (sum / count) / 1000000000ULL);
 	return 0;
 }
+
+#else
+
+int do_cpu_frequency(void)
+{
+	printf("CPU Frequency determination is not supported on this "
+	       "platfom.\n");
+	return EINVAL;
+}
+
+#endif
 
 int do_cores_present(char * state)
 {

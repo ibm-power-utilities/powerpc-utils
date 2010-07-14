@@ -70,7 +70,8 @@ rtas_event_decode_OBJECTS = $(am_rtas_event_decode_OBJECTS)
 rtas_event_decode_LDADD = $(LDADD)
 rtas_event_decode_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(rtas_event_decode_LDFLAGS) $(LDFLAGS) -o $@
-am_rtas_ibm_get_vpd_OBJECTS = rtas_ibm_get_vpd.$(OBJEXT) librtas_error.$(OBJEXT)
+am_rtas_ibm_get_vpd_OBJECTS = rtas_ibm_get_vpd.$(OBJEXT) \
+	librtas_error.$(OBJEXT)
 rtas_ibm_get_vpd_OBJECTS = $(am_rtas_ibm_get_vpd_OBJECTS)
 rtas_ibm_get_vpd_LDADD = $(LDADD)
 rtas_ibm_get_vpd_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -80,7 +81,8 @@ serv_config_OBJECTS = $(am_serv_config_OBJECTS)
 serv_config_LDADD = $(LDADD)
 serv_config_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(serv_config_LDFLAGS) $(LDFLAGS) -o $@
-am_set_poweron_time_OBJECTS = set_poweron_time.$(OBJEXT) librtas_error.$(OBJEXT)
+am_set_poweron_time_OBJECTS = set_poweron_time.$(OBJEXT) \
+	librtas_error.$(OBJEXT)
 set_poweron_time_OBJECTS = $(am_set_poweron_time_OBJECTS)
 set_poweron_time_LDADD = $(LDADD)
 set_poweron_time_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
