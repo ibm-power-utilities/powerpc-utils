@@ -765,7 +765,7 @@ add_scsi_drives(struct loc_code *l)
 	/* Check for lscfg and sg_map, both required for this routine */
 	if (stat("/usr/bin/sg_map", &statbuf) < 0)
 		return;
-	if (stat("/sbin/lscfg", &statbuf) < 0)
+	if (stat("/usr/sbin/lscfg", &statbuf) < 0)
 		return;
 
 	if (curr)
@@ -870,7 +870,7 @@ add_scsi_drives(struct loc_code *l)
 				curr->next = NULL;
 
 				/* Add location code (from lscfg) */
-				snprintf(cmd, 128, "/sbin/lscfg | grep %s",
+				snprintf(cmd, 128, "/usr/sbin/lscfg | grep %s",
 						entry->d_name);
 				if ((fp = popen(cmd, "r")) == NULL) {
 					goto err_out;
@@ -1161,14 +1161,14 @@ main (int argc, char **argv)
 	if (dvalue) {
 		/* Print/update indicator status for the specified device */
 
-		if (stat("/sbin/lscfg", &statbuf) < 0) {
+		if (stat("/usr/sbin/lscfg", &statbuf) < 0) {
 			fprintf(stderr, "lsvpd must be installed for the "
 					"-d option to work\n");
 			return 2;
 		}
 
 		/* Add location code (from lscfg) */
-		snprintf(cmd, 128, "/sbin/lscfg | grep %s", dvalue);
+		snprintf(cmd, 128, "/usr/sbin/lscfg | grep %s", dvalue);
 		if ((fp = popen(cmd, "r")) == NULL) {
 			fprintf(stderr, "Could not run lscfg to retrieve "
 					"the location code\n");
