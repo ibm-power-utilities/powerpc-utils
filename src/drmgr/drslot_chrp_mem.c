@@ -102,6 +102,7 @@ get_mem_scns(struct dr_node *lmb)
 	while (lmb_sz > 0) {
 		char *sysfs_path = "/sys/devices/system/memory/memory%d";
 		struct mem_scn *scn;
+		struct stat sbuf;
 
 		scn = zalloc(sizeof(*scn));
 		if (scn == NULL) {
@@ -112,10 +113,13 @@ get_mem_scns(struct dr_node *lmb)
 		sprintf(scn->sysfs_path, sysfs_path, mem_scn);
 		scn->phys_addr = phys_addr;
 
-		get_int_attribute(scn->sysfs_path, "removable",
-				  &scn->removable, sizeof(scn->removable));
-		if (! scn->removable)
-			lmb->is_removable = 0;
+		if (!stat(scn->sysfs_path, &sbuf)) {
+			get_int_attribute(scn->sysfs_path, "removable",
+					  &scn->removable,
+					  sizeof(scn->removable));
+			if (!scn->removable)
+				lmb->is_removable = 0;
+		}
 
 		scn->next = lmb->lmb_mem_scns;
 		lmb->lmb_mem_scns = scn;
@@ -768,6 +772,7 @@ set_lmb_state(struct dr_node *lmb, int state)
 {
 	struct mem_scn *scn;
 	int rc = 0;
+	struct stat sbuf;
 
 	dbg("Attempting to %s lmb.\n", state_strs[state]);
 
@@ -778,6 +783,9 @@ set_lmb_state(struct dr_node *lmb, int state)
 	}
 
 	for (scn = lmb->lmb_mem_scns; scn; scn = scn->next) {
+		if (stat(scn->sysfs_path, &sbuf))
+			continue;
+
 		rc = set_mem_scn_state(scn, state);
 		if (rc)
 			break;
@@ -790,6 +798,9 @@ set_lmb_state(struct dr_node *lmb, int state)
 		int new_state = (state == OFFLINE) ? ONLINE : OFFLINE;
 
 		for (scn = lmb->lmb_mem_scns; scn; scn = scn->next) {
+			if (stat(scn->sysfs_path, &sbuf))
+				continue;
+
 			if (get_mem_scn_state(scn) == state)
 				set_mem_scn_state(scn, new_state);
 		}
