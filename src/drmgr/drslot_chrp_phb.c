@@ -290,12 +290,12 @@ valid_phb_options(struct options *opts)
 int
 drslot_chrp_phb(struct options *opts)
 {
-	int rc;
+	int rc = -1;
 
 	if (! phb_dlpar_capable()) {
 		err_msg("DLPAR PHB operations are not supported on"
 			"this kernel.");
-		return -1;
+		return rc;
 	}
 
 	switch(opts->action) {
