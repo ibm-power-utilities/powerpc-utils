@@ -16,9 +16,6 @@
 #include <dirent.h>
 #include <time.h>
 #include <librtas.h>
-#ifdef HAVE_SERVICELOG
-#include <servicelog-1/servicelog.h>
-#endif
 #include "dr.h"
 #include "ofdt.h"
 #include "drpci.h"
@@ -494,62 +491,6 @@ devtree_update(void)
 	dbg("leaving\n");
 }
 
-#ifdef HAVE_SERVICELOG
-/**
- * servicelog_update
- * @brief Logs a migration event in servicelog, if it is installed
- *
- * @param sys_src serial number of the source machine
- */
-static void
-servicelog_update(char *sys_src)
-{
-	struct servicelog *slog;
-	struct sl_event event;
-	char msg[128], refcode[64], sys_dest[20];
-	int rc;
-	uint64_t event_id;
-
-	/* Build the servicelog event */
-	memset(&event, 0, sizeof(event));
-	event.type = SL_TYPE_BASIC;
-	event.time_event = time(NULL);
-	event.severity = SL_SEV_INFO;
-
-	if (action == MIGRATE)
-		snprintf(refcode, 9, "#MIGRATE");
-	else /* hibernation */
-		snprintf(refcode, 12, "#HIBERNATION");
-	event.refcode = refcode;
-
-	get_str_attribute(OFDT_BASE, "system-id", sys_dest, 20);
-
-	if (action == MIGRATE)
-		snprintf(msg, 128, "Partition migration completed.  Source: "
-			 "%s Destination: %s", sys_src, sys_dest);
-	else /* hibernation */
-		snprintf(msg, 128, "Partition hibernation completed.  Source: "
-			 "%s Destination: %s", sys_src, sys_dest);
-
-	event.description = msg;
-
-	rc = servicelog_open(&slog, 0);
-	if (rc) {
-		dbg("Couldn't open the servicelog database: %s\n",
-		    servicelog_error(slog));
-		return;
-	}
-
-	rc = servicelog_event_log(slog, &event, &event_id);
-	if (rc) {
-		dbg("Couldn't log an event to the servicelog database: %s\n",
-		    servicelog_error(slog));
-	}
-
-	servicelog_close(slog);
-}
-#endif
-
 int
 valid_pmig_options(struct options *opts)
 {
@@ -701,10 +642,6 @@ drmig_chrp_pmig(struct options *opts)
 
 	dbg("Refreshing RMC via refrsrc\n");
 	system("/usr/sbin/rsct/bin/refrsrc IBM.ManagementServer");
-
-#ifdef HAVE_SERVICELOG
-	servicelog_update(sys_src);
-#endif
 
 	return 0;
 }
