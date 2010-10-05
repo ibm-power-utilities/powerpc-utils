@@ -13,11 +13,8 @@ AC_CONFIG_SRCDIR([src/rtas_ibm_get_vpd.c])
 AC_PROG_CC
 AC_PROG_INSTALL
 
-# Checks for libraries.
-AC_CHECK_LIB([servicelog], [servicelog_open])
-
 # Checks for header files.
-AC_CHECK_HEADERS([fcntl.h inttypes.h limits.h locale.h memory.h netinet/in.h nl_types.h stdint.h stdlib.h string.h sys/ioctl.h syslog.h unistd.h servicelog-1/servicelog.h linux/perf_event.h])
+AC_CHECK_HEADERS([fcntl.h inttypes.h limits.h locale.h memory.h netinet/in.h nl_types.h stdint.h stdlib.h string.h sys/ioctl.h syslog.h unistd.h linux/perf_event.h])
 AC_CHECK_HEADER(librtas.h,,AC_MSG_ERROR(Cannot find librtas.h))
 
 # Checks for typedefs, structures, and compiler characteristics.
