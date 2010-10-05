@@ -484,7 +484,7 @@ static int setup_counters(void)
 	attr.size = sizeof(attr);
 
 	for (i = 0; i < threads_in_system; i++) {
-		if (cpu_freq[i] == CPU_OFFLINE)
+		if (!cpu_online(i))
 			continue;
 
 		counters[i] = syscall(__NR_perf_event_open, &attr, -1,
