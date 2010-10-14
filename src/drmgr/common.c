@@ -1197,3 +1197,26 @@ print_dlpar_capabilities(void)
 	       (cpu_entitled ? "yes" : "no"), (mem_entitled ? "yes" : "no"),
 	       (slb_resize ? "yes" : "no"), (phib ? "yes" : "no"));
 }
+
+/**
+ * ams_balloon_active
+ * @brief Determines if AMS and memory ballooning is enabled
+ *
+ * @returns 1 if ballooning is active, 0 if AMS or ballooning is inactive
+ */
+int ams_balloon_active(void)
+{
+	/* CMM's loaned_kb file only appears when AMS is enabled */
+	char *ams_enabled = "/sys/devices/system/cmm/cmm0/loaned_kb";
+	char *cmm_param_path = "/sys/module/cmm/parameters";
+	struct stat sbuf;
+	int is_inactive = 1;
+
+	if (!stat(ams_enabled, &sbuf) && !stat(cmm_param_path, &sbuf)) {
+		get_int_attribute(cmm_param_path, "disable",
+				  &is_inactive, sizeof(is_inactive));
+	}
+
+	dbg("AMS ballooning %s active\n", is_inactive?"is not":"is");
+	return !is_inactive;
+}

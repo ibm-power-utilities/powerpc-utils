@@ -181,4 +181,6 @@ int valid_pmig_options(struct options *);
 void pmig_usage(char **);
 void phib_usage(char **);
 
+int ams_balloon_active(void);
+
 #endif

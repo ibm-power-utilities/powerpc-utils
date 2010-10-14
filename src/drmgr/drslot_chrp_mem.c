@@ -413,7 +413,7 @@ get_lmbs(void)
  * get_available_lmb
  *
  * Find the first lmb which does not correspond to a lmb
- * already owned by the partition and is avaialble, or the lmb
+ * already owned by the partition and is available, or the lmb
  * matching the one specified by the user.
  *
  * @param lmb_list list of lmbs to be searched for available lmb
@@ -423,6 +423,7 @@ static struct dr_node *
 get_available_lmb(struct options *opts, struct lmb_list_head *lmb_list)
 {
 	struct dr_node *lmb;
+	int balloon_active = ams_balloon_active();
 
 	for (lmb = lmb_list->lmbs; lmb; lmb = lmb->next) {
 		int rc;
@@ -448,7 +449,9 @@ get_available_lmb(struct options *opts, struct lmb_list_head *lmb_list)
 			break;
 
 		    case REMOVE:
-			if ((!lmb->is_removable) || (!lmb->is_owned))
+			/* removable is ignored if AMS ballooning is active. */
+			if ((!balloon_active && !lmb->is_removable) ||
+			    (!lmb->is_owned))
 				continue;
 			break;
 		}
@@ -458,7 +461,7 @@ get_available_lmb(struct options *opts, struct lmb_list_head *lmb_list)
 	}
 
 	if (lmb)
-		dbg("Found avaialable lmb, %s, drc index 0x%x\n",
+		dbg("Found available lmb, %s, drc index 0x%x\n",
 		    lmb->drc_name, lmb->drc_index);
 	else
 		dbg("Could not find available lmb\n");
