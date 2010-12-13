@@ -18,12 +18,12 @@ SED="/bin/sed"
 
 usage()
 {
-    echo "Usage: $LSVETH [-h]"
+    echo "Usage: $LSVETH "
     echo "Provide information on Virtual Ethernet devices"
     echo ""
     echo "Optional arguments."
-    echo "  -V, --version    Display version information and exit"
-    echo "  -h, --help       Display this help information and exit"
+    echo "  -V	Display version information and exit"
+    echo "  -h	Display this help information and exit"
     echo ""
 }
 
@@ -34,7 +34,7 @@ show_version()
 }
 
 
-while getopts "Vh" flag ; do
+while getopts ":Vh" flag ; do
     case "$flag" in
         V) show_version
                         exit 0 ;;
@@ -42,8 +42,6 @@ while getopts "Vh" flag ; do
         h)              usage
                         exit 0 ;;
         \?)             usage
-                        exit 1 ;;
-        :)              echo "Option -$OPTARG requires an argument."
                         exit 1 ;;
     esac
 done

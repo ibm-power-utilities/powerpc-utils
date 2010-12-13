@@ -19,6 +19,11 @@ usage()
 {
     echo "Usage: $LSVSCSI"
     echo "Provide information on Virtual devices"
+	echo ""
+	echo "Optional arguments."
+	echo "  -V  Display version information and exit"
+	echo "  -h  Display this help information and exit"
+	echo ""
 }
 
 show_version()
@@ -28,7 +33,7 @@ show_version()
 }
 
 
-while getopts "Vh" flag ; do
+while getopts ":Vh" flag ; do
     case "$flag" in
 
         V) show_version

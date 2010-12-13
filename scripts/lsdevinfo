@@ -35,8 +35,8 @@ usage()
     echo "  -R		     Recursively display children of selected devices"
     echo "  -c		     Display output as a comma separated list for"
     echo "                   each device."
-    echo "  -V, --version    Display version information and exit"
-    echo "  -h, --help       Display this help information and exit"
+    echo "  -V				 Display version information and exit"
+    echo "  -h				 Display this help information and exit"
     echo ""
 }
 
