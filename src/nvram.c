@@ -1491,7 +1491,7 @@ main (int argc, char *argv[])
 	
     for (;;) {
 	option_index = 0;
-	ret = getopt_long(argc, argv, "+p:V", long_options, &option_index);
+	ret = getopt_long(argc, argv, "+p:Vv::", long_options, &option_index);
 	if (ret == -1)
 		break;
 	switch (ret) {
