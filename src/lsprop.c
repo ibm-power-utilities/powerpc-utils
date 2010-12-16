@@ -3,7 +3,8 @@
  *
  * This program is free software; it may be used and redistributed
  * under the terms of the GNU Public Licence, either version 2, or
- * (at your option) any later version.
+ * (at your option) any later version, or under the Common Public License
+ * Version 1.
  */
 #include <stdio.h>
 #include <stdlib.h>
