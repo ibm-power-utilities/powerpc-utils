@@ -1,0 +1,334 @@
+.TH LPARCFG 5 "August 2010"
+.SH NAME
+/proc/ppc64/lparcfg - IBM Power LPAR Configuration Data
+.SH SYNOPSIS
+.BI "/proc/ppc64/lparcfg"
+.sp
+.BI "cat /proc/ppc64/lparcfg"
+.SH DESCRIPTION
+The 
+.B lparcfg 
+file is a virtual file which contains information
+related to an IBM Power Logical Partition.
+.SH OPTIONS
+The fields displayed in the 
+.B lparcfg 
+file are sorted below according to the version of the 
+.B lparcfg 
+file. Generally, fields are only added and not removed (unless otherwise noted), so the latest version of 
+.B lparcfg 
+contains all fields in all previous versions of the file as well.
+.PP
+.B lparcfg 1.6 based values
+.br
+(Values added in lparcfg 1.7, 1.8, 1.9 are listed below)
+.PP
+.B serial_number
+.br
+The serial number of the physical system in which the partition resides
+.PP
+.B system_type
+.br
+The machine,type-model of the physical system in which the partition resides
+.PP
+.B partition_id
+.br
+The numeric partition ID.
+.PP
+.B R4
+.br
+The hexadecimal representation of partition_entitled_capacity. This field is deprecated and not displayed on more recent versions of the Linux kernel (
+.B lparcfg 1.8 
+or greater). The definition is only provided for historical purposes.
+.PP
+.B R5
+.br
+The hexadecimal representation of unallocated_capacity. Not displayed on more recent versions of the Linux kernel. This field is deprecated and not displayed on more recent versions of the Linux kernel (
+.B lparcfg 1.8 
+or greater). The definition is only provided for historical purposes.
+.PP
+.B R6
+.br
+This is a hexadecimal value representing both the group and pool. This field is deprecated and not displayed on more recent versions of the Linux kernel (
+.B lparcfg 1.8 
+or greater). The definition is only provided for historical purposes.
+.PP
+.B R7
+.br
+This is a hexadecimal value representing capped, capacity_weight, unallocated_capacity_weight, pool_capacity, and system_active_processors. This field is deprecated and not displayed on more recent versions of the Linux kernel (
+.B lparcfg 1.8 
+or greater). The definition is only provided for historical purposes.
+.PP
+.B BoundThrds
+.br
+For virtual processor dispatches, if the hypervisor always dispatches a set of virtual threads together on a physical processor, the threads are said to be bound. This allows an operating system to make scheduling decisions based on cache affinity and work load. Set to 1 if threads are bound, 0 otherwise. This value is informational and is not a tunable value.
+.\" A change in this characteristic takes effect on the next reboot of the partition. 
+.PP
+.B CapInc
+.br
+This defines the delta by which the entitled capacity of a partition can be incremented or decremented by DLPAR/WLM. The capacity increment is expressed as a percentage of a physical processor. This value is informational and is not a tunable value.
+.\" A change in the capacity increment takes effect on the next reboot of the partition. This does not affect the number of virtual processors defined for the partition.
+.PP
+.B DisWheRotPer
+.br
+The duration of the hypervisor's scheduling window. The time over which the entitled capacity of a virtual processor has to be utilized by the partition. At the start of a dispatch wheel rotation period, each virtual processor is eligible for CPU time corresponding to its entitled capacity. If the entire entitled capacity of a virtual processor is not utilized during a dispatch wheel rotation period, the unused entitled capacity is lost. The dispatch wheel rotation period is expressed as N number of time base ticks. The dispatch wheel duration of a partition with a capacity increment of 100 is 0. This value is informational and is not a tunable value.
+.PP
+.B MinEntCap
+.br
+The minimum entitled capacity that is needed to boot the partition. The capacity is expressed as a percentage of a physical processor. The minimum entitled capacity is set by the system administrator in the partition definition. DLPAR cannot take the entitled capacity below the minimum entitled capacity. A change in the minimum entitled capacity takes effect on the next reboot of the partition. Linux running in a partition can give up its entitled capacity to be below the minimum entitled capacity, but this is generally not recommended.
+.PP
+.B MinEntCapPerVP
+.br
+The minimum entitled capacity that the platform requires for a virtual processor of any partition on the platform. The minimum capacity per virtual processor is enforced by the HMC in the partition definition and by the hypervisor. A change in the minimum entitled capacity per virtual processor takes effect on the next reboot of the partition. This is a physical system setting and is not considered a Linux partition tunable.
+.PP
+.B MinMem
+.br
+The minimum amount of main store that is needed to boot the partition. Minimum memory is expressed in MB of storage. The minimum memory is set by the system administrator in the partition definition. DLPAR cannot take the partition memory below the minimum memory. A change in the minimum memory takes effect on the next reboot of the partition. Linux running in a partition can always give up its memory to go below the minimum memory.
+.PP
+.B MinProcs
+.br
+The minimum number of virtual processors that are needed to boot the partition. The minimum number of virtual processors is set by the system administrator in the partition definition. DLPAR cannot take the number of virtual processors below the minimum number of processors. A change in the minimum number of processors takes effect on the next reboot of the partition. A partition can always give up its virtual processors to go below the minimum number of processors. The number of virtual processors is a simulated physical core view. Additional logical CPUs are defined in the Linux partition to account for the possible hardware threads.
+.PP
+.B partition_max_entitled_capacity
+.br
+The maximum entitled capacity currently that can be assigned to the partition through DLPAR/WLM. The capacity is expressed as a percentage of a physical processor. The Maximum entitled capacity is set up by the system administrator in the partition definition. A change in the maximum entitled capacity maximum takes effect on the next reboot of the partition.
+.PP
+.B system_potential_processors
+.br
+The maximum number of physical processors that can be active on the platform. A change in the maximum platform processors takes effect on the next reboot of the partition.
+.PP
+.B DesEntCap
+.br
+The desired entitled capacity is the number of processing units, expressed as a percentage of a physical processor, which is desired for a logical partition. The desired entitled capacity is the same as the desired processing units on the HMC. If the system has at least the desired number of processing units available when you activate the partition, then the system commits the desired number of processing units to the logical partition. If the desired number of processing units is not available, but at least the minimum number of processing units is available, then the system activates the logical partition with the processing units it has. 
+.PP
+.B DesMem
+.br
+The desired memory set by the system administrator in the partition definition. The desired memory is expressed in MB of storage. The desired memory can change without a reboot of the partition. The desired memory that the partition is currently using may differ from the desired memory because of WLM actions or because of failed system memory.
+.PP
+.B DesProcs
+.br
+The desired number of virtual processors set by the system administrator in the partition definition. The desired number of processors can change without a reboot of the partition. The number of processors that the partition is currently using may differ from the desired number of processors because of WLM actions or because of failed system processors.
+.PP
+.B DesVarCapWt
+.br
+The desired variable capacity weight set by the system administrator in the partition definition. The desired variable capacity weight is a number between 0 and 255. The desired variable capacity weight can change without a reboot of the partition. The variable capacity weight that the partition is currently using may differ from the desired variable capacity because of WLM actions.
+.PP
+.B DedDonMode
+.br
+For a partition with a capacity increment of 100, the platform uses a dedicated CPU to actualize a virtual processor of the partition. For such a partition, the platform can increase the capacity of the shared processor pool by utilizing the unused processor capacity of the partition. If the platform supports the dedicated donate function, it can be enabled by the system administrator in the partition definition. The value of this characteristic can change without a reboot of the partition. The values for this field are 0 and 1.
+.PP
+.B partition_entitled_capacity
+.br
+Entitled Processor Capacity Percentage. The percentage of a physical processor that the hypervisor guarantees to be available to the partition's virtual processors (distributed in a uniform manner among the partition's virtual processors -- thus the number of virtual processors affects the time slice size) each dispatch cycle. Capacity ceded or conferred from one partition virtual processor extends the time slices offered to other partition processors. Capacity ceded or conferred after all of the partition's virtual processors have been dispatched is added to the variable capacity kitty. The initial, minimum and maximum constraint values of this parameter are determined by the partition configuration definition. The OS can set this parameter within the constraints imposed by the partition configuration definition minimum and maximums plus constraints imposed by partition aggregation. To change this value, echo the new partition_entitled_capacity into 
+.B /proc/ppc64/lparcfg 
+like this:
+.br
+.IP "" 7
+.B echo """partition_entitled_capacity=40"" > /proc/ppc64/lparcfg
+.PP
+.B group
+.br
+LPAR group number of the partition
+.PP
+.B system_active_processors
+.br
+The number of processors active on the underlying physical system.
+.PP
+.B pool
+.br
+The pool number of the shared processor pool for the partition. This field is not displayed in the case of a dedicated processor partition.
+.PP
+.B pool_capacity
+.br
+The number of physical processors active in the partition's processor pool. This field is not displayed in the case of a dedicated processor partition. This value is expressed as a percentage so is 100* the number of active physical processors.
+.PP
+.B pool_idle_time
+.br
+If no virtual processor is ready to run, the pool_idle_count is incremented the total number of idle processor cycles in the physical processor pool. This field contains the total number of idle processor cycles up to the current point in time. If unsupported or if performance information collection is not enabled for the partition on the HMC, this will report 0. This field is not displayed in the case of a dedicated processor partition. For more information, see the NOTES section below on PURR/PIC.
+.PP
+.B pool_num_procs
+.br
+The number of physical processors in the partition's processing pool. This field is not displayed in the case of a dedicated processor partition.
+.PP
+.B unallocated_capacity_weight
+.br
+Unallocated Variable Processor Capacity Weight. The amount of variable processor capacity weight that is currently available within the constraints of the partition's current environment for allocation to the partition's variable processor capacity weight.
+.PP
+.B capacity_weight
+.br
+Variable Processor Capacity Weight. The unitless factor that the hypervisor uses to assign processor capacity in addition to the Entitled Processor Capacity Percentage. This factor may take the values 0 to 255. In the case of a dedicated processor partition this value is 0. A virtual processor's time slice may be extended to allow it to use capacity unused by other partitions, or not needed to meet the Entitled Processor Capacity Percentage of the active partitions. A partition is offered a portion of this variable capacity kitty equal to: (Variable Processor Capacity Weight for the partition) / (summation of Variable Processor Capacity Weights for all competing partitions). The initial value of this parameter is determined by the partition configuration definition. The OS can set this parameter within the constraints imposed by the partition configuration definition maximum. Certain partition definitions may not allow any variable processor capacity allocation. To change this value, echo the new capacity_weight into 
+.B /proc/ppc64/lparcfg 
+like this:
+.br
+.IP "" 7
+.B echo """capacity_weight=128"" > /proc/ppc64/lparcfg
+.PP
+.B capped
+.br
+The partition's virtual processor(s) are capped at their entitled processor capacity percentage if this is 1. If capped=0, the partition is uncapped, and can use processor capacity from the uncapped pool, if available and according to the weighted values. In the case of dedicated processors this bit is set.
+.PP
+.B unallocated_capacity
+.br
+Unallocated Processor Capacity Percentage. The amount of processor capacity that is currently available within the constraints of the partition's current environment for allocation to Entitled Processor Capacity Percentage.
+.PP
+.B purr
+.br
+The Processor Utilization of Resources Register. Summation of the PURR value for all of the partition's virtual processors. See the NOTES section below for more information on PURR and PIC. This value is typically not a metric used.
+.PP
+.B partition_active_processors
+.br
+The total number of virtual processors assigned to the partition. This does not include the potential SMT threads. For dedicated processor partitions, this is the number of physical processors assigned to the partition. Linux will define virtual CPUs for the possible SMT threads across all of the virtual processors defined here. 
+.PP
+.B partition_potential_processors
+.br
+The maximum number of virtual processors that can be assigned to the partition. This does not include SMT threads. For dedicated processor partitions, this is the maximum number of physical processors that can be assigned to the partition.
+.PP
+.B shared_processor_mode
+.br
+This is set to 1 if the partition is running with shared processors. This is set to 0 for dedicated processor partitions.
+.PP
+.B lparcfg 1.7 additional fields
+.PP
+.B slb_size
+.br
+The total number of entries in the Segment Lookaside Buffer (SLB). This is an attribute of the underlying processor architecture and is provided for informational purposes. The Linux OS uses this when determining the ability to perform Live Partition Migration with differing processor families.
+.PP
+.B lparcfg 1.8
+.PP
+.B entitled_memory
+.br
+The number of bytes of main storage that the partition is entitled to DMA map for virtual I/O devices. In the case of a dedicated memory partition this is the size of the partition's logical address space. To change this value, echo the new entitled_memory value into 
+.B /proc/ppc64/lparcfg 
+like this:
+.br
+.IP "" 7
+.B echo """entitled_memory=80740352"" > /proc/ppc64/lparcfg
+.PP
+.B mapped_entitled_memory
+.br
+The number of bytes of main storage that the partition has DMA mapped. In the case of a dedicated memory partition this is not displayed.
+.PP
+.B entitled_memory_group_number
+.br
+Entitled Memory Group Number
+.PP
+.B entitled_memory_pool_number
+.br
+Entitled memory pool number. In the case of a dedicated memory partition, this is 65535.
+.PP
+.B entitled_memory_weight
+.br
+The partition's shared memory weight. In the case of a dedicated memory partition this is 0. To change this value, echo the new entitled_memory_weight value into 
+.B /proc/ppc64/lparcfg 
+like this:
+.br
+.IP "" 7
+.B echo """entitled_memory_weight=128"" > /proc/ppc64/lparcfg
+.PP
+.B unallocated_entitled_memory_weight
+.br
+The unallocated shared memory weight for the calling partition's aggregation. In the case of a dedicated memory partition this is 0.
+.PP
+.B unallocated_io_mapping_entitlement
+.br
+The unallocated I/O mapping entitlement for the calling partition's aggregation divided by 4096. In the case of a dedicated memory partition this is 0.
+.PP
+.B entitled_memory_loan_request
+.br
+The signed difference between the number of bytes of logical storage that are currently on loan from the calling partition and the partition's overage allotment (a positive number indicates a request to the partition to loan the indicated number of bytes else they will be expropriated as needed). In the case of a dedicated memory partition this is 0. In the case of a shared memory partition, when running the Collaborative Memory Manager (cmm module), this will typically be 0, as the CMM will monitor and fulfill the hypervisor's loan requests.
+.PP
+.B backing_memory
+.br
+The number of bytes of main storage that is backing the partition logical address space. In the case of a dedicated memory partition this is the size of the partition's logical address space.
+.PP
+.B cmo_enabled
+.br
+If Active Memory Sharing is enabled for the partition, this is set to 1. For dedicated memory partitions, this is 0.
+.PP
+.B cmo_faults
+.br
+Displayed only for shared memory partitions. Indicates the total number of times the partition has accessed a page in memory which was paged out to disk by firmware, requiring it to be paged back in. If the Collaborative Memory Manager is disabled, this value may be large. If it is enabled (default setting for most Linux distributions), this number is typically small. If this value is large and is increasing, it may be an indication that the partition's shared memory pool has too high of an overcommit ratio, in which case you may need to assign additional physical memory to the shared memory pool.
+.PP
+.B cmo_fault_time_usec
+.br
+Displayed only for shared memory partitions. Indicates the total amount of time in microseconds the partition has had a virtual processor blocked in order for firmware to page in data. Directly related to cmo_faults.
+.PP
+.B cmo_primary_psp
+.br
+Displayed only for shared memory partitions. Partition ID of the primary paging VIOS.
+.PP
+.B cmo_secondary_psp
+.br
+Displayed only for shared memory partitions. Partition ID of the secondary paging VIOS. If there is no secondary paging VIOS, this will be set to 65535.
+.PP
+.B cmo_page_size
+.br
+Displayed only for shared memory partitions. Physical page size in bytes.
+.PP
+.B lparcfg 1.9 additional fields
+.PP
+.B physical_procs_allocated_to_virtualization
+.br
+The number of physical platform processors allocated to processor virtualization. This is a physical system attribute and has no bearing on the Linux partition.
+.PP
+.B max_proc_capacity_available
+.br
+The maximum processor capacity percentage that is available to the partition's shared processor pool.
+.PP
+.B entitled_proc_capacity_available
+.br
+The entitled processor capacity percentage available to the partition's pool.
+.PP
+.B dispatches
+.br
+Virtual Processor Dispatch Counter. Counter that is incremented each time a virtual processor is dispatched/preempted.
+.PP
+.B dispatch_dispersions
+.br
+Virtual Processor Dispatch Dispersion Accumulator. Incremented on each virtual processor dispatch if the physical processor differs from that of the last dispatch.
+.SH NOTES
+.PP
+.B PURR/PIC
+.br
+These two statistics are counts in the same units as counted by the processor time base. Like the time base, the PUR and PIC are 64 bit values that are set to a numerically low value during system initialization. The difference between their values at the end and beginning of monitored operations provides data on virtual processor performance. The value of the PUR is a count of processor cycles used by the calling virtual processor. The PUR count is intended to provide an indication to the partition software of the computation load supported by the virtual processor. Shared processor virtual processors are created by dispatching the virtual processor's architectural state on one of the physical processors from a pool of physical processors. The value of the PIC is the summation of the physical processor pool idle cycles, that is the number of time base counts when the pool could not dispatch a virtual processor. The PIC count is intended to provide an indication to platform management software of the pool capacity to perform more work.
+.PP
+.B Processors vs. SMT threads
+.br
+The Power processors support Simultaneous Multi-Threading (SMT). SMT is generally enabled by default on most Linux distributions that support Power. When enabled, a single Power 5 or Power 6 CPU will be seen as up to two logical CPUs in the Linux operating system. A single Power 7 CPU will be seen as four logical CPUs. SMT can be disabled with the 
+.B ppc64_cpu 
+utility, which is packaged in powerpc-utils. When SMT is disabled, the logical CPUs seen by Linux will not be contiguous. For example, a four core Power 7 partition with SMT disabled will show CPUs 0, 4, 8, and 12 in /proc/cpuinfo. A Power7 CPU/processor/core can also be set to SMT=2 mode.
+
+.SH VERSIONS
+.PP
+.B Linux Distribution Version Mapping
+The following is a brief list of the mapping of some enterprise versions of Linux for Power to the version of the 
+.B lparcfg 
+file. 
+.br
+SLES 9: lparcfg 1.6
+.br
+SLES 10: lparcfg 1.7
+.br
+SLES 11: lparcfg 1.8
+.br
+SLES 11 SP1: lparcfg 1.9
+.br
+RHEL 4: lparcfg 1.6
+.br
+RHEL 5: lparcfg 1.7
+.br
+RHEL 6: lparcfg 1.9
+
+.SH FILES
+.TP
+.B /proc/ppc64/lparcfg
+
+.SH AUTHOR
+Written by Brian King <brking@linux.vnet.ibm.com>.
+.br
+Comments and questions on this document should be posted on the 
+.B Linux for Power Architecture 
+forum:
+.br
+.B http://www.ibm.com/developerworks/forums/forum.jspa?forumID=375&start=0.
+
