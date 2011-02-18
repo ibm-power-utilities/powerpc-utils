@@ -35,7 +35,7 @@ sbin_PROGRAMS = activate_firmware$(EXEEXT) usysident$(EXEEXT) \
 	rtas_ibm_get_vpd$(EXEEXT) serv_config$(EXEEXT) \
 	uesensor$(EXEEXT) rtas_event_decode$(EXEEXT) \
 	sys_ident$(EXEEXT) nvram$(EXEEXT) lsprop$(EXEEXT) \
-	ppc64_cpu$(EXEEXT)
+	ppc64_cpu$(EXEEXT) lparstat$(EXEEXT)
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -52,6 +52,9 @@ activate_firmware_OBJECTS = $(am_activate_firmware_OBJECTS)
 activate_firmware_LDADD = $(LDADD)
 activate_firmware_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(activate_firmware_LDFLAGS) $(LDFLAGS) -o $@
+am_lparstat_OBJECTS = lparstat.$(OBJEXT)
+lparstat_OBJECTS = $(am_lparstat_OBJECTS)
+lparstat_LDADD = $(LDADD)
 am_lsprop_OBJECTS = lsprop.$(OBJEXT)
 lsprop_OBJECTS = $(am_lsprop_OBJECTS)
 lsprop_LDADD = $(LDADD)
@@ -114,14 +117,14 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(activate_firmware_SOURCES) $(lsprop_SOURCES) \
-	$(nvram_SOURCES) $(ppc64_cpu_SOURCES) \
+SOURCES = $(activate_firmware_SOURCES) $(lparstat_SOURCES) \
+	$(lsprop_SOURCES) $(nvram_SOURCES) $(ppc64_cpu_SOURCES) \
 	$(rtas_event_decode_SOURCES) $(rtas_ibm_get_vpd_SOURCES) \
 	$(serv_config_SOURCES) $(set_poweron_time_SOURCES) \
 	$(sys_ident_SOURCES) $(uesensor_SOURCES) $(usysattn_SOURCES) \
 	$(usysident_SOURCES)
-DIST_SOURCES = $(activate_firmware_SOURCES) $(lsprop_SOURCES) \
-	$(nvram_SOURCES) $(ppc64_cpu_SOURCES) \
+DIST_SOURCES = $(activate_firmware_SOURCES) $(lparstat_SOURCES) \
+	$(lsprop_SOURCES) $(nvram_SOURCES) $(ppc64_cpu_SOURCES) \
 	$(rtas_event_decode_SOURCES) $(rtas_ibm_get_vpd_SOURCES) \
 	$(serv_config_SOURCES) $(set_poweron_time_SOURCES) \
 	$(sys_ident_SOURCES) $(uesensor_SOURCES) $(usysattn_SOURCES) \
@@ -250,6 +253,7 @@ nvram_LDFLAGS = -ldl
 lsprop_SOURCES = lsprop.c
 ppc64_cpu_SOURCES = ppc64_cpu.c librtas_error.c librtas_error.h
 ppc64_cpu_LDFLAGS = -lrtas -lpthread
+lparstat_SOURCES = lparstat.c lparstat.h
 all: all-recursive
 
 .SUFFIXES:
@@ -309,6 +313,9 @@ clean-sbinPROGRAMS:
 activate_firmware$(EXEEXT): $(activate_firmware_OBJECTS) $(activate_firmware_DEPENDENCIES) 
 	@rm -f activate_firmware$(EXEEXT)
 	$(activate_firmware_LINK) $(activate_firmware_OBJECTS) $(activate_firmware_LDADD) $(LIBS)
+lparstat$(EXEEXT): $(lparstat_OBJECTS) $(lparstat_DEPENDENCIES) 
+	@rm -f lparstat$(EXEEXT)
+	$(LINK) $(lparstat_OBJECTS) $(lparstat_LDADD) $(LIBS)
 lsprop$(EXEEXT): $(lsprop_OBJECTS) $(lsprop_DEPENDENCIES) 
 	@rm -f lsprop$(EXEEXT)
 	$(LINK) $(lsprop_OBJECTS) $(lsprop_LDADD) $(LIBS)
@@ -351,6 +358,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/activate_fw.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librtas_error.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lparstat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lsprop.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nvram.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ppc64_cpu.Po@am__quote@

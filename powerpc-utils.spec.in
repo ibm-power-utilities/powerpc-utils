@@ -55,6 +55,7 @@ Utilities for maintaining and servicing PowerPC systems.
 /usr/sbin/ls-veth
 /usr/sbin/ls-vdev
 /usr/sbin/ls-vscsi
+/usr/sbin/lparstat
 
 /etc/init.d/ibmvscsis.sh
 
