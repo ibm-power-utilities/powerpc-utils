@@ -423,6 +423,7 @@ static struct dr_node *
 get_available_lmb(struct options *opts, struct lmb_list_head *lmb_list)
 {
 	struct dr_node *lmb;
+	struct dr_node *usable_lmb = NULL;
 	int balloon_active = ams_balloon_active();
 
 	for (lmb = lmb_list->lmbs; lmb; lmb = lmb->next) {
@@ -446,6 +447,8 @@ get_available_lmb(struct options *opts, struct lmb_list_head *lmb_list)
 			rc = dr_entity_sense(lmb->drc_index);
 			if (rc != STATE_UNUSABLE)
 				continue;
+
+			usable_lmb = lmb;
 			break;
 
 		    case REMOVE:
@@ -453,20 +456,22 @@ get_available_lmb(struct options *opts, struct lmb_list_head *lmb_list)
 			if ((!balloon_active && !lmb->is_removable) ||
 			    (!lmb->is_owned))
 				continue;
-			break;
+
+			usable_lmb = lmb;
+			continue;
 		}
 
 		/* Found an available lmb */
 		break;
 	}
 
-	if (lmb)
+	if (usable_lmb)
 		dbg("Found available lmb, %s, drc index 0x%x\n",
-		    lmb->drc_name, lmb->drc_index);
+		    usable_lmb->drc_name, usable_lmb->drc_index);
 	else
 		dbg("Could not find available lmb\n");
 
-	return lmb;
+	return usable_lmb;
 }
 
 /**
