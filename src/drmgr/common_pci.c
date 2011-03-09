@@ -999,6 +999,14 @@ get_bus_id(char *loc_code)
 	DIR *d;
 	struct dirent *ent;
 	char *dir = "/sys/bus/pci/slots";
+	int inlen;
+	char *ptr;
+
+	/* Strip any newline from the input location */
+	if ((ptr = strchr(loc_code, '\n')) != NULL)
+		inlen = ptr - loc_code;
+	else
+		inlen = strlen(loc_code);
 
 	d = opendir(dir);
 	if (d == NULL) {
@@ -1021,7 +1029,13 @@ get_bus_id(char *loc_code)
 
 		fread(location, sizeof(location), 1, f);
 		fclose(f);
-		if (!strncmp(loc_code, location, strlen(loc_code))) {
+
+		/* Strip any newline from the location to compare */
+		if  ((ptr = strchr(location, '\n')) != NULL)
+			*ptr = '\0';
+
+		if ((strlen(location) == inlen &&
+				!strncmp(loc_code, location, inlen))) {
 			char *bus_id;
 
 			bus_id = strdup(ent->d_name);
