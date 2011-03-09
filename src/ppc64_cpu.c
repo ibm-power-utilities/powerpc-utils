@@ -50,12 +50,13 @@ int threads_in_system = 0;
 int get_attribute(char *path, const char *fmt, int *value)
 {
 	FILE *fp;
+	int rc;
 
 	fp = fopen(path, "r");
 	if (fp == NULL)
 		return -1;
 
-	fscanf(fp, fmt, value);
+	rc = fscanf(fp, fmt, value);
 	fclose(fp);
 
 	return 0;

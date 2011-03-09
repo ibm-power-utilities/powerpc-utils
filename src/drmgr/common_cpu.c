@@ -121,7 +121,7 @@ init_thread_info(struct dr_info *dr_info)
 		thread = zalloc(sizeof(*thread));
 
 		thread->id = i;
-		sprintf(thread->path, path);
+		snprintf(thread->path, DR_PATH_MAX, "%s", path);
 
 		rc = get_int_attribute(thread->path, "physical_id",
 				       &thread->phys_id,
@@ -194,7 +194,7 @@ cpu_index_to_path(struct dr_node *cpu)
 	closedir(d);
 
 	if (found)
-		sprintf(cpu->ofdt_path, path);
+		snprintf(cpu->ofdt_path, DR_PATH_MAX, "%s", path);
 
 	return rc;
 }
@@ -207,7 +207,7 @@ update_cpu_node(struct dr_node *cpu, const char *path, struct dr_info *dr_info)
 	int rc;
 
 	if (path) {
-		sprintf(cpu->ofdt_path, path);
+		snprintf(cpu->ofdt_path, DR_PATH_MAX, "%s", path);
 	} else {
 		rc = cpu_index_to_path(cpu);
 		if (rc) {
@@ -535,8 +535,8 @@ init_cache_info(struct dr_info *dr_info)
 				return -1;
 			}
 
-			sprintf(cache->name, ent->d_name);
-			sprintf(cache->path, path);
+			snprintf(cache->name, DR_BUF_SZ, "%s", ent->d_name);
+			snprintf(cache->path, DR_BUF_SZ, "%s", path);
 
 			cache->removed = 0;
 			cache->next = cache_list;

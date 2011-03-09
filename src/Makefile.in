@@ -49,9 +49,7 @@ sbinPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(sbin_PROGRAMS)
 am_activate_firmware_OBJECTS = activate_fw.$(OBJEXT)
 activate_firmware_OBJECTS = $(am_activate_firmware_OBJECTS)
-activate_firmware_LDADD = $(LDADD)
-activate_firmware_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(activate_firmware_LDFLAGS) $(LDFLAGS) -o $@
+activate_firmware_DEPENDENCIES =
 am_lparstat_OBJECTS = lparstat.$(OBJEXT)
 lparstat_OBJECTS = $(am_lparstat_OBJECTS)
 lparstat_LDADD = $(LDADD)
@@ -60,56 +58,36 @@ lsprop_OBJECTS = $(am_lsprop_OBJECTS)
 lsprop_LDADD = $(LDADD)
 am_nvram_OBJECTS = nvram.$(OBJEXT)
 nvram_OBJECTS = $(am_nvram_OBJECTS)
-nvram_LDADD = $(LDADD)
-nvram_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(nvram_LDFLAGS) \
-	$(LDFLAGS) -o $@
+nvram_DEPENDENCIES =
 am_ppc64_cpu_OBJECTS = ppc64_cpu.$(OBJEXT) librtas_error.$(OBJEXT)
 ppc64_cpu_OBJECTS = $(am_ppc64_cpu_OBJECTS)
-ppc64_cpu_LDADD = $(LDADD)
-ppc64_cpu_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(ppc64_cpu_LDFLAGS) \
-	$(LDFLAGS) -o $@
+ppc64_cpu_DEPENDENCIES =
 am_rtas_event_decode_OBJECTS = rtas_event_decode.$(OBJEXT)
 rtas_event_decode_OBJECTS = $(am_rtas_event_decode_OBJECTS)
-rtas_event_decode_LDADD = $(LDADD)
-rtas_event_decode_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(rtas_event_decode_LDFLAGS) $(LDFLAGS) -o $@
+rtas_event_decode_DEPENDENCIES =
 am_rtas_ibm_get_vpd_OBJECTS = rtas_ibm_get_vpd.$(OBJEXT) \
 	librtas_error.$(OBJEXT)
 rtas_ibm_get_vpd_OBJECTS = $(am_rtas_ibm_get_vpd_OBJECTS)
-rtas_ibm_get_vpd_LDADD = $(LDADD)
-rtas_ibm_get_vpd_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(rtas_ibm_get_vpd_LDFLAGS) $(LDFLAGS) -o $@
+rtas_ibm_get_vpd_DEPENDENCIES =
 am_serv_config_OBJECTS = serv_config.$(OBJEXT) librtas_error.$(OBJEXT)
 serv_config_OBJECTS = $(am_serv_config_OBJECTS)
-serv_config_LDADD = $(LDADD)
-serv_config_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(serv_config_LDFLAGS) $(LDFLAGS) -o $@
+serv_config_DEPENDENCIES =
 am_set_poweron_time_OBJECTS = set_poweron_time.$(OBJEXT) \
 	librtas_error.$(OBJEXT)
 set_poweron_time_OBJECTS = $(am_set_poweron_time_OBJECTS)
-set_poweron_time_LDADD = $(LDADD)
-set_poweron_time_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(set_poweron_time_LDFLAGS) $(LDFLAGS) -o $@
+set_poweron_time_DEPENDENCIES =
 am_sys_ident_OBJECTS = sys_ident.$(OBJEXT)
 sys_ident_OBJECTS = $(am_sys_ident_OBJECTS)
-sys_ident_LDADD = $(LDADD)
-sys_ident_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(sys_ident_LDFLAGS) \
-	$(LDFLAGS) -o $@
+sys_ident_DEPENDENCIES =
 am_uesensor_OBJECTS = uesensor.$(OBJEXT) librtas_error.$(OBJEXT)
 uesensor_OBJECTS = $(am_uesensor_OBJECTS)
-uesensor_LDADD = $(LDADD)
-uesensor_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(uesensor_LDFLAGS) \
-	$(LDFLAGS) -o $@
+uesensor_DEPENDENCIES =
 am_usysattn_OBJECTS = usysident.$(OBJEXT) librtas_error.$(OBJEXT)
 usysattn_OBJECTS = $(am_usysattn_OBJECTS)
-usysattn_LDADD = $(LDADD)
-usysattn_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(usysattn_LDFLAGS) \
-	$(LDFLAGS) -o $@
+usysattn_DEPENDENCIES =
 am_usysident_OBJECTS = usysident.$(OBJEXT) librtas_error.$(OBJEXT)
 usysident_OBJECTS = $(am_usysident_OBJECTS)
-usysident_LDADD = $(LDADD)
-usysident_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(usysident_LDFLAGS) \
-	$(LDFLAGS) -o $@
+usysident_DEPENDENCIES =
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__depfiles_maybe = depfiles
@@ -231,28 +209,28 @@ AM_CFLAGS = -Wall -g
 AM_LDFLAGS = 
 SUBDIRS = drmgr
 activate_firmware_SOURCES = activate_fw.c
-activate_firmware_LDFLAGS = -lrtas
+activate_firmware_LDADD = -lrtas
 usysident_SOURCES = usysident.c librtas_error.c librtas_error.h
-usysident_LDFLAGS = -lrtas
+usysident_LDADD = -lrtas
 usysattn_SOURCES = usysident.c librtas_error.c librtas_error.h
-usysattn_LDFLAGS = -lrtas
+usysattn_LDADD = -lrtas
 set_poweron_time_SOURCES = set_poweron_time.c librtas_error.c librtas_error.h
-set_poweron_time_LDFLAGS = -lrtas
+set_poweron_time_LDADD = -lrtas
 rtas_ibm_get_vpd_SOURCES = rtas_ibm_get_vpd.c librtas_error.c librtas_error.h
-rtas_ibm_get_vpd_LDFLAGS = -lrtas
+rtas_ibm_get_vpd_LDADD = -lrtas
 serv_config_SOURCES = serv_config.c librtas_error.c librtas_error.h
-serv_config_LDFLAGS = -lrtas
+serv_config_LDADD = -lrtas
 uesensor_SOURCES = uesensor.c librtas_error.c librtas_error.h
-uesensor_LDFLAGS = -lrtas
+uesensor_LDADD = -lrtas
 rtas_event_decode_SOURCES = rtas_event_decode.c
-rtas_event_decode_LDFLAGS = -lrtasevent
+rtas_event_decode_LDADD = -lrtasevent
 sys_ident_SOURCES = sys_ident.c
-sys_ident_LDFLAGS = -lrtas
+sys_ident_LDADD = -lrtas
 nvram_SOURCES = nvram.c nvram.h
-nvram_LDFLAGS = -ldl
+nvram_LDADD = -ldl
 lsprop_SOURCES = lsprop.c
 ppc64_cpu_SOURCES = ppc64_cpu.c librtas_error.c librtas_error.h
-ppc64_cpu_LDFLAGS = -lrtas -lpthread
+ppc64_cpu_LDADD = -lrtas -lpthread
 lparstat_SOURCES = lparstat.c lparstat.h
 all: all-recursive
 
@@ -312,7 +290,7 @@ clean-sbinPROGRAMS:
 	-test -z "$(sbin_PROGRAMS)" || rm -f $(sbin_PROGRAMS)
 activate_firmware$(EXEEXT): $(activate_firmware_OBJECTS) $(activate_firmware_DEPENDENCIES) 
 	@rm -f activate_firmware$(EXEEXT)
-	$(activate_firmware_LINK) $(activate_firmware_OBJECTS) $(activate_firmware_LDADD) $(LIBS)
+	$(LINK) $(activate_firmware_OBJECTS) $(activate_firmware_LDADD) $(LIBS)
 lparstat$(EXEEXT): $(lparstat_OBJECTS) $(lparstat_DEPENDENCIES) 
 	@rm -f lparstat$(EXEEXT)
 	$(LINK) $(lparstat_OBJECTS) $(lparstat_LDADD) $(LIBS)
@@ -321,34 +299,34 @@ lsprop$(EXEEXT): $(lsprop_OBJECTS) $(lsprop_DEPENDENCIES)
 	$(LINK) $(lsprop_OBJECTS) $(lsprop_LDADD) $(LIBS)
 nvram$(EXEEXT): $(nvram_OBJECTS) $(nvram_DEPENDENCIES) 
 	@rm -f nvram$(EXEEXT)
-	$(nvram_LINK) $(nvram_OBJECTS) $(nvram_LDADD) $(LIBS)
+	$(LINK) $(nvram_OBJECTS) $(nvram_LDADD) $(LIBS)
 ppc64_cpu$(EXEEXT): $(ppc64_cpu_OBJECTS) $(ppc64_cpu_DEPENDENCIES) 
 	@rm -f ppc64_cpu$(EXEEXT)
-	$(ppc64_cpu_LINK) $(ppc64_cpu_OBJECTS) $(ppc64_cpu_LDADD) $(LIBS)
+	$(LINK) $(ppc64_cpu_OBJECTS) $(ppc64_cpu_LDADD) $(LIBS)
 rtas_event_decode$(EXEEXT): $(rtas_event_decode_OBJECTS) $(rtas_event_decode_DEPENDENCIES) 
 	@rm -f rtas_event_decode$(EXEEXT)
-	$(rtas_event_decode_LINK) $(rtas_event_decode_OBJECTS) $(rtas_event_decode_LDADD) $(LIBS)
+	$(LINK) $(rtas_event_decode_OBJECTS) $(rtas_event_decode_LDADD) $(LIBS)
 rtas_ibm_get_vpd$(EXEEXT): $(rtas_ibm_get_vpd_OBJECTS) $(rtas_ibm_get_vpd_DEPENDENCIES) 
 	@rm -f rtas_ibm_get_vpd$(EXEEXT)
-	$(rtas_ibm_get_vpd_LINK) $(rtas_ibm_get_vpd_OBJECTS) $(rtas_ibm_get_vpd_LDADD) $(LIBS)
+	$(LINK) $(rtas_ibm_get_vpd_OBJECTS) $(rtas_ibm_get_vpd_LDADD) $(LIBS)
 serv_config$(EXEEXT): $(serv_config_OBJECTS) $(serv_config_DEPENDENCIES) 
 	@rm -f serv_config$(EXEEXT)
-	$(serv_config_LINK) $(serv_config_OBJECTS) $(serv_config_LDADD) $(LIBS)
+	$(LINK) $(serv_config_OBJECTS) $(serv_config_LDADD) $(LIBS)
 set_poweron_time$(EXEEXT): $(set_poweron_time_OBJECTS) $(set_poweron_time_DEPENDENCIES) 
 	@rm -f set_poweron_time$(EXEEXT)
-	$(set_poweron_time_LINK) $(set_poweron_time_OBJECTS) $(set_poweron_time_LDADD) $(LIBS)
+	$(LINK) $(set_poweron_time_OBJECTS) $(set_poweron_time_LDADD) $(LIBS)
 sys_ident$(EXEEXT): $(sys_ident_OBJECTS) $(sys_ident_DEPENDENCIES) 
 	@rm -f sys_ident$(EXEEXT)
-	$(sys_ident_LINK) $(sys_ident_OBJECTS) $(sys_ident_LDADD) $(LIBS)
+	$(LINK) $(sys_ident_OBJECTS) $(sys_ident_LDADD) $(LIBS)
 uesensor$(EXEEXT): $(uesensor_OBJECTS) $(uesensor_DEPENDENCIES) 
 	@rm -f uesensor$(EXEEXT)
-	$(uesensor_LINK) $(uesensor_OBJECTS) $(uesensor_LDADD) $(LIBS)
+	$(LINK) $(uesensor_OBJECTS) $(uesensor_LDADD) $(LIBS)
 usysattn$(EXEEXT): $(usysattn_OBJECTS) $(usysattn_DEPENDENCIES) 
 	@rm -f usysattn$(EXEEXT)
-	$(usysattn_LINK) $(usysattn_OBJECTS) $(usysattn_LDADD) $(LIBS)
+	$(LINK) $(usysattn_OBJECTS) $(usysattn_LDADD) $(LIBS)
 usysident$(EXEEXT): $(usysident_OBJECTS) $(usysident_DEPENDENCIES) 
 	@rm -f usysident$(EXEEXT)
-	$(usysident_LINK) $(usysident_OBJECTS) $(usysident_LDADD) $(LIBS)
+	$(LINK) $(usysident_OBJECTS) $(usysident_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)

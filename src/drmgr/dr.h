@@ -34,7 +34,7 @@ static inline void dbg(char *fmt, ...)
 {
 	va_list ap;
 	char buf[256];
-	int len;
+	int len, rc;
 	
 	va_start(ap, fmt);
 	memset(buf, 0, 256);
@@ -42,10 +42,10 @@ static inline void dbg(char *fmt, ...)
 	va_end(ap);
 
 	if (log_fd)
-		write(log_fd, buf, len);
+		rc = write(log_fd, buf, len);
 
 	if (debug >= 4)
-		fprintf(stderr, buf);
+		fprintf(stderr, "%s", buf);
 	
 }
 
@@ -53,7 +53,7 @@ static inline void err_msg(char *fmt, ...)
 {
 	va_list ap;
 	char buf[256];
-	int len;
+	int len, rc;
 
 	va_start(ap, fmt);
 	memset(buf, 0, 256);
@@ -61,10 +61,10 @@ static inline void err_msg(char *fmt, ...)
 	len += vsnprintf(buf + len, 256 - len, fmt, ap);
 	va_end(ap);
 
-	fprintf(stderr, buf);
+	fprintf(stderr, "%s", buf);
 	
 	if (log_fd)
-		write(log_fd, buf, len);
+		rc = write(log_fd, buf, len);
 }
 
 static inline int is_dot_dir(char * _p)

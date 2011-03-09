@@ -210,7 +210,7 @@ get_mem_node_lmbs(struct lmb_list_head *lmb_list)
 			break;
 		}
 
-		sprintf(lmb->ofdt_path, path);
+		snprintf(lmb->ofdt_path, DR_PATH_MAX, "%s", path);
 		lmb->is_owned = 1;
 
 		/* Find the lmb size for this lmb */
@@ -705,6 +705,7 @@ set_mem_scn_state(struct mem_scn *mem_scn, int state)
 	int file;
 	char path[DR_PATH_MAX];
 	int rc = 0;
+	int unused;
 
 	memset(path, 0, DR_PATH_MAX);
 	sprintf(path, "%s/state", mem_scn->sysfs_path);
@@ -718,7 +719,7 @@ set_mem_scn_state(struct mem_scn *mem_scn, int state)
 		return -1;
 	}
 
-	write(file, state_strs[state], strlen(state_strs[state]));
+	unused = write(file, state_strs[state], strlen(state_strs[state]));
 	close(file);
 
 	if (get_mem_scn_state(mem_scn) != state) {

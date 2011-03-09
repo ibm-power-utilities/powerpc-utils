@@ -45,7 +45,7 @@ alloc_dr_node(struct dr_connector *drc, int dev_type, const char *of_path)
 		get_property(of_path, "ibm,loc-code", node->loc_code,
 			     sizeof(node->loc_code));
 
-		sprintf(node->ofdt_path, of_path);
+		snprintf(node->ofdt_path, DR_PATH_MAX, "%s", of_path);
 	}
 
 	return node;
@@ -268,7 +268,8 @@ add_child_node(struct dr_node *parent, char *child_path)
 
 	if ((! strcmp(parent->drc_type, "SLOT"))
 	    && (parent->dev_type == PCI_DLPAR_DEV))
-		sprintf(child->ofdt_dname, parent->ofdt_dname);
+		snprintf(child->ofdt_dname, DR_STR_MAX, "%s",
+			 parent->ofdt_dname);
 	else
 		get_property(child_path, "name", child->ofdt_dname,
 			     sizeof(child->ofdt_dname));
@@ -376,7 +377,8 @@ examine_child(struct dr_node *node, char *child_path)
 		if (! node->is_owned) {
 			if (node->drc_index == my_drc_index) {
 				/* Update node path */
-				sprintf(node->ofdt_path, child_path);
+				snprintf(node->ofdt_path, DR_PATH_MAX, "%s",
+					 child_path);
 				node->is_owned = 1;
 				used = 1;
 
@@ -464,14 +466,15 @@ devspec_check_node(struct dr_node *node, char *sysfs_path,
 		return 0;
 
 	if (! strcmp(full_of_path, node->ofdt_path)) {
-		sprintf(node->sysfs_dev_path, sysfs_path);
+		snprintf(node->sysfs_dev_path, DR_PATH_MAX, "%s", sysfs_path);
 		*found = 1;
 		return 0;
 	}
 
 	for (child = node->children; child; child = child->next) {
 		if (! strcmp(full_of_path, child->ofdt_path)) {
-			sprintf(child->sysfs_dev_path, sysfs_path);
+			snprintf(child->sysfs_dev_path, DR_PATH_MAX, "%s",
+				 sysfs_path);
 			*found = 1;
 			return 0;
 		}
@@ -765,7 +768,8 @@ update_phb_ic_info(struct dr_node *node_list)
 		for (node = node_list; node; node = node->next) {
 			if ((node->dev_type == PHB_DEV)
 			    && (node->drc_index == my_drc_index)) {
-				sprintf(node->phb_ic_ofdt_path, ofdt_path);
+				snprintf(node->phb_ic_ofdt_path, DR_PATH_MAX,
+					 "%s", ofdt_path);
 				break;
 			}
 		}

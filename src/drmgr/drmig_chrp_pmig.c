@@ -641,7 +641,7 @@ drmig_chrp_pmig(struct options *opts)
 	devtree_update();
 
 	dbg("Refreshing RMC via refrsrc\n");
-	system("/usr/sbin/rsct/bin/refrsrc IBM.ManagementServer");
+	rc = system("/usr/sbin/rsct/bin/refrsrc IBM.ManagementServer");
 
 	return 0;
 }

@@ -132,8 +132,8 @@ set_drc_info(struct dr_node *node, struct dr_connector *drc)
 	node->drc_index = drc->index;
 	node->drc_power = drc->powerdomain;
 
-	sprintf(node->drc_name, drc->name);
-	sprintf(node->drc_type, drc->type);
+	snprintf(node->drc_name, DR_STR_MAX, "%s", drc->name);
+	snprintf(node->drc_type, DR_STR_MAX, "%s", drc->type);
 }
 
 struct dr_connector *get_drc_info(const char *);

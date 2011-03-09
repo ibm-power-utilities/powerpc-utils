@@ -414,7 +414,7 @@ main(int argc, char *argv[])
 	for (i = 1; i < argc; i++)
 		offset += sprintf(log_msg + offset, "%s ", argv[i]);
 	log_msg[offset] = '\0';
-	syslog(LOG_LOCAL0 | LOG_INFO, log_msg);
+	syslog(LOG_LOCAL0 | LOG_INFO, "%s", log_msg);
 	
 	dbg("%s\n", log_msg);
 

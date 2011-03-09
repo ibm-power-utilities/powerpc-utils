@@ -243,7 +243,7 @@ get_drc_info(const char *of_path)
 
 	rc = build_connectors_list(&prop_grp, n_drcs, list);
 
-	sprintf(list->ofdt_path, of_path);
+	snprintf(list->ofdt_path, DR_PATH_MAX, "%s", of_path);
 	
 	list->all_next = all_drc_lists;
 	all_drc_lists = list;

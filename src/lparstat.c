@@ -50,7 +50,7 @@ void get_sysdata(char *name, char **descr, char *value)
 	} else if (se->value[0] == '\0') {
 		sprintf(value, SE_NOT_VALID);
 	} else {
-		sprintf(value, se->value);
+		sprintf(value, "%s", se->value);
 	}
 
 	*descr = se->descr;
@@ -99,7 +99,7 @@ int get_time_base()
 		return -1;
 
 	se = get_sysentry("timebase");
-	sprintf(se->value, tb);
+	sprintf(se->value, "%s", tb);
 	return 0;
 }
 
@@ -127,6 +127,7 @@ int parse_lparcfg()
 {
 	FILE *f;
 	char line[128];
+	char *unused;
 
 	f = fopen(LPARCFG_FILE, "r");
 	if (!f) {
@@ -135,7 +136,7 @@ int parse_lparcfg()
 	}
 
 	/* parse the file skipping the first line */
-	fgets(line, 128, f);
+	unused = fgets(line, 128, f);
 	while (fgets(line, 128, f) != NULL) {
 		char *name, *value, *nl;
 		struct sysentry *se;
@@ -168,12 +169,13 @@ int parse_proc_stat()
 	int i, entries = 6;
 	long long statvals[entries];
 	struct sysentry *se;
+	char *unused;
 	char *names[] = {"cpu_total", "cpu_user", "cpu_nice", "cpu_sys",
 			 "cpu_idle", "cpu_iowait"};
 
 	/* we just need the first line */
 	f = fopen("/proc/stat", "r");
-	fgets(line, 128, f);
+	unused = fgets(line, 128, f);
 	fclose(f);
 
 	statvals[0] = 0;
@@ -208,7 +210,7 @@ void get_smt_state(struct sysentry *se, char *buf)
 	else 
 		value = "Dedicated";
 
-	sprintf(buf, value);
+	sprintf(buf, "%s", value);
 }
 		
 void get_capped_mode(struct sysentry *se, char *buf)
@@ -220,7 +222,7 @@ void get_capped_mode(struct sysentry *se, char *buf)
 	else 
 		value = "Uncapped";
 
-	sprintf(buf, value);
+	sprintf(buf, "%s", value);
 }
 
 void get_percent_entry(struct sysentry *se, char *buf)
@@ -271,9 +273,10 @@ void get_name(const char *file, char *buf)
 {
 	FILE *f;
 	char tmpbuf[64];
+	int rc;
 
 	f = fopen(file, "r");
-	fread(tmpbuf, 64, 1, f);
+	rc = fread(tmpbuf, 64, 1, f);
 	fclose(f);
 
 	sprintf(buf, "%s", tmpbuf);
@@ -301,10 +304,10 @@ void get_mem_total(struct sysentry *se, char *buf)
 {
 	FILE *f;
 	char line[128];
-	char *mem, *nl;
+	char *mem, *nl, *unused;
 
 	f = fopen("/proc/meminfo", "r");
-	fgets(line, 128, f);
+	unused = fgets(line, 128, f);
 	fclose(f);
 
 	mem = strchr(line, ':');
@@ -315,7 +318,7 @@ void get_mem_total(struct sysentry *se, char *buf)
 	nl = strchr(mem, '\n');
 	*nl = '\0';
 
-	sprintf(buf, mem);
+	sprintf(buf, "%s", mem);
 }
 
 void get_smt_mode(struct sysentry *se, char *buf)
@@ -323,9 +326,10 @@ void get_smt_mode(struct sysentry *se, char *buf)
 	FILE *f;
 	char line[128];
 	char *cmd = "/usr/sbin/ppc64_cpu --smt";
+	char *unused;
 
 	f = popen(cmd, "r");
-	fgets(line, 128, f);
+	unused = fgets(line, 128, f);
 	pclose(f);
 
 	/* The output is either "SMT is on" or "SMT is off", we can cheat
@@ -411,7 +415,7 @@ void print_default_output(int interval, int count)
 	char user[32], sys[32], wait[32], idle[32], physc[32], entc[32];
 	char lbusy[32], vcsw[32], phint[32];
 
-	memset(buf, 128, 0);
+	memset(buf, 0, 128);
 	get_sysdata("shared_processor_mode", &descr, value);
 	offset = sprintf(buf, "type=%s ", value);
 	get_sysdata("capped", &descr, value);
