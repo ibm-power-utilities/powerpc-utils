@@ -28,8 +28,8 @@ SP3 releases.
 
 %files
 %defattr(-,root,root)
-#/usr/share/doc/packages/powerpc-utils-sles10-addons/README
-#/usr/share/doc/packages/powerpc-utils-sles10-addons/COPYRIGHT
+/usr/share/doc/packages/powerpc-utils-sles10-addons/README
+/usr/share/doc/packages/powerpc-utils-sles10-addons/COPYRIGHT
 
 /usr/sbin/drmgr
 /usr/sbin/lsslot

@@ -20,7 +20,7 @@ install:
 	$(INSTALL) -d -m 755 $(DESTDIR)$(SBIN_DIR)
 	$(foreach f,$(SCRIPTS),$(INSTALL) -m 744 $f $(DESTDIR)$(SBIN_DIR);)
 	$(foreach f,$(UTILS),$(INSTALL) -m 744 $f $(DESTDIR)$(SBIN_DIR);)
-	$(INSTALL) -d -m 755$(DESTDIR)$(DOC_DIR)
+	$(INSTALL) -d -m 755 $(DESTDIR)$(DOC_DIR)
 	$(foreach f,$(DOCS),$(INSTALL) -m 744 $f $(DESTDIR)$(DOC_DIR);)
 
 dist:
@@ -29,6 +29,7 @@ dist:
 	mv $(PPU_TARNAME) $(PPU_ADDONS_TARNAME)
 	mkdir $(PPU_ADDONS_TARNAME)/addon
 	cp Makefile $(PPU_ADDONS_TARNAME)/addon
+	cp README $(PPU_ADDONS_TARNAME)/addon
 	cp powerpc-utils-sles10-addons.spec $(PPU_ADDONS_TARNAME)/addon
 	tar -chof $(PPU_ADDONS_TARNAME).tar $(PPU_ADDONS_TARNAME)
 	gzip $(PPU_ADDONS_TARNAME).tar
