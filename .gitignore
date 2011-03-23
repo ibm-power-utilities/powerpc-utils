@@ -1,0 +1,96 @@
+#
+# NOTE! Don't add files that are generated in specific
+# subdirectories here. Add them in the ".gitignore" file
+# in that subdirectory instead.
+#
+# NOTE! Please use 'git ls-files -i --exclude-standard'
+# command after changing this file, to see if there are
+# any tracked files which get ignored after the change.
+#
+# Normal rules
+#
+.*
+*.o
+*.o.*
+*.a
+*.s
+*.so
+*.so.dbg
+*.mod.c
+*.i
+*.order
+*.gz
+*.bz2
+*.lzma
+*.zip
+*.lzo
+*.patch
+*.gcno
+
+#
+# Build files
+#
+/aclocal.m4
+/autom4te.cache/
+/config.log
+/config.status
+/Makefile
+/man/Makefile
+/powerpc-utils.spec
+/scripts/Makefile
+/src/Makefile
+/src/drmgr/Makefile
+
+#
+# git files that we don't want to ignore even it they are dot-files
+#
+!.gitignore
+
+#
+# Generated include files
+#
+include/config
+include/linux/version.h
+include/generated
+
+# stgit generated dirs
+patches-*
+
+# quilt's files
+patches
+series
+
+# cscope files
+cscope.*
+ncscope.*
+
+# ctags
+tags
+TAGS
+
+# gnu global files
+GPATH
+GRTAGS
+GSYMS
+GTAGS
+
+# Executables
+/src/activate_firmware
+/src/drmgr/drmgr
+/src/drmgr/lsslot
+/src/lparstat
+/src/lsprop
+/src/nvram
+/src/ppc64_cpu
+/src/rtas_event_decode
+/src/rtas_ibm_get_vpd
+/src/serv_config
+/src/set_poweron_time
+/src/sys_ident
+/src/uesensor
+/src/usysattn
+/src/usysident
+
+*.orig
+*~
+\#*#
