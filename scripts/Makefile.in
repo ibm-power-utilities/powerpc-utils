@@ -14,7 +14,6 @@
 
 @SET_MAKE@
 
-
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
@@ -32,9 +31,8 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 subdir = scripts
-DIST_COMMON = $(dist_bin_SCRIPTS) $(dist_init_DATA) \
-	$(dist_sbin_SCRIPTS) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in
+DIST_COMMON = $(dist_bin_SCRIPTS) $(dist_sbin_SCRIPTS) \
+	$(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -42,8 +40,7 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 mkinstalldirs = $(install_sh) -d
 CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(bindir)" \
-	"$(DESTDIR)$(sbindir)" "$(DESTDIR)$(sbindir)" \
-	"$(DESTDIR)$(initdir)" "$(DESTDIR)$(initdir)"
+	"$(DESTDIR)$(sbindir)" "$(DESTDIR)$(sbindir)"
 binSCRIPT_INSTALL = $(INSTALL_SCRIPT)
 dist_binSCRIPT_INSTALL = $(INSTALL_SCRIPT)
 dist_sbinSCRIPT_INSTALL = $(INSTALL_SCRIPT)
@@ -52,15 +49,6 @@ SCRIPTS = $(bin_SCRIPTS) $(dist_bin_SCRIPTS) $(dist_sbin_SCRIPTS) \
 	$(sbin_SCRIPTS)
 SOURCES =
 DIST_SOURCES =
-am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
-am__vpath_adj = case $$p in \
-    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
-    *) f=$$p;; \
-  esac;
-am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
-dist_initDATA_INSTALL = $(INSTALL_DATA)
-initDATA_INSTALL = $(INSTALL_DATA)
-DATA = $(dist_init_DATA) $(init_DATA)
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
@@ -149,15 +137,12 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 bin_SCRIPTS = amsstat
 dist_bin_SCRIPTS = amsstat
-sbin_SCRIPTS = update_flash hvcsadmin vscsisadmin rtas_dump snap	\
+sbin_SCRIPTS = update_flash hvcsadmin rtas_dump snap	\
 	       bootlist ofpathname lsdevinfo ls-veth ls-vscsi ls-vdev
 
-dist_sbin_SCRIPTS = update_flash hvcsadmin vscsisadmin rtas_dump snap	\
+dist_sbin_SCRIPTS = update_flash hvcsadmin rtas_dump snap	\
 	            bootlist ofpathname lsdevinfo ls-veth ls-vscsi ls-vdev
 
-initdir = /etc/init.d
-init_DATA = ibmvscsis.sh
-dist_init_DATA = ibmvscsis.sh
 all: all-am
 
 .SUFFIXES:
@@ -266,40 +251,6 @@ uninstall-sbinSCRIPTS:
 	  echo " rm -f '$(DESTDIR)$(sbindir)/$$f'"; \
 	  rm -f "$(DESTDIR)$(sbindir)/$$f"; \
 	done
-install-dist_initDATA: $(dist_init_DATA)
-	@$(NORMAL_INSTALL)
-	test -z "$(initdir)" || $(MKDIR_P) "$(DESTDIR)$(initdir)"
-	@list='$(dist_init_DATA)'; for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  f=$(am__strip_dir) \
-	  echo " $(dist_initDATA_INSTALL) '$$d$$p' '$(DESTDIR)$(initdir)/$$f'"; \
-	  $(dist_initDATA_INSTALL) "$$d$$p" "$(DESTDIR)$(initdir)/$$f"; \
-	done
-
-uninstall-dist_initDATA:
-	@$(NORMAL_UNINSTALL)
-	@list='$(dist_init_DATA)'; for p in $$list; do \
-	  f=$(am__strip_dir) \
-	  echo " rm -f '$(DESTDIR)$(initdir)/$$f'"; \
-	  rm -f "$(DESTDIR)$(initdir)/$$f"; \
-	done
-install-initDATA: $(init_DATA)
-	@$(NORMAL_INSTALL)
-	test -z "$(initdir)" || $(MKDIR_P) "$(DESTDIR)$(initdir)"
-	@list='$(init_DATA)'; for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  f=$(am__strip_dir) \
-	  echo " $(initDATA_INSTALL) '$$d$$p' '$(DESTDIR)$(initdir)/$$f'"; \
-	  $(initDATA_INSTALL) "$$d$$p" "$(DESTDIR)$(initdir)/$$f"; \
-	done
-
-uninstall-initDATA:
-	@$(NORMAL_UNINSTALL)
-	@list='$(init_DATA)'; for p in $$list; do \
-	  f=$(am__strip_dir) \
-	  echo " rm -f '$(DESTDIR)$(initdir)/$$f'"; \
-	  rm -f "$(DESTDIR)$(initdir)/$$f"; \
-	done
 tags: TAGS
 TAGS:
 
@@ -335,9 +286,9 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(SCRIPTS) $(DATA)
+all-am: Makefile $(SCRIPTS)
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(sbindir)" "$(DESTDIR)$(sbindir)" "$(DESTDIR)$(initdir)" "$(DESTDIR)$(initdir)"; do \
+	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(sbindir)" "$(DESTDIR)$(sbindir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -382,7 +333,7 @@ info: info-am
 
 info-am:
 
-install-data-am: install-dist_initDATA install-initDATA
+install-data-am:
 
 install-dvi: install-dvi-am
 
@@ -418,25 +369,23 @@ ps: ps-am
 ps-am:
 
 uninstall-am: uninstall-binSCRIPTS uninstall-dist_binSCRIPTS \
-	uninstall-dist_initDATA uninstall-dist_sbinSCRIPTS \
-	uninstall-initDATA uninstall-sbinSCRIPTS
+	uninstall-dist_sbinSCRIPTS uninstall-sbinSCRIPTS
 
 .MAKE: install-am install-strip
 
 .PHONY: all all-am check check-am clean clean-generic distclean \
 	distclean-generic distdir dvi dvi-am html html-am info info-am \
 	install install-am install-binSCRIPTS install-data \
-	install-data-am install-dist_binSCRIPTS install-dist_initDATA \
+	install-data-am install-dist_binSCRIPTS \
 	install-dist_sbinSCRIPTS install-dvi install-dvi-am \
 	install-exec install-exec-am install-html install-html-am \
-	install-info install-info-am install-initDATA install-man \
-	install-pdf install-pdf-am install-ps install-ps-am \
-	install-sbinSCRIPTS install-strip installcheck installcheck-am \
-	installdirs maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-generic pdf pdf-am ps ps-am uninstall \
-	uninstall-am uninstall-binSCRIPTS uninstall-dist_binSCRIPTS \
-	uninstall-dist_initDATA uninstall-dist_sbinSCRIPTS \
-	uninstall-initDATA uninstall-sbinSCRIPTS
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-sbinSCRIPTS \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-generic pdf pdf-am ps ps-am uninstall uninstall-am \
+	uninstall-binSCRIPTS uninstall-dist_binSCRIPTS \
+	uninstall-dist_sbinSCRIPTS uninstall-sbinSCRIPTS
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
