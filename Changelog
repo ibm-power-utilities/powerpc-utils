@@ -1,6 +1,178 @@
+powerpc-utils-1.2.8
+=====================================================================
+
+commit 919c43c7dab08af0858e571d37cce2f6d1d22dc0
+Author: Nathan Fontenot <nfont@austin.ibm.com>
+Date:   2011-03-23
+
+    The snap man page indicates that the file /var/log/platform
+    is collected.  This is not always true and can cause some confusion
+    since the file does not exist on newer systems.  To avoid confusing
+    users who might think the file should be collected, remove it
+    from the man page listing of files.
+    
+    The /var/log/platform file is where the rtas_errd daemon used to write
+    its data before the advent of servicelog.  On older systems that may
+    still be running an older rtas_errd daemon (diagela package) this
+    file would still exist so we should still try to collect it in the
+    snap command if its present.
+    
+    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
+
+ man/snap.8 |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+commit c26211793d4cb76bbff620d02a99c3885f62aa2e
+Author: Robert Jennings <rcj@linux.vnet.ibm.com>
+Date:   2011-03-23
+
+    The 'really-clean' target is useful for cleaning up the repository but it
+    also deletes the input makefiles so that you can't build again.  This
+    change removes this part of the cleanup.
+    
+    Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
+
+ Makefile.am |    3 ---
+ Makefile.in |    4 ----
+ 2 files changed, 0 insertions(+), 7 deletions(-)
+
+commit 6ebd28e670879945b3bcef6399175ba03c1816b2
+Author: Robert Jennings <rcj@linux.vnet.ibm.com>
+Date:   2011-03-23
+
+    Fixing a few makefile errors that caused installation of the README and
+    COPYRIGHT files to be installed and uncomment those files in the spec
+    file so that they are shipped.
+    
+    Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
+
+ addon/Makefile                         |    3 ++-
+ addon/powerpc-utils-sles10-addons.spec |    4 ++--
+ 2 files changed, 4 insertions(+), 3 deletions(-)
+
+commit fa91d2e335631d15950b1108ee1799478e9cddc3
+Author: Robert Jennings <rcj@linux.vnet.ibm.com>
+Date:   2011-03-23
+
+    Adding .gitignore to specify intentionally untracked files to ignore.
+    
+    Signed-off-by:Robert Jennings <rcj@linux.vnet.ibm.com>
+
+ .gitignore |   96 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 96 insertions(+), 0 deletions(-)
+ create mode 100644 .gitignore
+
+commit 64b2672bdf65e906b3121e9c3293fd4b271a2568
+Author: Robert Jennings <rcj@linux.vnet.ibm.com>
+Date:   2011-03-23
+
+    The Makefile in the addon directory looks for
+    powerpc-utils-sles10-addons.spec but the file is currently named
+    powerpc-utils-addon.spec.  This patch moves the file to the name
+    specified in the Makefile.
+    
+    Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
+
+ addon/powerpc-utils-addon.spec         |   63 --------------------------------
+ addon/powerpc-utils-sles10-addons.spec |   63 ++++++++++++++++++++++++++++++++
+ 2 files changed, 63 insertions(+), 63 deletions(-)
+ delete mode 100644 addon/powerpc-utils-addon.spec
+ create mode 100644 addon/powerpc-utils-sles10-addons.spec
+
+commit 4f1d829e65bf240329f6130bf74c7eaa6fc3a8ab
+Author: Brian King <brking@linux.vnet.ibm.com>
+Date:   2011-03-23
+
+    Since vscsiadmin and its related tools only apply to the legacy
+    ibmvscsis driver, lets stop installing it everywhere, since it
+    will only lead to confusion. Customers who are running with a
+    Linux distribution which includes the ibmvscsis driver can manually
+    install these scripts if necessary.
+    
+    Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
+
+ man/Makefile.am       |    6 ++--
+ man/Makefile.in       |    6 ++--
+ powerpc-utils.spec.in |    9 ++---
+ scripts/Makefile.am   |    9 +----
+ scripts/Makefile.in   |   85 ++++++++++---------------------------------------
+ 5 files changed, 28 insertions(+), 87 deletions(-)
+
+commit fa0649c82e7a02a92df6e0479b1eb39daff43d0e
+Author: Robert Jennings <rcj@linux.vnet.ibm.com>
+Date:   2011-03-09
+
+    The get_bus_id function takes a location code and then searches
+    /sys/bus/pci/slots/*/phy_location for a slot with the matching location
+    code.  Without this patch the comparison only considers the characters
+    up to the length of the input location which can cause a false match.
+    For example, the following to would match.
+    
+    Input location: U5877.001.00H4031-P1
+    False match:    U5877.001.00H4031-P10
+                                       ^ Comparison stops here
+    
+    The length of the input is 23 characters and the first 23 characters
+    are compared, this leaves off the last '0' on the string to compare and
+    erroneously returns the wrong bus.
+    
+    In the case of a PHB remove operation, this can cause the incorrect slot
+    (and associated devices) to be powered off.
+    
+    Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
+
+ src/drmgr/common_pci.c |   16 +++++++++++++++-
+ 1 files changed, 15 insertions(+), 1 deletions(-)
+
+commit abb2829c4c3059abbde95b1433a42867196be692
+Author: Nathan Fontenot <nfont@austin.ibm.com>
+Date:   2011-03-09
+
+    This patch is a pass at cleaning up the code to get rid of some
+    of the warnings that are generated at build time.  There are no
+    functional changes as part of this patch.
+    
+    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
+
+ src/Makefile.in             |   88 ++++++++++++++++---------------------------
+ src/drmgr/Makefile.in       |    7 ++-
+ src/drmgr/common_cpu.c      |   10 ++--
+ src/drmgr/common_ofdt.c     |    2 +-
+ src/drmgr/common_pci.c      |   16 +++++---
+ src/drmgr/dr.h              |   12 +++---
+ src/drmgr/drmgr.c           |    2 +-
+ src/drmgr/drmig_chrp_pmig.c |    2 +-
+ src/drmgr/drslot_chrp_mem.c |    5 +-
+ src/drmgr/ofdt.h            |    4 +-
+ src/lparstat.c              |   28 ++++++++------
+ src/ppc64_cpu.c             |    3 +-
+ 12 files changed, 84 insertions(+), 95 deletions(-)
+
+commit 3439bec9cdd18c6407d88a10728cdc0eaa080e3c
+Author: Nathan Fontenot <nfont@austin.ibm.com>
+Date:   2011-03-09
+
+    On newer systems the preference is to have the libraries linked
+    against specified last in the call to ld.  The current setup of
+    Makefiles causes the libraries to be listed towards the front of
+    the ld command.
+    
+    The cause of this is that the current Makefile.am files use the
+    XXX_LDFLAGS macro to specify the libraries to link with.  Instead
+    it should be using the XXX_LDADD macro.  This patch corrects this.
+    
+    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
+
+ src/Makefile.am       |   22 +++++++++++-----------
+ src/drmgr/Makefile.am |    3 ++-
+ 2 files changed, 13 insertions(+), 12 deletions(-)
+
+powerpc-utils-1.2.7
+=====================================================================
+
 commit c0a2b16c7cab44aa92544485760ee24bf8929235
 Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Fri Feb 18 09:45:24 2011 -0600
+Date:   2011-02-18
 
     This patch updates the searching algorithm used for finding an available lmb
     to remove.  The new algorithm will try to add lmbs starting from the lowest
@@ -12,26 +184,45 @@ Date:   Fri Feb 18 09:45:24 2011 -0600
     
     Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
 
+ src/drmgr/drslot_chrp_mem.c |   13 +++++++++----
+ 1 files changed, 9 insertions(+), 4 deletions(-)
+
 commit e56f3fcfb1763868bb65812b3e170341f181ec2f
 Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Fri Feb 18 09:37:39 2011 -0600
+Date:   2011-02-18
 
     Initial release of the lparstat command.
     
     Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
 
+ powerpc-utils.spec.in |    1 +
+ src/Makefile.am       |    4 +-
+ src/Makefile.in       |   18 ++-
+ src/lparstat.c        |  489 +++++++++++++++++++++++++++++++++++++++++++++++++
+ src/lparstat.h        |  264 ++++++++++++++++++++++++++
+ 5 files changed, 770 insertions(+), 6 deletions(-)
+ create mode 100644 src/lparstat.c
+ create mode 100644 src/lparstat.h
+
 commit 899ad734c1bc53f0767730b25cfc062d5d6be632
 Author: Brian King <brking@linux.vnet.ibm.com>
-Date:   Fri Jan 21 07:52:06 2011 -0600
+Date:   2011-01-21
 
     Re-commit (fully this time) the lparcfg documentation.
     
     Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
     Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
 
+ man/lparcfg.5 |  334 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 334 insertions(+), 0 deletions(-)
+ create mode 100644 man/lparcfg.5
+
+powerpc-utils-1.2.6
+=====================================================================
+
 commit afa9a6828ea879539844cc899db039ab2895a329
 Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Thu Dec 16 12:17:57 2010 -0600
+Date:   2010-12-16
 
     Updates for release 1.2.6.
      - Bump version number to 1.2.6
@@ -39,26 +230,43 @@ Date:   Thu Dec 16 12:17:57 2010 -0600
     
     Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
 
+ Makefile.in           |  258 +++++++++--------------------
+ configure             |  443 ++++++++++++++++++++-----------------------------
+ configure.ac          |    2 +-
+ man/Makefile.in       |  296 ++++++++++++++++-----------------
+ scripts/Makefile.in   |  284 ++++++++++---------------------
+ src/Makefile.in       |  231 ++++++++------------------
+ src/drmgr/Makefile.in |  142 +++++-----------
+ 7 files changed, 604 insertions(+), 1052 deletions(-)
+
 commit 447180fec3e22de2adcf1ff353c8ad2e65203817
 Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Thu Dec 16 08:53:54 2010 -0600
+Date:   2010-12-16
 
     Update lsprop license to include CPL.
     
     Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
 
+ src/lsprop.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
 commit 540a2d36a196866836c9d26a268b55f1d6b965ee
 Author: Brian King <brking@linux.vnet.ibm.com>
-Date:   Mon Dec 13 10:27:30 2010 -0600
+Date:   2010-12-13
 
     The /proc/ppc64/lparcfg file is cryptic and not well documented
     anywhere. Create a man page to document this for users.
     
     Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
 
+ man/Makefile.am       |    2 +-
+ man/Makefile.in       |    2 +-
+ powerpc-utils.spec.in |    1 +
+ 3 files changed, 3 insertions(+), 2 deletions(-)
+
 commit b6d4043319cce24e20e9187a428e4e0c3f549ccb
 Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Mon Dec 13 10:01:38 2010 -0600
+Date:   2010-12-13
 
     Trying to install the man pages causes a failure due to trying
     to install the man pages twice.  This was introduced when the use
@@ -71,9 +279,13 @@ Date:   Mon Dec 13 10:01:38 2010 -0600
     
     Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
 
+ man/Makefile.am |    6 ------
+ man/Makefile.in |   20 +++++++-------------
+ 2 files changed, 7 insertions(+), 19 deletions(-)
+
 commit 2f549c4907f065a9610d03c4866070f2373a730f
 Author: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-Date:   Mon Dec 13 09:51:51 2010 -0600
+Date:   2010-12-13
 
     scripts: Fix usage() of ls-v{dev,eth,scsi} and lsdevinfo.
     
@@ -88,9 +300,15 @@ Date:   Mon Dec 13 09:51:51 2010 -0600
     
     Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
 
+ scripts/ls-vdev   |    8 +++-----
+ scripts/ls-veth   |   10 ++++------
+ scripts/ls-vscsi  |    7 ++++++-
+ scripts/lsdevinfo |    4 ++--
+ 4 files changed, 15 insertions(+), 14 deletions(-)
+
 commit 3d984296d0c60b3bac26034da7294316dcb4e39c
 Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Mon Dec 13 09:46:43 2010 -0600
+Date:   2010-12-13
 
     The nvram verbose option should be able to be specified as -v
     and --verbose as is specified in the help message for the command.
@@ -99,9 +317,12 @@ Date:   Mon Dec 13 09:46:43 2010 -0600
     
     Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
 
+ src/nvram.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
 commit fdd4d749933986a6cb90f79571225d98382183c0
 Author: Robert Jennings <rcj@linux.vnet.ibm.com>
-Date:   Thu Oct 14 09:10:39 2010 -0500
+Date:   2010-10-14
 
     Change drmgr to attempt to remove memory which may be held by a balloon
     driver.  This change ignores the 'removable' flag if AMS and CMM are
@@ -115,18 +336,26 @@ Date:   Thu Oct 14 09:10:39 2010 -0500
     
     Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
 
+ src/drmgr/common.c          |   23 +++++++++++++++++++++++
+ src/drmgr/dr.h              |    2 ++
+ src/drmgr/drslot_chrp_mem.c |    9 ++++++---
+ 3 files changed, 31 insertions(+), 3 deletions(-)
+
 commit 828424347e5162b3395e0efe57fd4f7f54b09fad
 Author: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-Date:   Tue Oct 5 08:24:02 2010 -0500
+Date:   2010-10-05
 
     This patch fixes the typo in -V option of the ofpathname
     man page.
     
     Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
 
+ man/ofpathname.8 |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
 commit c20b2c003ef582445c1d947a770ef4e25fbc9c48
 Author: Murillo Fernandes Bernardes <bernarde@br.ibm.com>
-Date:   Tue Oct 5 08:23:04 2010 -0500
+Date:   2010-10-05
 
     cpu_freq[i] is initialized after setup_counters is called, therefore
     setup_counters will always fails if the system is in SMT 2 or SMT off.
@@ -135,60 +364,99 @@ Date:   Tue Oct 5 08:23:04 2010 -0500
     
     Signed-off-by: Murillo Fernandes Bernardes <bernarde@br.ibm.com>
 
+ src/ppc64_cpu.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
 commit 229ee5d226e90400e239d6b1dfdc43aa60099d4b
 Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Tue Oct 5 08:21:28 2010 -0500
+Date:   2010-10-05
 
     Configure updates to not check for servicelog.
     
     Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
 
+ configure    |   82 +--------------------------------------------------------
+ configure.ac |    5 +---
+ 2 files changed, 3 insertions(+), 84 deletions(-)
+
 commit b7c309a78db9fb6ce00a9b62060e770513276653
 Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Tue Oct 5 08:20:44 2010 -0500
+Date:   2010-10-05
 
     Remove the logging of migration/hibernation events.  This is now done
     in the DynamicRM package.
     
     Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
 
+ src/drmgr/drmig_chrp_pmig.c |   63 -------------------------------------------
+ 1 files changed, 0 insertions(+), 63 deletions(-)
+
 commit d015941002ac06fabb27e318bd8d7bc99f990a17
 Author: Brian King <brking@linux.vnet.ibm.com>
-Date:   Tue Aug 17 08:10:46 2010 -0500
+Date:   2010-08-17
 
     Fixes issues with DLPAR on P7 platforms that do not support physical hotplug
     DR operations.
     
     Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
 
+ src/drmgr/drslot_chrp_phb.c |  164 +++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 164 insertions(+), 0 deletions(-)
+
 commit 3fe80c2f9b490a520fbb47d2166034dc4da83a79
 Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Wed Aug 4 12:28:54 2010 -0500
+Date:   2010-08-04
 
     Update to automake 1.11 try 2.
     
     Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
 
+ Makefile.in           |  258 +++++++++++++++++++++---------
+ configure             |  421 +++++++++++++++++++++++++++++-------------------
+ man/Makefile.in       |  233 +++++++++++++++++-----------
+ scripts/Makefile.in   |  284 +++++++++++++++++++++++-----------
+ src/Makefile.in       |  231 +++++++++++++++++++--------
+ src/drmgr/Makefile.in |  142 ++++++++++++-----
+ 6 files changed, 1032 insertions(+), 537 deletions(-)
+
 commit 2d4e0443555f3d131479bff42d5e42fb959259a2
 Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Wed Aug 4 10:25:50 2010 -0500
+Date:   2010-08-04
 
     Initialize 'rc' variable so as to not use uninitialized.
     
     Signed-off-by: Nathan Fontenot<nfont@austin.ibm.com>
 
+ Makefile.in                 |  258 ++++++++-------------------
+ configure                   |  421 +++++++++++++++++--------------------------
+ man/Makefile.in             |  233 ++++++++++---------------
+ scripts/Makefile.in         |  284 +++++++++--------------------
+ src/Makefile.in             |  231 +++++++-----------------
+ src/drmgr/Makefile.in       |  142 +++++----------
+ src/drmgr/drslot_chrp_phb.c |    4 +-
+ 7 files changed, 539 insertions(+), 1034 deletions(-)
+
 commit 5586e8faa2232f2c8ec76ea2610f841822f490c5
 Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Wed Aug 4 10:14:06 2010 -0500
+Date:   2010-08-04
 
     Update to use automake 1.11 along with defaulting to a silent
     build.  This will create build output similar to the Linux kernel.
     
     Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
 
+ Makefile.in           |  258 +++++++++++++++++++++---------
+ configure             |  422 +++++++++++++++++++++++++++++-------------------
+ configure.ac          |    3 +-
+ man/Makefile.in       |  233 ++++++++++++++++-----------
+ scripts/Makefile.in   |  284 +++++++++++++++++++++++-----------
+ src/Makefile.in       |  231 +++++++++++++++++++--------
+ src/drmgr/Makefile.in |  142 ++++++++++++-----
+ 7 files changed, 1035 insertions(+), 538 deletions(-)
+
 commit 4b694eb0f283d2438fdba11014dc485697b8d72b
 Author: Brian King <brking@linux.vnet.ibm.com>
-Date:   Wed Aug 4 10:12:49 2010 -0500
+Date:   2010-08-04
 
     Due to a recent change in the sysfs layout of memory sections for
     powerpc, the following change is needed to powerpc-utils to make
@@ -197,9 +465,12 @@ Date:   Wed Aug 4 10:12:49 2010 -0500
     Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
     Acked-by: Nathan Fontenot <nfont@austin.ibm.com>
 
+ src/drmgr/drslot_chrp_mem.c |   19 +++++++++++++++----
+ 1 files changed, 15 insertions(+), 4 deletions(-)
+
 commit a1e308ce5e4248cae80bdc84b06950af2416bb00
 Author: Brad Peters <bpeters@linux.vnet.ibm.com>
-Date:   Wed Aug 4 10:10:09 2010 -0500
+Date:   2010-08-04
 
     Patch updates lscfg path to /usr/sbin, which is where this has been installing
     to since lsvpd-1.0 was released back in 2007.  Would be nice to auto-find the
@@ -209,846 +480,5 @@ Date:   Wed Aug 4 10:10:09 2010 -0500
     
     Signed off by: Brad Peters <bpeters@linux.vnet.ibm.com>
 
-commit 88d51162d42aba82130db16cadc9a31fc70a0b7e
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Wed Jul 14 14:09:56 2010 -0500
-
-    Add --version option to ppc64_cpu.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 2aa04a7e9b8bc3ace90f347a6d9eba001d88b9cc
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Wed Jul 14 14:05:04 2010 -0500
-
-    Add explicit check for librtas.h and have configure fail if not found.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit f83ec96bd8ff2ad608c3f725867956ed853ae894
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Wed Jul 14 12:58:29 2010 -0500
-
-    Add check for linux/perf_event.h when building ppc64_cpu.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit d2b20d22d8f8434e343741e1374a1d78ad9791c1
-Author: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-Date:   Tue Jul 13 11:39:15 2010 -0500
-
-    This patch fixes the typo in man ofpathname.8
-    
-    Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-
-commit a378927b9c670cc45ccd0ab0aec5b734b4711f80
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Mon Jul 12 12:38:53 2010 -0500
-
-    Update version number to 1.2.4
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit f53c2a33800af8db646428242998b3837b2f31a3
-Author: Freeman Rawson <frawson@us.ibm.com>
-Date:   Mon Jul 12 12:07:07 2010 -0500
-
-    This patch provides a set of options to report the number of
-    cores online on a system and allow the user to set the number
-    of cores that are online.
-    
-    Signed-off-by: Freeman Rawson <frawson@us.ibm.com>
-    Acked-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 41a1809de3175b70f10c4544bdf418f49a14d7f1
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Mon Jul 12 12:04:53 2010 -0500
-
-    Add the capability to determine the cpu frequency on a system to the
-    ppc64_cpu command.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 5eed6ecc7f29e75c2e8a38d4cb393f39b0dcc871
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Mon Jul 12 12:03:26 2010 -0500
-
-    Update the exisitng code base to use the new is_librtas_error()
-    routine.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit a3d7e08918d5c46630801f3e25e572355e200905
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Mon Jul 12 12:01:36 2010 -0500
-
-    Create a new is_librtas_error() routine that lets users know if
-    the supplied error is a librtas specific return code.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit ac63fffe1e534299cfedd4c47ad0d1965fec6e7b
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Mon Jul 12 11:59:58 2010 -0500
-
-    This patch corrects the parameter handling of ppc64_cpu when setting the
-    run-mode.  The PAPR specifies that the rtas_[get|set]_system_parameter calls
-    take a char buffer, but for the run mode it actually wants integer values in
-    the buffer, not strings.  This updates the handling of the values to be
-    integers.
-    
-    This patch also add an additional error message to indicate failure when a
-    partition is not authorized to set the run mode.
-    
-    Signed-off-by:Nathan Fontenot <nfont@austin.ibm.com>
-
-commit d312aa1517b8a2003e22e4394a928193cc3f03e0
-Author: Brad Peters <bpeters@linux.vnet.ibm.com>
-Date:   Mon Jul 12 11:57:30 2010 -0500
-
-    Adding some of description of the update_flash related error events covered in
-    LTC BZ 64797, which is an understandably confusing situation
-    
-    Signed-off by: Brad Peters
-
-commit 3c45496610795d689e9c27299b8d832b51131788
-Author: Brian King <brking@linux.vnet.ibm.com>
-Date:   Wed May 26 13:41:40 2010 -0500
-
-    Adds support for partition hibernation
-    
-    Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
-
-commit c9c9efbffd8faca8bbafa75b87868f7bd4ee567e
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Wed May 19 13:56:13 2010 -0500
-
-    This patch removes the redundant code for getting the online status of a cpu
-    thread in the get_one_smt_state() routine and now uses the common cpu_online()
-    routine.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit fa8c1f0bf44ca560b910eb130a256a55e6d140d2
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Wed May 19 13:52:50 2010 -0500
-
-    This patch corrects the parameter checking when attempting to set the
-    run mode.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 607717cc09b26a18182979e1c2c245b803c8f863
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Wed May 19 13:49:16 2010 -0500
-
-    The sysfs file used to update the dscr setting expects that the value written
-    to it is in hex.  The ppc64_cpu command does not adhere to this, it currently
-    writes the value in decimal, which leads to incorrect settings.  This patch
-    corrects this by creating new common read/write routines that take a format
-    string so we can control how a value is written to sysfs.  This also allows
-    us to maintain an interface where users can specify the value to be written
-    in any format and still correctly write the value to sysfs.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 293df9580adcf16b57b257c4edf89423b2975414
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Wed May 19 13:47:01 2010 -0500
-
-    The ofpathname script uses the soon to be deprecated udevinfo command.  This
-    patch updates the ofpthname script to use the new udevadm command if
-    present.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit a74f4de8a9fedfa7531db404eb48169b9162defb
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Wed May 19 13:42:00 2010 -0500
-
-    This patch corrects the parsing of sysfs when looking for the open firmware
-    device name for an ethernet device.  The error occurs when multiple sysfs
-    entries (i.e. links) point to the ethernet device we are looking for.  The
-    patch checks results until we get a path.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 752c8ee9f82379efdba75a822a0e5373e2e33599
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Wed May 19 13:38:48 2010 -0500
-
-    This patch corrects the handling of the -v option for the nvram command.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 2568514fc910e3bb075b9b94d9d486243ddb5d29
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Wed May 19 13:36:22 2010 -0500
-
-    The amsstat appears to make some assumptions, namely that AMS is
-    enabled and all of the files it pulls data from exist.  This patch
-    updates the script to verify that AMS is available and enabled before
-    trying to gather information.  If either are not, it prints an error
-    message and exits.
-    
-    This also updates the file checking to redirect error messages from
-    the pushd command and print an appropriate error message if the file
-    is not present.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 998ba626cefcb85e1148dbcd6b675afb67030ca0
-Author: Nathan Fontenot <nfont@shady-lp2.ltc.austin.ibm.com>
-Date:   Thu Apr 8 21:57:08 2010 -0500
-
-    Updates for release 1.2.3
-
-commit 1f38ba0854d51c33dcb2b70235d962665efb4cf8
-Author: Nathan Fontenot <nfont@shady-lp2.ltc.austin.ibm.com>
-Date:   Wed Apr 7 20:21:09 2010 -0500
-
-    The SLES 10 releases of powerpc-utils do not include all of the commands
-    currently in the powerpc-utils package.  Namely these are drmgr, lsslot,
-    lsdevinfo, ls-veth, ls-vscsi, and ls-vdev.  In order to allow SLES 10
-    install bases to come up to speed without causing any collisions in
-    package naming a powerpc-utils-sles10-addons package is being created to
-    install the previously mentioned utilities.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit f707472ab8625a44a98b58de8979762ceaf4aac4
-Author: Nathan Fontenot <nfont@shady-lp2.ltc.austin.ibm.com>
-Date:   Wed Apr 7 20:20:18 2010 -0500
-
-    Fixes an issue on some kernel versions generating the ofpathname
-    for FC LUNs attached to lpfc based adapters.
-    
-    Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
-
-commit 7a17ff0743cdec7ee2edb2b3aad347566136b6d5
-Author: Nathan Fontenot <nfont@shady-lp2.ltc.austin.ibm.com>
-Date:   Wed Apr 7 20:19:01 2010 -0500
-
-    This patch adds -a -V options to the ofpathname man page.
-    
-    Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-
-commit 2d3688cf445ffb204cd3bcb14ee2002dbc4d33ba
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Wed Feb 17 09:54:46 2010 -0600
-
-    Updated configure script for librtas.h checking.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit e465ed6babc0fdc2d177c72e49cf82311759b203
-Author: Brad Peters <bpeters@linux.vnet.ibm.com>
-Date:   Wed Feb 17 09:40:59 2010 -0600
-
-    Spec file was quite out of date.  I added some prep/build/install logic,
-    and corrected for man page name changes.
-    
-    Sorta signed off by: Brad Peters <bpeters@linux.vnet.ibm.com>
-    Acked-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 874f4e687df4bab65fba7fc12b4b2e63fffea0b5
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Wed Feb 17 09:36:39 2010 -0600
-
-    The powerpc-utils package depends on librtas.h to build, we should be checking
-    for this in the configure script.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 765be24fa6497316263873165b947b3b2774efb6
-Author: Brian King <brking@linux.vnet.ibm.com>
-Date:   Wed Feb 17 09:34:37 2010 -0600
-
-    Running ls-vdev with disconnected adapters can result in errors getting
-    printed. Fixup ls-vdev to bit bucket these errors.
-    
-    Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
-
-commit 3484eb20dc772a0267ea3cff3896755122656b88
-Author: Brian King <brking@linux.vnet.ibm.com>
-Date:   Wed Feb 17 09:30:07 2010 -0600
-
-    Fixes up lsdevinfo to return the data needed by the HMC to fully support
-    end to end virtual device view enablement. Adds support for the -R parameter,
-    which is required. Also adds support for the uniquetype field.
-    
-    Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
-
-commit f57420aedf5e899738465450ca2199201f9b5671
-Author: Brian King <brking@linux.vnet.ibm.com>
-Date:   Wed Feb 17 09:26:51 2010 -0600
-
-    Adds ls-vscsi, ls-veth, and ls-vdev scripts the HMC can call
-    to retrieve VIO related information from Linux.
-    
-    Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
-
-commit e437301f6e9336e872696e0f4b794f1d0d851235
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Mon Jan 18 13:49:43 2010 -0600
-
-    This patch is dependent on two additional patches that are queued
-    for inclusion in the kernel.
-    
-    http://lists.ozlabs.org/pipermail/linuxppc-dev/2009-November/078181.html
-    http://lkml.org/lkml/2009/11/26/368
-    
-    With this new kernel functionality CPU  DLPAR can be done completely
-    in the kernel.  Under this new scheme the drmgr command only has to write
-    the drc-index of a cpu to /sys/devices/system/cpu/probe to have the cpu
-    dlpar added and hotplug added to the system.  The DLPAR remove of a cpu
-    involves writing the path in the device tree for the the cpu to be
-    removed to he /sys/sdevices/system/cpu/release file.  This will hotplug
-    remove the cpu and dlpar remove it.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit c36c06f686fa5b74104b8ba6d6c96a1b5fd94399
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Mon Jan 18 13:47:45 2010 -0600
-
-    The check to determine if cpu dlpar is capable on a system has a flaw, namely
-    that a similarly named file can cause a failure.  The capable check looks for
-    the online file in the /sys/devices/system/cpu/cpuX directory, where X is a
-    number.  This checked fails on newer kernels that present a cpufreq directory
-    that does not (nor should) contain an online file.
-    
-    The simple fix is to ensure that the directory we check starts with 'cpu' and
-    is followed by a digit.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit b2f23b2131bf983414ea4e1d9c9e076c917804dc
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Tue Jan 5 12:56:25 2010 -0600
-
-    The current logic in ppc64_cpu will loop through the maximum number
-    of cpu threads (set to 1024) when trying to determine or set a particular
-    cpu attribuite.
-    
-    For example, when setting smt mode, the code would try to set cpu
-    thread 0..1024 either online or offline until a failure occurs.  This
-    usually was trying to set the smt mode for a cpu thread that does not exist.
-    While this is mostly harmless, the side effect was that an error was returned
-    even though the smt setting operation completed successfully.
-    
-    This patch changes the logic so that it only tries to set cpu attributes for
-    the cpu threads that are present on the system.  This resolves the inadvertent
-    error return and is logically a bit nicer than trying all possible threads.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 58004f86aa85b8aa196ba45c7b955e71df3c58a1
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Tue Jan 5 12:55:03 2010 -0600
-
-    There are several build warnings generated when building the powerpc-utils
-    package, most of these are just innocuous initializations of variables.
-    There are a couple of larger changes such as in serv_config.c where the
-    results of the fread call needed to be properly checked.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 0022a99bb12daba80f265493c5905a271bbc406c
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Tue Dec 1 13:17:54 2009 -0600
-
-    For certain SAS devices we need to grab the sas address from sysfs
-    sas_device information instead of using the LUN to calculate the
-    sas address for the adapter.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit e5c4bbf6fe9a61821ec0655c23ace1aa4a069d7b
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Tue Dec 1 12:58:25 2009 -0600
-
-    Updated configure script for all of the changes.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 9b556b8bead6d2614c67d192a9f979b815fdba4f
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Tue Dec 1 11:48:54 2009 -0600
-
-    Correct a bad reference to powerpc-utils-papr.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 4a8cd973d93289ef1d6cb6a88765d7c022729925
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Tue Dec 1 11:47:36 2009 -0600
-
-    In order to avoid running the bootstrap.sh script we need to include
-    the Makefile.in files that are created by autoconf.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit ac412616d489637c7b4789fd637825a1fd5b30d1
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Tue Dec 1 11:45:26 2009 -0600
-
-    With the update to have the install.sh, missing, and depcomp scripts
-    included there is no reason to have the bootstrap.sh file.  This also
-    allows users to simply run 'configure' and 'make' to build the package.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit dd416763563f79ee93585abfc35aa24f9f580d2a
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Tue Dec 1 11:41:15 2009 -0600
-
-    The amsvis utility is now a part of the powerpc-utils-python package
-    and the man page is shipped with it.  The man page should have been removed
-    from this package when the amsvis tool was moved to the powerpc-utils-python
-    package.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit bbd52599654bc9a0305c2f19df4bf90f8cbd5775
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Tue Dec 1 11:37:54 2009 -0600
-
-    Rename the powerpc-utils.spec file to powerpc-utils.spec.in.  This
-    is used in a later patch so that we can set the release version in the
-    spec file when configure is run so as to avoid having to update the
-    release version in multiple places.
-    
-    For some reason this patch also adds the files in the doc directory to
-    be included in the 'make dist' output.  Better patch maintenance next
-    time, sorry.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 575662fb3d4510b198dae9b8e65954509c3939a3
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Tue Dec 1 11:21:59 2009 -0600
-
-    This update makes several corrections to the Makefile.am files
-    to correctly have all the files included when doing a 'make dist'.
-    This also updates configure.ac to put the install.sh, missing, and
-    depcomp file in the build-aux directory.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 672af32d08f3a80518a85ac8f5b5772c4873e9e7
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Thu Oct 22 13:58:13 2009 -0500
-
-    Updated Changelog for version 1.2.2
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit c829a55bd38cd6591246e9c4776d5e4698ddf2f6
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Thu Oct 22 13:54:17 2009 -0500
-
-    Re-add the powerpc-utils.spec file.
-    
-    For some reason ther spec file got dropped in the commit to remove the
-    amsvis command from the powerpc-utils package.
-    
-    Signed-off-by:Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 1fd07f4493e0ea77fd22749f501b8e7a3270a145
-Author: Brad Peters <bpeters@us.ibm.com>
-Date:   Wed Oct 21 15:41:58 2009 -0500
-
-    When executed, serv_config is causing a partition hang.  I was able to track
-    the cause of the hang down to a single query against PHYP via RTAS.  Attempting
-    to access 'proc-cuod-card-info', the Processor CUoD Capacity Card Info, seems
-    to no longer be supported.  I've removed this inquiry from the array.
-    
-    Signed-off by Brad Peters <bpeters@us.ibm.com>
-
-commit f725556286a4efe88ae82744625599604e1d3374
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Wed Oct 21 15:37:37 2009 -0500
-
-    Remove the amsvis command from powerpc-utils.
-    
-    The amsvis command is now available in the powerpc-utils-python package.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 016669ac413b6dee1ab83e2f4913789d0416926e
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Mon Sep 21 14:31:20 2009 -0500
-
-    Updates and prep for powerpc-utils-1.2.1 release
-    
-    Signed-off-by:Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 8a8ff90ee59ed4401cc9242ea6735551905e7f2c
-Author: Santiago Leon <sleon@ec.ibm.com>
-Date:   Mon Sep 21 14:16:35 2009 -0500
-
-    Introduce the lsdevinfo utility.  This command is used to provide the HMC or
-    IVM with name information for virtual devices so they can be matched against
-    the VIOS names.
-    
-    Signed-off-by: Santiago Leon <sleon@ec.ibm.com>
-    Acked-by: Nathan Fontenot <nfont@qustin.ibm.com>
-
-commit 1d28a04d69249ba2e80b3e4a52f5cca9ce3c410e
-Author: Brian King <brking@linux.vnet.ibm.com>
-Date:   Wed Sep 16 20:06:19 2009 -0500
-
-    According to PAPR, we need to call activate-firmware after a migration, which
-    we weren't doing. Add this call after updating the device tree. Add another
-    device tree update call after it to ensure the SLB size is correctly updated
-    in the kernel.
-    
-    Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
-
-commit 575a1172f223b0980746036d67b4031dd4151481
-Author: Robert Jennings <rcj@linux.vnet.ibm.com>
-Date:   Tue Sep 8 19:14:25 2009 -0500
-
-    DR commands shouldn't take long to complete, but having both an entry
-    and exit timestamp eliminates the guessing and can point people in the
-    correct direction while they debug issues.
-    
-    Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
-
-commit 89174c5f72cb81e3cb42cf2552378ef43ebb3dd7
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Tue Sep 8 19:13:03 2009 -0500
-
-    The current bounds checking only validates that the specified smt setting is
-    not zero and less than or equal to the threads per cpu on the system.  This
-    causes smt settings such as 4000000000 to be converted to some negative number
-    and thus odd smt settings ensue.  This patch ensures checks to make the smt
-    setting specified is not less than or equal to zero.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 935a222bb4962a5c904ded084603f9c99fa77d03
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Tue Sep 8 19:12:37 2009 -0500
-
-    This patch updates the retrieval of a system attribute, such as smt-snooze-delay
-    or dscr, to handle a valid return value of -1.
-    
-    The value of -1 for smt-snooze-delay is a valid value, where -1 == turning off
-    the snooze delay.  This updates the code to allow a return code from the
-    retrieval routine (success/failure) and the new system attribute is returned in
-    a parameter to the routine.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 2ccf8ed7465b9bb3a9e1091e7a8ee25881f2c6eb
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Tue Sep 8 19:12:00 2009 -0500
-
-    When making changes to increase the smt state, the cpus that are brought
-    online come online with the same smt-snooze-delay they had when they were
-    taken offline.  This leads to a mix of smt-snooze-delay states for a system.
-    
-    This patch will update the cpus after an smt state change so that they all
-    have the same smt-snooze-delay value if that value was consistant across
-    the cpus prior to changing the smt state.  If there was a mix of
-    smt-snooze-delay values prior to the smt state change then no attempt is
-    made to update the smt-snooze-delay state.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 6fa3193f0814a13580f11e23dbc6239ee416c87b
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Tue Sep 8 19:11:04 2009 -0500
-
-    This is some minor code cleanups, no functional changes.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 284a1dcf9142dc505e147d7d1ba292b80e013c42
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Tue Sep 8 19:10:29 2009 -0500
-
-    When setting or retrieving system wide attributes such as the
-    smt-snooze-delay or dscr we should only be concerned with online
-    cpus/threads.  Offline cpus/threads will not have these attributes
-    in their sysfs directory.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit cdd5116a7a1bd76946cd6385d1bbf127d5176fd1
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Tue Sep 8 19:09:25 2009 -0500
-
-    The ppc64_cpu command needs to properly turn off the smt snooze delay.
-    The current code does not handle the option 'off', it should as this
-    is regarded as a delay of -1.
-    
-    Signed-off-by:Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 75fd9c33ca111460151b78df4e24348fc1fbf55c
-Author: Brian King <brking@linux.vnet.ibm.com>
-Date:   Tue Aug 25 19:57:46 2009 -0500
-
-    The OpenFirmware binding for Fibre Channel devices permits any leading zeros
-    in the LUN field to be stripped, but does not require it. Fix ofpathname to
-    handle this case when translating OF pathname to logical device name.
-    
-    Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
-
-commit ce05548a33d198dd854983f85a76ce7e5649ca8e
-Author: Robert Jennings <rcj@linux.vnet.ibm.com>
-Date:   Tue Aug 25 18:43:57 2009 -0500
-
-    The logic in get_node_by_name() currently does not return when it finds
-    a child with the name being search for.  This would mean that a command
-    such as `drmgr -Q -c port -s "Port 1" -w 0 -d 3` would always return:
-      drmgr: Port 1 not owned by partition
-    
-    Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
-
-commit c090148f27b10d64d883df568550a32c0c725453
-Author: Robert Jennings <rcj@linux.vnet.ibm.com>
-Date:   Tue Aug 25 16:08:38 2009 -0500
-
-    Currently, print_node_list will never print the children of a node.
-    Just correcting a small bit of the logic.
-    
-    Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
-
-commit 33cf73f955b8894792a0b1ceff33799c60ad3bba
-Author: Robert Jennings <rcj@linux.vnet.ibm.com>
-Date:   Tue Aug 25 16:06:03 2009 -0500
-
-    Add HEA ports as a new connector type to lsslot.  Ports will be sorted on
-    location code, not name, so the output might look as follows (debug output
-    included).
-    
-    Getting node types 0x00000004
-    
-    DR nodes list
-    ==============
-    /proc/device-tree/lhea@23c00400:
-    	drc index: 0x23c00400        description: HEA I/O Slot
-    	drc name: HEA 1
-    	loc code: U789D.001.DQDYGLC-P1
-    /proc/device-tree/lhea@23c00400/ethernet@23e00300:
-    	drc index: 0x23e00300        description: HEA Port I/O Slot
-    	drc name: Port 4
-    	loc code: U789D.001.DQDYGLC-P1-C10-T1
-    /proc/device-tree/lhea@23c00400/ethernet@23e00000:
-    	drc index: 0x23e00000        description: HEA Port I/O Slot
-    	drc name: Port 1
-    	loc code: U789D.001.DQDYGLC-P1-C10-T2
-    
-    LHEA port name  Description
-    Port 4          HEA Port I/O Slot
-    Port 1          HEA Port I/O Slot
-    
-    Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
-
-commit 1c22ea90438b9ed2fd8b8682348d262a2066643f
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Thu Jul 30 19:41:47 2009 -0500
-
-    Changelog for v1.2.0
-
-commit 722ab744a6dc0c43b616eda2d17acbbe347a364b
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Thu Jul 30 16:47:26 2009 -0500
-
-    This patch contains all of the additional updates needed to support the
-    new version of ppc64_cpu, removal of old script and Makefile updates.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 49ad3ef26883b907a200ff5a7cf719fa1535752e
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Thu Jul 30 16:46:35 2009 -0500
-
-    This is really more of a re-write than an update.  The ppc64_cpu command
-    is being ported from Perl to C to support new functionality.  This
-    update introduces two new pieces of functionality to the command.
-    
-    1) Add the ability to set the SMT mode to a  certain value in addition to
-       turning it on and off.
-    2) Add the ability to set and display the cpu diagnostics run mode.  This
-       functionality required the port to C since this ability requires the
-       use of librtas.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 3922ddd3cf59635795e353e82b3ed98ae42f0618
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Thu Jul 30 16:45:37 2009 -0500
-
-    The /usr/sbin/rsct/bin/refrsrc command forces a refresh of the HMC/IVM
-    and RMC status after a migration occurs.  We should do this from the
-    drmgr command instead of assuming servicelog is installed.  A failure
-    to invoke this command can cause additional migrations to be delayed
-    for up to 10 minutes while the framework refreshes itself.
-    
-    The current scenario has the refrsrc command invoked from a servicelog
-    notifier handler.  This works in most cases but will cause a delay on
-    systems that do not have servicelog installed.  Additionally, one can
-    build drmgr without servicelog support which would cause the notification
-    to never be sent to servicelog even if it is installed.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 3c0868c32e6decfcb8d34a14c8ab9d453e59818d
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Thu Jul 30 16:44:52 2009 -0500
-
-    When removing nodes from the device tree in /proc the recusrsive routine
-    can fail with a bad pointer to the DIR struct.  The DIR struct should
-    be rewound after each remove to avoid this.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit fa1ae2a0b8db68487f93f4341ab1f5749a71155b
-Author: Nathan Fontenot <nfont@austin.ibm.com>
-Date:   Thu Jul 30 16:42:46 2009 -0500
-
-    s patch adds an additional output message when drmgr fails to remove
-    all of the requested lmbs in a drmgr memory remove request.  This additional
-    message is meant just to help clarify that the memory remove operations
-    didn't fail, but was unable to completely fulfill the request.  This update
-    came as a request from testers.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 2c9e5bd3c6f396195a1c1105505b0e2c18913774
-Author: Nathan Fontenot <nfont@shady-lp2.ltc.austin.ibm.com>
-Date:   Fri Jul 10 15:07:18 2009 -0500
-
-    I'm removing the __date__, __version__, and __source fields from each
-    of the files.  They were filled in by CVS keyword expansion and won't
-    be updated by GIT.
-    
-    Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
-
-commit 6203ee320c9945d5758768f68e74ce032279065d
-Author: Nathan Fontenot <nfont@shady-lp2.ltc.austin.ibm.com>
-Date:   Fri Jul 10 15:06:33 2009 -0500
-
-    The amsvis command will fail if vio devices have addresses greater than
-    30000009 due to a problem with hexidecimal values attempting to be sorted
-    as long integers.  This patch changes the sort to use string comparisions.
-    
-    Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
-
-commit 637cf0f453b0bb3afc29623c00637e1fc7f356ff
-Author: Nathan Fontenot <nfont@shady-lp2.ltc.austin.ibm.com>
-Date:   Fri Jul 10 15:01:46 2009 -0500
-
-    Logical device name to open firmware path translation for fibre-channel
-    devices can fail on systems where the fc_remote_ports file in sysfs has a
-    slightly different name.  On some systems this file appears as
-    fc_remote_ports:rport-X:Y-Z.  This patch corrects the lookup of this file.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 2063b6d212a87452744ed376e9dbe0238d6c9b17
-Author: Nathan Fontenot <nfont@shady-lp2.ltc.austin.ibm.com>
-Date:   Mon Jun 15 16:04:04 2009 -0500
-
-    Cpu add failures need to return 1 instead of -1.  A return code of -1 causes
-    the IVM to think there has been a really bad error and the IVM will wait 15
-    minutes prior to re-trying the operation.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 75bd5281443312faa30b82e482e8938353e3cd8c
-Author: Nathan Fontenot <nfont@users.sourceforge.net>
-Date:   Fri May 15 18:21:11 2009 -0500
-
-    The sysfs_dev_path member of the dr_node struct is a char[] and needs to be
-    treated as such.  this fixes a bug where the sysfs_dev_path is treated as a
-    char * and returning invalid info when the buffer is actually empty.
-    
-    This also removes the get_linux_dname() routine and moves the code inline in
-    the lsslot command, the only place it is used.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit bcd6ea2fdcd46dd6442b9e61a0876cf605cfc913
-Author: Nathan Fontenot <nfont@users.sourceforge.net>
-Date:   Fri May 15 17:41:41 2009 -0500
-
-    Update Meta data
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 77cc142379413d7a25574f6c4a5f3e7faaafb006
-Author: Nathan Fontenot <nfont@users.sourceforge.net>
-Date:   Fri May 15 17:36:21 2009 -0500
-
-    Remove unneeded spaces to correct previous patch for find_dir()
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit bc1838dbbda36087a784e304a6abc73ad0fd099f
-Author: Nathan Fontenot <nfont@users.sourceforge.net>
-Date:   Fri May 15 16:39:24 2009 -0500
-
-    When disabling SMT for a processor, make sure that we leave the first thread
-    of the processor enabled and disable all the others.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 340676e2db3a570e414731dd6d1f2f94cd451d5d
-Author: Nathan Fontenot <nfont@users.sourceforge.net>
-Date:   Fri May 15 16:37:55 2009 -0500
-
-    Change the name format for vio devices and correct indentation.
-    
-    Signed-off-by: Rob Jennings <rcj@linux.vnet.ibm.com>
-
-commit 0ddb33f4fcfb5324721551a60207e9da98a55152
-Author: Nathan Fontenot <nfont@users.sourceforge.net>
-Date:   Fri May 15 16:35:19 2009 -0500
-
-    Update the find command in get_vfc_wwpn() to handle being passed a symbolic
-    link.  Previously this lead to an infinite loop due to the possible circular
-    nature of sysfs.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 2c0721d82b6ac8d177ab13a3583758184b425bea
-Author: Nathan Fontenot <nfont@users.sourceforge.net>
-Date:   Fri May 15 16:32:37 2009 -0500
-
-    There are instances where goto_dir() will incorrectly return success.  An
-    updated find_dir allows us to check the result before trying to cd to the
-    directory we want.
-    
-    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 6157cb7be43deb16de242cc097342fa933e8a862
-Author: Nathan Fontenot <nfont@users.sourceforge.net>
-Date:   Fri May 15 16:30:26 2009 -0500
-
-    Return RC_ALREADY_OWN when trying to add a PHB that is already owned by the
-    partition.
-    
-    Signed-off-by: David Darrington <ddarring@linux.vnet.ibm.com>
-    Acked-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 05fb8a53a402032e6a7d33934d8c7bed72dc974b
-Author: Nathan Fontenot <nfont@users.sourceforge.net>
-Date:   Fri May 15 16:26:00 2009 -0500
-
-    Ignore hotplug power-off failures when the devie tree property
-    "/proc/device-tree/ibm,ignore-hp-po-fails-for-dlpar" exists.
-    
-    Signed-off-by: David Darrington <ddarring@linux.vnet.ibm.com>
-    Acked-by: Nathan Fontenot <nfont@austin.ibm.com>
-
-commit 4e19f3a434a9cc7b082f120d98700d50c12779d4
-Author: Nathan Fontenot <nfont@users.sourceforge.net>
-Date:   Wed May 13 14:33:57 2009 -0500
-
-    Initial commit for the new combined powerpc-utils package from the previous
-    powerpc-utils and p;owerpc-utils-papr packages.
+ src/usysident.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)

@@ -1,7 +1,7 @@
 ## Makefile for powerpc-utils-sles10-addons
 
 PPU_ADDONS_NAME = powerpc-utils-sles10-addons
-VERSION = 1.0.0
+VERSION = 1.0.2
 
 SCRIPTS = ../scripts/lsdevinfo ../scripts/ls-vdev ../scripts/ls-veth ../scripts/ls-vscsi
 UTILS = ../src/drmgr/drmgr ../src/drmgr/lsslot
@@ -11,7 +11,7 @@ INSTALL = /usr/bin/install
 SBIN_DIR = /usr/sbin
 DOC_DIR = /usr/share/doc/packages/$(PPU_ADDONS_NAME)
 
-PPU_TARNAME = powerpc-utils-1.2.2
+PPU_TARNAME = powerpc-utils-1.2.8
 PPU_ADDONS_TARNAME = $(PPU_ADDONS_NAME)-$(VERSION)
 
 all:

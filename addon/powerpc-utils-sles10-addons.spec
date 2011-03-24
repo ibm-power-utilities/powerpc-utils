@@ -1,5 +1,5 @@
 %define name powerpc-utils-sles10-addons
-%define version 1.0.0
+%define version 1.0.2
 %define release 0
 Summary:	Powerpc-utils Add-ons for SLES10 SP3
 Name:		%{name}
