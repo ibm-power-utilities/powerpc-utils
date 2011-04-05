@@ -965,25 +965,32 @@ mem_remove(struct options *opts)
 	struct lmb_list_head *lmb_list;
 	struct dr_node *lmb;
 	unsigned int removable = 0;
-	int rc;
+	int rc = 0;
 
 	lmb_list = get_lmbs();
 	if (lmb_list == NULL)
 		return -1;
 
-	/* Make sure we have enough removable memory to fulfill
-	 * this request
+	/* Can not know which lmbs are removable by the is_removable field
+	 * if AMS ballooning is active.
 	 */
-	for (lmb = lmb_list->lmbs; lmb; lmb = lmb->next) {
-		if (lmb->is_removable)
-			removable++;
+	if (!ams_balloon_active()) {
+		/* Make sure we have enough removable memory to fulfill
+		 * this request
+		 */
+		for (lmb = lmb_list->lmbs; lmb; lmb = lmb->next) {
+			if (lmb->is_removable)
+				removable++;
+		}
+
+		if (removable < opts->quantity) {
+			err_msg("There is not enough removable memory available to "
+				"fulfill the request.\n");
+			rc = -1;
+		}
 	}
 
-	if (removable < opts->quantity) {
-		err_msg("There is not enough removable memory available to "
-			"fulfill the request.\n");
-		rc = -1;
-	} else {
+	if (!rc) {
 		dbg("Removing %d lmbs\n", opts->quantity);
 		rc = remove_lmbs(opts, lmb_list);
 		if (rc)
