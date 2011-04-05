@@ -429,12 +429,9 @@ get_available_lmb(struct options *opts, struct lmb_list_head *lmb_list)
 	for (lmb = lmb_list->lmbs; lmb; lmb = lmb->next) {
 		int rc;
 
-		if (opts->usr_drc_name) {
+		if (opts->usr_drc_name)
 			if (strcmp(lmb->drc_name, opts->usr_drc_name))
 				continue;
-			else
-				break;
-		}
 
 		if (lmb->unusable)
 			continue;
