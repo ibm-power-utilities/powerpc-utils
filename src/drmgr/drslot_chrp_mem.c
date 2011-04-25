@@ -424,17 +424,17 @@ get_lmbs(unsigned int sort)
  * already owned by the partition and is available, or the lmb
  * matching the one specified by the user.
  *
- * @param lmb_list list of lmbs to be searched for available lmb
+ * @param start_lmb first lmbs to be searched for an available lmb
  * @returns pointer to avaiable lmb on success, NULL otherwise
  */
 static struct dr_node *
-get_available_lmb(struct options *opts, struct lmb_list_head *lmb_list)
+get_available_lmb(struct options *opts, struct dr_node *start_lmb)
 {
 	struct dr_node *lmb;
 	struct dr_node *usable_lmb = NULL;
 	int balloon_active = ams_balloon_active();
 
-	for (lmb = lmb_list->lmbs; lmb; lmb = lmb->next) {
+	for (lmb = start_lmb; lmb; lmb = lmb->next) {
 		int rc;
 
 		if (opts->usr_drc_name)
@@ -842,13 +842,17 @@ static int
 add_lmbs(struct options *opts, struct lmb_list_head *lmb_list)
 {
 	int rc = 0;
+	struct dr_node *lmb_head = lmb_list->lmbs;
 	struct dr_node *lmb;
 
 	lmb_list->lmbs_modified = 0;
 	while (lmb_list->lmbs_modified < (int)opts->quantity) {
-		lmb = get_available_lmb(opts, lmb_list);
+		lmb = get_available_lmb(opts, lmb_head);
 		if (lmb == NULL)
 			return -1;
+
+		/* Iterate only over the remaining LMBs */
+		lmb_head = lmb->next;
 
 		rc = acquire_drc(lmb->drc_index);
 		if (rc) {
@@ -916,13 +920,17 @@ mem_add(struct options *opts)
 static int
 remove_lmbs(struct options *opts, struct lmb_list_head *lmb_list)
 {
+	struct dr_node *lmb_head = lmb_list->lmbs;
 	struct dr_node *lmb;
 	int rc;
 
 	while (lmb_list->lmbs_modified < (int)opts->quantity) {
-		lmb = get_available_lmb(opts, lmb_list);
+		lmb = get_available_lmb(opts, lmb_head);
 		if (!lmb)
 			return -1;
+
+		/* Iterate only over the remaining LMBs */
+		lmb_head = lmb->next;
 
 		rc = set_lmb_state(lmb, OFFLINE);
 		if (rc) {
