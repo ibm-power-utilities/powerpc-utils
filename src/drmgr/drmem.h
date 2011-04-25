@@ -22,5 +22,8 @@ struct drconf_mem {
 #define MEM_BLOCK_SIZE_BYTES	"/sys/devices/system/memory/block_size_bytes"
 #define DYNAMIC_RECONFIG_MEM	"/proc/device-tree/ibm,dynamic-reconfiguration-memory"
 
-struct lmb_list_head *get_lmbs(void);
+#define LMB_NORMAL_SORT		0
+#define LMB_REVERSE_SORT	1
+
+struct lmb_list_head *get_lmbs(unsigned int);
 void free_lmbs(struct lmb_list_head *);

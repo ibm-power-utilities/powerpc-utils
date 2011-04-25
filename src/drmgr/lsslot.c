@@ -706,7 +706,7 @@ lsslot_chrp_mem(void)
 	int scn_offset = strlen("/sys/devices/system/memory/memory");
 	int lmb_offset = strlen(OFDT_BASE);
 
-	lmb_list = get_lmbs();
+	lmb_list = get_lmbs(LMB_NORMAL_SORT);
 	if (lmb_list == NULL)
 		return -1;
 

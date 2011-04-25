@@ -324,10 +324,12 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
  * get_lmbs
  * @brief Build a list of all possible lmbs for the system
  *
+ * @param sort LMB_NORMAL_SORT or LMB_REVERSE_SORT to control sort order
+ *
  * @return list of lmbs, NULL on failure
  */
 struct lmb_list_head *
-get_lmbs(void)
+get_lmbs(unsigned int sort)
 {
 	struct dr_connector *drc_list, *drc;
 	struct lmb_list_head *lmb_list = NULL;
@@ -360,12 +362,18 @@ get_lmbs(void)
 			return NULL;
 		}
 
-		if (last)
-			last->next = lmb;
-		else
+		if (sort == LMB_REVERSE_SORT) {
+			if (last)
+				lmb->next = last;
 			lmb_list->lmbs = lmb;
-
-		last = lmb;
+			last = lmb;
+		} else {
+			if (last)
+				last->next = lmb;
+			else
+				lmb_list->lmbs = lmb;
+			last = lmb;
+		}
 		found++;
 	}
 
@@ -455,7 +463,7 @@ get_available_lmb(struct options *opts, struct lmb_list_head *lmb_list)
 				continue;
 
 			usable_lmb = lmb;
-			continue;
+			break;
 		}
 
 		/* Found an available lmb */
@@ -882,7 +890,7 @@ mem_add(struct options *opts)
 	struct lmb_list_head *lmb_list;
 	int rc;
 
-	lmb_list = get_lmbs();
+	lmb_list = get_lmbs(LMB_NORMAL_SORT);
 	if (lmb_list == NULL)
 		return -1;
 
@@ -964,7 +972,7 @@ mem_remove(struct options *opts)
 	unsigned int removable = 0;
 	int rc = 0;
 
-	lmb_list = get_lmbs();
+	lmb_list = get_lmbs(LMB_REVERSE_SORT);
 	if (lmb_list == NULL)
 		return -1;
 
