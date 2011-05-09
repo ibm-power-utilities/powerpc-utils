@@ -67,6 +67,12 @@ The number of bytes which firmware would like the partition to give or take via 
 backing_memory
 This is the amount of physical memory, in bytes, that is currently reserved for access by this partition.  This value does change over time based on load of all of the partitions in the shared memory pool.  Use of memory in excess of this amount incurs performance penalties as loaning and paging will need to occur.
 .TP
+coalesced_bytes
+The number of bytes of memory assigned to the logical partition which have been coalesced with identical pages either within the logical partition, or with another logical partition.
+.TP
+pool_coalesced_bytes
+The number of bytes of memory in the shared memory pool which have been coalesced with identical pages.
+.TP
 cmo_enabled
 When this value is \fI1\fP the partition is running in shared memory mode.  A \fI0\fP in this field indicates that dedicated memory mode is enabled and the AMS kernel code will not be active.
 .TP

@@ -286,6 +286,22 @@ Virtual Processor Dispatch Counter. Counter that is incremented each time a virt
 .B dispatch_dispersions
 .br
 Virtual Processor Dispatch Dispersion Accumulator. Incremented on each virtual processor dispatch if the physical processor differs from that of the last dispatch.
+.PP
+.B coalesced_bytes
+.br
+The number of bytes of memory assigned to the logical partition which have been coalesced with identical pages either within the logical partition, or with another logical partition.
+.PP
+.B pool_coalesced_bytes
+.br
+The number of bytes of memory in the shared memory pool which have been coalesced with identical pages.
+.PP
+.B coalesce_pool_purr
+.br
+The number of PURR cycles which have been consumed to coalesce pages of data.
+.PP
+.B coalesce_pool_spurr
+.br
+The number of SPURR cycles which have been consumed to coalesce pages of data.
 .SH NOTES
 .PP
 .B PURR/PIC

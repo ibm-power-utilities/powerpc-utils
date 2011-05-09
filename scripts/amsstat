@@ -50,7 +50,7 @@ function print_meminfo_stats {
 function print_entitlement_data {
     echo "Entitlement Information:"
     for stat in `cat $lparcfg_file`; do
-        if echo $stat | grep "^entitled_memory\|^mapped_entitled_memory\|^entitled_memory_weight\|entitled_memory_pool_size\|^backing_memory\|^cmo_enabled\|^cmo_faults\|^cmo_fault_time_usec\|cmo_primary_psp\|^cmo_secondary_psp" >/dev/null; then
+        if echo $stat | grep "^entitled_memory\|^mapped_entitled_memory\|^entitled_memory_weight\|entitled_memory_pool_size\|^backing_memory\|^cmo_enabled\|^cmo_faults\|^cmo_fault_time_usec\|cmo_primary_psp\|^cmo_secondary_psp\|^coalesced_bytes\|^pool_coalesced_bytes" >/dev/null; then
             this_stat=`echo $stat | awk -F= '{print $1}'`
             this_value=`echo $stat | awk -F= '{print $2}'`
             printf "%${indent}s %${lparcfg_data_spacing}s %${lparcfg_data_spacing}s\n" " " "$this_stat:" "$this_value"
