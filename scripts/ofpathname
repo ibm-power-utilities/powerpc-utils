@@ -423,8 +423,31 @@ int_to_scsilun()
     C=$(( ($lunint >> 24) & 0xff ))
     D=$(( ($lunint >> 16) & 0xff ))
 
-    local lunstr=$(printf "%02X%02X%02X%02X00000000" $A $B $C $D)
+    local lunstr=$(printf "%02x%02x%02x%02x00000000" $A $B $C $D)
+    lunstr=`echo $lunstr | sed 's/^[0]*//'`
     echo "$lunstr"
+}
+
+#
+# scsilun_to_int
+# Conversion routine for SCSI LUN name => SCSI HBTL LUN
+#
+scsilun_to_int()
+{
+    local lunstr=$1
+    local A B C D L
+
+    L=${lunstr/00000000}
+    L=`echo $L | tr "[a-z]" "[A-Z]"`
+    L=`echo "ibase=16;obase=A; $L" | bc`
+
+    A=$(( ($L >> 8) & 0xff ))
+    B=$(($L & 0xff))
+    C=$(( ($L >> 24) & 0xff ))
+    D=$(( ($L >> 16) & 0xff ))
+
+    L=$(( (($A << 24) | ($B << 16) | ($C << 8) | $D) ))
+    echo "$L"
 }
 
 get_fc_scsilun()
@@ -460,6 +483,7 @@ get_fc_wwpn()
 l2of_scsi()
 {
     local found=0
+    local devtype
 
     # There may be many instances of DEVICE under /sys
     for dir in `$FIND /sys -name $DEVICE`; do
@@ -500,10 +524,32 @@ l2of_scsi()
     local vdev=${OF_PATH%/*}
     local fc=${OF_PATH%@*}
     fc=${fc##/*/}
+
+    if [[ -e /proc/device-tree$OF_PATH/device_type ]]; then
+        devtype=`$CAT /proc/device-tree$OF_PATH/device_type`;
+        if [[ $devtype = "fcp" || $devtype = "scsi-fcp" ]]; then
+                fc="fibre-channel";
+        fi
+    fi
+
     if [[ $fc = "fibre-channel" ]]; then
-	local fc_lun=`get_fc_scsilun $LUN`
 	local wwpn=`get_fc_wwpn "$device_path/../../fc_remote_ports*"`
-        OF_PATH=$(printf "%s/disk@%s,%s" $OF_PATH $wwpn $fc_lun)
+
+        if [[ ! -e /proc/device-tree$OF_PATH/disk ]]; then
+                for dir in `$FIND /proc/device-tree$OF_PATH -type d`; do
+                        if [[ -e $dir/disk ]]; then
+                                OF_PATH=${dir##/proc/device-tree}
+                                break;
+                        fi
+                done
+        fi
+
+        OF_PATH=$(printf "%s/disk@%s" $OF_PATH $wwpn)
+
+        if [[ $LUN != "0" ]]; then
+                local fc_lun=`get_fc_scsilun $LUN`
+                OF_PATH=$(printf "%s,%s" $OF_PATH $fc_lun)
+        fi
     elif [[ $vdev = "/vdevice" ]]; then
         # get the v-device data
         local tmp=${OF_PATH//\/vdevice/}
@@ -531,22 +577,47 @@ l2of_scsi()
 	    goto_dir $device_path "sas_end_device*"
 	    dev_id=${PWD##*-}
 	    sas_id=`cat /sys/class/sas_device/end_device-$dev_id/sas_address`
+	    sas_id=${sas_id##0x}
+
+	    OF_PATH=$(printf "%s/sas/disk@%s" $OF_PATH $sas_id)
+	    if [[ $LUN != "0" ]]; then
+                local LUNSTR=`int_to_scsilun $LUN`
+                OF_PATH=$(printf "%s,%s" $OF_PATH $LUNSTR)
+	    fi
 	else
             local B T L
-            B=`echo $BUS | tr "[a-z]" "[A-Z]"`
-            B=`echo "ibase=16;obase=A; $B" | bc`
-            T=`echo $ID | tr "[a-z]" "[A-Z]"`
-            T=`echo "ibase=16;obase=A; $T" | bc`
-            L=`echo $LUN | tr "[a-z]" "[A-Z]"`
-            L=`echo "ibase=16;obase=A; $L" | bc`
+            local fwtype="0"
 
-	    sas_id=$(( ($B << 16) | ($T << 8) | $L ))
+            if [[ -e /sys/class/scsi_host/host$HOST/fw_type ]]; then
+                fwtype=`$CAT /sys/class/scsi_host/host$HOST/fw_type`
+            fi
+
+            if [[ $fwtype = "1" ]]; then
+                goto_dir $device_path "device_id"
+                sas_id=`$CAT $PWD/device_id`
+                sas_id=${sas_id##0x}
+
+	        OF_PATH=$(printf "%s/sas/disk@%s" $OF_PATH $sas_id)
+                if [[ $LUN != "0" ]]; then
+                    local LUNSTR=`int_to_scsilun $LUN`
+                    OF_PATH=$(printf "%s,%s" $OF_PATH $LUNSTR)
+                fi
+            else
+                B=`echo $BUS | tr "[a-z]" "[A-Z]"`
+                B=`echo "ibase=16;obase=A; $B" | bc`
+                T=`echo $ID | tr "[a-z]" "[A-Z]"`
+                T=`echo "ibase=16;obase=A; $T" | bc`
+                L=`echo $LUN | tr "[a-z]" "[A-Z]"`
+                L=`echo "ibase=16;obase=A; $L" | bc`
+
+                sas_id=$(( ($B << 16) | ($T << 8) | $L ))
+
+	        OF_PATH=$(printf "%s/sas/disk@%x" $OF_PATH $sas_id)
+                if [[ $LUN != "0" ]]; then
+                    OF_PATH=$(printf "%s,%x" $OF_PATH $LUN)
+                fi
+            fi
 	fi
-
-	OF_PATH=$(printf "%s/sas/disk@%x" $OF_PATH $sas_id)
-        if [[ $LUN != "0" ]]; then
-            OF_PATH=$(printf "%s,%x" $OF_PATH $LUN)
-        fi
     else
         # make sure the "scsi" information is on the end of the path
         local scsi_name=${OF_PATH##/*/}
@@ -589,6 +660,14 @@ ofpathname_to_logical()
     fi
 
     if [[ $DEVTYPE = "disk" && $FC = "fibre-channel" ]]; then
+        DEVTYPE="fc"
+    fi
+
+    if [[ $DEVTYPE = "disk" && $FC = "QLGC,qlc" ]]; then
+        DEVTYPE="fc"
+    fi
+
+    if [[ $DEVTYPE = "disk" && $FC = "fp" ]]; then
         DEVTYPE="fc"
     fi
 
@@ -797,13 +876,52 @@ of2l_scsi()
 #
 of2l_sas()
 {
-    DEV_ID=${DEVICE##*\@}
-    DEV_ID=${DEV_ID%%,*}
+    local matchtype dir
 
-    DEV_ID=`echo $DEV_ID | tr "[a-z]" "[A-Z]"`
-    DEV_ID=`echo "ibase=16;obase=A; $DEV_ID" | bc`
+    DEV_NAME=${DEVICE##*\@}
+    DEV_ID=${DEV_NAME%%,*}
 
-    local dir
+    LUN=${DEV_NAME/$DEV_ID}
+    LUN=${LUN/,/}
+
+    if [[ ${#LUN} = 0 ]]; then
+        LUN="0"
+    fi
+
+    lunint=`scsilun_to_int $LUN`
+
+    PCI_ID=${DEVPATH%%/sas*}
+    vendor_id=`od -tx /proc/device-tree/$PCI_ID/vendor-id`
+    vendor_id=`echo $vendor_id | cut -d " " -f 2`
+
+    if [[ $vendor_id = "00001000" ]]; then
+        matchtype="libsas"
+    else
+        matchtype="ipr32"
+    fi
+
+    for dir in `$FIND /sys/class/scsi_host -maxdepth 1 -name 'host*'`; do
+        cd $dir
+        local link=`get_link "device"`
+
+        cd $link
+        cd ..
+
+        local devspec=`$CAT ./devspec 2>/dev/null`
+        if [[ $devspec = $PCI_ID ]]; then
+                # check for ipr64
+                if [[ -e $dir/fw_type ]]; then
+                        local fwtype=`$CAT $dir/fw_type`
+                        if [[ $fwtype = "1" ]]; then
+                                matchtype="ipr64"
+                                break
+                        fi
+                fi
+
+                break
+        fi
+    done
+
     for dir in `$FIND /sys/block -name 's[dr]*'`; do
         # go up to find directory with 'device' link
 	local devdir=`find_dir $dir device`
@@ -822,7 +940,7 @@ of2l_sas()
         cd $link
 
         # save the name of the current directory, we may need it later...
-        local device_dir=${PWD##/*/}
+        local device_dir=$PWD
 
         local B T L
         B=`echo $BUS | tr "[a-z]" "[A-Z]"`
@@ -831,17 +949,70 @@ of2l_sas()
         T=`echo "ibase=16;obase=A; $T" | bc`
         L=`echo $LUN | tr "[a-z]" "[A-Z]"`
         L=`echo "ibase=16;obase=A; $L" | bc`
-        local sas_id=$((($B << 16) | ($T << 8) | $L))
 
-        if [[ $sas_id = $DEV_ID ]]; then
-            goto_dir $PWD "devspec"
-            local devspec=`$CAT ./devspec 2>/dev/null`
+        if [[ $matchtype = "ipr32" ]]; then
+            local sas_id=$((($B << 16) | ($T << 8) | $L))
 
-            if [[ $devspec/sas = $DEVPATH ]]; then
-                LOGICAL_DEVNAME="${dir##*/}"
-                return
+            sas_id=`echo "ibase=A;obase=16; $sas_id" | bc`
+            sas_id=`echo $sas_id | tr "[A-Z]" "[a-z]"`
+
+            if [[ $sas_id = $DEV_ID ]]; then
+                goto_dir $PWD "devspec"
+                local devspec=`$CAT ./devspec 2>/dev/null`
+
+                if [[ $devspec/sas = $DEVPATH ]]; then
+                    LOGICAL_DEVNAME="${dir##*/}"
+                    return
+                fi
             fi
+        elif [[ $matchtype = "ipr64" ]]; then
+            if [[ -e $devdir/device/device_id ]]; then
+                local deviceid=`$CAT $devdir/device/device_id`
+                deviceid=${deviceid##0x}
+
+                if [[ $deviceid != $DEV_ID ]]; then
+                    continue
+                fi
+
+                if [[ $L = $lunint ]]; then
+                    goto_dir $PWD "devspec"
+                    local devspec=`$CAT ./devspec 2>/dev/null`
+
+                    if [[ $devspec/sas = $DEVPATH ]]; then
+                        LOGICAL_DEVNAME="${dir##*/}"
+                        return
+                    fi
+                fi
+            fi
+        elif [[ $matchtype = "libsas" ]]; then
+            local dev_id
+	    goto_dir $device_dir "sas_end_device*" 0
+	    dev_id=${PWD##*-}
+
+            if [[ ! -e /sys/class/sas_device/end_device-$dev_id/sas_address ]]; then
+                continue
+            fi
+
+	    sas_id=`cat /sys/class/sas_device/end_device-$dev_id/sas_address`
+	    sas_id=${sas_id##0x}
+
+            if [[ $sas_id != $DEV_ID ]]; then
+                continue
+            fi
+
+            if [[ $L = $lunint ]]; then
+                goto_dir $PWD "devspec"
+                local devspec=`$CAT ./devspec 2>/dev/null`
+
+                if [[ $devspec/sas = $DEVPATH ]]; then
+                    LOGICAL_DEVNAME="${dir##*/}"
+                    return
+                fi
+            fi
+        else
+                err $ERR_NO_LOGDEV
         fi
+
     done
 }
 
@@ -907,7 +1078,14 @@ of2l_fc()
 {
     DEV_ID=${DEVICE##*\@}
     OF_WWPN=${DEV_ID%%,*}
-    OF_LUN=${DEV_ID##*,}
+    OF_LUN=${DEV_ID/$OF_WWPN}
+    OF_LUN=${OF_LUN/,/}
+
+    if [[ ${#OF_LUN} = 0 ]]; then
+        OF_LUN="0"
+    fi
+
+    lunint=`scsilun_to_int $OF_LUN`
 
     local dir
     for dir in `$FIND /sys/block -name 's[dr]*'`; do
@@ -943,13 +1121,14 @@ of2l_fc()
                 err $ERR_NO_LOGDEV
         fi
 
-        local fc_lun=`get_fc_scsilun $LUN`
 	local wwpn=`get_fc_wwpn "$device_path/fc_remote_ports*"`
-	let stripped_lun=`echo "10#$fc_lun"`
-	let stripped_oflun=`echo "10#$OF_LUN"`
 
         if [[ $wwpn = $OF_WWPN ]]; then
-                if [[ $fc_lun = $OF_LUN || $stripped_lun = $stripped_oflun ]]; then
+                local L
+                L=`echo $LUN | tr "[a-z]" "[A-Z]"`
+                L=`echo "ibase=16;obase=A; $L" | bc`
+
+                if [[ $L = $lunint ]]; then
                         LOGICAL_DEVNAME="${dir##*/}"
                         return
                 fi

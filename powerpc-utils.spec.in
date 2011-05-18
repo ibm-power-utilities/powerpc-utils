@@ -109,5 +109,8 @@ if [ "$1" = "0" ]; then
 fi
 
 %changelog
+* Fri May 13 2011 Brian King <brking@linux.vnet.ibm.com>
+- Fixed some ofpathname issues with various SAS and FC adapters
+
 * Fri Mar 11 2011 Brian King <brking@linux.vnet.ibm.com>
 - Do not install vscsi server scripts, since they are deprecated
