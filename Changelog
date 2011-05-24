@@ -1,3 +1,96 @@
+powerpc-utils-1.2.9
+=====================================================================
+commit bc8468c42c2d1e4c2be3e0e8ecdb91024d384295
+Author: Brian King <brking@linux.vnet.ibm.com>
+Date:   Tue May 24 10:05:20 2011 -0500
+
+    Adds support to ofpathname for HFI network devices. Since the current driver
+    does not attach to any bus and there is no way to correlate between the devi
+ce
+    tree and the hf device in sysfs, we have to make some assumptions in how the
+    two are related.
+    
+    Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
+
+commit 002ae7138d67bbedcbff03da45b60f839afd7d10
+Author: Brian King <brking@linux.vnet.ibm.com>
+Date:   Wed May 18 09:03:33 2011 -0500
+
+    Adds support for some new ipr SAS adapters which have a new device path
+    representation in Open Firmware. This also fixes the OF to logical translation
+    for LSI based SAS adapters as well as fixes issues seen with some FC devices.
+    
+    Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
+
+commit ecc3536de7994f5597b35898390012ebeca6845a
+Author: Brian King <brking@linux.vnet.ibm.com>
+Date:   Mon May 9 11:18:39 2011 -0500
+
+    Adds the page coalescing statistics to the output of amsstat
+    
+    Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
+
+commit 6ebe995f4b5a245b3822b4440bf0dbf760923db4
+Author: Robert Jennings <rcj@linux.vnet.ibm.com>
+Date:   Mon Apr 25 09:33:25 2011 -0500
+
+    For each attempt to add or remove a number of LMBs the search for
+    an available LMB starts at the head of the lmb list.  When removing
+    a number of LMBs on a system with AMS enabled (where the is_removable
+    flag is ignored) this causes several issues.  First, the remove will
+    attempt to remove an LMB already removed.  Secondly, the remove will
+    attempt to remove LMBs which are not removable repeatedly in it's search
+    which wastes a lot of time.
+    
+    This patch changes get_available_lmb so that it takes an lmb pointer to
+    start it's search rather than the lmb_list.  Both add_lmbs and
+    remove_lmbs are changed to keep an lmb pointer as the starting point to
+    pass to get_available_lmb and this is incremented as lmbs are attempted.
+    
+    Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
+
+commit 96fa1aa995ab85bab3c1522eb5f8d9c70006534c
+Author: Robert Jennings <rcj@linux.vnet.ibm.com>
+Date:   Mon Apr 25 09:32:21 2011 -0500
+
+    This will be used by get_available_lmb to find an lmb during remove
+    starting with the highest lmb available.  This patch re-works commit
+    c0a2b16c7cab44aa92544485760ee24bf8929235 where the list was traversed
+    to the end each time it was called for a remove.  This change is needed
+    for a future patch which will have get_available_lmb search only
+    previously untried lmbs.  This was not possible unless the lmb list sort
+    order is reversed.
+    
+    Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
+
+commit 5948c0953be9655c5eb1bb01768cfd94702916f6
+Author: Robert Jennings <rcj@linux.vnet.ibm.com>
+Date:   Tue Apr 5 10:56:19 2011 -0500
+
+    Fix the code in get_available_lmb() to continue validating the LMB
+    if the name matches the drc name provided by the user.  Previously,
+    if a specific slot name was specified to drmgr for a memory add/remove
+    operation the match could not be made.  The code would drop out of the
+    search when it found the match but do it in such a way that the match
+    was not deemed to be found.
+    
+    Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
+
+commit e52fbf7d10ba89d8b464f734eb36c94e593cd97d
+Author: Robert Jennings <rcj@linux.vnet.ibm.com>
+Date:   Tue Apr 5 10:55:23 2011 -0500
+
+    The number removable memory sections can not be determined if AMS is
+    active because LMBs that are not marked 'is_removable' could still be
+    removed if the balloon driver owns that memory.  Therefore the check
+    comparing the user-specified quanity of LMBs to add/remove is invalid.
+    
+    If AMS ballooning is active, skip the check for how many LMBs are
+    removable and try the operation.
+    
+    Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
+
+
 powerpc-utils-1.2.8
 =====================================================================
 
