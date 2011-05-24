@@ -322,6 +322,7 @@ logical_to_ofpathname()
 
     case $DEVICE in
         eth*)       l2of_ethernet ;;
+        hf*)        l2of_hfi ;;
         sd* | sr*)  # PATA devices appear as sd*, but should be converted
 		    # using the ide logic
 		    is_pata=$(is_pata_dev $DEVNAME)
@@ -407,6 +408,26 @@ l2of_ethernet()
     if [[ -z $OF_PATH ]]; then
         err $ERR_NO_OFPATH
     fi
+}
+
+#
+# l2of_hfi
+# Conversion routine for logical => OF path of HFI devices
+#
+l2of_hfi()
+{
+    local hfnum=${DEVICE##hf}
+    local hfpath
+
+    if [[ $hfnum = "0" || $hfnum = "2" ]]; then
+        hfpath=`$FIND /proc/device-tree -name hfi-ethernet* | sort | head -n 1`
+    elif [[ $hfnum = "1" || $hfnum = "3" ]]; then
+        hfpath=`$FIND /proc/device-tree -name hfi-ethernet* | sort | tail -n 1`
+    else
+        err $ERR_NO_OFPATH
+    fi
+
+    OF_PATH=${hfpath##/proc/device-tree}
 }
 
 #
@@ -692,6 +713,7 @@ ofpathname_to_logical()
                              of2l_ide
                           fi ;;
         eth* | l-lan  )  of2l_ethernet ;;
+        hfi-ethernet* )  of2l_hfi ;;
         disk*         )  of2l_ide ;;
     esac
 
@@ -772,6 +794,33 @@ of2l_ethernet()
             return
         fi
     done
+}
+
+#
+# of2l_hfi
+# Conversion routine for OF path => logical names of HFI devices
+#
+of2l_hfi()
+{
+    # strip off ip info if present
+    local devname=${DEVNAME%%:*}
+    local hfpath
+
+    hfpath=`$FIND /proc/device-tree -name hfi-ethernet* | sort | head -n 1`
+    hfpath=${hfpath##/proc/device-tree}
+
+    if [[ $hfpath = $devname ]] ; then
+        LOGICAL_DEVNAME="hf0"
+    else
+        hfpath=`$FIND /proc/device-tree -name hfi-ethernet* | sort | tail -n 1`
+        hfpath=${hfpath##/proc/device-tree}
+
+        if [[ $hfpath = $devname ]] ; then
+            LOGICAL_DEVNAME="hf1"
+        else
+            err $ERR_NO_LOGDEV
+        fi
+    fi
 }
 
 #
