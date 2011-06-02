@@ -1,0 +1,193 @@
+.\" Copyright (C) 2011 International Business Machines.
+.\"
+.\" Author(s)
+.\"	Santiago Leon <santil@santil@linux.vnet.ibm.com>
+.\"	Text extracted from AIX 6.1 Information Document.
+.\"	Copyright International Business Machines Corporation 1997, 2010.
+.\"	
+.TH LPARSTAT 8 "May 2011" Linux "Linux on Power Service Tools"
+.SH NAME
+lparstat \- Reports logical partition ( LPAR ) related information and statistics.
+.SH SYNOPSIS
+.B /usr/sbin/lparstat
+[ options ]
+.SH DESCRIPTION
+The \fIlparstat\fR command provides a report of LPAR related information and utilization statistics. This command provides a display of current LPAR related parameters and Hypervisor information, as well as utilization statistics for the LPAR.
+
+The \fIlparstat\fR command with no options will generate a single report containing utilization statistics related to the LPAR since boot time.
+
+The following information is displayed in the system configuration row: 
+.TP
+type
+Partition Type. Can be either dedicated or shared.
+.TP
+mode
+Indicates whether the partition processor capacity is capped or uncapped allowing it to consume idle cycles from the shared pool. Dedicated LPAR is capped or donating. 
+.TP
+smt
+Indicates whether simultaneous multi-threading is enabled or disabled in the partition. If there are two SMT threads, the row is displayed as "on." However, if there are more than two SMT threads, the number of SMT threads is displayed.
+.TP
+lcpu
+Number of online logical processors. 
+.TP
+mem
+Online Memory Capacity. 
+.TP
+cpus
+Number of online physical processors in the pool. 
+.TP
+ent
+Entitled processing capacity in processor units. This information is displayed only if the partition type is shared. 
+.P
+The following information is displayed in the utilization row:
+.TP
+%user
+Shows the percentage of the entitled processing capacity used while executing at the user level (application).
+For dedicated partitions, the entitled processing capacity is the number of physical processors.
+For uncapped partitions with a current physical processor consumption above their entitled capacity, the percentage becomes relative to the number of physical processor consumed (physc).
+.TP
+%sys
+Shows the percentage of the entitled processing capacity used while executing at the system level (kernel).
+For dedicated partitions, the entitled processing capacity is the number of physical processors.
+For uncapped partitions with a current physical processor consumption above their entitled capacity, the percentage becomes relative to the number of physical processor consumed (physc).
+.TP
+%wait
+Shows the percentage of the entitled processing capacity unused while the partition was idle and had outstanding disk I/O requests.
+For dedicated partitions, the entitled processing capacity is the number of physical processors.
+For uncapped partitions with a current physical processor consumption above their entitled capacity, the percentage becomes relative to the number of physical processor consumed (physc).
+.TP
+%idle
+Shows the percentage of the entitled processing capacity unused while the partition was idle and did not have any outstanding disk I/O request.
+For dedicated partitions, the entitled processing capacity is the number of physical processors.
+For uncapped partitions with a current physical processor consumption above their entitled capacity, the percentage becomes relative to the number of physical processor consumed (physc).
+.P
+The following statistics are displayed when the partition type is shared or dedicated-donating:
+.TP
+physc
+Shows the number of physical processors consumed. 
+.TP
+vcsw
+Shows the number of virtual context switches that are virtual processor hardware preemptions. 
+.P
+The following statistics are displayed only when the partition type is shared:
+.TP
+%entc
+Shows the percentage of the entitled capacity consumed. Because the time base over which this data is computed can vary, the entitled capacity percentage can sometimes exceed 100%. This excess is noticeable only with small sampling intervals. 
+.TP
+lbusy
+Shows the percentage of logical processor(s) utilization that occurred while executing at the user and system level. 
+.TP
+phint
+Shows the number of phantom (targeted to another shared partition in this pool) interruptions received. 
+.SH OPTIONS
+.TP
+\fB\-i\fR
+Lists details on the LPAR configuration. The various details displayed by the -i option are listed below: 
+.RS
+.TP
+Node Name
+Description
+.TP
+Partition Name
+Logical partition name as assigned at the HMC. 
+.TP
+Partition Number
+Number of this Logical Partition. 
+.TP
+Type
+Indicates whether the LPAR is using dedicated or shared CPU resource and if the SMT is turned ON. The Type is displayed in the format [Shared | Dedicated] [ -SMT ] [ -# ] 
+The following list explains the different Type formats:
+.RS
+.TP
+Shared - Indicates that the LPAR is running in the Shared processor mode.
+.TP
+Dedicated - Indicates that the LPAR is running in the dedicated processor mode.
+.TP
+SMT[-#] - Indicates that the LPAR has SMT mode turned ON and the number of SMT threads is 2. If the number of threads is greater than 2, then the number of threads is also displayed.
+.RE
+.TP
+Mode
+Indicates whether the LPAR processor capacity is capped, or if it is uncapped and allowed to consume idle cycles from the shared pool. Dedicated LPAR is capped or donating. 
+.TP
+Entitled Capacity
+    The number of processing units this LPAR is entitled to receive. 
+.TP
+Partition Group-ID
+    LPAR group that this LPAR is a member of. 
+.TP
+Shared Pool ID
+    Identifier of Shared Pool of Physical processors that this LPAR is a member.
+.TP
+Online Virtual CPUs
+Number of CPUs (virtual engines) currently online. 
+.TP
+Maximum Virtual CPUs
+Maximum possible number of CPUs (virtual engines). 
+.TP
+Minimum Virtual CPUs
+    Minimum number of virtual CPUs this LPAR was defined to ever have. 
+.TP
+Online Memory
+Amount of memory currently online. 
+.TP
+Minimum Memory
+    Minimum memory this LPAR was defined to ever have. 
+.TP
+Variable Capacity Weight
+    The priority weight assigned to this LPAR which controls how extra (idle) capacity is allocated to it. A weight of -1 indicates a soft cap is in place. 
+.TP
+Minimum Capacity
+    The minimum number of processing units this LPAR was defined to ever have. Entitled capacity can be reduced down to this value. 
+.TP
+Maximum Capacity
+    The maximum number of processing units this LPAR was defined to ever have. Entitled capacity can be increased up to this value. 
+.TP
+Capacity Increment
+    The granule at which changes to Entitled Capacity can be made. A value in whole multiples indicates a Dedicated LPAR. 
+.TP
+Active Physical CPUs in System
+    The current number of active physical CPUs in the system containing this LPAR. 
+.TP
+Active CPUs in Pool
+    The maximum number of CPUs available to this LPAR's shared processor pool. 
+.TP
+Maximum Capacity of Pool
+    The maximum number of processing units available to this LPAR's shared processor pool. 
+.TP
+Entitled Capacity of Pool
+    The number of processing units that this LPAR's shared processor pool is entitled to receive. 
+.TP
+Unallocated Capacity
+    The sum of the number of processor units unallocated from shared LPARs in an LPAR group. This sum does not include the processor units unallocated from a dedicated LPAR, which can also belong to the group. The unallocated processor units can be allocated to any dedicated LPAR (if it is greater than or equal to 1.0 ) or shared LPAR of the group. 
+.TP
+Physical CPU Percentage
+    Fractional representation relative to whole physical CPUs that these LPARs virtual CPUs equate to. This is a function of Entitled Capacity / Online CPUs. Dedicated LPARs would have 100% Physical CPU Percentage. A 4-way virtual with Entitled Capacity of 2 processor units would have a 50% physical CPU Percentage. 
+.TP
+Unallocated Weight
+    Number of variable processor capacity weight units currently unallocated within the LPAR group. 
+.TP
+Memory Mode
+Indicates whether the memory mode is shared or dedicated. If Active Memory Expansion is enabled, the memory mode also includes a new mode called Expanded.
+.TP
+Total I/O Memory Entitlement
+The I/O memory entitlement of the LPAR. 
+.TP
+Variable Memory Capacity Weight
+.TP
+Memory Pool ID
+The memory pool ID of the pool that the LPAR belongs to. 
+.TP
+Physical Memory in the Pool
+The physical memory present in the pool that the LPAR belongs to.
+.TP
+Unallocated Variable Memory Capacity Weight
+he unallocated variable memory-capacity weight of the LPAR. 
+.TP
+Unallocated I/O Memory Entitlement
+The unallocated I/O memory entitlement of the LPAR. 
+.TP
+Memory Group ID of LPAR
+The memory group ID of the Workload Manager group that the LPAR belongs to. 
+.TP
+Desired Variable Capacity Weight
+The variable memory capacity weight of the LPAR. 
