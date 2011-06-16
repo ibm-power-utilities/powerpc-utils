@@ -1,3 +1,52 @@
+powerpc-utils-1.2.10
+=====================================================================
+commit 6bac5a2dca6bd1ce2e31c930e1dcda8e64a9258d
+Author: Nathan Fontenot <nfont@austin.ibm.com>
+Date:   Thu Jun 16 09:28:06 2011 -0500
+
+    Add lparstat man page to specfile.
+    
+    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
+
+commit 09787d39d35839bc30c7370af2114e7578501d9e
+Author: Nathan Fontenot <nfont@austin.ibm.com>
+Date:   Mon Jun 13 15:20:23 2011 -0500
+
+    Bump to release 1.2.9-2
+    
+    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
+
+commit 767567dcfcc7615defab360e6d2c3b253eeda9ac
+Author: Nathan Fontenot <nfont@austin.ibm.com>
+Date:   Mon Jun 13 15:09:29 2011 -0500
+
+    Add the lparstat man page to the dist builds.
+    
+    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
+
+commit da720b14f25f1663d7e126ba6259b4944ec9b0e1
+Author: Nathan Fontenot <nfont@austin.ibm.com>
+Date:   Thu Jun 2 10:08:45 2011 -0500
+
+    Update to release 1.2.9-1
+
+commit 5139d79b923cb0ad36f254be47c72211d19cf3da
+Author: Santiago Leon <santil@linux.vnet.ibm.com>
+Date:   Thu Jun 2 09:54:43 2011 -0500
+
+    Man page for lparstat.
+    
+    Signed-off-by: Santiago Leon <santil@linux.vnet.ibm.com>
+
+commit c3096d3849deca4abc330080c36b077b265aeb6f
+Author: Santiago Leon <santil@linux.vnet.ibm.com>
+Date:   Thu Jun 2 09:50:03 2011 -0500
+
+    Correct spelling error.
+    
+    Signed-off-by: Santiago Leon <santil@linux.vnet.ibm.com>
+
+
 powerpc-utils-1.2.9
 =====================================================================
 commit bc8468c42c2d1e4c2be3e0e8ecdb91024d384295
