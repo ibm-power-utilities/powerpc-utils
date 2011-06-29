@@ -36,11 +36,14 @@
 #define DIAGNOSTICS_RUN_MODE	42
 #define CPU_OFFLINE		-1
 
+#ifdef HAVE_LINUX_PERF_EVENT_H
 static unsigned long long cpu_freq[MAX_NR_CPUS];
 static int counters[MAX_NR_CPUS];
 
 #ifndef __NR_perf_event_open
 #define __NR_perf_event_open	319
+#endif
+
 #endif
 
 int threads_per_cpu = 0;
