@@ -47,14 +47,70 @@ int threads_per_cpu = 0;
 int cpus_in_system = 0;
 int threads_in_system = 0;
 
+int test_attr(char *path, char *perms)
+{
+	FILE *fp;
+
+	fp = fopen(path, perms);
+	if (fp) {
+		fclose(fp);
+		return 1;
+	}
+
+	if (errno == ENOENT)
+		/* cpu probably offline */
+		return 1;
+
+	return 0;
+}
+
+int attr_is_readable(char *path)
+{
+	return test_attr(path, "r");
+}
+
+int attr_is_writeable(char *path)
+{
+	return test_attr(path, "w");
+}
+
+int test_sysattr(char *attribute, char *perms)
+{
+	char path[SYSFS_PATH_MAX];
+	int i;
+
+	for (i = 0; i < threads_in_system; i++) {
+		sprintf(path, SYSFS_CPUDIR"/%s", i, attribute);
+		if (!test_attr(path, perms))
+			return 0;
+	}
+
+	return 1;
+}
+
+int sysattr_is_readable(char *attribute)
+{
+	return test_sysattr(attribute, "r");
+}
+
+int sysattr_is_writeable(char *attribute)
+{
+	return test_sysattr(attribute, "w");
+}
+
 int get_attribute(char *path, const char *fmt, int *value)
 {
 	FILE *fp;
 	int rc;
 
 	fp = fopen(path, "r");
-	if (fp == NULL)
-		return -1;
+	if (fp == NULL) {
+		if (errno == ENOENT)
+			/* No attribute, cpu probably offline */
+			return 0;
+		else
+			return -1;
+	}
 
 	rc = fscanf(fp, fmt, value);
 	fclose(fp);
@@ -98,14 +154,10 @@ int get_system_attribute(char *attribute, const char *fmt, int *value)
 	for (i = 0; i < threads_in_system; i++) {
 		int cpu_attribute;
 
-		/* only check online cpus */
-		if (!cpu_online(i))
-			continue;
-
 		sprintf(path, SYSFS_CPUDIR"/%s", i, attribute);
 		rc = get_attribute(path, fmt, &cpu_attribute);
 		if (rc)
-			continue;
+			return rc;
 
 		if (system_attribute == -1)
 			system_attribute = cpu_attribute;
@@ -123,14 +175,10 @@ int set_system_attribute(char *attribute, const char *fmt, int state)
 	int i, rc;
 
 	for (i = 0; i < threads_in_system; i++) {
-		/* only set online cpus */
-		if (!cpu_online(i))
-			continue;
-
 		sprintf(path, SYSFS_CPUDIR"/%s", i, attribute);
 		rc = set_attribute(path, fmt, state);
 		if (rc)
-			return -1;
+			return rc;
 	}
 
 	return 0;
@@ -138,21 +186,41 @@ int set_system_attribute(char *attribute, const char *fmt, int state)
 
 int set_dscr(int state)
 {
+	if (!sysattr_is_writeable("dscr")) {
+		perror("Cannot set dscr");
+		return -2;
+	}
+
 	return set_system_attribute("dscr", "%x", state);
 }
 
 int get_dscr(int *value)
 {
+	if (!sysattr_is_readable("dscr")) {
+		perror("Cannot retrieve dscr");
+		return -2;
+	}
+
 	return get_system_attribute("dscr", "%x", value);
 }
 
 int set_smt_snooze_delay(int delay)
 {
+	if (!sysattr_is_writeable("smt_snooze_delay")) {
+		perror("Cannot set smt snooze delay");
+		return -2;
+	}
+
 	return set_system_attribute("smt_snooze_delay", "%d", delay);
 }
 
 int get_smt_snooze_delay(int *delay)
 {
+	if (!sysattr_is_readable("smt_snooze_delay")) {
+		perror("Cannot retrieve smt snooze delay");
+		return -2;
+	}
+
 	return get_system_attribute("smt_snooze_delay", "%d", delay);
 }
 
@@ -236,6 +304,11 @@ int get_smt_state(void)
 	int system_state = -1;
 	int i;
 
+	if (!sysattr_is_readable("online")) {
+		perror("Cannot retrieve smt state");
+		return -2;
+	}
+
 	for (i = 0; i < threads_in_system; i += threads_per_cpu) {
 		int cpu_state;
 
@@ -280,6 +353,11 @@ int set_smt_state(int smt_state)
 {
 	int i, rc;
 	int ssd, update_ssd = 1;
+
+	if (!sysattr_is_writeable("online")) {
+		perror("Cannot set smt state");
+		return -1;
+	}
 
 	rc = get_smt_snooze_delay(&ssd);
 	if (rc)
@@ -328,6 +406,9 @@ int do_smt(char *state)
 	if (!state) {
 		smt_state = get_smt_state();
 
+		if (smt_state == -2)
+			return -1;
+
 		if (smt_state == 1)
 			printf("SMT is off\n");
 		else if (smt_state == threads_per_cpu)
@@ -366,14 +447,18 @@ int do_dscr(char *state)
 
 	if (!state) {
 		int dscr;
+
 		rc = get_dscr(&dscr);
-		if (rc) {
+		switch (rc) {
+		    case -1:
 			printf("Could not retrieve DSCR\n");
-		} else {
+			break;
+		    case 0:
 			if (dscr == -1)
 				printf("Inconsistent DSCR\n");
 			else
 				printf("dscr is %d\n", dscr);
+			break;
 		}
 	} else
 		rc = set_dscr(strtol(state, NULL, 0));
@@ -419,6 +504,12 @@ int do_run_mode(char *run_mode)
 {
 	char mode[3];
 	int rc;
+
+	if (getpid() != 0) {
+		fprintf(stderr, "Cannot %s run mode: Permission denied\n",
+			run_mode ? "set" : "get");
+		return -1;
+	}
 
 	if (!run_mode) {
 		rc = rtas_get_sysparm(DIAGNOSTICS_RUN_MODE, 3, mode);
@@ -695,6 +786,18 @@ int do_cores_online(char *state)
 	int i;
 	int number_to_have, number_to_change = 0, number_changed = 0;
 	int new_state;
+
+	if (state) {
+		if (!sysattr_is_writeable("online")) {
+			perror("Cannot set cores online");
+			return -1;
+		}
+	} else {
+		if (!sysattr_is_readable("online")) {
+			perror("Cannot get online cores");
+			return -1;
+		}
+	}
 
 	smt_state = get_smt_state();
 	if (smt_state == -1) {
