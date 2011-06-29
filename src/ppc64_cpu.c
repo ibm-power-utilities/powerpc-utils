@@ -29,6 +29,7 @@
 #define PPC64_CPU_VERSION	"1.1"
 
 #define SYSFS_CPUDIR	"/sys/devices/system/cpu/cpu%d"
+#define DSCR_DEFAULT_PATH "/sys/devices/system/cpu/dscr_default"
 #define INTSERV_PATH	"/proc/device-tree/cpus/%s/ibm,ppc-interrupt-server#s"
 
 #define SYSFS_PATH_MAX		128
@@ -187,24 +188,64 @@ int set_system_attribute(char *attribute, const char *fmt, int state)
 	return 0;
 }
 
+int dscr_default_exists(void)
+{
+	struct stat sb;
+
+	if (!stat(DSCR_DEFAULT_PATH, &sb))
+		return 1;
+
+	return 0;
+}
+
+/* On newer systems we just set the default_dscr value instead of the cpu
+ * specific dscr value.  This is because the dscr value is now thread
+ * specific.
+ */
 int set_dscr(int state)
 {
-	if (!sysattr_is_writeable("dscr")) {
-		perror("Cannot set dscr");
-		return -2;
+	int rc;
+
+	if (dscr_default_exists()) {
+		if (!attr_is_writeable(DSCR_DEFAULT_PATH)) {
+			perror("Cannot set default dscr value");
+			return -2;
+		}
+
+		rc = set_attribute(DSCR_DEFAULT_PATH, "%x", state);
+	} else {
+		if (!sysattr_is_writeable("dscr")) {
+			perror("Cannot set dscr");
+			return -2;
+		}
+
+		rc = set_system_attribute("dscr", "%x", state);
 	}
 
-	return set_system_attribute("dscr", "%x", state);
+	return rc;
 }
 
 int get_dscr(int *value)
 {
-	if (!sysattr_is_readable("dscr")) {
-		perror("Cannot retrieve dscr");
-		return -2;
+	int rc;
+
+	if (dscr_default_exists()) {
+		if (!attr_is_readable(DSCR_DEFAULT_PATH)) {
+			perror("Cannot retrieve default dscr");
+			return -2;
+		}
+
+		rc = get_attribute(DSCR_DEFAULT_PATH, "%x", value);
+	} else {
+		if (!sysattr_is_readable("dscr")) {
+			perror("Cannot retrieve dscr");
+			return -2;
+		}
+
+		rc = get_system_attribute("dscr", "%x", value);
 	}
 
-	return get_system_attribute("dscr", "%x", value);
+	return rc;
 }
 
 int set_smt_snooze_delay(int delay)
@@ -385,6 +426,9 @@ int is_dscr_capable(void)
 	struct stat sb;
 	char path[SYSFS_PATH_MAX];
 	int i;
+
+	if (dscr_default_exists())
+		return 1;
 
 	for (i = 0; i < threads_in_system; i++) {
 		sprintf(path, SYSFS_CPUDIR"/dscr", i);
