@@ -1073,7 +1073,8 @@ of2l_vfc()
 {
     DEV_ID=${DEVICE##*\@}
     OF_WWPN=${DEV_ID%%,*}
-    OF_LUN=${DEV_ID##*,}
+    OF_LUN=${DEV_ID##$OF_WWPN}
+    OF_LUN=${OF_LUN#,}
 
     local dir
     for dir in `$FIND /sys/block -name 's[dr]*'`; do
