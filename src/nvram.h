@@ -57,6 +57,12 @@ struct partition_header {
     char 		name[12];   /**< partition name */
 };
 
+/* sub-header for error-log partitions */
+struct err_log_info {
+    int			error_type;
+    unsigned int	seq_num;
+};
+
 /* Internal representation of NVRAM. */
 #define MAX_PARTITIONS 50
 /**

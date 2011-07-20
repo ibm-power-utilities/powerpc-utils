@@ -35,7 +35,7 @@ sys_ident_SOURCES = sys_ident.c
 sys_ident_LDADD = -lrtas
 
 nvram_SOURCES = nvram.c nvram.h
-nvram_LDADD = -ldl
+nvram_LDADD = -ldl -lz
 
 lsprop_SOURCES = lsprop.c
 
