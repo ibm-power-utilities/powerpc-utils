@@ -189,6 +189,134 @@ fi
 
 BOOTLIST_MODE=unknown
 
+dm_to_part()
+{
+        local dmp=$1
+        local dmdev=$2
+        local sddev=$3
+        local dmmapper
+
+        partname=$(cat "/sys/block/$dmp/dm/name" | sed 's/[0-9]*$//g')
+        diskname=$(cat "/sys/block/$dmdev/dm/name")
+        delim=${partname##$diskname}
+        dmpmajmin=$(cat "/sys/block/$dmp/dev")
+        dmdevmajmin=$(cat "/sys/block/$dmdev/dev")
+
+        for dmapper in /dev/mapper/* ; do
+                dmajor=$(stat -L --format="%t" $dmapper)
+                dminor=$(stat -L --format="%T" $dmapper)
+                dmajmin=$(printf "%d:%d" 0x$dmajor 0x$dminor)
+                if [[ "$dmajmin" = "$dmdevmajmin" ]]; then
+                        dmmapper=$dmapper;
+                        break;
+                fi
+        done
+
+
+        kpartx -p $delim -l $dmmapper | while read kp ; do
+                kpname=${kp%% *}
+                tmajor=$(stat -L --format="%t" /dev/mapper/$kpname)
+                tminor=$(stat -L --format="%T" /dev/mapper/$kpname)
+                tmajmin=$(printf "%d:%d" 0x$tmajor 0x$tminor)
+                if [[ "$tmajmin" = "$dmpmajmin" ]]; then
+                        partstart=${kp##* }
+                        for part in `ls -1d /sys/block/$sddev/$sddev*`; do
+                                pstart=$(cat $part/start)
+                                if [[ "$pstart" -eq "$partstart" ]] ; then
+                                        echo "${part##*/}"
+                                        return
+                                fi
+                        done
+                fi
+        done
+}
+
+add_logical()
+{
+    local DEVNAME=$1
+    local major minor majmin devno
+    local startctr=$ctr
+
+    if [[ ! -e $DEVNAME ]]; then
+        DEVNAME=/dev/$DEVNAME
+    fi
+
+    if [[ ! -e $DEVNAME ]]; then
+        LOGICAL_NAMES[$ctr]=$1
+        ctr=$[$ctr + 1]
+        return
+    fi
+
+    major=$(stat -L --format="%t" $DEVNAME)
+    minor=$(stat -L --format="%T" $DEVNAME)
+    majmin=$(printf "%d:%d" 0x$major 0x$minor)
+
+    # Look for a matching multipath device
+
+    for dm in /sys/block/dm*; do
+        dmdev=${dm##*/}
+        devno=$(cat $dm/dev)
+        devmaj=${devno%:*}
+        devmin=${devno#*:}
+
+        if [[ ! -d $dm/slaves ]] ; then
+                # Old kernel for which there is no good way to reliably map a kpartx device with its parent
+                break;
+        fi
+
+        if [[ ! -d $dm/dm ]] ; then
+                # Old kernel for which there is no good way to reliably map a kpartx device with its parent
+                break;
+        fi
+
+        if [[ "$devno" = "$majmin" ]]; then
+                for slave in $dm/slaves/*; do
+                        slavedev=${slave##*/}
+                        if [[ "$slavedev" == dm-* ]] ; then
+                                for slave2 in $slave/slaves/*; do
+                                        slavedev2=${slave2##*/}
+                                        if [[ "$slavedev2" == dm-* ]] ; then
+                                                # dmdev is an LV on physical multipath partition
+                                                for slave3 in $slave2/slaves/*; do
+                                                        slavedev3=${slave3##*/}
+                                                        partdev=$(dm_to_part $slavedev $slavedev2 $slavedev3)
+                                                        if [[ ! -z "$partdev" ]] ; then
+                                                                LOGICAL_NAMES[$ctr]=$partdev
+                                                                ctr=$[$ctr + 1]
+                                                        fi
+                                                done
+                                        else # /sys/block/dm-2/slave/dm-0/slaves/sdb
+                                                kp=$(kpartx -l /dev/$slavedev)
+
+                                                if [[ -z "$kp" ]] ; then
+                                                        # dmdev is an LV on physical multipath disk LV->DMDEV->DEV
+                                                        LOGICAL_NAMES[$ctr]=$slavedev2
+                                                        ctr=$[$ctr + 1]
+                                                else
+                                                        # dmdev is multipath partition of slave DMP->DMDEV->DEV
+
+                                                        partdev=$(dm_to_part $dmdev $slavedev $slavedev2)
+                                                        if [[ ! -z "$partdev" ]] ; then
+                                                                LOGICAL_NAMES[$ctr]=$partdev
+                                                                ctr=$[$ctr + 1]
+                                                        fi
+                                                fi
+                                        fi
+                                done
+                        else # DMDEV is a multipath device on a physical device or a LV on a disk partition
+                                LOGICAL_NAMES[$ctr]=$slavedev
+                                ctr=$[$ctr + 1]
+                        fi
+                done
+        fi
+    done
+
+    if [[ "$startctr" = "$ctr" ]] ; then
+        LOGICAL_NAMES[$ctr]=$1
+        ctr=$[$ctr + 1]
+    fi
+}
+
 #
 # Parse the command line arguements and put them into two parallel
 # arrays, one to hold the logical device name and one to hold the 
@@ -228,8 +356,7 @@ while [[ -n $1 ]]; do
 	fi
 
         for i in `cat $2 2>/dev/null`; do
-	    LOGICAL_NAMES[$ctr]=$i
-	    ctr=$[$ctr + 1]
+	    add_logical $i
 	done
 	shift
     elif [[ $1 = -* ]]; then
@@ -238,8 +365,7 @@ while [[ -n $1 ]]; do
 	exit -1
     else
         # add this element to the array
-	LOGICAL_NAMES[$ctr]=$1
-	ctr=$[$ctr + 1]
+	add_logical $1
     fi
 
     shift
