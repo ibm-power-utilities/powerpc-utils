@@ -1,3 +1,68 @@
+powerpc-utils-1.2.11
+=====================================================================
+commit 122bc3180afa3ac35e583d78d3b1c546722a9430
+Author: Brian King <brking@linux.vnet.ibm.com>
+Date:   Mon Aug 22 12:56:47 2011 -0500
+
+    Adds support to the bootlist script to be able to supply a multipath device
+    as a parameter. The script will now properly handle setting up the bootlist
+    for all paths to a multipath device.
+
+    Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
+
+commit 1a3c1eaecdffd0e8ecbecc75bc2c65aaa3ddcaf4
+Author: Brian King <brking@linux.vnet.ibm.com>
+Date:   Wed Jul 20 12:27:11 2011 -0500
+
+    Fixes ofpathname OF to logical conversion for LUN zero for VFC devices.
+
+    Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
+
+commit 0e09f4e2898e7dea556479b018a7f4bf12108099
+Author: Jim Keniston <jkenisto@us.ibm.com>
+Date:   Wed Jul 20 12:24:50 2011 -0500
+
+    Add --unzip and --ascii options to nvram command, for examination
+    of oops/panic reports captured in lnx,oops-log or ibm,rtas-log.
+
+    Signed-off-by: Jim Keniston <jkenisto@us.ibm.com>
+
+commit 29f851ac7ec6c65be68bf400c548f92316d13de0
+Author: Nathan Fontenot <nfont@austin.ibm.com>
+Date:   Wed Jun 29 14:03:01 2011 -0500
+
+    On newer kernels the dscr value is a per-process value and a new
+    interface (dscr_default) is used to update the dscr value for
+    all new processes on the system.
+
+    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
+
+commit 70faf4d81f2dca208550b26098ab0c9188309d0e
+Author: Nathan Fontenot <nfont@austin.ibm.com>
+Date:   Wed Jun 29 14:02:19 2011 -0500
+
+    Update the section of ppc64_cpu that requires Linux perf.  Without these
+    ifdef's unneccessary compile warnings are generated.
+
+    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
+
+commit df1b178744299c1d0fc236ec561c5b3e5a16cb7e
+Author: Nathan Fontenot <nfont@austin.ibm.com>
+Date:   Wed Jun 29 13:49:28 2011 -0500
+
+    The current implementation requires that user be root to use the ppc64_cpu
+    command.  This can be an issue for some that want to use the ppc64_cpu
+    command to read information.  Some of the information reported by ppc64_cpu
+    is available to non-root users, and there are bits that could be made
+    available to non-root users in the future with some kernel updates.
+
+    This patch updates the command to allow it to be run as a non-root user. 
+    In stead of enforcing that a user need to be root to run the command, the 
+    command now uses the users permissions when accessing a file (either read 
+    or write) to d etermine if the action is possible.
+
+    Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
+
 powerpc-utils-1.2.10
 =====================================================================
 commit 6bac5a2dca6bd1ce2e31c930e1dcda8e64a9258d
