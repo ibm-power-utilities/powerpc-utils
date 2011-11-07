@@ -1,3 +1,19 @@
+powerpc-utils-1.2.12
+=====================================================================
+commit 3267a6ef1a8b7981a50f638793d4f6afc2f51638
+Author: Mark Hamzy <hamzy@us.ibm.com>
+Date:   Mon Nov 7 09:56:06 2011 -0600
+
+    I looked through script files in powerpc-utils-1.2.6-2.fc15.src.rpm, and fou
+nd
+    missing dependicies.  The case I saw failing was tring to use ofpathname in
+    the installer boot disk.  bc was not installed which caused ofpathname to fa
+il
+    and print an incorrect translated name.
+    
+    Signed-off-by: Mark Hamzy <hamzy@us.ibm.com>
+
+
 powerpc-utils-1.2.11
 =====================================================================
 commit 122bc3180afa3ac35e583d78d3b1c546722a9430
