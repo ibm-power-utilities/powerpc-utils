@@ -10,6 +10,16 @@ Group:		System Environment
 Source:		powerpc-utils-%{version}.tar.gz
 BuildRoot:	/tmp/%{name}-buildroot/
 Requires:	/bin/bash, /bin/sh, /bin/sed, /usr/bin/perl, librtas >= 1.3.0, zlib
+Requires:	bc
+Requires:	coreutils
+Requires:	findutils
+Requires:	gawk
+Requires:	grep
+Requires:	/sbin/modprobe
+Requires:	/sbin/shutdown
+Requires:	udev
+Requires:	util-linux
+Requires:	which
 
 %description
 Utilities for maintaining and servicing PowerPC systems.
