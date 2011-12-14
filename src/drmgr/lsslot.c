@@ -17,7 +17,6 @@
 
 int output_level = 0;
 int log_fd = 0;
-char *cmd = "lsslot";
 
 /**
  * struct print_node

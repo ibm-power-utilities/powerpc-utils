@@ -20,7 +20,6 @@
 int output_level = 1; /* default to lowest output level */
 
 int log_fd = 0;
-char *cmd;
 int action_cnt = 0;
 
 static int display_capabilities = 0;
@@ -35,14 +34,12 @@ void drmgr_usage(char **);
 int valid_drmgr_options(struct options *);
 
 struct command {
-	int		type;
-	char		*name;
 	cmd_func_t	*func;
 	cmd_args_t	*validate_options;
 	cmd_usage_t	*usage;
 };
 
-#define DRMGR				0
+#define DRMGR			0
 #define DRSLOT_CHRP_SLOT	1
 #define DRSLOT_CHRP_PHB		2
 #define DRSLOT_CHRP_PCI		3
@@ -53,57 +50,39 @@ struct command {
 #define DRSLOT_CHRP_PHIB	8
 
 static struct command commands[] = {
-	{ .type = DRMGR,
-	  .name = "drmgr",
-	  .func = drmgr,
+	{ .func = drmgr,
 	  .validate_options = valid_drmgr_options,
 	  .usage = drmgr_usage,
 	},
-	{ .type = DRSLOT_CHRP_SLOT,
-	  .name = "drslot_chrp_slot",
-	  .func = drslot_chrp_slot,
+	{ .func = drslot_chrp_slot,
 	  .validate_options = valid_slot_options,
 	  .usage = slot_usage,
 	},
-	{ .type = DRSLOT_CHRP_PHB,
-	  .name = "drslot_chrp_phb",
-	  .func = drslot_chrp_phb,
+	{ .func = drslot_chrp_phb,
 	  .validate_options = valid_phb_options,
 	  .usage = phb_usage,
 	},
-	{ .type = DRSLOT_CHRP_PCI,
-	  .name = "drslot_chrp_pci",
-	  .func = drslot_chrp_pci,
+	{ .func = drslot_chrp_pci,
 	  .validate_options = valid_pci_options,
 	  .usage = pci_usage,
 	},
-	{ .type = DRSLOT_CHRP_MEM,
-	  .name = "drslot_chrp_mem",
-	  .func = drslot_chrp_mem,
+	{ .func = drslot_chrp_mem,
 	  .validate_options = valid_mem_options,
 	  .usage = mem_usage,
 	},
-	{ .type = DRSLOT_CHRP_HEA,
-	  .name = "drslot_chrp_hea",
-	  .func = drslot_chrp_hea,
+	{ .func = drslot_chrp_hea,
 	  .validate_options = valid_hea_options,
 	  .usage = hea_usage,
 	},
-	{ .type = DRSLOT_CHRP_CPU,
-	  .name = "drslot_chrp_cpu",
-	  .func = drslot_chrp_cpu,
+	{ .func = drslot_chrp_cpu,
 	  .validate_options = valid_cpu_options,
 	  .usage = cpu_usage,
 	},
-	{ .type = DRMIG_CHRP_PMIG,
-	  .name = "drmig_chrp_pmig",
-	  .func = drmig_chrp_pmig,
+	{ .func = drmig_chrp_pmig,
 	  .validate_options = valid_pmig_options,
 	  .usage = pmig_usage,
 	},
-	{ .type = DRSLOT_CHRP_PHIB,
-	  .name = "drslot_chrp_phib",
-	  .func = drmig_chrp_pmig,
+	{ .func = drmig_chrp_pmig,
 	  .validate_options = valid_pmig_options,
 	  .usage = phib_usage,
 	},
@@ -111,7 +90,7 @@ static struct command commands[] = {
 
 static struct option long_options[] = {
 	{"capabilities",	no_argument,	NULL, 'C'},
-	{"help",	no_argument,	NULL, 'h'},
+	{"help",		no_argument,	NULL, 'h'},
 	{0,0,0,0}
 };
 #define MAX_USAGE_LENGTH 512
@@ -121,7 +100,7 @@ command_usage(struct command *command) {
 	/*
 	 * Display the common usage options
 	 */
-	fprintf(stderr, "Usage: %s %s", cmd,
+	fprintf(stderr, "Usage: drmgr %s",
 			"[-w minutes] [-d detail_level] [-C | --capabilities] [-h | --help]\n");
 
 	/*
@@ -183,44 +162,20 @@ parse_options(int argc, char *argv[], struct options *opts)
 {
 	int c;
 	int option_indx;
-	char *last_underscore;
+	int option_found = 0;
 
 	memset(opts, 0, sizeof(*opts));
 
 	/* default timeout */
 	opts->timeout = DR_WAIT;
 
-	/* Set the default connector type based on the command name
-	 * When the command ends with 'port','slot','phb','pci','mem', or 'cpu'.
-	 * This will eliminate the need to specify the -c ctype option
-	 * when invoking the command via symbolic link, since there is a 1-to-1
-	 * mapping in these cases.
-	 *
-	 * i.e. if drmgr is invoke from a symbolic link
-	 *      drslot_chrp_pci->drmgr, the default connector type will be pci
-	 */
-	last_underscore = strrchr(cmd, '_');
-
-	if (last_underscore) {
-		if (!strcmp(last_underscore,"_slot") ||
-			!strcmp(last_underscore,"_phb") ||
-			!strcmp(last_underscore,"_pci") ||
-			!strcmp(last_underscore,"_mem") ||
-			!strcmp(last_underscore,"_cpu"))
-			opts->ctype = last_underscore+1;
-		else
-			if (!strcmp(last_underscore,"_pmig"))
-			opts->action = MIGRATE;
-		else
-			if(!strcmp(last_underscore,"_hea"))
-				opts->ctype="port";
-	}
-
 	/* disable getopt error messages */
 	opterr = 0;
 
 	while ((c = getopt_long(argc, argv, DRMGR_ARGS, long_options,
 				&option_indx)) != -1) {
+		option_found = 1;
+
 		switch (c) {
 		    case 'a':
 			opts->action = ADD;
@@ -278,10 +233,9 @@ parse_options(int argc, char *argv[], struct options *opts)
 			opts->timeout = strtol(optarg, NULL, 10) * 60;
 			break;
 		    case 'h':
-		    display_usage = 1;
-		    return 0;
-		    break;
-
+		    	display_usage = 1;
+		    	return 0;
+		    	break;
 		    case 't': /* target lpid (pmig, not used) */
 			break;
 
@@ -291,6 +245,9 @@ parse_options(int argc, char *argv[], struct options *opts)
 			break;
 		}
 	}
+
+	if (!option_found)
+		display_usage = 1;
 
 	return 0;
 }
@@ -342,7 +299,7 @@ get_command(struct options *opts)
 }
 
 int drmgr(struct options *opts) {
-	say(L1, "Invalid command %s %d\n",cmd, opts->action);
+	say(L1, "Invalid command: %d\n", opts->action);
 	return -1;
 }
 
@@ -352,20 +309,8 @@ main(int argc, char *argv[])
 	struct options opts;
 	char log_msg[DR_PATH_MAX];
 	struct command *command;
-	char *slash;
 	int i, offset;
 	int rc;
-
-	dr_init();
-
-	/* We need to know the name of the command that was actually invoked
-	 * so grab that out of argv[0]
-	 */
-	slash = strrchr(argv[0], '/');
-	if (slash)
-		cmd = slash + 1;
-	else
-		cmd = argv[0];
 
 	parse_options(argc, argv, &opts);
 
@@ -382,6 +327,8 @@ main(int argc, char *argv[])
 		rc = 0;
 		goto exit;
 	}
+
+	dr_init();
 
 	/* Validate the options for the action we want to perform */
 	rc = command->validate_options(&opts);
@@ -410,7 +357,7 @@ main(int argc, char *argv[])
 	}
 
 	/* Log this invocation to /var/log/messages and /var/log/drmgr */
-	offset = sprintf(log_msg, "drmgr: %s ", command->name);
+	offset = sprintf(log_msg, "drmgr: ");
 	for (i = 1; i < argc; i++)
 		offset += sprintf(log_msg + offset, "%s ", argv[i]);
 	log_msg[offset] = '\0';

@@ -93,13 +93,6 @@ ln -sf /usr/sbin/usysattn usr/sbin/usysfault
 ln -sf /usr/sbin/serv_config usr/sbin/uspchrp
 ln -sf /usr/share/man/man8/usysattn.8 usr/share/man/man8/usysfault.8
 ln -sf /usr/share/man/man8/serv_config.8 usr/share/man/man8/uspchrp.8
-ln -sf /usr/sbin/drmgr /usr/sbin/drslot_chrp_slot
-ln -sf /usr/sbin/drmgr /usr/sbin/drslot_chrp_pci
-ln -sf /usr/sbin/drmgr /usr/sbin/drslot_chrp_cpu
-ln -sf /usr/sbin/drmgr /usr/sbin/drslot_chrp_phb
-ln -sf /usr/sbin/drmgr /usr/sbin/drslot_chrp_mem
-ln -sf /usr/sbin/drmgr /usr/sbin/drslot_chrp_hea
-ln -sf /usr/sbin/drmgr /usr/sbin/drmig_chrp_pmig
 
 %postun
 # Post-uninstall script ---------------------------------------------
@@ -109,13 +102,6 @@ if [ "$1" = "0" ]; then
 	rm -f /usr/sbin/uspchrp
 	rm -f /usr/share/man/man8/usysfault.8.gz
 	rm -f /usr/share/man/man8/uspchrp.8.gz
-	rm /usr/sbin/drslot_chrp_slot
-        rm /usr/sbin/drslot_chrp_pci
-        rm /usr/sbin/drslot_chrp_cpu
-        rm /usr/sbin/drslot_chrp_phb
-        rm /usr/sbin/drslot_chrp_mem
-        rm /usr/sbin/drslot_chrp_hea
-        rm /usr/sbin/drmig_chrp_pmig
 fi
 
 %changelog
