@@ -89,7 +89,7 @@ find_ofdt_dname(struct dr_node *node, char *path)
 	 */
 	d = opendir(path);
 	if (d == NULL) {
-		err_msg("Could not open dir %s\n%s\n", path, strerror(errno));
+		say(L1, "Could not open dir %s\n%s\n", path, strerror(errno));
 		return 0;
 	}
 
@@ -336,8 +336,8 @@ init_node(struct dr_node *node)
 		newpath = zalloc(strlen(node->ofdt_path) +
 				 strlen(de->d_name) + 2);
 		if (newpath == NULL) {
-			err_msg("Could not allocate path for node at %s/%s\n",
-				node->ofdt_path, de->d_name);
+			say(L1, "Could not allocate path for node at %s/%s\n",
+			    node->ofdt_path, de->d_name);
 			return 1;
 		}
 
@@ -529,7 +529,7 @@ add_linux_devices(char *start_dir, struct dr_node *node_list)
 
 	d = opendir(dir);
 	if (d == NULL) {
-		err_msg("failed to open %s\n%s\n", dir, strerror(errno));
+		say(L1, "failed to open %s\n%s\n", dir, strerror(errno));
 		return;
 	}
 
@@ -584,15 +584,15 @@ add_hea_node(char *path, struct dr_connector *drc_list,
 	}
 
 	if (drc == NULL) {
-		err_msg("Could not find drc index 0x%x to add to hea list\n",
-			my_drc_index);
+		say(L1, "Could not find drc index 0x%x to add to hea list\n",
+		    my_drc_index);
 		return -1;
 	}
 
 	hea_node = alloc_dr_node(drc, HEA_DEV, path);
 	if (hea_node == NULL) {
-		err_msg("Could not allocate hea node for drc index 0x%x\n",
-			my_drc_index);
+		say(L1, "Could not allocate hea node for drc index 0x%x\n",
+		    my_drc_index);
 		return -1;
 	}
 
@@ -654,7 +654,7 @@ add_pci_vio_node(const char *path, int dev_type, struct dr_node **node_list)
 
 		node = alloc_dr_node(drc, child_dev_type, path);
 		if (node == NULL) {
-			err_msg("Could not allocate pci/vio node\n");
+			say(L1, "Could not allocate pci/vio node\n");
 			return -1;
 		}
 
@@ -700,15 +700,15 @@ add_phb_node(char *ofdt_path, struct dr_connector *drc_list,
 	}
 
 	if (drc == NULL) {
-		err_msg("Could not find drc index 0x%x to add to phb list\n",
-			my_drc_index);
+		say(L1, "Could not find drc index 0x%x to add to phb list\n",
+		    my_drc_index);
 		return -1;
 	}
 
 	phb_node = alloc_dr_node(drc, PHB_DEV, ofdt_path);
 	if (phb_node == NULL) {
-		err_msg("Could not allocate PHB node for drc index 0x%x\n",
-			my_drc_index);
+		say(L1, "Could not allocate PHB node for drc index 0x%x\n",
+		    my_drc_index);
 		return -1;
 	}
 
@@ -743,7 +743,7 @@ update_phb_ic_info(struct dr_node *node_list)
 
 	d = opendir(OFDT_BASE);
 	if (d == NULL) {
-		err_msg("failed to open %s\n%s\n", OFDT_BASE, strerror(errno));
+		say(L1, "failed to open %s\n%s\n", OFDT_BASE, strerror(errno));
 		return -1;
 	}
 
@@ -794,11 +794,11 @@ get_dlpar_nodes(uint32_t node_types)
 	DIR *d;
 	char path[1024];
 
-	dbg("Getting node types 0x%08x\n", node_types);
+	say(L4, "Getting node types 0x%08x\n", node_types);
 
 	d = opendir(OFDT_BASE);
 	if (d == NULL) {
-		err_msg("failed to open %s\n%s\n", OFDT_BASE, strerror(errno));
+		say(L1, "failed to open %s\n%s\n", OFDT_BASE, strerror(errno));
 		return NULL;
 	}
 
@@ -859,7 +859,7 @@ _get_hp_nodes(char *dir, struct dr_node **list)
 
 	d = opendir(dir);
 	if (d == NULL) {
-		err_msg("failed to open %s\n%s\n", dir, strerror(errno));
+		say(L1, "failed to open %s\n%s\n", dir, strerror(errno));
 		return -1;
 	}
 
@@ -893,7 +893,7 @@ get_hp_nodes()
 {
 	struct dr_node *node_list = NULL;
 
-	dbg("Retrieving hotplug nodes\n");
+	say(L4, "Retrieving hotplug nodes\n");
 
 	_get_hp_nodes(OFDT_BASE, &node_list);
 	if (node_list != NULL)
@@ -911,7 +911,7 @@ get_node_by_name(const char *drc_name, uint32_t node_type)
 
 	all_nodes = get_dlpar_nodes(node_type);
 	if (all_nodes == NULL) {
-		err_msg("There are no DR capable slots on this system\n");
+		say(L1, "There are no DR capable slots on this system\n");
 		return NULL;
 	}
 
@@ -1010,7 +1010,7 @@ get_bus_id(char *loc_code)
 
 	d = opendir(dir);
 	if (d == NULL) {
-		err_msg("failed to open %s: %s\n", dir, strerror(errno));
+		say(L1, "failed to open %s: %s\n", dir, strerror(errno));
 		return NULL;
 	}
 
@@ -1042,7 +1042,7 @@ get_bus_id(char *loc_code)
 			if (bus_id)
 				return bus_id;
 			else {
-				err_msg("Failed to allocate bus id\n");
+				say(L1, "Failed to allocate bus id\n");
 				break;
 			}
 		}
@@ -1078,7 +1078,7 @@ get_hp_adapter_status(char *drc_name)
 	if (rc)
 		return -1;
 
-	dbg("hp adapter status for %s is %d\n", drc_name, value);
+	say(L4, "hp adapter status for %s is %d\n", drc_name, value);
 
 	rc = value;
 	if (rc != CONFIG && rc != NOT_CONFIG && rc != EMPTY)
@@ -1108,13 +1108,13 @@ set_hp_adapter_status(uint operation, char *slot_name)
 	else
 		sprintf(path, PHP_SYSFS_POWER_PATH, slot_name);
 
-	dbg("setting hp adapter status to %s for %s\n",
+	say(L4, "setting hp adapter status to %s for %s\n",
 	    ((operation+1 - 1) ? "CONFIG adapter" : "UNCONFIG adapter"),
 	    slot_name);
 
 	file = fopen(path, "w");
 	if (file == NULL) {
-		err_msg("failed to open %s: %s\n", path, strerror(errno));
+		say(L1, "failed to open %s: %s\n", path, strerror(errno));
 		return -ENODEV;
 	}
 
@@ -1142,21 +1142,21 @@ dlpar_io_kernel_op(char *interface_file, char *drc_name)
 	int rc = 0, len, val = 0;
 	FILE *file;
 
-	dbg("performing kernel op for %s, file is %s\n", drc_name,
+	say(L4, "performing kernel op for %s, file is %s\n", drc_name,
 	    interface_file);
 
     	file = fopen(interface_file, "r+");
     	if (file == NULL) {
-		err_msg("failed to open %s: %s\n", interface_file,
-			strerror(errno));
+		say(L1, "failed to open %s: %s\n", interface_file,
+		    strerror(errno));
 		return -ENODEV;
     	}
 
 	len = strlen(drc_name);
     	rc = fwrite(drc_name, 1, len, file);
     	if (rc != len) {
-		err_msg("write to interface file %s failed, rc = %d len = %d."
-			"\n%s\n", interface_file, rc, len, strerror(errno));
+		say(L1, "write to interface file %s failed, rc = %d len = %d."
+		    "\n%s\n", interface_file, rc, len, strerror(errno));
 		fclose(file);
         	return -errno;
 	}
@@ -1164,8 +1164,8 @@ dlpar_io_kernel_op(char *interface_file, char *drc_name)
 	rewind(file);
 	rc = fscanf(file, "%i", &val);
 	if (rc != 1) {
-		err_msg("scan of interface file %s failed, rc = %d, should be 1"
-			"\n%s\n", interface_file, rc, strerror(errno));
+		say(L1, "scan of interface file %s failed, rc = %d, should be 1"
+		    "\n%s\n", interface_file, rc, strerror(errno));
 		fclose(file);
 		return -errno;
 	}
@@ -1183,9 +1183,9 @@ print_node_list(struct dr_node *first_node)
 	struct dr_node *child;
 
 	parent = first_node;
-	dbg("\nDR nodes list\n==============\n");
+	say(L4, "\nDR nodes list\n==============\n");
 	while (parent) {
-		dbg("%s: %s\n"
+		say(L4, "%s: %s\n"
 		    "\tdrc index: 0x%x        description: %s\n"
 		    "\tdrc name: %s\n\tloc code: %s\n", 
 		    parent->ofdt_path, (parent->skip ? "(SKIP)" : ""),
@@ -1194,7 +1194,7 @@ print_node_list(struct dr_node *first_node)
 
 		child = parent->children;
 		while (child) {
-			dbg("%s: %s\n"
+			say(L4, "%s: %s\n"
 			    "\tdrc index: 0x%x        description: %s\n"
 			    "\tdrc name: %s\n\tloc code: %s\n",
 			    child->ofdt_path, (child->skip ? "(SKIP)" : ""),
@@ -1206,7 +1206,7 @@ print_node_list(struct dr_node *first_node)
 
 		parent = parent->next;
 	}
-	dbg("\n");
+	say(L4, "\n");
 }
 
 #define ACQUIRE_HP_START	2
@@ -1234,8 +1234,8 @@ acquire_hp_resource(struct dr_connector *drc, char *of_path)
 	if (state == PRESENT || state == NEED_POWER || state == PWR_ONLY) {
 		rc = set_power(drc->powerdomain, POWER_ON);
 		if (rc) {
-			err_msg("set power failed for 0x%x\n",
-				drc->powerdomain);
+			say(L1, "set power failed for 0x%x\n",
+			    drc->powerdomain);
 			return progress;
 		}
 
@@ -1248,7 +1248,7 @@ acquire_hp_resource(struct dr_connector *drc, char *of_path)
 		rc = rtas_set_indicator(ISOLATION_STATE, drc->index,
 				UNISOLATE);
 		if (rc) {
-			err_msg("set ind failed for 0x%x\n", drc->index);
+			say(L1, "set ind failed for 0x%x\n", drc->index);
 			return progress;
 		}
 
@@ -1258,7 +1258,7 @@ acquire_hp_resource(struct dr_connector *drc, char *of_path)
 	}
 
 	if (state < 0) {
-		err_msg("invalid state %d\n", state);
+		say(L1, "invalid state %d\n", state);
 		return progress;
 	}
 
@@ -1271,7 +1271,7 @@ acquire_hp_resource(struct dr_connector *drc, char *of_path)
 
 		rc = add_device_tree_nodes(of_path, new_nodes);
 		if (rc) {
-			err_msg("add nodes failed for 0x%x\n", drc->index);
+			say(L1, "add nodes failed for 0x%x\n", drc->index);
 			return progress;
 		}
 	}
@@ -1302,7 +1302,7 @@ int acquire_hp_children(char *slot_of_path, int *n_acquired)
 		if (is_hp_type(drc->type)) {
 			rc = acquire_hp_resource(drc, slot_of_path);
 			if (rc) {
-				err_msg("failed to acquire %s\n", drc->name);
+				say(L1, "failed to acquire %s\n", drc->name);
 				failure = 1;
 			}
 			count++;
@@ -1327,21 +1327,21 @@ release_hp_resource(struct dr_node *node)
 
 	rc = remove_device_tree_nodes(node->ofdt_path);
 	if (rc) {
-		err_msg("failed to remove kernel nodes for index 0x%x\n",
-			node->drc_index);
+		say(L1, "failed to remove kernel nodes for index 0x%x\n",
+		    node->drc_index);
 		return -EIO;
 	}
 
 	rc = rtas_set_indicator(DR_INDICATOR, node->drc_index, LED_OFF);
 	if (rc) {
-		err_msg("failed to set led off for index 0x%x\n",
-			node->drc_index);
+		say(L1, "failed to set led off for index 0x%x\n",
+		    node->drc_index);
 		return -EIO;
 	}
 
 	rc = rtas_set_indicator(ISOLATION_STATE, node->drc_index, ISOLATE);
 	if (rc) {
-		err_msg("failed to isolate for index 0x%x\n", node->drc_index);
+		say(L1, "failed to isolate for index 0x%x\n", node->drc_index);
 		return -EIO;
 	}
 
@@ -1349,11 +1349,11 @@ release_hp_resource(struct dr_node *node)
 	if (rc) {
 		struct stat sb;
 
-		err_msg("failed to power off for index 0x%x\n",
-			node->drc_index);
+		say(L1, "failed to power off for index 0x%x\n",
+		    node->drc_index);
 
 		if (!stat(IGNORE_HP_PO_PROP, &sb))
-			err_msg("Ignoring hot-plug power off failure.\n");
+			say(L1, "Ignoring hot-plug power off failure.\n");
 		else
 			return -EIO;
 	}

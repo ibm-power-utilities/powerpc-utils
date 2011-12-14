@@ -175,14 +175,14 @@ of_to_full_path(const char *of_path)
 	if (!strncmp(of_path, OFDT_BASE, strlen(OFDT_BASE))) {
 		full_path = strdup(of_path);
 		if (full_path == NULL) {
-			err_msg("malloc failed\n");
+			say(L1, "malloc failed\n");
 			return NULL;
 		}
 	} else {
 		full_path_len = strlen(OFDT_BASE) + strlen(of_path) + 2;
 		full_path = zalloc(full_path_len);
 		if (full_path == NULL) {
-			err_msg("malloc failed\n");
+			say(L1, "malloc failed\n");
 			return NULL;
 		}
 
@@ -217,7 +217,7 @@ get_drc_info(const char *of_path)
 
 	full_path = of_to_full_path(of_path);
 	if (full_path == NULL) {
-		err_msg("malloc failed\n");
+		say(L1, "malloc failed\n");
 		rc = 1;
 		goto done;
 	}
@@ -236,7 +236,7 @@ get_drc_info(const char *of_path)
 
 	list = zalloc(n_drcs * sizeof(struct dr_connector));
 	if (list == NULL) {
-		err_msg("malloc failed\n");
+		say(L1, "malloc failed\n");
 		rc = 1;
 		goto done;
 	}

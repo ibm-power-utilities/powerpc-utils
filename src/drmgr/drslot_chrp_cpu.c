@@ -73,8 +73,8 @@ get_available_cpu(struct options *opts, struct dr_info *dr_info)
 	if (opts->usr_drc_name) {
 		cpu = get_cpu_by_name(dr_info, opts->usr_drc_name);
 		if (!cpu)
-			err_msg("Could not locate cpu %s\n",
-				opts->usr_drc_name);
+			say(L1, "Could not locate cpu %s\n",
+			    opts->usr_drc_name);
 
 		return cpu;
 	}
@@ -106,7 +106,7 @@ get_available_cpu(struct options *opts, struct dr_info *dr_info)
 	}
 
 	if (!cpu)
-		err_msg("Could not find avaiable cpu.\n");
+		say(L1, "Could not find avaiable cpu.\n");
 
 	return cpu;
 }
@@ -140,7 +140,7 @@ add_cpus(struct options *opts, struct dr_info *dr_info)
 
 		rc = probe_cpu(cpu, dr_info);
 		if (rc) {
-			dbg("Unable to acquire CPU with drc index %x\n",
+			say(L4, "Unable to acquire CPU with drc index %x\n",
 			    cpu->drc_index);
 			cpu->unusable = 1;
 			continue;
@@ -150,7 +150,7 @@ add_cpus(struct options *opts, struct dr_info *dr_info)
 		count++;
 	}
 
-	dbg("Acquired %d of %d requested cpu(s).\n", count, opts->quantity);
+	say(L4, "Acquired %d of %d requested cpu(s).\n", count, opts->quantity);
 	return rc ? 1 : 0;
 }
 
@@ -204,7 +204,7 @@ remove_cpus(struct options *opts, struct dr_info *dr_info)
 		count++;
 	}
 
-	dbg("Removed %d of %d requested cpu(s)\n", count, opts->quantity);
+	say(L4, "Removed %d of %d requested cpu(s)\n", count, opts->quantity);
 	return rc;
 }
 
@@ -221,13 +221,13 @@ smt_threads_func(struct options *opts, struct dr_info *dr_info)
 	int rc;
 
 	if (opts->quantity != 1) {
-		err_msg("Quantity option '-q' may not be specified with "
-			"the '-p smt_threads' option\n");
+		say(L1, "Quantity option '-q' may not be specified with "
+		    "the '-p smt_threads' option\n");
 		return -1;
 	}
 
 	if (! smt_enabled(dr_info)) {
-		err_msg("SMT functions not available on this system.\n");
+		say(L1, "SMT functions not available on this system.\n");
 		return -1;
 	}
 
@@ -236,7 +236,7 @@ smt_threads_func(struct options *opts, struct dr_info *dr_info)
 
 		cpu = get_cpu_by_name(dr_info, opts->usr_drc_name);
 		if (cpu == NULL) {
-			err_msg("Could not find cpu %s\n", opts->usr_drc_name);
+			say(L1, "Could not find cpu %s\n", opts->usr_drc_name);
 			return -1;
 		}
 
@@ -263,7 +263,7 @@ valid_cpu_options(struct options *opts)
 		opts->quantity = 1;
 
 	if ((opts->action != ADD) && (opts->action != REMOVE)) {
-		err_msg("Invalid action specified\n");
+		say(L1, "Invalid action specified\n");
 		return -1;
 	}
 
@@ -277,8 +277,8 @@ drslot_chrp_cpu(struct options *opts)
 	int rc = -1;
 
 	if (! cpu_dlpar_capable()) {
-		err_msg("CPU DLPAR capability is not enabled on this "
-			"platform.\n");
+		say(L1, "CPU DLPAR capability is not enabled on this "
+		    "platform.\n");
 		return -1;
 	}
 
@@ -287,15 +287,15 @@ drslot_chrp_cpu(struct options *opts)
 		    (strcmp(opts->p_option, "variable_weight") == 0)) {
 			rc = update_sysparm(opts);
 			if (rc)
-				err_msg("Could not update system parmaeter "
-					"%s\n", opts->p_option);
+				say(L1, "Could not update system parmaeter "
+				    "%s\n", opts->p_option);
 			return rc;
 		}
 	}
 
 	if (init_cpu_drc_info(&dr_info)) {
-		err_msg("Could not intialize Dynamic Reconfiguration "
-			"information.\n");
+		say(L1, "Could not intialize Dynamic Reconfiguration "
+		    "information.\n");
 		return -1;
 	}
 

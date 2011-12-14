@@ -46,7 +46,7 @@ sysfs_write(char *fname, char *name)
 
     	file = fopen(fname, "w");
     	if (file == NULL) {
-		err_msg("Could not open %s:\n%s\n", fname, strerror(errno));
+		say(L1, "Could not open %s:\n%s\n", fname, strerror(errno));
 		return -ENODEV;
     	}
 
@@ -56,7 +56,7 @@ sysfs_write(char *fname, char *name)
 
 	rc = (rc >= 0) ? 0 : rc;
 	if (rc)
-		err_msg("Write to %s failed:\n%s\n", fname, strerror(errno));
+		say(L1, "Write to %s failed:\n%s\n", fname, strerror(errno));
 
 	return rc;
 }
@@ -76,11 +76,11 @@ hotplug_hea(int action, char *name)
 	char *action_str = (action == ADD) ? "add" : "remove";
 	char *action_path = (action == ADD) ? HEA_ADD_SLOT : HEA_REMOVE_SLOT;
 	
-	dbg("Attempting to hotplug %s %s\n", action_str, name);
+	say(L4, "Attempting to hotplug %s %s\n", action_str, name);
 	
 	rc = sysfs_write(action_path, name);
 	if (rc)
-		err_msg("Could not hotplug %s %s\n", action_str, name);
+		say(L1, "Could not hotplug %s %s\n", action_str, name);
 
 	return rc;
 }
@@ -103,10 +103,11 @@ hotplug_port(int action, struct dr_node *hea, struct dr_node *port)
 	uint port_no;
 	int rc;
 
-	dbg("Attempting to hotplug %s Port.\n", action_str);
+	say(L4, "Attempting to hotplug %s Port.\n", action_str);
 	
 	if (! hea->sysfs_dev_path) {
-		dbg("Non-existant sysfs dev path for Port, hotplug failed.\n");
+		say(L4, "Non-existant sysfs dev path for Port, hotplug "
+		    "failed.\n");
 		return -EINVAL;
 	}
 
@@ -121,7 +122,7 @@ hotplug_port(int action, struct dr_node *hea, struct dr_node *port)
 
 	rc = sysfs_write(fname, port_str);
 	if (rc)
-		err_msg("Hotplug %s of Port %d failed\n", action_str, port_no);
+		say(L1, "Hotplug %s of Port %d failed\n", action_str, port_no);
 
 	return rc;
 }
@@ -152,8 +153,8 @@ remove_port(struct options *opts)
 	}
 
 	if (!port) {
-		err_msg("Could not find HEA Port \"%s\" to remove\n",
-			opts->usr_drc_name);
+		say(L1, "Could not find HEA Port \"%s\" to remove\n",
+		    opts->usr_drc_name);
 		free_node(hea);
 		return -1;
 	}
@@ -201,7 +202,7 @@ remove_port(struct options *opts)
 		return rc;
 	}
 
-	dbg("device node(s) for %s removed\n", port->drc_name);
+	say(L4, "device node(s) for %s removed\n", port->drc_name);
 	free_node(hea);
 	return 0;
 }
@@ -231,7 +232,7 @@ remove_hea(struct options *opts)
 
 	rc = remove_device_tree_nodes(hea->ofdt_path);
 	if (rc)
-		err_msg("Error removing HEA adapter from the device tree\n");
+		say(L1, "Error removing HEA adapter from the device tree\n");
 
 	free_node(hea);
 	return rc;
@@ -272,16 +273,16 @@ add_slot(struct options *opts)
 	rc = add_device_tree_nodes(ofdt_path, of_nodes);
 	free_of_node(of_nodes);
 	if (rc) {
-		err_msg("Error adding % to the device tree\n", slot_type);
+		say(L1, "Error adding % to the device tree\n", slot_type);
 		release_drc(drc.index, HEA_DEV);
 		return rc;
 	}
 
 	hea = get_node_by_name(opts->usr_drc_name, HEA_NODES);
 	if (hea == NULL) {
-		err_msg("Could not get find \"%s\" in the updated device "
-			"tree,\nAddition of %s failed.\n", opts->usr_drc_name,
-			slot_type);
+		say(L1, "Could not get find \"%s\" in the updated device "
+		    "tree,\nAddition of %s failed.\n", opts->usr_drc_name,
+		    slot_type);
 
 		remove_device_tree_nodes(ofdt_path);
 		release_drc(drc.index, HEA_DEV);
@@ -314,7 +315,7 @@ int
 valid_hea_options(struct options *opts)
 {
 	if (opts->usr_drc_name == NULL) {
-		err_msg("A drc name  must be specified\n");
+		say(L1, "A drc name  must be specified\n");
 		return -1;
 	}
 
@@ -327,8 +328,8 @@ drslot_chrp_hea(struct options *opts)
 	int rc;
 
 	if (! hea_dlpar_capable()) {
-		err_msg("DLPAR HEA operations are not supported on"
-			"this kernel");
+		say(L1, "DLPAR HEA operations are not supported on"
+		    "this kernel");
 		return -1;
 	}
 
@@ -343,8 +344,8 @@ drslot_chrp_hea(struct options *opts)
 		else if (! strcmp(opts->ctype, "slot"))
 			rc = remove_hea(opts);
 		else {
-			err_msg("The connector type %s is not supported.\n",
-				opts->ctype);
+			say(L1, "The connector type %s is not supported.\n",
+			    opts->ctype);
 			rc = -1;
 		}
 		break;
@@ -354,8 +355,8 @@ drslot_chrp_hea(struct options *opts)
 			struct dr_node *node;
 			node = get_node_by_name(opts->usr_drc_name, HEA_NODES);
 			if (node == NULL) {
-				err_msg("%s not owned by partition\n",
-					opts->usr_drc_name);
+				say(L1, "%s not owned by partition\n",
+				    opts->usr_drc_name);
 				rc = RC_DONT_OWN;
 			} else {
 				/* Special case for HMC */

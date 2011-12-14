@@ -106,15 +106,15 @@ init_thread_info(struct dr_info *dr_info)
 	int nr_threads, thread_cnt = 0;
 
 	if (stat("/sys/devices/system/cpu", &s)) {
-		err_msg("Cannot gather CPU thread information,\n"
-			"stat(\"/sys/devices/system/cpu\"): %s\n",
-			strerror(errno));
+		say(L1, "Cannot gather CPU thread information,\n"
+		    "stat(\"/sys/devices/system/cpu\"): %s\n",
+		    strerror(errno));
 		return -1;
 	}
 
 	nr_threads = s.st_nlink - 2;
 
-	dbg("Expecting %d threads...", nr_threads);
+	say(L4, "Expecting %d threads...", nr_threads);
 
 	sprintf(path, DR_THREAD_DIR_PATH, i);
 	for (i = 0; 0 == stat(path, &s); i++) {
@@ -127,8 +127,8 @@ init_thread_info(struct dr_info *dr_info)
 				       &thread->phys_id,
 				       sizeof(thread->phys_id));
 		if (rc) {
-			err_msg("Could not get \"physical_id\" of thread %s\n",
-				thread->path);
+			say(L1, "Could not get \"physical_id\" of thread %s\n",
+			    thread->path);
 			free(thread);
 			return -1;
 		}
@@ -144,7 +144,7 @@ init_thread_info(struct dr_info *dr_info)
 		thread_cnt++;
 	}
 
-	dbg("found %d.\n", thread_cnt);
+	say(L4, "found %d.\n", thread_cnt);
 	dr_info->all_threads = thread_list;
 	return 0;
 }
@@ -160,8 +160,8 @@ cpu_index_to_path(struct dr_node *cpu)
 
 	d = opendir(CPU_OFDT_BASE);
 	if (d == NULL) {
-		err_msg("Could not open %s: %s\n", CPU_OFDT_BASE,
-			strerror(errno));
+		say(L1, "Could not open %s: %s\n", CPU_OFDT_BASE,
+		    strerror(errno));
 		return -1;
 	}
 
@@ -181,7 +181,7 @@ cpu_index_to_path(struct dr_node *cpu)
 			/* This is an error, but continue searching since
 			 * this may not be the drc index we are looking for
 			 */
-			dbg("Could not retrieve drc_index for %s\n", path);
+			say(L4, "Could not retrieve drc_index for %s\n", path);
 			continue;
 		}
 
@@ -211,8 +211,8 @@ update_cpu_node(struct dr_node *cpu, const char *path, struct dr_info *dr_info)
 	} else {
 		rc = cpu_index_to_path(cpu);
 		if (rc) {
-			err_msg("Could not find ofdt path for drc index %s\n",
-				cpu->drc_index);
+			say(L1, "Could not find ofdt path for drc index %s\n",
+			    cpu->drc_index);
 			return rc;
 		}
 	}
@@ -225,8 +225,8 @@ update_cpu_node(struct dr_node *cpu, const char *path, struct dr_info *dr_info)
 			  &cpu->cpu_intserv_nums,
 			  sizeof(cpu->cpu_intserv_nums));
 	if (rc) {
-		err_msg("Could not retrieve ibm,ppc-interrupt-server#s "
-			"property for %s\n", cpu->name);
+		say(L1, "Could not retrieve ibm,ppc-interrupt-server#s "
+		    "property for %s\n", cpu->name);
 		return -1;
 	}
 
@@ -246,8 +246,7 @@ update_cpu_node(struct dr_node *cpu, const char *path, struct dr_info *dr_info)
 	rc = get_property(cpu->ofdt_path, "reg", &cpu->cpu_reg,
 			  sizeof(cpu->cpu_reg));
 	if (rc) {
-		err_msg("Could not retrieve reg property for %s\n",
-			cpu->name);
+		say(L1, "Could not retrieve reg property for %s\n", cpu->name);
 		return -1;
 	}
 
@@ -278,8 +277,8 @@ init_cpu_info(struct dr_info *dr_info)
 
 	drc_list = get_drc_info(CPU_OFDT_BASE);
 	if (drc_list == NULL) {
-		err_msg("Could not get drc information for %s\n",
-			CPU_OFDT_BASE);
+		say(L1, "Could not get drc information for %s\n",
+		    CPU_OFDT_BASE);
 		return -1;
 	}
 
@@ -287,8 +286,8 @@ init_cpu_info(struct dr_info *dr_info)
 	for (drc = drc_list; drc; drc = drc->next) {
 		cpu = alloc_dr_node(drc, CPU_DEV, NULL);
 		if (cpu == NULL) {
-			err_msg("Could not allocate CPU node structure: %s\n",
-				strerror(errno));
+			say(L1, "Could not allocate CPU node structure: %s\n",
+			    strerror(errno));
 			free_node(cpu_list);
 			return -1;
 		}
@@ -299,8 +298,8 @@ init_cpu_info(struct dr_info *dr_info)
 
 	d = opendir(CPU_OFDT_BASE);
 	if (d == NULL) {
-		err_msg("Could not open %s: %s\n", CPU_OFDT_BASE,
-			strerror(errno));
+		say(L1, "Could not open %s: %s\n", CPU_OFDT_BASE,
+		    strerror(errno));
 		free_node(cpu_list);
 		return -1;
 	}
@@ -319,8 +318,8 @@ init_cpu_info(struct dr_info *dr_info)
 
 			rc = get_my_drc_index(path, &my_drc_index);
 			if (rc) {
-				err_msg("Could not retrieve drc index for %s\n",
-					path);
+				say(L1, "Could not retrieve drc index for "
+				    "%s\n", path);
 				break;
 			}
 
@@ -330,8 +329,8 @@ init_cpu_info(struct dr_info *dr_info)
 			}
 
 			if (cpu == NULL) {
-				err_msg("Could not find cpu with drc index "
-					"%x\n", my_drc_index);
+				say(L1, "Could not find cpu with drc index "
+				    "%x\n", my_drc_index);
 				rc = -1;
 				break;
 			}
@@ -340,7 +339,7 @@ init_cpu_info(struct dr_info *dr_info)
 			if (rc)
 				break;
 
-			dbg("Found cpu %s\n", cpu->name);
+			say(L4, "Found cpu %s\n", cpu->name);
 		}
 	}
 
@@ -372,7 +371,7 @@ cpu_get_dependent_cache(struct dr_node *cpu, struct dr_info *dr_info)
 			continue;
 
 		if (cache->phandle == cpu->cpu_l2cache) {
-			dbg("found cache %s for cpu %s\n", cache->name,
+			say(L4, "found cache %s for cpu %s\n", cache->name,
 			    cpu->name);
 			return cache;
 		}
@@ -399,7 +398,7 @@ cache_get_dependent_cache(struct cache_info *cache, struct dr_info *dr_info)
 			continue;
 
 		if (cache->phandle == cache->l2cache) {
-			dbg("found cache %s for cache %s\n", c->name,
+			say(L4, "found cache %s for cache %s\n", c->name,
 			    cache->name);
 			return c;
 		}
@@ -453,7 +452,7 @@ cache_get_use_count(struct cache_info *cache, struct dr_info *dr_info)
 			continue;
 
 		if (cache == cpu_get_dependent_cache(cpu, dr_info)) {
-			dbg("Cache %s is a dependent of cpu %s\n",
+			say(L4, "Cache %s is a dependent of cpu %s\n",
 			    cache->name, cpu->name);
 			count++;
 		}
@@ -461,13 +460,13 @@ cache_get_use_count(struct cache_info *cache, struct dr_info *dr_info)
 
 	for (c = dr_info->all_caches; c != NULL; c = c->next) {
 		if (cache == cache_get_dependent_cache(c, dr_info)) {
-			dbg("Cache %s is a dependent of cache %s\n",
+			say(L4, "Cache %s is a dependent of cache %s\n",
 			    cache->name, c->name);
 			count++;
 		}
 	}
 
-	dbg("Cache %s dependency count: %d\n", cache->name, count);
+	say(L4, "Cache %s dependency count: %d\n", cache->name, count);
 	return count;
 }
 
@@ -504,8 +503,8 @@ init_cache_info(struct dr_info *dr_info)
 
 	d = opendir(CPU_OFDT_BASE);
 	if (d == NULL) {
-		err_msg("Could not open %s: %s\n", CPU_OFDT_BASE,
-			strerror(errno));
+		say(L1, "Could not open %s: %s\n", CPU_OFDT_BASE,
+		    strerror(errno));
 		return -1;
 	}
 
@@ -516,8 +515,8 @@ init_cache_info(struct dr_info *dr_info)
 		/* skip everything but directories */
 		sprintf(path, "/proc/device-tree/cpus/%s", ent->d_name);
 		if (lstat(path, &sb)) {
-			err_msg("Could not access %s,\nstat(): %s\n",
-				path, strerror(errno));
+			say(L1, "Could not access %s,\nstat(): %s\n",
+			    path, strerror(errno));
 			break;
 		}
 
@@ -529,8 +528,8 @@ init_cache_info(struct dr_info *dr_info)
 
 			cache = zalloc(sizeof(*cache));
 			if (cache == NULL) {
-				err_msg("Could not allocate cache info.\n%s\n",
-					strerror(errno));
+				say(L1, "Could not allocate cache info.\n%s\n",
+				    strerror(errno));
 				free_cache_info(cache_list);
 				return -1;
 			}
@@ -546,8 +545,8 @@ init_cache_info(struct dr_info *dr_info)
 					  &cache->phandle,
 					  sizeof(cache->phandle));
 			if (rc) {
-				err_msg("Could not retreive ibm,phandle "
-					"property for %s\n", cache->path);
+				say(L1, "Could not retreive ibm,phandle "
+				    "property for %s\n", cache->path);
 				free_cache_info(cache_list);
 				return -1;
 			}
@@ -557,7 +556,7 @@ init_cache_info(struct dr_info *dr_info)
 			get_property(cache->path, "l2-cache", &cache->l2cache,
 				     sizeof(cache->l2cache));
 
-			dbg("Found cache %s\n", cache->name);
+			say(L4, "Found cache %s\n", cache->name);
 		}
 	}
 
@@ -588,7 +587,7 @@ refresh_cache_info(struct dr_info *dr_info)
 	
 	rc = init_cache_info(dr_info);
 	if (rc) {
-		err_msg("failed to refresh info\n");
+		say(L1, "failed to refresh cache information\n");
 		return rc;
 	}
 
@@ -612,13 +611,14 @@ acquire_cpu(struct dr_node *cpu, struct dr_info *dr_info)
 
 	rc = acquire_drc(cpu->drc_index);
 	if (rc) {
-		dbg("Could not acquire drc resources for %s\n", cpu->name);
+		say(L4, "Could not acquire drc resources for %s\n", cpu->name);
 		return rc;
 	}
 
 	of_nodes = configure_connector(cpu->drc_index);
 	if (of_nodes == NULL) {
-		dbg("Call to configure_connector failed for %s\n", cpu->name);
+		say(L1, "Call to configure_connector failed for %s\n",
+		    cpu->name);
 		release_drc(cpu->drc_index, CPU_DEV);
 		return -1;
 	}
@@ -626,7 +626,8 @@ acquire_cpu(struct dr_node *cpu, struct dr_info *dr_info)
 	rc = add_device_tree_nodes(CPU_OFDT_BASE, of_nodes);
 	free_of_node(of_nodes);
 	if (rc) {
-		dbg("Failure to add device tree nodes for %s\n", cpu->name);
+		say(L1, "Failure to add device tree nodes for %s\n",
+		    cpu->name);
 		release_drc(cpu->drc_index, CPU_DEV);
 		return rc;
 	}
@@ -659,7 +660,7 @@ probe_cpu(struct dr_node *cpu, struct dr_info *dr_info)
 			/* Roll back the operation.  Is this the correct
 			 * behavior?
 			 */
-			dbg("Unable to online %s\n", cpu->drc_name);
+			say(L1, "Unable to online %s\n", cpu->drc_name);
 			offline_cpu(cpu);
 			release_cpu(cpu, dr_info);
 			cpu->unusable = 1;
@@ -669,10 +670,10 @@ probe_cpu(struct dr_node *cpu, struct dr_info *dr_info)
 		memset(drc_index, 0, DR_STR_MAX);
 		write_len = sprintf(drc_index, "0x%x", cpu->drc_index);
 
-		dbg("Probing cpu 0x%x\n", cpu->drc_index);
+		say(L4, "Probing cpu 0x%x\n", cpu->drc_index);
 		rc = write(probe_file, drc_index, write_len);
 		if (rc != write_len)
-			dbg("Probe failed! rc = %x\n", rc);
+			say(L1, "Probe failed! rc = %x\n", rc);
 		else
 			/* reset rc to success */
 			rc = 0;
@@ -748,10 +749,10 @@ release_cpu(struct dr_node *cpu, struct dr_info *dr_info)
 		char *path = cpu->ofdt_path + strlen(OFDT_BASE);
 		int write_len = strlen(path);
 
-		dbg("Releasing cpu \"%s\"\n", path);
+		say(L4, "Releasing cpu \"%s\"\n", path);
 		rc = write(release_file, path, write_len);
 		if (rc != write_len)
-			dbg("Release failed! rc = %d\n", rc);
+			say(L1, "Release failed! rc = %d\n", rc);
 		else
 			/* set rc to success */
 			rc = 0;
@@ -761,13 +762,13 @@ release_cpu(struct dr_node *cpu, struct dr_info *dr_info)
 		/* Must do DLPAR from user-space */
 		rc = offline_cpu(cpu);
 		if (rc) {
-			err_msg("Could not offline cpu %s\n", cpu->drc_name);
+			say(L1, "Could not offline cpu %s\n", cpu->drc_name);
 			return rc;
 		}
 
 		rc = release_drc(cpu->drc_index, CPU_DEV);
 		if (rc) {
-			dbg("Could not release drc resources for %s\n",
+			say(L1, "Could not release drc resources for %s\n",
 			    cpu->name);
 			return rc;
 		}
@@ -776,16 +777,16 @@ release_cpu(struct dr_node *cpu, struct dr_info *dr_info)
 		if (rc) {
 			struct of_node *of_nodes;
 
-			dbg("Could not remove device tree nodes %s\n",
+			say(L1, "Could not remove device tree nodes %s\n",
 			    cpu->name);
 		
 			of_nodes = configure_connector(cpu->drc_index);
 			if (of_nodes == NULL) {
-				err_msg("Call to configure_connector failed "
-					"for %s. The device tree\nmay contain "
-					"invalid data for this cpu and a "
-					"re-activation of the partition is "
-					"needed to correct it.\n", cpu->name);
+				say(L1, "Call to configure_connector failed "
+				    "for %s. The device tree\nmay contain "
+				    "invalid data for this cpu and a "
+				    "re-activation of the partition is "
+				    "needed to correct it.\n", cpu->name);
 			} else {
 				rc = add_device_tree_nodes(CPU_OFDT_BASE,
 							   of_nodes);
@@ -834,13 +835,13 @@ init_cpu_drc_info(struct dr_info *dr_info)
 		return -1;
 	}
 	
-	dbg("Start CPU List.\n");
+	say(L4, "Start CPU List.\n");
 	for (cpu = dr_info->all_cpus; cpu; cpu = cpu->next) {
-		dbg("%x : %s\n", cpu->drc_index, cpu->drc_name);
+		say(L4, "%x : %s\n", cpu->drc_index, cpu->drc_name);
 		for (t = cpu->cpu_threads; t; t = t->sibling)
-			dbg("\tthread: %d: %s\n", t->phys_id, t->path);
+			say(L4, "\tthread: %d: %s\n", t->phys_id, t->path);
 	}
-	dbg("Done.\n");
+	say(L4, "Done.\n");
 
 	return 0;
 }
@@ -879,13 +880,13 @@ set_thread_state(struct thread *thread, int state)
 	FILE *file;
 	int rc = 0;
 
-	dbg("%slining thread id %d\n", ((state == ONLINE) ? "On" : "Off"),
+	say(L4, "%slining thread id %d\n", ((state == ONLINE) ? "On" : "Off"),
 	    thread->id);
 	sprintf(path, DR_THREAD_ONLINE_PATH, thread->id);
 	file = fopen(path, "w");
 	if (file == NULL) {
-		err_msg("Could not open %s, unable to set thread state "
-			"to %d\n", path);
+		say(L1, "Could not open %s, unable to set thread state "
+		    "to %d\n", path);
 		return -1;
 	}
 
@@ -897,7 +898,7 @@ set_thread_state(struct thread *thread, int state)
 	 * thread state.
 	 */
 	if (state != get_thread_state(thread)) {
-		err_msg("Failure setting thread state for %s\n", path);
+		say(L1, "Failure setting thread state for %s\n", path);
 		rc = -1;
 	}
 
@@ -1002,7 +1003,7 @@ online_first_dead_cpu(int nthreads, struct dr_info *dr_info)
 	}
 
 	if (rc)
-		err_msg("Could not find any threads to online\n");
+		say(L1, "Could not find any threads to online\n");
 
 	return rc;
 }
@@ -1021,7 +1022,8 @@ offline_cpu(struct dr_node *cpu)
 	int rc = 0;
 	struct thread *thread;
 
-	dbg("Offlining cpu %s (%d threads)\n", cpu->name, cpu->cpu_nthreads);
+	say(L4, "Offlining cpu %s (%d threads)\n", cpu->name,
+	    cpu->cpu_nthreads);
 
 	for (thread = cpu->cpu_threads; thread; thread = thread->sibling) {
 		if (get_thread_state(thread) != OFFLINE)
@@ -1045,7 +1047,8 @@ online_cpu(struct dr_node *cpu, struct dr_info *dr_info)
 	struct thread *thread = NULL;
 	int found = 0;
 
-	dbg("Onlining cpu %s (%d threads)\n", cpu->name, cpu->cpu_nthreads);
+	say(L4, "Onlining cpu %s (%d threads)\n", cpu->name,
+	    cpu->cpu_nthreads);
 
 	/* Hack to work around kernel brain damage (LTC 7692) */
 	for (thread = dr_info->all_threads; thread; thread = thread->next) {

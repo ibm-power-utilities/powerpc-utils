@@ -61,9 +61,9 @@ process_led(struct dr_node *node, int led)
 	rtas_rc = rtas_set_indicator(DR_INDICATOR, node->drc_index, led);
 	if (rtas_rc) {
 		if (rtas_rc == HW_ERROR)
-			err_msg("%s", hw_error);
+			say(L1, "%s", hw_error);
 		else
-			err_msg("%s", sw_error);
+			say(L1, "%s", sw_error);
 
 		return -1;
 	}
@@ -127,8 +127,8 @@ find_slot(char *drc_name, struct dr_node *all_nodes)
 	}
 
 	if ((node == NULL) || (node->skip))
-		err_msg("The specified PCI slot is either invalid\n"
-			"or does not support hot plug operations.\n");
+		say(L1, "The specified PCI slot is either invalid\n"
+		    "or does not support hot plug operations.\n");
 
 	return node;
 }
@@ -163,7 +163,7 @@ card_present(struct dr_node *node, int *power_state, int *isolate_state)
 		return state;
 
 	else if (state == HW_ERROR) {
-		err_msg("%s", hw_error);
+		say(L1, "%s", hw_error);
 		return -1;
 	}
 	else if ((state == NEED_POWER) || (state == PWR_ONLY)) {
@@ -171,17 +171,17 @@ card_present(struct dr_node *node, int *power_state, int *isolate_state)
 		rc = set_power(node->drc_power, POWER_ON);
 		if (rc) {
 			if (rc == HW_ERROR) {
-				err_msg("%s", hw_error);
+				say(L1, "%s", hw_error);
 				return -1;
 			}
 			else if (rc == SPEED_ERROR) {
-				err_msg("%s", speed_error);
+				say(L1, "%s", speed_error);
 				set_power(node->drc_power, POWER_OFF);
 				return -1;
 			}
 			/* Catch any other errors.  */
 			else {
-				err_msg("%s", sw_error);
+				say(L1, "%s", sw_error);
 				set_power(node->drc_power, POWER_OFF);
 				return -1;
 			}
@@ -196,9 +196,9 @@ card_present(struct dr_node *node, int *power_state, int *isolate_state)
 						node->drc_index, UNISOLATE);
 			if (rc) {
 				if (rc == HW_ERROR)
-					err_msg("%s", hw_error);
+					say(L1, "%s", hw_error);
 				else
-					err_msg("%s", sw_error);
+					say(L1, "%s", sw_error);
 
 				rtas_set_indicator(ISOLATION_STATE,
 						   node->drc_index, ISOLATE);
@@ -217,9 +217,9 @@ card_present(struct dr_node *node, int *power_state, int *isolate_state)
 
 		if (state) {
 			if (rc == HW_ERROR)
-				err_msg("%s", hw_error);
+				say(L1, "%s", hw_error);
 			else
-				err_msg("%s", sw_error);
+				say(L1, "%s", sw_error);
 
 			rtas_set_indicator(ISOLATION_STATE, node->drc_index,
 					   ISOLATE);
@@ -229,7 +229,7 @@ card_present(struct dr_node *node, int *power_state, int *isolate_state)
 	}
 	else {
   		/* catch any other errors from first dr_entity_sense */
-		err_msg("%s", sw_error);
+		say(L1, "%s", sw_error);
 	}
 
 	return state;
@@ -304,28 +304,28 @@ add_work(struct dr_node *node)
 	if (process_led(node, LED_ON))
 		return -1;
 
-	dbg("is calling card_present\n");
+	say(L4, "is calling card_present\n");
 	rc = card_present(node, &pow_state, &iso_state);
 	if (!rc) {
-		err_msg("No PCI card was detected in the specified "
-			"PCI slot.\n");
+		say(L1, "No PCI card was detected in the specified "
+		    "PCI slot.\n");
 		rtas_set_indicator(ISOLATION_STATE, node->drc_index, ISOLATE);
 		set_power(node->drc_power, POWER_OFF);
 		return -1;
 	}
 
 	if (!pow_state) {
-		dbg("is calling set_power(POWER_ON index 0x%x, "
+		say(L4, "is calling set_power(POWER_ON index 0x%x, "
 		    "power_domain 0x%x\n", node->drc_index, node->drc_power);
 
 		rc = set_power(node->drc_power, POWER_ON);
 		if (rc) {
 			if (rc == HW_ERROR)
-				err_msg("%s", hw_error);
+				say(L1, "%s", hw_error);
 			else if (rc == SPEED_ERROR)
-				err_msg("%s", speed_error);
+				say(L1, "%s", speed_error);
 			else
-				err_msg("%s", sw_error);
+				say(L1, "%s", sw_error);
 
 			rtas_set_indicator(ISOLATION_STATE, node->drc_index,
 					   ISOLATE);
@@ -335,16 +335,16 @@ add_work(struct dr_node *node)
 	}
 
 	if (!iso_state) {
-		dbg("calling rtas_set_indicator(UNISOLATE index 0x%x)\n",
+		say(L4, "calling rtas_set_indicator(UNISOLATE index 0x%x)\n",
 		    node->drc_index);
 
 		rc = rtas_set_indicator(ISOLATION_STATE, node->drc_index,
 					UNISOLATE);
 		if (rc) {
 			if (rc == HW_ERROR)
-				err_msg("%s", hw_error);
+				say(L1, "%s", hw_error);
 			else
-				err_msg("%s", sw_error);
+				say(L1, "%s", sw_error);
 
 			rtas_set_indicator(ISOLATION_STATE, node->drc_index,
 					   ISOLATE);
@@ -364,11 +364,12 @@ add_work(struct dr_node *node)
 		return -1;
 	}
 
-	dbg("Adding %s to %s\n", new_nodes->name, node->ofdt_path);
+	say(L4, "Adding %s to %s\n", new_nodes->name, node->ofdt_path);
 	rc = add_device_tree_nodes(node->ofdt_path, new_nodes);
 	if (rc) {
-		dbg("add_device_tree_nodes failed at %s\n", node->ofdt_path);
-		err_msg("%s", sw_error);
+		say(L4, "add_device_tree_nodes failed at %s\n",
+		    node->ofdt_path);
+		say(L1, "%s", sw_error);
 		rtas_set_indicator(ISOLATION_STATE, node->drc_index, ISOLATE);
 		set_power(node->drc_power, POWER_OFF);
 		return -1;
@@ -422,7 +423,7 @@ do_add(struct options *opts, struct dr_node *all_nodes)
 		 * LED on and exit with user error.
 		 */
 		process_led(node, LED_ON);
-		err_msg("The specified PCI slot is already "
+		say(L1, "The specified PCI slot is already "
 			"occupied.\n");
 		return -1;
 	}
@@ -433,29 +434,29 @@ do_add(struct options *opts, struct dr_node *all_nodes)
 	 * card in.
 	 */
 
-	dbg("is calling rtas_set_indicator(ISOLATE index 0x%x)\n",
+	say(L4, "is calling rtas_set_indicator(ISOLATE index 0x%x)\n",
 	    node->drc_index);
 
 	rc = rtas_set_indicator(ISOLATION_STATE, node->drc_index, ISOLATE);
 	if (rc) {
 		if (rc == HW_ERROR)
-			err_msg("%s", hw_error);
+			say(L1, "%s", hw_error);
 		else
-			err_msg("%s", sw_error);
+			say(L1, "%s", sw_error);
 
 		set_power(node->drc_power, POWER_OFF);
 		return -1;
 	}
 
-	dbg("is calling set_power(POWER_OFF index 0x%x, "
+	say(L4, "is calling set_power(POWER_OFF index 0x%x, "
 	    "power_domain 0x%x) \n", node->drc_index, node->drc_power);
 
 	rc = set_power(node->drc_power, POWER_OFF);
 	if (rc) {
 		if (rc == HW_ERROR)
-			err_msg("%s", hw_error);
+			say(L1, "%s", hw_error);
 		else
-			err_msg("%s", sw_error);
+			say(L1, "%s", sw_error);
 
 		return -1;
 	}
@@ -486,7 +487,7 @@ do_add(struct options *opts, struct dr_node *all_nodes)
 	if (rc)
 		return rc;
 
-	dbg("is calling enable_slot to config adapter\n");
+	say(L4, "is calling enable_slot to config adapter\n");
 
 	/* Try to config the adapter */
 	set_hp_adapter_status(PHP_CONFIG_ADAPTER, node->drc_name);
@@ -521,7 +522,7 @@ remove_work(struct options *opts, struct dr_node *all_nodes)
 	if (node == NULL)
 		return NULL;
 
-	dbg("found node: drc name=%s, index=0x%x, path=%s\n",
+	say(L4, "found node: drc name=%s, index=0x%x, path=%s\n",
 	     node->drc_name, node->drc_index, node->ofdt_path);
 
 	/* Prompt user only if not in noprompt mode */
@@ -545,8 +546,8 @@ remove_work(struct options *opts, struct dr_node *all_nodes)
 	/* Make sure there's something there to remove. */
 	if (node->children == NULL) {
 		process_led(node, LED_OFF);
-		err_msg("There is no configured card to remove from the "
-			"specified PCI slot.\n");
+		say(L1, "There is no configured card to remove from the "
+		    "specified PCI slot.\n");
 		return NULL;
 	}
 
@@ -554,12 +555,12 @@ remove_work(struct options *opts, struct dr_node *all_nodes)
 	 * not configured before proceeding
 	 */
 	if (get_hp_adapter_status(node->drc_name) == CONFIG) {
-		dbg("unconfiguring adapter in slot[%s]\n", node->drc_name);
+		say(L4, "unconfiguring adapter in slot[%s]\n", node->drc_name);
 		set_hp_adapter_status(PHP_UNCONFIG_ADAPTER, node->drc_name);
 
 		int rc = get_hp_adapter_status(node->drc_name);
 		if (rc != NOT_CONFIG) {
-			err_msg("Unconfig adapter failed.\n");
+			say(L1, "Unconfig adapter failed.\n");
 			return NULL;
 		}
 	}
@@ -570,7 +571,7 @@ remove_work(struct options *opts, struct dr_node *all_nodes)
 	for (child = node->children; child; child = child->next) {
 		rc = remove_device_tree_nodes(child->ofdt_path);
 		if (rc) {
-			err_msg("%s", sw_error);
+			say(L1, "%s", sw_error);
 			rtas_set_indicator(ISOLATION_STATE, node->drc_index,
 					   ISOLATE);
 			set_power(node->drc_power, POWER_OFF);
@@ -582,29 +583,29 @@ remove_work(struct options *opts, struct dr_node *all_nodes)
 	 * allowing the user to physically remove
 	 * the card.
 	 */
-	dbg("is calling rtas_set_indicator(ISOLATE index 0x%x)\n",
+	say(L4, "is calling rtas_set_indicator(ISOLATE index 0x%x)\n",
 	    node->drc_index);
 
 	rc = rtas_set_indicator(ISOLATION_STATE, node->drc_index, ISOLATE);
 	if (rc) {
 		if (rc == HW_ERROR)
-			err_msg("%s", hw_error);
+			say(L1, "%s", hw_error);
 		else
-			err_msg("%s", sw_error);
+			say(L1, "%s", sw_error);
 
 		set_power(node->drc_power, POWER_OFF);
 		return NULL;
 	}
 
-	dbg("is calling set_power(POWER_OFF index 0x%x, power_domain 0x%x)\n",
-	    node->drc_index, node->drc_power);
+	say(L4, "is calling set_power(POWER_OFF index 0x%x, power_domain "
+	    "0x%x)\n", node->drc_index, node->drc_power);
 
 	rc = set_power(node->drc_power, POWER_OFF);
 	if (rc) {
 		if (rc == HW_ERROR)
-			err_msg("%s", hw_error);
+			say(L1, "%s", hw_error);
 		else
-			err_msg("%s", sw_error);
+			say(L1, "%s", sw_error);
 
 		set_power(node->drc_power, POWER_OFF);
 		return NULL;
@@ -694,11 +695,11 @@ do_replace(struct options *opts, struct dr_node *all_nodes)
 		return -1;
 
 	if (!repl_node->children) {
-		err_msg("Bad node struct.\n");
+		say(L1, "Bad node struct.\n");
 		return -1;
 	}
 
-	dbg("repl_node:path=%s node:path=%s\n",
+	say(L4, "repl_node:path=%s node:path=%s\n",
 	    repl_node->ofdt_path, repl_node->children->ofdt_path);
 
 	/* Prompt user to replace card and to press
@@ -725,7 +726,7 @@ do_replace(struct options *opts, struct dr_node *all_nodes)
 	if (rc)
 		return rc;
 
-	dbg("CONFIGURING the card in node[name=%s, path=%s]\n",
+	say(L4, "CONFIGURING the card in node[name=%s, path=%s]\n",
 	    repl_node->drc_name, repl_node->ofdt_path);
 
 	set_hp_adapter_status(PHP_CONFIG_ADAPTER, repl_node->drc_name);
@@ -737,12 +738,12 @@ int
 valid_pci_options(struct options *opts)
 {
 	if ((opts->action == IDENTIFY) && (opts->no_ident)) {
-		err_msg("Cannot specify the -i and -I option together\n");
+		say(L1, "Cannot specify the -i and -I option together\n");
 		return -1;
 	}
 
 	if (opts->usr_drc_name == NULL) {
-		err_msg("A drc name must be specified\n");
+		say(L1, "A drc name must be specified\n");
 		return -1;
 	}
 
@@ -757,7 +758,7 @@ drslot_chrp_pci(struct options *opts)
 
 	all_nodes = get_hp_nodes();
 	if (all_nodes == NULL) {
-		err_msg("There are no PCI hot plug slots on this system.\n");
+		say(L1, "There are no PCI hot plug slots on this system.\n");
 		return -1;
 	}
 
@@ -779,7 +780,7 @@ drslot_chrp_pci(struct options *opts)
 		rc = do_identify(opts, all_nodes);
 		break;
 	    default:
-		err_msg("Invalid operation specified!\n");
+		say(L1, "Invalid operation specified!\n");
 		rc = -1;
 		break;
 	}

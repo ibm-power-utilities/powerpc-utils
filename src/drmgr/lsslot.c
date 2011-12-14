@@ -15,7 +15,7 @@
 #include "lsslot.h"
 #include "drmem.h"
 
-int debug = 0;
+int output_level = 0;
 int log_fd = 0;
 char *cmd = "lsslot";
 
@@ -420,7 +420,7 @@ parse_options(int argc, char *argv[], struct cmd_opts *opts)
 			break;
 
 		    case 'd':
-			set_debug(atoi(optarg));
+			set_output_level(atoi(optarg));
 			break;
 
 		    case 'F':
@@ -431,9 +431,9 @@ parse_options(int argc, char *argv[], struct cmd_opts *opts)
 			 */
 			if ((opts->delim[1] != '\0')
 			    || (opts->delim[0] == '%')) {
-				err_msg("You may specify only one character "
-					"for the -F option,\nand it must not "
-					"be the %% character.\n");
+				say(L1, "You may specify only one character "
+				    "for the -F option,\nand it must not "
+				    "be the %% character.\n");
 				exit(1);
 			}
 			break;
@@ -512,8 +512,8 @@ parse_options(int argc, char *argv[], struct cmd_opts *opts)
 			usage();
 
 		if (opts->b_flag && opts->p_flag) {
-			err_msg("You cannot specify both the -b and -p "
-				"options.\n");
+			say(L1, "You cannot specify both the -b and -p "
+			    "options.\n");
 			usage();
 		}
 
@@ -554,10 +554,10 @@ lsslot_chrp_pci(struct cmd_opts *opts)
 	/* If nothing returned, then no hot plug node */
 	if (all_nodes == NULL) {
 		if (opts->slot_type == PCI)
-			err_msg("There are no PCI hot plug slots on "
-				"this system.\n");
+			say(L1, "There are no PCI hot plug slots on "
+			    "this system.\n");
 		else
-			err_msg("There are no DR slots on this system.\n");
+			say(L1, "There are no DR slots on this system.\n");
    		return 1;
 	}
 
@@ -589,8 +589,8 @@ lsslot_chrp_pci(struct cmd_opts *opts)
 		 * user specified a slot or a device name.
 		 */
 		if (opts->s_name != NULL) {
-			err_msg("The specified PCI slot is either invalid\n"
-				"or does not support hot plug operations.\n");
+			say(L1, "The specified PCI slot is either invalid\n"
+			    "or does not support hot plug operations.\n");
 			rc = 1;
 		}
 		goto lsslot_pci_exit;
@@ -778,7 +778,7 @@ lsslot_chrp_port(struct cmd_opts *opts)
 
 	/* If nothing returned, then no hot plug node */
 	if (all_nodes == NULL) {
-		err_msg("There are no LHEA ports on this system.\n");
+		say(L1, "There are no LHEA ports on this system.\n");
 		return 1;
 	}
 
@@ -810,7 +810,7 @@ lsslot_chrp_port(struct cmd_opts *opts)
 		 * user specified a slot or a device name.
 		 */
 		if (opts->s_name != NULL) {
-			err_msg("The specified port was not found.\n");
+			say(L1, "The specified port was not found.\n");
 			rc = 1;
 		}
 		goto lsslot_port_exit;
@@ -858,8 +858,8 @@ main(int argc, char *argv[])
 
 	rc = dr_lock(opts.timeout);
 	if (rc) {
-		err_msg("Unable to obtain Dynamic Reconfiguration lock. "
-			"Please try command again later.\n");
+		say(L1, "Unable to obtain Dynamic Reconfiguration lock. "
+		    "Please try command again later.\n");
 		exit(1);
 	}
 

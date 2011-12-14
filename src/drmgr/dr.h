@@ -15,7 +15,7 @@
 #include "rtas_calls.h"
 #include "drpci.h"
 
-extern int debug;
+extern int output_level;
 extern int log_fd;
 extern char *cmd;
 
@@ -29,43 +29,6 @@ extern char *cmd;
 /* Online/Offline */
 #define OFFLINE		0
 #define ONLINE		1
-
-static inline void dbg(char *fmt, ...)
-{
-	va_list ap;
-	char buf[256];
-	int len, rc;
-	
-	va_start(ap, fmt);
-	memset(buf, 0, 256);
-	len = vsnprintf(buf, 256, fmt, ap);
-	va_end(ap);
-
-	if (log_fd)
-		rc = write(log_fd, buf, len);
-
-	if (debug >= 4)
-		fprintf(stderr, "%s", buf);
-	
-}
-
-static inline void err_msg(char *fmt, ...)
-{
-	va_list ap;
-	char buf[256];
-	int len, rc;
-
-	va_start(ap, fmt);
-	memset(buf, 0, 256);
-	len = snprintf(buf, 256, "%s: ", cmd);
-	len += vsnprintf(buf + len, 256 - len, fmt, ap);
-	va_end(ap);
-
-	fprintf(stderr, "%s", buf);
-	
-	if (log_fd)
-		rc = write(log_fd, buf, len);
-}
 
 static inline int is_dot_dir(char * _p)
 {
@@ -114,7 +77,10 @@ struct options {
 	char	*p_option;
 };
 
+enum say_level { L1 =1, L2, L3, L4 };
+
 /* The follwing are defined in common.c */
+int say(enum say_level, char *, ...);
 void dr_init(void);
 void dr_fini(void);
 int dr_lock(int);
@@ -148,7 +114,7 @@ int cpu_entitlement_capable(void);
 int mem_entitlement_capable(void);
 void print_dlpar_capabilities(void);
 
-void set_debug(int);
+void set_output_level(int);
 
 #define DR_BUF_SZ	256
 

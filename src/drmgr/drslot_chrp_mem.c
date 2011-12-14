@@ -106,7 +106,7 @@ get_mem_scns(struct dr_node *lmb)
 
 		scn = zalloc(sizeof(*scn));
 		if (scn == NULL) {
-			err_msg("Could not allocate memory section\n.");
+			say(L1, "Could not allocate memory section\n.");
 			return -1;
 		}
 
@@ -154,7 +154,8 @@ get_lmb_size(struct dr_node *lmb)
 
 	rc = get_property(lmb->ofdt_path, "reg", &regs, sizeof(regs));
 	if (rc) {
-		dbg("Could not determine lmb size for %s\n", lmb->ofdt_path);
+		say(L4, "Could not determine lmb size for %s\n",
+		    lmb->ofdt_path);
 		return rc;
 	}
 
@@ -204,7 +205,7 @@ get_mem_node_lmbs(struct lmb_list_head *lmb_list)
 		}
 
 		if (lmb == NULL) {
-			dbg("Could not find lmb with drc-index of %x\n",
+			say(L4, "Could not find lmb with drc-index of %x\n",
 			    lmb->drc_index);
 			rc = -1;
 			break;
@@ -220,7 +221,7 @@ get_mem_node_lmbs(struct lmb_list_head *lmb_list)
 		/* Find the physical address for this lmb */
 		tmp = strrchr(lmb->ofdt_path, '@');
 		if (tmp == NULL) {
-			dbg("Could not determine physical address for %s\n",
+			say(L4, "Could not determine physical address for %s\n",
 			    lmb->ofdt_path);
 			break;
 		}
@@ -257,7 +258,7 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
 	rc = get_property(DYNAMIC_RECONFIG_MEM, "ibm,lmb-size",
 			  &lmb_sz, sizeof(lmb_sz));
 	if (rc) {
-		dbg("Could not retrieve drconf lmb size\n");
+		say(L4, "Could not retrieve drconf lmb size\n");
 		return rc;
 	}
 
@@ -265,15 +266,15 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
 						   "ibm,dynamic-memory");
 	lmb_list->drconf_buf = zalloc(lmb_list->drconf_buf_sz);
 	if (lmb_list->drconf_buf == NULL) {
-		dbg("Could not allocate buffer to get dynamic reconfigurable "
-		    "memory\n");
+		say(L4, "Could not allocate buffer to get dynamic "
+		    "reconfigurable memory\n");
 		return -1;
 	}
 
 	rc = get_property(DYNAMIC_RECONFIG_MEM, "ibm,dynamic-memory",
 			  lmb_list->drconf_buf, lmb_list->drconf_buf_sz);
 	if (rc) {
-		dbg("Could not retrieve dynamic reconfigurable memory "
+		say(L4, "Could not retrieve dynamic reconfigurable memory "
 		    "property\n");
 		return -1;
 	}
@@ -293,7 +294,7 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
 		}
 
 		if (lmb == NULL) {
-			dbg("Could not find lmb with drc-index of %x\n",
+			say(L4, "Could not find lmb with drc-index of %x\n",
 			    lmb->drc_index);
 			rc = -1;
 			break;
@@ -316,7 +317,7 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
 		drmem++; /* trust your compiler */
 	}
 
-	dbg("Found %d owning lmbs\n", found);
+	say(L4, "Found %d owning lmbs\n", found);
 	return rc;
 }
 
@@ -345,7 +346,7 @@ get_lmbs(unsigned int sort)
 
 	lmb_list = zalloc(sizeof(*lmb_list));
 	if (lmb_list == NULL) {
-		dbg("Could not allocate lmb list head\n");
+		say(L4, "Could not allocate lmb list head\n");
 		return NULL;
 	}
 
@@ -377,12 +378,12 @@ get_lmbs(unsigned int sort)
 		found++;
 	}
 
-	dbg("Found %d lmbs\n", found);
+	say(L4, "Found %d lmbs\n", found);
 
 	rc = get_str_attribute("/sys/devices/system/memory",
 			       "/block_size_bytes", &buf, DR_STR_MAX);
 	if (rc) {
-		dbg("Could not determine block size bytes for memory.\n");
+		say(L4, "Could not determine block size bytes for memory.\n");
 		free_lmbs(lmb_list);
 		return NULL;
 	}
@@ -471,10 +472,10 @@ get_available_lmb(struct options *opts, struct dr_node *start_lmb)
 	}
 
 	if (usable_lmb)
-		dbg("Found available lmb, %s, drc index 0x%x\n",
+		say(L4, "Found available lmb, %s, drc index 0x%x\n",
 		    usable_lmb->drc_name, usable_lmb->drc_index);
 	else
-		dbg("Could not find available lmb\n");
+		say(L4, "Could not find available lmb\n");
 
 	return usable_lmb;
 }
@@ -537,7 +538,7 @@ update_drconf_node(struct dr_node *lmb, struct lmb_list_head *lmb_list,
 	rc = get_phandle(lmb->ofdt_path, &phandle);
 
 	if (rc) {
-		dbg("Failed to get phandle: %d\n",rc);
+		say(L1, "Failed to get phandle: %d\n",rc);
 		return rc;
 	}
 
@@ -600,7 +601,7 @@ add_device_tree_lmb(struct dr_node *lmb, struct lmb_list_head *lmb_list)
 			 * In this case we provide this little hack to allow
 			 * memory add to work on these kernels.
 			 */
-			dbg("Assuming older kernel, trying to add node\n");
+			say(L4, "Assuming older kernel, trying to add node\n");
 			lmb->lmb_of_node = configure_connector(lmb->drc_index);
 			if (lmb->lmb_of_node == NULL) {
 				release_drc(lmb->drc_index, MEM_DEV);
@@ -636,7 +637,7 @@ add_device_tree_lmb(struct dr_node *lmb, struct lmb_list_head *lmb_list)
 		 */
 		char *tmp = strrchr(lmb->ofdt_path, '@');
 		if (tmp == NULL) {
-			dbg("Could not determine physical address for %s\n",
+			say(L4, "Could not determine physical address for %s\n",
 			    lmb->ofdt_path);
 			remove_device_tree_nodes(lmb->ofdt_path);
 			return -1;
@@ -678,8 +679,8 @@ get_mem_scn_state(struct mem_scn *mem_scn)
 
 	file = open(path, O_RDONLY);
 	if (file <= 0) {
-		dbg("Could not open %s to validate its state.\n%s\n",
-			    path, strerror(errno));
+		say(L4, "Could not open %s to validate its state.\n%s\n",
+		    path, strerror(errno));
 		return -1;
 	}
 
@@ -714,11 +715,11 @@ set_mem_scn_state(struct mem_scn *mem_scn, int state)
 
 	memset(path, 0, DR_PATH_MAX);
 	sprintf(path, "%s/state", mem_scn->sysfs_path);
-	dbg("Marking %s %s\n", mem_scn->sysfs_path, state_strs[state]);
+	say(L4, "Marking %s %s\n", mem_scn->sysfs_path, state_strs[state]);
 
 	file = open(path, O_WRONLY);
 	if (file <= 0) {
-		dbg("Could not open %s to %s memory.\n%s\n",
+		say(L4, "Could not open %s to %s memory.\n%s\n",
 		    path, state_strs[state], strerror(errno));
 		close(file);
 		return -1;
@@ -728,7 +729,7 @@ set_mem_scn_state(struct mem_scn *mem_scn, int state)
 	close(file);
 
 	if (get_mem_scn_state(mem_scn) != state) {
-		dbg("Could not %s %s.\n", state_strs[state],
+		say(L4, "Could not %s %s.\n", state_strs[state],
 		    mem_scn->sysfs_path);
 		rc = EAGAIN;
 	}
@@ -752,7 +753,7 @@ probe_lmb(struct dr_node *lmb)
 
 	probe_file = open(MEM_PROBE_FILE, O_WRONLY);
 	if (probe_file <= 0) {
-		dbg("Could not open %s to probe memory\n", MEM_PROBE_FILE);
+		say(L4, "Could not open %s to probe memory\n", MEM_PROBE_FILE);
 		return errno;
 	}
 
@@ -762,10 +763,10 @@ probe_lmb(struct dr_node *lmb)
 		memset(addr, 0, DR_STR_MAX);
 		sprintf(addr, "0x%"PRIx64, scn->phys_addr);
 
-		dbg("Probing memory address 0x%llx\n", scn->phys_addr);
+		say(L4, "Probing memory address 0x%llx\n", scn->phys_addr);
 		rc = write(probe_file, addr, strlen(addr));
 		if (rc == -1) {
-			dbg("Probe failed:\n%s\n", strerror(errno));
+			say(L4, "Probe failed:\n%s\n", strerror(errno));
 			return rc;
 		}
 	}
@@ -788,7 +789,7 @@ set_lmb_state(struct dr_node *lmb, int state)
 	int rc = 0;
 	struct stat sbuf;
 
-	dbg("Attempting to %s lmb.\n", state_strs[state]);
+	say(L4, "Attempting to %s lmb.\n", state_strs[state]);
 
 	if (state == ONLINE) {
 		rc = probe_lmb(lmb);
@@ -821,7 +822,7 @@ set_lmb_state(struct dr_node *lmb, int state)
 	}
 
 	if (rc == EAGAIN)
-		err_msg("Could not %s lmb.\n", state_strs[state]);
+		say(L1, "Could not %s lmb.\n", state_strs[state]);
 
 	return rc;
 }
@@ -898,10 +899,10 @@ mem_add(struct options *opts)
 	if (lmb_list == NULL)
 		return -1;
 
-	dbg("Adding %d lmbs\n", opts->quantity);
+	say(L4, "Adding %d lmbs\n", opts->quantity);
 	rc = add_lmbs(opts, lmb_list);
 
-	dbg("Added %d of %d requested lmb(s)\n", lmb_list->lmbs_modified,
+	say(L4, "Added %d of %d requested lmb(s)\n", lmb_list->lmbs_modified,
 	    opts->quantity);
 	printf("DR_TOTAL_RESOURCES=%d\n", lmb_list->lmbs_modified);
 
@@ -997,23 +998,23 @@ mem_remove(struct options *opts)
 		}
 
 		if (removable < opts->quantity) {
-			err_msg("There is not enough removable memory available to "
-				"fulfill the request.\n");
+			say(L1, "There is not enough removable memory "
+			    "available to fulfill the request.\n");
 			rc = -1;
 		}
 	}
 
 	if (!rc) {
-		dbg("Removing %d lmbs\n", opts->quantity);
+		say(L4, "Removing %d lmbs\n", opts->quantity);
 		rc = remove_lmbs(opts, lmb_list);
 		if (rc)
-			dbg("Memory removal request failed\n");
+			say(L4, "Memory removal request failed\n");
 	}
 
-	dbg("Removed %d of %d requested lmb(s)\n", lmb_list->lmbs_modified,
+	say(L4, "Removed %d of %d requested lmb(s)\n", lmb_list->lmbs_modified,
 	    opts->quantity);
 	if (lmb_list->lmbs_modified < opts->quantity)
-		dbg("Unable to hotplug remove the remaining %d lmb(s)\n",
+		say(L4, "Unable to hotplug remove the remaining %d lmb(s)\n",
 		    opts->quantity - lmb_list->lmbs_modified);
 	printf("DR_TOTAL_RESOURCES=%d\n", lmb_list->lmbs_modified);
 
@@ -1065,8 +1066,8 @@ ehea_compatable(int action)
 		/* File doesn't exist, memory dlpar operations are not
 		 * supported by this version of the ehea driver.
 		 */
-		err_msg("The eHEA module for this system does not support "
-			"memory DLPAR operations.\n");
+		say(L1, "The eHEA module for this system does not support "
+		    "memory DLPAR operations.\n");
 		return 0;
 	}
 
@@ -1083,9 +1084,9 @@ ehea_compatable(int action)
 		rc = 1;
 
 	if (!rc)
-		err_msg("The eHEA modules loaded on this system does not "
-			"support memory DLPAR %s operations.\n",
-			(action == ADD) ? "add" : "remove");
+		say(L1, "The eHEA modules loaded on this system does not "
+		    "support memory DLPAR %s operations.\n",
+		    (action == ADD) ? "add" : "remove");
 	return rc;
 }
 
@@ -1110,8 +1111,8 @@ drslot_chrp_mem(struct options *opts)
 	}
 
 	if (! mem_dlpar_capable()) {
-		err_msg("DLPAR memory operations are not supported on"
-			"this kernel.");
+		say(L1, "DLPAR memory operations are not supported on"
+		    "this kernel.");
 		return -1;
 	}
 

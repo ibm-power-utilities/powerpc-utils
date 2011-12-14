@@ -17,7 +17,7 @@
 
 #define DRMGR_ARGS	"ac:d:Iimnp:Qq:Rrs:w:t:hC"
 
-int debug = 4; /* Always have debug output enabled. */
+int output_level = 1; /* default to lowest output level */
 
 int log_fd = 0;
 char *cmd;
@@ -150,27 +150,27 @@ valid_drmgr_options(struct options *opts)
 {
 
 	if (opts->ctype == NULL) {
-		err_msg("A connector type (-c) must be specified\n");
+		say(L1, "A connector type (-c) must be specified\n");
 		return -1;
 	}
 
 	if (action_cnt == 0) {
-		err_msg("At least one action must be specified\n");
+		say(L1, "At least one action must be specified\n");
 		return -1;
 	}
 
 	if (action_cnt > 1) {
-		err_msg("Only one action may be specified\n");
+		say(L1, "Only one action may be specified\n");
 		return -1;
 	}
 
 	if ((opts->quantity > 1) && (opts->usr_drc_name)) {
-		err_msg("The -q and -s flags are mutually exclusive\n");
+		say(L1, "The -q and -s flags are mutually exclusive\n");
 		return -1;
 	}
 
 	if (opts->timeout < 0) {
-		err_msg("Invalid timeout specified: %s\n",
+		say(L1, "Invalid timeout specified: %s\n",
 			optarg);
 		return -1;
 	}
@@ -233,7 +233,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 			display_capabilities = 1;
 			break;
 		    case 'd':
-			set_debug(atoi(optarg));
+			set_output_level(atoi(optarg));
 			break;
 		    case 'I':
 			opts->no_ident = 1;
@@ -286,7 +286,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 			break;
 
 		    default:
-			err_msg("Invalid option specified '%c'\n", optopt);
+			say(L1, "Invalid option specified '%c'\n", optopt);
 			return -1;
 			break;
 		}
@@ -335,14 +335,14 @@ get_command(struct options *opts)
 	/* If we make it this far, the user specified an invalid
 	 * connector type.
 	 */
-	err_msg("Dynamic reconfiguration is not supported for connector\n"
-		"type \"%s\" on this system\n", opts->ctype);
+	say(L1, "Dynamic reconfiguration is not supported for connector\n"
+	    "type \"%s\" on this system\n", opts->ctype);
 
 	return &commands[DRMGR];
 }
 
 int drmgr(struct options *opts) {
-	err_msg("Invalid command %s %d\n",cmd, opts->action);
+	say(L1, "Invalid command %s %d\n",cmd, opts->action);
 	return -1;
 }
 
@@ -396,15 +396,15 @@ main(int argc, char *argv[])
 
 	/* Mask signals so we do not get interrupted */
 	if (sig_setup()) {
-		err_msg("Could not mask signals to avoid interrupts\n"); 
+		say(L1, "Could not mask signals to avoid interrupts\n");
 		rc = -1;
 		goto exit;
 	}
 
 	rc = dr_lock(opts.timeout);
 	if (rc) {
-		err_msg("Unable to obtain Dynamic Reconfiguration lock. "
-			"Please try command again later.\n");
+		say(L1, "Unable to obtain Dynamic Reconfiguration lock. "
+		    "Please try command again later.\n");
 		rc = -1;
 		goto exit;
 	}
@@ -416,7 +416,7 @@ main(int argc, char *argv[])
 	log_msg[offset] = '\0';
 	syslog(LOG_LOCAL0 | LOG_INFO, "%s", log_msg);
 	
-	dbg("%s\n", log_msg);
+	say(L4, "%s\n", log_msg);
 
 	/* Now, using the actual command, call out to the proper handler */
 	rc = command->func(&opts);
