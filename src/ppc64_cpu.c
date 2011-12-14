@@ -869,8 +869,11 @@ int do_cores_online(char *state)
 	if (number_to_have == cores_now_online)
 		return 0;
 
-	if (number_to_have > cpus_in_system)
-		number_to_have = cpus_in_system;
+	if (number_to_have > cpus_in_system) {
+		printf("Cannot online more cores than are present.\n");
+		do_cores_present(NULL);
+		return -1;
+	}
 
 	if (number_to_have > cores_now_online) {
 		number_to_change = number_to_have - cores_now_online;
