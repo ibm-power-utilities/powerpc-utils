@@ -552,7 +552,7 @@ int do_run_mode(char *run_mode)
 	char mode[3];
 	int rc;
 
-	if (getpid() != 0) {
+	if (getuid() != 0) {
 		fprintf(stderr, "Cannot %s run mode: Permission denied\n",
 			run_mode ? "set" : "get");
 		return -1;
