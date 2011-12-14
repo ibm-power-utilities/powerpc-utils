@@ -48,9 +48,11 @@ usage(void)
 	fprintf(stderr, "                Display the slots of the specified "
 		"connector type.  The valid\n");
 	fprintf(stderr, "                connector types are \"pci\" for "
-		"hotplg PCI slots, \"slot\" for\n");
-	fprintf(stderr, "                logical slots, \"phb\" fot PHB's "
-		"and \"cpu\" for cpu's. The default\n");
+		"hotplug PCI slots, \"slot\" for\n");
+	fprintf(stderr, "                logical slots, \"phb\" for PHB's, "
+		"\"port\" for LHEA ports, \"mem\"\n");
+	fprintf(stderr, "                for memory, and \"cpu\" "
+		"for cpu's. The default\n");
 	fprintf(stderr, "                is \"slot\" if no -c option is "
 		"specified.\n");
 	fprintf(stderr, "        -a      Display available slots, valid for "
