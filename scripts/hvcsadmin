@@ -524,6 +524,7 @@ sub status {
     my @allentries = sort readdir DIRHANDLE;
     closedir DIRHANDLE;
     my $path = "";
+    my $count = 0;
 
     verboseprint("$app_name: gathering status for all vty-server adapters.\n");
     verboseprint("$app_name: some device nodes won't be mapped to vty-server adapters.\n");
@@ -532,10 +533,15 @@ sub status {
         if( $entry =~ /$global_node_name(\d)$/) {
             $path = get_device_path_by_index( $1 );
             if ($path ne "") {
-                displaybypath( $path )
+                displaybypath( $path );
+        $count++;
             }
         }
         $path = "";
+    }
+
+    if ($count eq 0) {
+    print("$app_name: no hvcs adapters found\.\n");
     }
 }
 
