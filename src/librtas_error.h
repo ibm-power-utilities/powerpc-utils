@@ -5,7 +5,7 @@
  * Copyright (c) 2004 International Business Machines
  * Common Public License Version 1.0 (see COPYRIGHT)
  *
- * @author Nathan Fontenot <nfont@austin.ibm.com>
+ * @author Nathan Fontenot <nfont@linux.vnet.ibm.com>
  */
 
 #ifndef _LIBRTAS_ERROR_H

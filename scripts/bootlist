@@ -4,7 +4,7 @@
 #
 # bootlist - command to display and/or update the bootlist in nvram.
 #
-# author Nathan Fontenot <nfont@austin.ibm.com>
+# author Nathan Fontenot <nfont@linux.vnet.ibm.com>
 #
 
 OFPATHNAME=/usr/sbin/ofpathname

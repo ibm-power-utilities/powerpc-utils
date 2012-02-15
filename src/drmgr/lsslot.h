@@ -4,7 +4,7 @@
  *
  * Copyright (C) IBM Corporation 2006
  *
- * @author Nathan Fontenot <nfont@austin.ibm.com>
+ * @author Nathan Fontenot <nfont@linux.vnet.ibm.com>
  */
 
 #ifndef _H_LSSLOT

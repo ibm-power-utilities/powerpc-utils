@@ -5,7 +5,7 @@
  * Copyright (C) 2005 International Business Machines
  * Common Public License Version 1.0 (see COPYRIGHT)
  *
- * @author Nathan Fonetenot <nfont@austin.ibm.com>
+ * @author Nathan Fonetenot <nfont@linux.vnet.ibm.com>
  * @author Jake Moilanen  <moilanen@us.ibm.com>
  *
  * RTAS messages are placed in the syslog encoded in a binary

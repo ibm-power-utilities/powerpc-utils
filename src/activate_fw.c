@@ -28,7 +28,7 @@
  * (extended delay).  The librtas module intercepts these return codes and 
  * handles them itself, they should never be returned from librtas.
  *
- * @author Nathan Fontenot <nfont@austin.ibm.com>
+ * @author Nathan Fontenot <nfont@linux.vnet.ibm.com>
  */
 
 #include <stdio.h>

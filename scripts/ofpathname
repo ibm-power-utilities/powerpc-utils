@@ -3,7 +3,7 @@
 # Copyright (c) 2004 International Business Machines
 # Common Public License Version 1.0 (see COPYRIGHT)
 #
-# Author Nathan Fontenot <nfont@austin.ibm.com>
+# Author Nathan Fontenot <nfont@linux.vnet.ibm.com>
 
 #
 # ofpathname - This utility provides a mechanism for converting a logical
@@ -44,7 +44,7 @@ usage()
 show_version()
 {
     echo "$OFPATHNAME: Version $VERSION"
-    echo "Written by: Nathan Fontenot <nfont@austin.ibm.com>"
+    echo "Written by: Nathan Fontenot <nfont@linux.vnet.ibm.com>"
 }
 
 #

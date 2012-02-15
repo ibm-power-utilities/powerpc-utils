@@ -21,7 +21,7 @@
  * following NVRAM partitions contain data formatted as name=value pairs: 
  * common, of-config, and ibm,setupcfg.
  *
- * @author Nathan Fontenot <nfont@austin.ibm.com>
+ * @author Nathan Fontenot <nfont@linux.vnet.ibm.com>
  * @author Michael Strosaker <strosake@us.ibm.com>
  * @author Todd Inglett <tinglett@us.ibm.com>
  */
