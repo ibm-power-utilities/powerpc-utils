@@ -123,6 +123,18 @@ void get_cpu_physc(struct sysentry *unused_se, char *buf)
 	sprintf(buf, "%.2f", physc);
 }
 
+void get_per_entc(struct sysentry *unused_se, char *buf)
+{
+	char *descr;
+	char physc[32];
+	char entc[32];
+
+	get_sysdata("DesEntCap", &descr, entc);
+	get_sysdata("physc", &descr, physc);
+
+	sprintf(buf, "%.2f", atof(physc) / atof(entc));
+}
+
 int parse_lparcfg()
 {
 	FILE *f;
@@ -158,6 +170,35 @@ int parse_lparcfg()
 	}
 
 	fclose(f);
+	return 0;
+}
+
+int parse_proc_ints()
+{
+	FILE *f;
+	char line[512];
+	char *value;
+	struct sysentry *se;
+	long long int phint = 0;
+
+	f = fopen("/proc/interrupts", "r");
+	while (fgets(line, 512, f) != NULL) {
+		/* we just need the SPU line */
+		if (line[0] != 'S' || line[1] != 'P' || line[2] != 'U')
+			continue;
+
+		for (value = &line[5]; value[2] != 'S'; value += 11) {
+			int v;
+			v = atoi(value);
+			phint += v;
+		}
+	}
+
+	fclose(f);
+
+	se = get_sysentry("phint");
+	sprintf(se->value, "%lld", phint);
+
 	return 0;
 }
 
@@ -340,7 +381,7 @@ void get_smt_mode(struct sysentry *se, char *buf)
 	else if (line[8] == 'f')
 		sprintf(buf, "Off");
 	else
-		sprintf(buf, "Unknown");
+		sprintf(buf, "%c", line[4]);
 }
 
 long long get_cpu_time_diff()
@@ -372,6 +413,7 @@ void init_sysdata(void)
 	get_time();
 	parse_lparcfg();
 	parse_proc_stat();
+	parse_proc_ints();
 	get_time_base();
 }
 
@@ -422,7 +464,7 @@ void print_default_output(int interval, int count)
 	offset += sprintf(buf + offset, "mode=%s ", value);
 	get_sysdata("smt_state", &descr, value);
 	offset += sprintf(buf + offset, "smt=%s ", value);
-	get_sysdata("system_active_processors", &descr, value);
+	get_sysdata("partition_active_processors", &descr, value);
 	offset += sprintf(buf + offset, "lcpu=%s ", value);
 	get_sysdata("MemTotal", &descr, value);
 	offset += sprintf(buf + offset, "mem=%s ", value);
@@ -451,9 +493,11 @@ void print_default_output(int interval, int count)
 		get_sysdata("cpu_lbusy", &descr, lbusy);
 		get_sysdata("dispatches", &descr, vcsw);
 		get_sysdata("physc", &descr, physc);
+		get_sysdata("per_entc", &descr, entc);
+		get_sysdata("phint", &descr, phint);
 
-		fprintf(stdout, fmt, user, sys, wait, idle, physc, "XXX",
-			lbusy, vcsw, "XXX");
+		fprintf(stdout, fmt, user, sys, wait, idle, physc, entc,
+			lbusy, vcsw, phint);
 	} while (--count > 0);
 }
 

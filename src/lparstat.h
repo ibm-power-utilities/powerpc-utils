@@ -32,6 +32,7 @@ extern void get_mem_total(struct sysentry *, char *);
 extern void get_smt_mode(struct sysentry *, char *);
 extern void get_cpu_stat(struct sysentry *, char *);
 extern void get_cpu_physc(struct sysentry *, char *);
+extern void get_per_entc(struct sysentry *, char *);
 
 struct sysentry system_data[] = {
 	/* System Names */
@@ -79,7 +80,7 @@ struct sysentry system_data[] = {
 	 .descr = "Desired Variable Capacity Weight"},
 	{.name = "DedDonMode",
 	 .descr = "Dedicated Donation Mode"},
-	{.name = "partition_entitled_capcity",
+	{.name = "partition_entitled_capacity",
 	 .descr = "Partition Entitled Capacity"},
 	{.name = "system_active_processors",
 	 .descr = "Active Physical CPUs in system"},
@@ -204,6 +205,9 @@ struct sysentry system_data[] = {
 	{.name = "physc",
 	 .descr = "Physical CPU Consumed",
 	 .get = &get_cpu_physc},
+	{.name = "per_entc",
+	 .descr = "Entitled CPU Consumed",
+	 .get = &get_per_entc},
 
 	/* Time */
 	{.name = "time",
@@ -212,6 +216,10 @@ struct sysentry system_data[] = {
 	/* /proc/cpuinfo */
 	{.name = "timebase",
 	 .descr = "Timebase"},
+
+	/* /proc/interrupts */
+	{.name = "phint",
+	 .descr = "Phantom Interrupts"},
 
 	{.name[0] = '\0'},
 };
