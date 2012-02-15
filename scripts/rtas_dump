@@ -81,9 +81,14 @@ usage() if $help_flag;
 
 # get a reference to our input filehandle
 if ($filename) {
-	open INPUT_FILE, $filename;
-	$fh = \*INPUT_FILE;
-	$close_input_file = 1;
+	if (-e $filename) {
+		open INPUT_FILE, $filename;
+		$fh = \*INPUT_FILE;
+		$close_input_file = 1;
+	} else {
+		print "File $filename does not exist\n" ;
+		return -1;
+	}
 } else {
 	$fh = \*STDIN;
 }
