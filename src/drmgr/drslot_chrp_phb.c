@@ -117,7 +117,7 @@ static int get_os_hp_devices(struct hpdev **hpdev_list)
 
 	d = opendir(SYSFS_PCI_DEV_PATH);
 	if (!d) {
-		say(L1, "Failed to open %s\n", SYSFS_PCI_DEV_PATH);
+		say(ERROR, "Failed to open %s\n", SYSFS_PCI_DEV_PATH);
 		return -1;
 	}
 
@@ -141,7 +141,8 @@ static int get_os_hp_devices(struct hpdev **hpdev_list)
 		if (rc)
 			break;
 
-		say(L4, "HPDEV: %s\n       %s\n", hpdev->path, hpdev->devspec);
+		say(DEBUG, "HPDEV: %s\n       %s\n", hpdev->path,
+		    hpdev->devspec);
 		hpdev->next = hp_list;
 		hp_list = hpdev;
 	}
@@ -169,7 +170,7 @@ static int hp_remove_os_device(struct hpdev *hpdev)
 	if (!file)
 		return -1;
 
-	say(L4, "Removing %s\n", hpdev->path);
+	say(DEBUG, "Removing %s\n", hpdev->path);
 	rc = fwrite("1", 1, 1, file);
 	if (rc == 1)
 		rc = 0;
@@ -215,7 +216,8 @@ static int disable_os_hp_children_recurse(struct dr_node *phb,
 		}
 
 		if (rc) {
-			say(L1, "Failed to hotplug remove %s\n", hpdev->path);
+			say(ERROR, "Failed to hotplug remove %s\n",
+			    hpdev->path);
 			break;
 		}
 	}
@@ -268,11 +270,13 @@ remove_phb(struct options *opts)
 		if (child->dev_type == PCI_HP_DEV) {
 			rc = disable_hp_children(child->drc_name);
 			if (rc)
-				say(L1, "failed to disable hotplug children\n");
+				say(ERROR,
+				    "failed to disable hotplug children\n");
 
 			rc = release_hp_children(child->drc_name);
 			if (rc && rc != -EINVAL) {
-				say(L1, "failed to release hotplug children\n");
+				say(ERROR,
+				    "failed to release hotplug children\n");
 				goto phb_remove_error;
 			}
 		}
@@ -293,7 +297,7 @@ remove_phb(struct options *opts)
 
 	rc = dlpar_io_kernel_op(dlpar_remove_slot, phb->drc_name);
 	if (rc) {
-		say(L1, "kernel remove failed for %s, rc = %d\n",
+		say(ERROR, "kernel remove failed for %s, rc = %d\n",
 			phb->drc_name, rc);
 		goto phb_remove_error;
 	}
@@ -320,7 +324,7 @@ static int acquire_phb(char *drc_name, struct dr_node **phb)
 
 	rc = get_drc_by_name(drc_name, &drc, path, OFDT_BASE);
 	if (rc) {
-		say(L1, "Could not find drc index for %s, unable to add the"
+		say(ERROR, "Could not find drc index for %s, unable to add the"
 		    "PHB.\n", drc_name);
 		return rc;
 	}
@@ -338,7 +342,7 @@ static int acquire_phb(char *drc_name, struct dr_node **phb)
 	rc = add_device_tree_nodes(path, of_nodes);
 	free_of_node(of_nodes);
 	if (rc) {
-		say(L1, "add_device_tree_nodes failed at %s\n", path);
+		say(ERROR, "add_device_tree_nodes failed at %s\n", path);
 		release_drc(drc.index, PHB_DEV);
 		return -1;
 	}
@@ -349,7 +353,7 @@ static int acquire_phb(char *drc_name, struct dr_node **phb)
 	 */
 	*phb = get_node_by_name(drc_name, PHB_NODES);
 	if (*phb == NULL) {
-		say(L1, "Could not get find \"%s\"\n", drc_name);
+		say(ERROR, "Could not get find \"%s\"\n", drc_name);
 		/* or should we call release_drc? but need device type */
 		release_drc(drc.index, PHB_DEV);
 		return -1;
@@ -372,7 +376,7 @@ add_phb(struct options *opts)
 
 	phb = get_node_by_name(opts->usr_drc_name, PHB_NODES);
 	if (phb) {
-		say(L1, "PHB is already owned by this partition\n");
+		say(ERROR, "PHB is already owned by this partition\n");
 		rc = RC_ALREADY_OWN;
 		goto phb_add_error;
 	}
@@ -384,8 +388,8 @@ add_phb(struct options *opts)
 	rc = acquire_hp_children(phb->ofdt_path, &n_children);
 	if (rc) {
 		if (release_phb(phb)) {
-			say(L1, "Unknown failure. Data may be out of sync and "
-			    "\nthe system may require a reboot.\n");
+			say(ERROR, "Unknown failure. Data may be out of sync "
+			    "and\nthe system may require a reboot.\n");
 		}
 		goto phb_add_error;
 	}
@@ -394,15 +398,15 @@ add_phb(struct options *opts)
 	if (rc) {
 		if (n_children) {
 			if (release_hp_children(phb->drc_name)) {
-				say(L1, "Unknown failure. Data may be out of "
-				    "sync and\nthe system may require "
+				say(ERROR, "Unknown failure. Data may be out "
+				    "of sync and\nthe system may require "
 				    "a reboot.\n");
 			}
 		}
 
 		if (release_phb(phb)) {
-			say(L1, "Unknown failure. Data may be out of sync and "
-			    "\nthe system may require a reboot.\n");
+			say(ERROR, "Unknown failure. Data may be out of sync "
+			    "and\nthe system may require a reboot.\n");
 		}
 		goto phb_add_error;
 	}
@@ -410,24 +414,24 @@ add_phb(struct options *opts)
 	if (n_children) {
 		rc = enable_hp_children(phb->drc_name);
 		if (rc) {
-			say(L1, "Adapter configuration failed.\n");
+			say(ERROR, "Adapter configuration failed.\n");
 			if (release_hp_children(phb->drc_name)) {
-				say(L1, "Unknown failure. Data may be out of "
-				    "sync and \nthe system may require "
+				say(ERROR, "Unknown failure. Data may be out "
+				    "of sync and \nthe system may require "
 				    "a reboot.\n");
 			}
 
 			if (dlpar_io_kernel_op(dlpar_remove_slot, phb->drc_name)) {
-				say(L4, "remove %s from hotplug subsystem "
+				say(DEBUG, "remove %s from hotplug subsystem "
 				    "failed\n", phb->drc_name);
-				say(L1, "Unknown failure. Data may be out of "
-				    "sync and \nthe system may require "
+				say(ERROR, "Unknown failure. Data may be out "
+				    "of sync and \nthe system may require "
 				    "a reboot.\n");
 			}
 
 			if (release_phb(phb)) {
-				say(L1, "Unknown failure. Data may be out of "
-				    "sync and \nthe system may require "
+				say(ERROR, "Unknown failure. Data may be out "
+				    "of sync and \nthe system may require "
 				    "a reboot.\n");
 			}
 		}
@@ -444,7 +448,7 @@ int
 valid_phb_options(struct options *opts)
 {
 	if (opts->usr_drc_name == NULL) {
-		say(L1, "A drc name must be specified\n");
+		say(ERROR, "A drc name must be specified\n");
 		return -1;
 	}
 
@@ -457,7 +461,7 @@ drslot_chrp_phb(struct options *opts)
 	int rc = -1;
 
 	if (! phb_dlpar_capable()) {
-		say(L1, "DLPAR PHB operations are not supported on"
+		say(ERROR, "DLPAR PHB operations are not supported on"
 		    "this kernel.");
 		return rc;
 	}

@@ -137,7 +137,7 @@ add_phandles(char *parent, char *p)
 	if (fd != NULL) {
 		if (fread(&phandle,sizeof(phandle),1,fd) != 1) {
 			perror(path);
-			say(L4, "Error reading phandle data!\n");
+			say(DEBUG, "Error reading phandle data!\n");
 			return 1;
 		}
 		*pend = '\0';
@@ -150,7 +150,7 @@ add_phandles(char *parent, char *p)
 	if (fd != NULL) {
 		if (fread(&phandle,sizeof(phandle),1,fd) != 1) {
 			perror(path);
-			say(L4, "Error reading phandle data!\n");
+			say(DEBUG, "Error reading phandle data!\n");
 			return 1;
 		}
 		*pend = '\0';
@@ -177,15 +177,16 @@ do_update(char *cmd, int len)
 
 	fd = open(OFDTPATH, O_WRONLY);
 	if (fd <= 0) {
-		say(L1, "Failed to open %s: %s\n", OFDTPATH, strerror(errno));
+		say(ERROR, "Failed to open %s: %s\n", OFDTPATH,
+		    strerror(errno));
 		rc = errno;
 		return rc;
 	}
 
-	say(L4, "len %d\n", len);
+	say(DEBUG, "len %d\n", len);
 
 	if ((rc = write(fd, cmd, len)) != len)
-		say(L1, "Error writing to ofdt file! rc %d errno %d\n",
+		say(ERROR, "Error writing to ofdt file! rc %d errno %d\n",
 		    rc, errno);
 
 	for (i = 0; i < len; i++) {
@@ -196,7 +197,7 @@ do_update(char *cmd, int len)
 	}
 	cmd[len-1] = 0x00;
 
-	say(L4, "<%s>\n", cmd);
+	say(DEBUG, "<%s>\n", cmd);
 
 	close(fd);
 	return rc;
@@ -214,7 +215,7 @@ del_node(unsigned int phandle)
 	char delcmd[128] = "remove_node ";
 
 	if (name == NULL)
-		say(L4, "Delete node error: Invalid phandle %8.8x", phandle);
+		say(DEBUG, "Delete node error: Invalid phandle %8.8x", phandle);
 	else {
 		strcat(delcmd,name);
 		do_update(delcmd, strlen(delcmd));
@@ -250,18 +251,19 @@ update_properties(unsigned int phandle)
 	wa[0] = phandle;
 
 	do {
-		say(L4, "about to call rtas_update_properties.  work area:\n"
+		say(DEBUG, "about to call rtas_update_properties.  work area:\n"
 		    "phandle %8.8x, node %s\n"
 		    " %8.8x %8.8x %8.8x %8.8x\n",
 		    phandle, name ? name : "NULL", wa[0], wa[1], wa[2], wa[3]);
 
 		rc = rtas_update_properties((char *)wa, 1);
 		if (rc && rc != 1) {
-			say(L4, "Error %d from rtas_update_properties()\n", rc);
+			say(DEBUG, "Error %d from rtas_update_properties()\n",
+			    rc);
 			return 1;
 		}
 
-		say(L4, "successful rtas_update_properties (more %d)\n", rc);
+		say(DEBUG, "successful rtas_update_properties (more %d)\n", rc);
 
 		op = wa+4;
 		nprop = *op++;
@@ -273,12 +275,12 @@ update_properties(unsigned int phandle)
 
 			switch (vd) {
 			    case 0x00000000:
-				say(L4, "%s - name only property %s\n",
+				say(DEBUG, "%s - name only property %s\n",
 				    name, pname);
 				break;
 
 			    case 0x80000000:
-				say(L4, "%s - delete property %s\n", name,
+				say(DEBUG, "%s - delete property %s\n", name,
 				    pname);
 				sprintf(cmd,"remove_property %u %s",
 					phandle, pname);
@@ -287,7 +289,7 @@ update_properties(unsigned int phandle)
 
 			default:
 				if (vd & 0x80000000) {
-					say(L4, "partial property!\n");
+					say(DEBUG, "partial property!\n");
 					/* twos compliment of length */
 					vd = ~vd + 1;
 					more = 1;
@@ -296,8 +298,8 @@ update_properties(unsigned int phandle)
 					more = 0;
 				}
 
-				say(L4, "%s - updating property %s length %d\n",
-				    name, pname, vd);
+				say(DEBUG, "%s - updating property %s length "
+				    "%d\n", name, pname, vd);
 
 				/* See if we have a partially completed
 				 * command
@@ -365,13 +367,13 @@ add_new_node(unsigned int phandle, unsigned int drcindex)
 	
 	path = find_phandle(phandle);
 	if (path == NULL) {
-		say(L4, "Cannot find pnahdle %x\n", phandle);
+		say(DEBUG, "Cannot find pnahdle %x\n", phandle);
 		return;
 	}
 
 	rtas_rc = add_device_tree_nodes(path, new_nodes);
 	if (rtas_rc)
-		say(L4, "add_device_tree_nodes failed at %s\n", path);
+		say(DEBUG, "add_device_tree_nodes failed at %s\n", path);
 }
 
 /**
@@ -387,7 +389,7 @@ del_nodes(unsigned int *op, unsigned int n)
 
 	for (i = 0; i < n; i++) {
 		phandle = *op++;
-		say(L4, "Delete node with phandle %8.8x\n", phandle);
+		say(DEBUG, "Delete node with phandle %8.8x\n", phandle);
 		del_node(phandle);
 	}
 }
@@ -405,7 +407,7 @@ update_nodes(unsigned int *op, unsigned int n)
 
 	for (i = 0; i < n; i++) {
 		phandle = *op++;
-		say(L4, "Update node with phandle %8.8x\n", phandle);
+		say(DEBUG, "Update node with phandle %8.8x\n", phandle);
 		update_properties(phandle);
 	}
 }
@@ -424,7 +426,7 @@ add_nodes(unsigned int *op, unsigned int n)
 	for (i = 0; i < n; i += 2) {
 		pphandle = *op++;
 		drcindex = *op++;
-		say(L4, "Add node with parent phandle %8.8x and drc index "
+		say(DEBUG, "Add node with parent phandle %8.8x and drc index "
 		    "%8.8x\n", pphandle, drcindex);
 		add_new_node(pphandle, drcindex);
 	}
@@ -441,7 +443,7 @@ devtree_update(void)
 	unsigned int wa[1024];
 	unsigned int *op;
 
-	say(L4, "Updating device_tree\n");
+	say(DEBUG, "Updating device_tree\n");
 	if (add_phandles("/proc/device-tree",""))
 		return;
 
@@ -451,20 +453,20 @@ devtree_update(void)
 	do {
 		rc = rtas_update_nodes((char *)wa, 1);
 		if (rc && rc != 1) {
-			say(L4, "Error %d from rtas_update_nodes()\n", rc);
+			say(DEBUG, "Error %d from rtas_update_nodes()\n", rc);
 			return;
 		}
 
-		say(L4, "successful rtas_update_nodes (more %d)\n", rc);
+		say(DEBUG, "successful rtas_update_nodes (more %d)\n", rc);
 
 		op = wa+4;
 
 		while (*op & 0xFF000000) {
 			unsigned int i;
-			say(L4, "op %p, *op %8.8x\n", op, *op);
+			say(DEBUG, "op %p, *op %8.8x\n", op, *op);
 
 			for (i = 0; i < (*op & 0x00FFFFFF); i++)
-				say(L4, "   %8.8x\n",op[i+1]);
+				say(DEBUG, "   %8.8x\n",op[i+1]);
 
 			switch (*op & 0xFF000000) {
 			    case 0x01000000:
@@ -484,20 +486,21 @@ devtree_update(void)
 				break;
 
 			    default:
-				say(L4, "Unknown update_nodes op %8.8x\n", *op);
+				say(DEBUG, "Unknown update_nodes op %8.8x\n",
+				    *op);
 			}
 			op += 1 + (*op & 0x00FFFFFF);
 		}
 	} while (rc == 1);
 
-	say(L4, "leaving\n");
+	say(DEBUG, "leaving\n");
 }
 
 int
 valid_pmig_options(struct options *opts)
 {
 	if (opts->p_option  == NULL) {
-		say(L1, "A command must be specified\n");
+		say(ERROR, "A command must be specified\n");
 		return -1;
 	}
 
@@ -505,25 +508,25 @@ valid_pmig_options(struct options *opts)
 	if (!strcmp(opts->ctype, "pmig")) {
 		if (opts->action != MIGRATE) {
 			/* The -m option must be specified with migrations */
-			say(L1, "The -m must be specified for migrations\n");
+			say(ERROR, "The -m must be specified for migrations\n");
 			return -1;
 		}
 
 		if (!pmig_capable()) {
-			say(L1, "Partition Mobility is not supported.\n");
+			say(ERROR, "Partition Mobility is not supported.\n");
 			return -1;
 		}
 
 		action = MIGRATE;
 	} else if (!strcmp(opts->ctype, "phib")) {
 		if (!phib_capable()) {
-			say(L1, "Partition Hibernation is not supported.\n");
+			say(ERROR, "Partition Hibernation is not supported.\n");
 			return -1;
 		}
 
 		action = HIBERNATE;
 	} else {
-		say(L1, "The value \"%s\" for the -c option is not valid\n",
+		say(ERROR, "The value \"%s\" for the -c option is not valid\n",
 		    opts->ctype);
 		return -1;
 	}
@@ -535,9 +538,9 @@ int do_migration(uint64_t stream_val)
 {
 	int rc;
 
-	say(L4, "about to issue ibm,suspend-me(%llx)\n", stream_val);
+	say(DEBUG, "about to issue ibm,suspend-me(%llx)\n", stream_val);
 	rc = rtas_suspend_me(stream_val);
-	say(L4, "ibm,suspend-me() returned %d\n", rc);
+	say(DEBUG, "ibm,suspend-me() returned %d\n", rc);
 	return rc;
 }
 
@@ -550,22 +553,23 @@ int do_hibernation(uint64_t stream_val)
 
 	fd = open(SYSFS_HIBERNATION_FILE, O_WRONLY);
 	if (fd == -1) {
-		say(L1, "Could not open \"%s\" to initiate hibernation, %m\n",
-		    SYSFS_HIBERNATION_FILE);
+		say(ERROR, "Could not open \"%s\" to initiate hibernation, "
+		    "%m\n", SYSFS_HIBERNATION_FILE);
 		return -1;
 	}
 
-	say(L4, "Initiating hibernation via %s with %s\n",
+	say(DEBUG, "Initiating hibernation via %s with %s\n",
 	    SYSFS_HIBERNATION_FILE, buf);
 
 	rc = write(fd, buf, strlen(buf));
 	if (rc < 0) {
-		say(L4, "Write to hibernation file failed with rc: %d\n", rc);
+		say(DEBUG, "Write to hibernation file failed with rc: %d\n",
+		    rc);
 		rc = errno;
 	} else if (rc > 0)
 		rc = 0;
 	close(fd);
-	say(L4, "Kernel hibernation returned %d\n", rc);
+	say(DEBUG, "Kernel hibernation returned %d\n", rc);
 
 	return rc;
 }
@@ -591,25 +595,25 @@ drmig_chrp_pmig(struct options *opts)
 	 * in which case why the heck are we being invoked anyways.
 	 */
 	if (strcmp(cmd, "check") == 0) {
-		say(L4, "check: Nothing to do...\n");
+		say(DEBUG, "check: Nothing to do...\n");
 		return 0;
 	}
 
 	/* The only other command is pre, any other command is invalid */
 	if (strcmp(cmd, "pre")) {
-		say(L4, "Invalid command \"%s\" specified\n", cmd);
+		say(DEBUG, "Invalid command \"%s\" specified\n", cmd);
 		return 1;
 	}
 
 	if (opts->usr_drc_name == NULL) {
-		say(L1, "No streamid specified\n");
+		say(ERROR, "No streamid specified\n");
 		return -1;
 	}
 
 	errno = 0;
 	stream_val = strtoull(opts->usr_drc_name, NULL, 16);
 	if (errno != 0) {
-		say(L1, "Invalid streamid specified: %s\n", strerror(errno));
+		say(ERROR, "Invalid streamid specified: %s\n", strerror(errno));
 		return -1;
 	}
 	
@@ -639,10 +643,10 @@ drmig_chrp_pmig(struct options *opts)
 	devtree_update();
 	rc = rtas_activate_firmware();
 	if (rc)
-		say(L4, "rtas_activate_firmware() returned %d\n", rc);
+		say(DEBUG, "rtas_activate_firmware() returned %d\n", rc);
 	devtree_update();
 
-	say(L4, "Refreshing RMC via refrsrc\n");
+	say(DEBUG, "Refreshing RMC via refrsrc\n");
 	rc = system("/usr/sbin/rsct/bin/refrsrc IBM.ManagementServer");
 
 	return 0;

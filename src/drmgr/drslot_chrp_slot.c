@@ -33,7 +33,7 @@ query_slot(struct dr_node *node, struct options *opts)
 		return RC_NONEXISTENT;
 
 	if (! node->is_owned) {
-		say(L1, "%s not owned by partition\n", opts->usr_drc_name);
+		say(ERROR, "%s not owned by partition\n", opts->usr_drc_name);
 		return RC_DONT_OWN;
 	}
 
@@ -73,15 +73,15 @@ remove_slot(struct dr_node *node)
 
 	rc = disable_hp_children(node->drc_name);
 	if (rc)
-		say(L1, "failed to disable hotplug children\n");
+		say(ERROR, "failed to disable hotplug children\n");
 
 	rc = release_hp_children(node->drc_name);
 	if (rc && rc != -EINVAL) {
-		say(L1, "failed to release hotplug children\n");
+		say(ERROR, "failed to release hotplug children\n");
 		return rc;
 	}
 
-	say(L4, "The sensor-state of drc_index 0x%x is %d\n",
+	say(DEBUG, "The sensor-state of drc_index 0x%x is %d\n",
 	    node->drc_index, dr_entity_sense(node->drc_index));
 
 	/* need to remove slot from sysfs which will
@@ -90,9 +90,9 @@ remove_slot(struct dr_node *node)
 	 */
 	rc = dlpar_io_kernel_op(dlpar_remove_slot, node->drc_name);
 	if (rc) {
-		say(L4, "remove %s from hotplug subsystem failed\n",
+		say(DEBUG, "remove %s from hotplug subsystem failed\n",
 		    node->drc_name);
-		say(L1, "Unknown failure. Data may be out of sync and \n"
+		say(ERROR, "Unknown failure. Data may be out of sync and \n"
 			"the system may require a reboot.\n");
 		return rc;
 	}
@@ -103,22 +103,22 @@ remove_slot(struct dr_node *node)
 		// try to restore to previous state
 		rc2 = acquire_hp_children(node->ofdt_path, &num_acquired);
 		if (rc2 && rc2 != -EINVAL) {
-			say(L1, "Unknown failure %d. Data may be out of sync "
-			    "and\nthe system may require a reboot.\n", rc2);
+			say(ERROR, "Unknown failure %d. Data may be out of "
+			    "sync and\nthe system may require a reboot.\n", rc2);
 			return rc;
 		}
 
 		rc2 = dlpar_io_kernel_op(dlpar_add_slot, node->drc_name);
 		if (rc2) {
-			say(L1, "Unknown failure %d. Data may be out of sync "
-			    "and\nthe system may require a reboot.\n", rc2);
+			say(ERROR, "Unknown failure %d. Data may be out of "
+			    "sync and\nthe system may require a reboot.\n", rc2);
 			return rc;
 		}
 
 		if (num_acquired) {
 			rc2 = enable_hp_children(node->drc_name);
 			if (rc2) {
-				say(L1, "failed to re-enable hotplug "
+				say(ERROR, "failed to re-enable hotplug "
 				    "children. %d\n", rc2);
 				return rc;
 			}
@@ -141,7 +141,7 @@ acquire_slot(char *drc_name, struct dr_node **slot)
 
 	rc = get_drc_by_name(drc_name, &drc, path, OFDT_BASE);
 	if (rc) {
-		say(L1, "Could not find drc index for %s, unable to add the"
+		say(ERROR, "Could not find drc index for %s, unable to add the"
 		    "slot.\n", drc_name);
 		return rc;
 	}
@@ -159,7 +159,7 @@ acquire_slot(char *drc_name, struct dr_node **slot)
 	rc = add_device_tree_nodes(path, of_nodes);
 	free_of_node(of_nodes);
 	if (rc) {
-		say(L1, "add_device_tree_nodes failed at %s\n", path);
+		say(ERROR, "add_device_tree_nodes failed at %s\n", path);
 		release_drc(drc.index, PCI_DLPAR_DEV);
 		return -1;
 	}
@@ -170,7 +170,7 @@ acquire_slot(char *drc_name, struct dr_node **slot)
 	 */
 	*slot = get_node_by_name(drc_name, PCI_NODES | VIO_NODES);
 	if (*slot == NULL) {
-		say(L1, "Could not get find \"%s\"\n", drc_name);
+		say(ERROR, "Could not get find \"%s\"\n", drc_name);
 		/* or should we call release_drc? but need device type */
 		release_drc(drc.index, PHB_DEV);
 		return -1;
@@ -198,8 +198,8 @@ add_slot(struct options *opts)
 		rc = acquire_hp_children(node->ofdt_path, &n_children);
 		if (rc) {
 			if (release_slot(node)) {
-				say(L1, "Unknown failure. Data may be out of "
-				    "sync and\nthe system may require "
+				say(ERROR, "Unknown failure. Data may be out "
+				    "of sync and\nthe system may require "
 				    "a reboot.\n");
 			}
 			goto slot_add_exit;
@@ -213,45 +213,45 @@ add_slot(struct options *opts)
 	if (rc) {
 		if (n_children) {
 			if (release_hp_children(node->drc_name)) {
-				say(L1, "Unknown failure. Data may be out of "
-				    "sync and\nthe system may require "
+				say(ERROR, "Unknown failure. Data may be out "
+				    "of sync and\nthe system may require "
 				    "a reboot.\n");
 			}
 		}
 		
 		if (release_slot(node)) {
-			say(L1, "Unknown failure. Data may be out of sync and "
-			    "\nthe system may require a reboot.\n");
+			say(ERROR, "Unknown failure. Data may be out of sync "
+			    "and\nthe system may require a reboot.\n");
 		}
 	}
 
 	if (n_children) {
 		rc = enable_hp_children(node->drc_name);
 		if (rc) {
-			say(L1, "Configure adapter failed.\n");
+			say(ERROR, "Configure adapter failed.\n");
 			if (release_hp_children(node->drc_name)) {
-				say(L1, "Unknown failure. Data may be out of "
-				    "sync and\nthe system may require "
+				say(ERROR, "Unknown failure. Data may be out "
+				    "of sync and\nthe system may require "
 				    "a reboot.\n");
 			}
 			
 			if (dlpar_io_kernel_op(dlpar_remove_slot, node->drc_name)) {
-				say(L4, "remove %s from hotplug subsystem "
+				say(DEBUG, "remove %s from hotplug subsystem "
 				    "failed\n", node->drc_name);
-				say(L1, "Unknown failure. Data may be out of "
-				    "sync and\nthe system may require "
+				say(ERROR, "Unknown failure. Data may be out "
+				    "of sync and\nthe system may require "
 				    "a reboot.\n");
 			}
 
 			if (release_slot(node)) {
-				say(L1, "Unknown failure. Data may be out of "
-				    "sync and\nthe system may require "
+				say(ERROR, "Unknown failure. Data may be out "
+				    "of sync and\nthe system may require "
 					"a reboot.\n");
 			}
 			goto slot_add_exit;
 		}
 
-		say(L4, "adapter in node[%s] has been configured.\n",
+		say(DEBUG, "adapter in node[%s] has been configured.\n",
 		    node->drc_name);
 	}
 
@@ -266,7 +266,7 @@ int
 valid_slot_options(struct options *opts)
 {
 	if (opts->usr_drc_name == NULL) {
-		say(L1, "A drc name must be specified\n");
+		say(ERROR, "A drc name must be specified\n");
 		return -1;
 	}
 
@@ -280,7 +280,7 @@ drslot_chrp_slot(struct options *opts)
 	int rc;
 
 	if (! slot_dlpar_capable()) {
-		say(L1, "DLPAR slot operations are not supported on"
+		say(ERROR, "DLPAR slot operations are not supported on"
 		    "this kernel.");
 		return -1;
 	}
@@ -290,7 +290,7 @@ drslot_chrp_slot(struct options *opts)
 	switch (opts->action) {
 	    case ADD:
 		if (node && node->is_owned) {
-			say(L1, "partition already owns %s\n",
+			say(ERROR, "partition already owns %s\n",
 			    opts->usr_drc_name);
 			rc = RC_ALREADY_OWN;
 		} else {
@@ -300,11 +300,11 @@ drslot_chrp_slot(struct options *opts)
 
 	    case REMOVE:
 		if (node == NULL) {
-			say(L1, "%s does not exist\n", opts->usr_drc_name);
+			say(ERROR, "%s does not exist\n", opts->usr_drc_name);
 			rc = RC_NONEXISTENT;
 		} else {	
 			if (! node->is_owned) {
-				say(L1, "%s not owned by partition\n",
+				say(ERROR, "%s not owned by partition\n",
 				    opts->usr_drc_name);
 				rc = RC_DONT_OWN;
 			} else

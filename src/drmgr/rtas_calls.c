@@ -157,7 +157,7 @@ dr_entity_sense(int index)
 	int rc;
 
 	rc = rtas_get_sensor(DR_ENTITY_SENSE, index, &state);
-	say(L4, "get-sensor for %x: %d, %d\n", index, rc, state);
+	say(DEBUG, "get-sensor for %x: %d, %d\n", index, rc, state);
 
 	return (rc >= 0) ? state : rc;
 }
@@ -271,7 +271,7 @@ configure_connector(int index)
 	int *work_int;
 	int rc;
 
-	say(L4, "Configuring connector for drc index %x\n", index);
+	say(DEBUG, "Configuring connector for drc index %x\n", index);
 
 	/* initialize work area and args structure */
 	work_int = (int *) &workarea[0];
@@ -285,7 +285,7 @@ configure_connector(int index)
 
 		if (rc == NEXT_SIB) {
 			if (last_node == NULL) {
-				say(L1, "unexpected sibling returned from "
+				say(ERROR, "unexpected sibling returned from "
 				    "configure_connector\n");
 				break;
 			}
@@ -293,8 +293,8 @@ configure_connector(int index)
 			/* Allocate and initialize the node */
 			node = get_node(workarea);
 			if (node == NULL) {
-				say(L1, "failed to allocate sibling node for "
-				    "drc index %x\n", index);
+				say(ERROR, "failed to allocate sibling node "
+				    "for drc index %x\n", index);
 				break;
 			}
 
@@ -310,7 +310,7 @@ configure_connector(int index)
 			/* Allocate and initialize the node */
 			node = get_node(workarea);
 			if (node == NULL) {
-				say(L1, "Failed to allocate child node for "
+				say(ERROR, "Failed to allocate child node for "
 				    "drc index %x\n", index);
 				break;
 			}
@@ -327,7 +327,7 @@ configure_connector(int index)
 			last_node = node;
 		} else if (rc == NEXT_PROPERTY){
 			if (last_node == NULL) {
-				say(L1, "Configure_connector returned a "
+				say(ERROR, "Configure_connector returned a "
 				    "property before returning a node\n");
 				break;
 			}
@@ -347,12 +347,12 @@ configure_connector(int index)
 			/* Need to back up to parent device */
 			last_node = last_node->parent;
 		} else if (rc == MORE_MEMORY) {
-			say(L1, "Configure_connector called with insufficient "
-			    "memory.\n");
+			say(ERROR, "Configure_connector called with "
+			    "insufficient memory.\n");
 			break;
 		} else if (rc == NOT_THIS_SYSTEM) {
 			/* this card is not supported in this system */
-			say(L1, "This adapter cannot be attached to this "
+			say(ERROR, "This adapter cannot be attached to this "
 			    "system at this\ntime. You may have to remove "
 			    "other adapters before this\nadapter can be "
 			    "successfully attached.  Consult the hardware"
@@ -363,7 +363,7 @@ configure_connector(int index)
 			break;
 		} else if (rc == NOT_THIS_SLOT) {
 			/* this card is not supported in this slot */
-			say(L1, "This adapter is not supported in the "
+			say(ERROR, "This adapter is not supported in the "
 				"specified slot,\nbut there may be other "
 				"slots where it is supported. Consult\nthe "
 				"hardware documentation for your system to "
@@ -372,21 +372,21 @@ configure_connector(int index)
 			break;
 		} else if (rc == ERR_CFG_USE) {
 			/* This entity is not usable */
-			say(L1, "This adapter is currently unusable, available "
+			say(ERROR, "This adapter is currently unusable, available "
 			    "for exchange or available for recovery\n");
 			break;
 		} else if (rc == HARDWARE_ERROR) {
-			say(L1, "%s\n", hw_error);
+			say(ERROR, "%s\n", hw_error);
 			break;
 		} else {
-			say(L1, "Unexpected error (%d) returned from "
+			say(ERROR, "Unexpected error (%d) returned from "
 			    "configure_connector\n", rc);
 			break;
 		}
 	} /* end while */
 
 	if (rc) {
-		say(L1, "Configure_connector failed for drc index %x\n"
+		say(ERROR, "Configure_connector failed for drc index %x\n"
 		    "Data may be out of sync and the system may require "
 		    "a reboot.\n", index);
 
@@ -428,27 +428,27 @@ acquire_drc(uint32_t drc_index)
 {
 	int rc;
 
-	say(L4, "Acquiring drc index 0x%x\n", drc_index);
+	say(DEBUG, "Acquiring drc index 0x%x\n", drc_index);
 
 	rc = dr_entity_sense(drc_index);
 	if (rc != STATE_UNUSABLE) {
-		say(L1, "Entity sense failed for drc %x with %d\n%s\n",
+		say(ERROR, "Entity sense failed for drc %x with %d\n%s\n",
 		    drc_index, rc, entity_sense_error(rc));
 		return -1;
 	}
 
-	say(L4, "setting allocation state to alloc usable\n");
+	say(DEBUG, "setting allocation state to alloc usable\n");
 	rc = rtas_set_indicator(ALLOCATION_STATE, drc_index, ALLOC_USABLE);
 	if (rc) {
-		say(L1, "Allocation failed for drc %x with %d\n%s\n",
+		say(ERROR, "Allocation failed for drc %x with %d\n%s\n",
 		    drc_index, rc, set_indicator_error(rc));
 		return -1;
 	}
 
-	say(L4, "setting indicator state to unisolate\n");
+	say(DEBUG, "setting indicator state to unisolate\n");
 	rc = rtas_set_indicator(ISOLATION_STATE, drc_index, UNISOLATE);
 	if (rc) {
-		say(L1, "Unisolate failed for drc %x with %d\n%s\n",
+		say(ERROR, "Unisolate failed for drc %x with %d\n%s\n",
 		    drc_index, rc, set_indicator_error(rc));
 		rc = rtas_set_indicator(ALLOCATION_STATE, drc_index,
 					ALLOC_USABLE);
@@ -462,14 +462,14 @@ release_drc(int drc_index, uint32_t dev_type)
 {
 	int rc;
 
-	say(L4, "Releasing drc index 0x%x\n", drc_index);
+	say(DEBUG, "Releasing drc index 0x%x\n", drc_index);
 
 	rc = dr_entity_sense(drc_index);
 	if (rc != PRESENT)
-		say(L4, "drc_index %x sensor-state: %d\n%s\n", drc_index, rc,
+		say(DEBUG, "drc_index %x sensor-state: %d\n%s\n", drc_index, rc,
 		    entity_sense_error(rc));
 
-	say(L4, "setting isolation state to isolate\n");
+	say(DEBUG, "setting isolation state to isolate\n");
 	rc = rtas_set_indicator(ISOLATION_STATE, drc_index, ISOLATE);
 	if (rc) {
 		if (dev_type == PHB_DEV) {
@@ -487,24 +487,24 @@ release_drc(int drc_index, uint32_t dev_type)
 		}
 
 		if (rc) {
-			say(L1, "Isolation failed for %x with %d\n%s\n",
+			say(ERROR, "Isolation failed for %x with %d\n%s\n",
 			    drc_index, rc, set_indicator_error(rc));
 			return -1;
 		}
 	}
 
-	say(L4, "setting allocation state to alloc unusable\n");
+	say(DEBUG, "setting allocation state to alloc unusable\n");
 	rc = rtas_set_indicator(ALLOCATION_STATE, drc_index, ALLOC_UNUSABLE);
 	if (rc) {
-		say(L1, "Unable to un-allocate drc %x from the partition "
+		say(ERROR, "Unable to un-allocate drc %x from the partition "
 		    "(%d)\n%s\n", drc_index, rc, set_indicator_error(rc));
 		rc = rtas_set_indicator(ISOLATION_STATE, drc_index, UNISOLATE);
-		say(L4, "UNISOLATE for drc %x, rc = %d\n", drc_index, rc);
+		say(DEBUG, "UNISOLATE for drc %x, rc = %d\n", drc_index, rc);
 		return -1;
 	}
 
 	rc = dr_entity_sense(drc_index);
-	say(L4, "drc_index %x sensor-state: %d\n%s\n", drc_index, rc,
+	say(DEBUG, "drc_index %x sensor-state: %d\n%s\n", drc_index, rc,
 	    entity_sense_error(rc));
 
 	return 0;

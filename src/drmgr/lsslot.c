@@ -432,7 +432,7 @@ parse_options(int argc, char *argv[], struct cmd_opts *opts)
 			 */
 			if ((opts->delim[1] != '\0')
 			    || (opts->delim[0] == '%')) {
-				say(L1, "You may specify only one character "
+				say(ERROR, "You may specify only one character "
 				    "for the -F option,\nand it must not "
 				    "be the %% character.\n");
 				exit(1);
@@ -513,7 +513,7 @@ parse_options(int argc, char *argv[], struct cmd_opts *opts)
 			usage();
 
 		if (opts->b_flag && opts->p_flag) {
-			say(L1, "You cannot specify both the -b and -p "
+			say(ERROR, "You cannot specify both the -b and -p "
 			    "options.\n");
 			usage();
 		}
@@ -555,10 +555,10 @@ lsslot_chrp_pci(struct cmd_opts *opts)
 	/* If nothing returned, then no hot plug node */
 	if (all_nodes == NULL) {
 		if (opts->slot_type == PCI)
-			say(L1, "There are no PCI hot plug slots on "
+			say(ERROR, "There are no PCI hot plug slots on "
 			    "this system.\n");
 		else
-			say(L1, "There are no DR slots on this system.\n");
+			say(ERROR, "There are no DR slots on this system.\n");
    		return 1;
 	}
 
@@ -590,7 +590,7 @@ lsslot_chrp_pci(struct cmd_opts *opts)
 		 * user specified a slot or a device name.
 		 */
 		if (opts->s_name != NULL) {
-			say(L1, "The specified PCI slot is either invalid\n"
+			say(ERROR, "The specified PCI slot is either invalid\n"
 			    "or does not support hot plug operations.\n");
 			rc = 1;
 		}
@@ -779,7 +779,7 @@ lsslot_chrp_port(struct cmd_opts *opts)
 
 	/* If nothing returned, then no hot plug node */
 	if (all_nodes == NULL) {
-		say(L1, "There are no LHEA ports on this system.\n");
+		say(ERROR, "There are no LHEA ports on this system.\n");
 		return 1;
 	}
 
@@ -811,7 +811,7 @@ lsslot_chrp_port(struct cmd_opts *opts)
 		 * user specified a slot or a device name.
 		 */
 		if (opts->s_name != NULL) {
-			say(L1, "The specified port was not found.\n");
+			say(ERROR, "The specified port was not found.\n");
 			rc = 1;
 		}
 		goto lsslot_port_exit;
@@ -859,7 +859,7 @@ main(int argc, char *argv[])
 
 	rc = dr_lock(opts.timeout);
 	if (rc) {
-		say(L1, "Unable to obtain Dynamic Reconfiguration lock. "
+		say(ERROR, "Unable to obtain Dynamic Reconfiguration lock. "
 		    "Please try command again later.\n");
 		exit(1);
 	}

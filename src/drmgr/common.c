@@ -41,7 +41,7 @@ set_output_level(int level)
 	output_level = level;
 
 	if (output_level >= 14) {
-		say(L4, "Enabling RTAS debug\n");
+		say(DEBUG, "Enabling RTAS debug\n");
 		rtas_set_debug(output_level);
 	}
 }
@@ -78,7 +78,7 @@ dr_init(void)
 		      S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 	if (log_fd == -1) {
 		log_fd = 0;
-		say(L1, "Could not open log file %s\n\t%s\n", DR_LOG_PATH,
+		say(ERROR, "Could not open log file %s\n\t%s\n", DR_LOG_PATH,
 		    strerror(errno));
 	} else {
 		time_t t;
@@ -87,7 +87,7 @@ dr_init(void)
 		/* Insert seperator at beginning of drmgr invocation */
 		time(&t);
 		strftime(tbuf, 128, "%b %d %T %G", localtime(&t));
-		say(L4, "\n########## %s ##########\n", tbuf);
+		say(DEBUG, "\n########## %s ##########\n", tbuf);
 	}
 }
 
@@ -113,7 +113,7 @@ dr_fini(void)
 	/* Insert seperator at end of drmgr invocation */
 	time(&t);
 	strftime(tbuf, 128, "%b %d %T %G", localtime(&t));
-	say(L4, "########## %s ##########\n", tbuf);
+	say(DEBUG, "########## %s ##########\n", tbuf);
 
 	close(log_fd);
 
@@ -257,11 +257,12 @@ add_node(char *path, struct of_node *new_nodes)
 	 * device tree.
 	 */
 	if (!stat(path, &sbuf)) {
-		say(L4, "Device-tree node %s already exists, skipping\n", path);
+		say(DEBUG, "Device-tree node %s already exists, skipping\n",
+		    path);
 		return 0;
 	}
 
-	say(L4, "Adding device-tree node %s\n", path);
+	say(DEBUG, "Adding device-tree node %s\n", path);
 
 	/* The path passed in is a full ofdt path, remove the preceeding
 	 * /proc/device-tree for the write to the kernel.
@@ -283,13 +284,13 @@ add_node(char *path, struct of_node *new_nodes)
 	}
 
 	if (! nprops) {
-		say(L1, "new_nodes have no properties\n");
+		say(ERROR, "new_nodes have no properties\n");
 		return -1;
 	}
 
 	buf = zalloc(bufsize);
 	if (buf == NULL) {
-		say(L1, "Failed to allocate buffer to write to kernel\n");
+		say(ERROR, "Failed to allocate buffer to write to kernel\n");
 		return errno;
 	}
 
@@ -320,17 +321,19 @@ add_node(char *path, struct of_node *new_nodes)
 	*pos = '\0';
 
 	/* dump the buffer for debugging */
-	say(L4, "ofdt update: %s\n", buf);
+	say(DEBUG, "ofdt update: %s\n", buf);
 
 	fd = open(OFDTPATH, O_WRONLY);
 	if (fd <= 0) {
-		say(L1, "Failed to open %s: %s\n", OFDTPATH, strerror(errno));
+		say(ERROR, "Failed to open %s: %s\n", OFDTPATH,
+		    strerror(errno));
 		return errno;
 	}
 
 	rc = write(fd, buf, bufsize);
 	if (rc <= 0)
-		say(L1, "Write to %s failed: %s\n", OFDTPATH, strerror(errno));
+		say(ERROR, "Write to %s failed: %s\n", OFDTPATH,
+		    strerror(errno));
 	else
 		rc = 0;
 
@@ -356,7 +359,7 @@ remove_node(char *path)
 	int cmdlen;
 	char buf[DR_PATH_MAX];
 
-	say(L4, "Removing device-tree node %s\n", path);
+	say(DEBUG, "Removing device-tree node %s\n", path);
 
 	memset(buf, 0, DR_PATH_MAX);
 
@@ -369,13 +372,15 @@ remove_node(char *path)
 
 	fd = open(OFDTPATH, O_WRONLY);
 	if (fd <= 0) {
-		say(L1, "Failed to open %s: %s\n", OFDTPATH, strerror(errno));
+		say(ERROR, "Failed to open %s: %s\n", OFDTPATH,
+		    strerror(errno));
 		return errno;
 	}
 
 	rc = write(fd, buf, cmdlen);
 	if (rc != cmdlen)
-		say(L1, "Write to %s failed: %s\n", OFDTPATH, strerror(errno));
+		say(ERROR, "Write to %s failed: %s\n", OFDTPATH,
+		    strerror(errno));
 	else
 		rc = 0;
 
@@ -464,7 +469,7 @@ remove_device_tree_nodes(char *path)
 
 	d = opendir(path);
 	if (d == NULL) {
-		say(L1, "Could not open %s: %s\n", path, strerror(errno));
+		say(ERROR, "Could not open %s: %s\n", path, strerror(errno));
 		return -1;
 	}
 
@@ -514,17 +519,19 @@ update_property(const char *buf, size_t len)
 {
 	int fd, rc;
 
-	say(L4, "Updating of property\n");
+	say(DEBUG, "Updating of property\n");
 
 	fd = open(OFDTPATH, O_WRONLY);
 	if (fd <= 0) {
-		say(L1, "Failed to open %s: %s\n", OFDTPATH, strerror(errno));
+		say(ERROR, "Failed to open %s: %s\n", OFDTPATH,
+		    strerror(errno));
 		return errno;
 	}
 
 	rc = write(fd, buf, len);
 	if ((size_t)rc != len)
-		say(L1, "Write to %s failed: %s\n", OFDTPATH, strerror(errno));
+		say(ERROR, "Write to %s failed: %s\n", OFDTPATH,
+		    strerror(errno));
 	else
 		rc = 0;
 
@@ -663,7 +670,8 @@ get_property_size(const char *path, const char *property)
 void
 sighandler(int signo)
 {
-	say(L1, "Received signal %d, attempting to cleanup and exit\n", signo);
+	say(ERROR, "Received signal %d, attempting to cleanup and exit\n",
+	    signo);
 
 	if (log_fd) {
 		void *callstack[128];
@@ -825,12 +833,13 @@ valid_platform(const char *platform)
 
 	rc = get_property(OFDT_BASE, "device_type", buf, 128);
 	if (rc) {
-		say(L1, "Cannot open %s: %s\n", PLATFORMPATH, strerror(errno));
+		say(ERROR, "Cannot open %s: %s\n", PLATFORMPATH,
+		    strerror(errno));
 		return 0;
 	}
 
 	if (strcmp(buf, platform)) {
-		say(L1, "This command is not supported for %s platforms.\n",
+		say(ERROR, "This command is not supported for %s platforms.\n",
 		    platform);
 		return 0;
 	}
@@ -854,7 +863,7 @@ get_sysparm(const char *parm, unsigned long *value)
 
 	f = fopen(LPARCFG_PATH, "r");
 	if (f == NULL) {
-		say(L1, "Could not open \"%s\"\n%s\n", LPARCFG_PATH,
+		say(ERROR, "Could not open \"%s\"\n%s\n", LPARCFG_PATH,
 		    strerror(errno));
 		return -1;
 	}
@@ -874,7 +883,7 @@ get_sysparm(const char *parm, unsigned long *value)
 
 	fclose(f);
 	if (rc)
-		say(L1, "Error finding %s in %s\n", parm, LPARCFG_PATH);
+		say(ERROR, "Error finding %s in %s\n", parm, LPARCFG_PATH);
 
 	return rc;
 }
@@ -894,17 +903,17 @@ set_sysparm(const char *parm, int val)
 
 	f = fopen(LPARCFG_PATH, "w");
 	if (f == NULL) {
-		say(L1, "Could not open \"%s\"\n%s\n", LPARCFG_PATH,
+		say(ERROR, "Could not open \"%s\"\n%s\n", LPARCFG_PATH,
 		    strerror(errno));
 		return -1;
 	}
 
-	say(L4, "Updating sysparm %s to %d...", parm, val);
+	say(DEBUG, "Updating sysparm %s to %d...", parm, val);
 	rc = fprintf(f, "%s=%d\n", parm, val);
 
 	fclose(f);
 
-	say(L4, "%s.\n", (rc == -1) ? "fail" : "success");
+	say(DEBUG, "%s.\n", (rc == -1) ? "fail" : "success");
 	return (rc == -1) ? -1 : 0;
 }
 
@@ -965,7 +974,7 @@ update_sysparm(struct options *opts)
 	/* Validate capability */
 	if (! strcmp(opts->ctype, "cpu")) {
 		if (! cpu_entitlement_capable()) {
-			say(L1, "CPU entitlement capability is not enabled "
+			say(ERROR, "CPU entitlement capability is not enabled "
 			    "on this platform.\n");
 			return -1;
 		}
@@ -973,15 +982,15 @@ update_sysparm(struct options *opts)
 		sysparm_table = cpu_sysparm_table;
 	} else if (! strcmp(opts->ctype, "mem")) {
 		if (! mem_entitlement_capable()) {
-			say(L1, "Memory entitlement capability is not enabled "
-			    "on this platform.\n");
+			say(ERROR, "Memory entitlement capability is not "
+			    "enabled on this platform.\n");
 			return -1;
 		}
 
 		sysparm_table = mem_sysparm_table;
 	} else {
-		say(L1, "Invalid entitlement update type \"%s\" specified.\n",
-		    opts->ctype);
+		say(ERROR, "Invalid entitlement update type \"%s\" "
+		    "specified.\n", opts->ctype);
 		return -1;
 	}
 	
@@ -999,23 +1008,23 @@ update_sysparm(struct options *opts)
 	}
 
 	if (linux_parm == NULL) {
-		say(L1, "The entitlement parameter \"%s\" is not recognized\n",
-		    opts->p_option);
+		say(ERROR, "The entitlement parameter \"%s\" is not "
+		    "recognized\n", opts->p_option);
 		return -1;
 	}
 
 	if ((get_sysparm(linux_parm, &curval)) < 0) {
-		say(L1, "Could not get current system parameter value of "
+		say(ERROR, "Could not get current system parameter value of "
 		    "%s (%s)\n", linux_parm, opts->p_option);
 		return -1;
 	}
 
 	if (opts->action == REMOVE) {
 		if (opts->quantity > curval) {
-			say(L1, "Cannot reduce system parameter value %s by "
+			say(ERROR, "Cannot reduce system parameter value %s by "
 			    "more than is currently available.\nCurrent "
-				"value: %lx, asking to remove: %x\n",
-				opts->p_option, curval, opts->quantity);
+			    "value: %lx, asking to remove: %x\n",
+			    opts->p_option, curval, opts->quantity);
 			return 1;
 		}
 
@@ -1035,11 +1044,11 @@ cpu_dlpar_capable(void)
 	char *cpu_dir = "/sys/devices/system/cpu";
 	int capable = 1;
 
-	say(L1, "Validating CPU DLPAR capability...");
+	say(ERROR, "Validating CPU DLPAR capability...");
 	
 	d = opendir(cpu_dir);
 	if (d == NULL) {
-		say(L1, "no.\n    opendir(\"%s\"): %s\n", cpu_dir,
+		say(ERROR, "no.\n    opendir(\"%s\"): %s\n", cpu_dir,
 		    strerror(errno));
 		return 0;
 	}
@@ -1057,12 +1066,12 @@ cpu_dlpar_capable(void)
 		sprintf(fname, "%s/%s/online", cpu_dir, de->d_name);
 		
 		if (stat(fname, &sbuf)) {
-			say(L1, "no.\n    stat(\"%s\"): %s\n", fname,
+			say(ERROR, "no.\n    stat(\"%s\"): %s\n", fname,
 			    strerror(errno));
 			capable = 0;
 		}
 
-		say(L1, "yes.\n");
+		say(ERROR, "yes.\n");
 		break;
 	}
 
@@ -1076,13 +1085,14 @@ dlpar_capable(const char *type, const char *fname)
 	struct stat sbuf;
 	int capable = 1;
 
-	say(L1, "Validating %s capability...", type);
+	say(ERROR, "Validating %s capability...", type);
 	
 	if (stat(fname, &sbuf)) {
-		say(L1, "no.\n    stat(\"%s\"): %s\n", fname, strerror(errno));
+		say(ERROR, "no.\n    stat(\"%s\"): %s\n", fname,
+		    strerror(errno));
 		capable = 0;
 	} else {
-		say(L1, "yes.\n");
+		say(ERROR, "yes.\n");
 	}
 
 	return capable;
@@ -1238,6 +1248,6 @@ int ams_balloon_active(void)
 				  &is_inactive, sizeof(is_inactive));
 	}
 
-	say(L4, "AMS ballooning %s active\n", is_inactive?"is not":"is");
+	say(DEBUG, "AMS ballooning %s active\n", is_inactive?"is not":"is");
 	return !is_inactive;
 }

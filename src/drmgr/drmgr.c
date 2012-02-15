@@ -129,28 +129,27 @@ valid_drmgr_options(struct options *opts)
 {
 
 	if (opts->ctype == NULL) {
-		say(L1, "A connector type (-c) must be specified\n");
+		say(ERROR, "A connector type (-c) must be specified\n");
 		return -1;
 	}
 
 	if (action_cnt == 0) {
-		say(L1, "At least one action must be specified\n");
+		say(ERROR, "At least one action must be specified\n");
 		return -1;
 	}
 
 	if (action_cnt > 1) {
-		say(L1, "Only one action may be specified\n");
+		say(ERROR, "Only one action may be specified\n");
 		return -1;
 	}
 
 	if ((opts->quantity > 1) && (opts->usr_drc_name)) {
-		say(L1, "The -q and -s flags are mutually exclusive\n");
+		say(ERROR, "The -q and -s flags are mutually exclusive\n");
 		return -1;
 	}
 
 	if (opts->timeout < 0) {
-		say(L1, "Invalid timeout specified: %s\n",
-			optarg);
+		say(ERROR, "Invalid timeout specified: %s\n", optarg);
 		return -1;
 	}
 
@@ -240,7 +239,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 			break;
 
 		    default:
-			say(L1, "Invalid option specified '%c'\n", optopt);
+			say(ERROR, "Invalid option specified '%c'\n", optopt);
 			return -1;
 			break;
 		}
@@ -292,14 +291,14 @@ get_command(struct options *opts)
 	/* If we make it this far, the user specified an invalid
 	 * connector type.
 	 */
-	say(L1, "Dynamic reconfiguration is not supported for connector\n"
+	say(ERROR, "Dynamic reconfiguration is not supported for connector\n"
 	    "type \"%s\" on this system\n", opts->ctype);
 
 	return &commands[DRMGR];
 }
 
 int drmgr(struct options *opts) {
-	say(L1, "Invalid command: %d\n", opts->action);
+	say(ERROR, "Invalid command: %d\n", opts->action);
 	return -1;
 }
 
@@ -343,14 +342,14 @@ main(int argc, char *argv[])
 
 	/* Mask signals so we do not get interrupted */
 	if (sig_setup()) {
-		say(L1, "Could not mask signals to avoid interrupts\n");
+		say(ERROR, "Could not mask signals to avoid interrupts\n");
 		rc = -1;
 		goto exit;
 	}
 
 	rc = dr_lock(opts.timeout);
 	if (rc) {
-		say(L1, "Unable to obtain Dynamic Reconfiguration lock. "
+		say(ERROR, "Unable to obtain Dynamic Reconfiguration lock. "
 		    "Please try command again later.\n");
 		rc = -1;
 		goto exit;
@@ -363,7 +362,7 @@ main(int argc, char *argv[])
 	log_msg[offset] = '\0';
 	syslog(LOG_LOCAL0 | LOG_INFO, "%s", log_msg);
 	
-	say(L4, "%s\n", log_msg);
+	say(DEBUG, "%s\n", log_msg);
 
 	/* Now, using the actual command, call out to the proper handler */
 	rc = command->func(&opts);

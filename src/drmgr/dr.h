@@ -76,7 +76,7 @@ struct options {
 	char	*p_option;
 };
 
-enum say_level { L1 =1, L2, L3, L4 };
+enum say_level { ERROR = 1, WARN, INFO, DEBUG};
 
 /* The follwing are defined in common.c */
 int say(enum say_level, char *, ...);
