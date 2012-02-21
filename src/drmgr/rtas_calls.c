@@ -448,10 +448,18 @@ acquire_drc(uint32_t drc_index)
 	say(DEBUG, "setting indicator state to unisolate\n");
 	rc = rtas_set_indicator(ISOLATION_STATE, drc_index, UNISOLATE);
 	if (rc) {
+		int ret;
+		rc = -1;
+
 		say(ERROR, "Unisolate failed for drc %x with %d\n%s\n",
 		    drc_index, rc, set_indicator_error(rc));
-		rc = rtas_set_indicator(ALLOCATION_STATE, drc_index,
-					ALLOC_USABLE);
+		ret = rtas_set_indicator(ALLOCATION_STATE, drc_index,
+					 ALLOC_UNUSABLE);
+		if (ret) {
+			say(ERROR, "Failed recovery to unusable state after "
+			    "unisolate failure for drc %x with %d\n%s\n",
+			    drc_index, ret, set_indicator_error(ret));
+		}
 	}
 
 	return rc;
