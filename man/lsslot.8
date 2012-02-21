@@ -1,0 +1,52 @@
+.\"
+.\" Copyright (C) 2011 International Business Machines
+.\" Brian King <brking@linux.vnet.ibm.com>
+.\"
+.TH LSSLOT 8 "December 2011" Linux "Linux on Power Service Tools"
+.SH NAME
+lsslot \- display hot plug capable slots and resources
+.SH SYNOPSIS
+.BI "lsslot [-c | -a | -b | -p | -o | -s | -F | -d | -w]"
+.SH DESCRIPTION
+The 
+.B lsslot
+command can be used to display hot plug capable I/O slots, CPUs and caches.
+Please note that this command does not display all I/O slots, only slots
+which are physically capable of hot plug. Slots which are capable of DLPAR
+but not hot plug capable will not be listed.
+.SH OPTIONS
+.TP
+.B \-c <connector type>
+Display the slots of the specified connector type.  The valid
+connector types are "pci" for hotplug PCI slots, "slot" for
+logical slots, "phb" for PHB's, "port" for LHEA ports, "mem"
+for memory, and "cpu" for cpu's. The default is "slot" if
+no -c option is specified.
+.TP
+.B \-a
+Display available slots, valid for "pci" slots only.
+.TP
+.B \-b
+Display cpu's and caches, valid for "cpu" only.
+.TP
+.B \-o
+Display occupied slots, valid for "pci" slots only.
+.TP
+.B \-p
+Display caches, valid for "cpu" slots only.
+.TP
+.B \-s <slot>
+Display characteristics of the specified slot.
+.TP
+.B \-F <delimiter>
+Specified a single character to delimit the output.  The
+heading is not displayed and the columns are delimited by the
+specified character.
+.TP
+.B \-d
+Enable debugging output.
+.TP
+.B \-w <timeout>
+Specify a timeout when attempting to acquire locks.
+.SH AUTHOR
+Brian King <brking@linux.vnet.ibm.com>
