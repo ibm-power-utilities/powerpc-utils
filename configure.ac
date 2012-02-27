@@ -1,6 +1,6 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
-m4_define([ppu_version], 1.2.11)
+m4_define([ppu_version], 1.2.12)
 
 AC_PREREQ([2.63])
 AC_INIT([powerpc-utils], ppu_version, [nfont@linux.vnet.ibm.com])
