@@ -1,9 +1,10 @@
 #!/usr/bin/perl -w
-# Copyright (c) 2003, 2004 International Business Machines
+# Copyright (c) 2003, 2004, 2012 International Business Machines
 # Common Public License Version 1.0 (see COPYRIGHT)
 #
 # Author Todd Inglett <tinglett@us.ibm.com>
 # updates by Michael Strosaker <strosake@us.ibm.com>
+# updates by Vasant Hegde <hegdevasant@in.ibm.com>
 
 # Snapshot system config
 # Command-line parameters:
@@ -20,13 +21,16 @@
 #    1:  invalid command line
 #    2:  other fatal error
 
+use strict;
 use Getopt::Std;
 
-$outdir = "/tmp/ibmsupt";	# note NO trailing /
-$outfile = "snap.tar.gz";	# in the working dir.
+my $outdir = "/tmp/ibmsupt";	# note NO trailing /
+my $outfile = "snap.tar.gz";	# in the working dir.
+
+our($opt_a, $opt_d, $opt_h, $opt_o, $opt_v);
 
 #  Files to include in all snaps
-@snap_paths_general = (
+my @snap_paths_general = (
   "/var/log/messages",
   "/var/log/platform",
   "/var/log/scanoutlog.*",
@@ -71,19 +75,19 @@ $outfile = "snap.tar.gz";	# in the working dir.
 );
 
 #  Files to include in all snaps on SuSE systems
-@snap_paths_general_SuSE = (
+my @snap_paths_general_SuSE = (
   "/etc/SuSE-release",
   "/var/log/boot.msg",
 );
 
-#  Files to include in all snaps on RedHat systems
-@snap_paths_general_RedHat = (
+#  Files to include in all snaps on Red Hat systems
+my @snap_paths_general_RedHat = (
   "/etc/redhat-release",
   "/var/log/dmesg",
 );
 
 #  Files to include only in detailed snaps (-a option)
-@snap_paths_detailed = (
+my @snap_paths_detailed = (
   "/proc/tty",
   "/etc/inittab",
   "/proc/ppc64/paca",
@@ -93,16 +97,15 @@ $outfile = "snap.tar.gz";	# in the working dir.
 );
 
 #  Command output to include in all snaps
-@snap_commands_general = (
+my @snap_commands_general = (
   "lscfg -vp",
   "ifconfig -a",
 );
 
 #  Command output to include only in detailed snaps (-a option)
-@snap_commands_detailed = (
+my @snap_commands_detailed = (
   "rpm -qa",
 );
-  
 
 sub recurse_dir($);		# function prototype
 
@@ -124,7 +127,7 @@ sub print_usage {
 	print "Usage: $0 [-ahv] [-d dir] [-o file]\n\n";
 	print "  Command-line parameters:\n";
 	print "    a:       all data; collect detailed information (more files and output)\n";
-	print "    d dir:   specify the directory where files and output will be collected\n"; 
+	print "    d dir:   specify the directory where files and output will be collected\n";
 	print "               (default: /tmp/ibmsupt)\n";
 	print "    h:       print this help message\n";
 	print "    o file:  specify the output file (.tar required, .tar.gz optional)\n";
@@ -138,7 +141,7 @@ sub print_usage {
 
 sub copy {
 	my ($source, $destination) = @_;
-	my ($dir, @path, $d, $blocksize, $buffer, $length);
+	my ($dir, @path, $d, $blocksize, $buffer, $length, $offset, $written);
 
 	#print "Copying $source...";
 
@@ -276,11 +279,6 @@ sub snap_commands {
 
 $< == 0 or error(1, "Must be executed as root");
 
-$opt_a = 0;
-$opt_d = 0;
-$opt_h = 0;
-$opt_o = 0;
-$opt_v = 0;
 if (!getopts('ad:ho:v')) {
 	print_usage;
 	exit 1;
@@ -302,7 +300,8 @@ if ($opt_d) {
 }
 if ($opt_o) {
 	if ($opt_o !~ /.tar/) {
-		print "$0: The filename provided, $opt_o, does not contain .tar;  using default filename $outfile\n";
+		print "$0: The filename provided, $opt_o, does not contain .tar;";
+		print " Using default filename $outfile\n";
 	}
 	else {
 		$outfile = $opt_o;
@@ -328,7 +327,7 @@ if ($opt_a) {
 	snap_commands(@snap_commands_detailed);
 }
 
-($basefile, $extension) = split /\.tar/, $outfile;
+my ($basefile, $extension) = split /\.tar/, $outfile;
 
 system ("tar -cf $basefile.tar $outdir 2>/dev/null");
 
