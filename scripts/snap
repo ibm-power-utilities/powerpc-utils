@@ -375,5 +375,8 @@ else {
 	print "$0: Unrecognized extension $extension\n";
 }
 
+# Delete temporary directory
+system("rm -rf $outdir");
+
 print "output written to $outfile\n";
 exit 0;
