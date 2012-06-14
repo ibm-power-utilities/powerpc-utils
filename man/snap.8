@@ -1,13 +1,14 @@
 .\"
-.\" Copyright (C) 2002 - 2004 International Business Machines
+.\" Copyright (C) 2002 - 2012 International Business Machines
 .\" Todd Inglett <tinglett@vnet.ibm.com>
 .\" Michael Strosaker <strosake@us.ibm.com>
+.\" Vasant Hegde <hegdevasant@in.ibm.com>
 .\"
-.TH SNAP 8 "14 November 2003" Linux "Linux on Power Service Tools"
+.TH SNAP 8 "30 May 2012" Linux "Linux on Power Service Tools"
 .SH NAME
 snap \- generate a configuration snapshot for service
 .SH SYNOPSIS
-\fB/usr/sbin/snap \fR[\fB-ahv\fR] [\fB-d \fIdir\fR] [\fB-o \fIfile\fR]
+\fB/usr/sbin/snap \fR[\fB-athv\fR] [\fB-d \fIdir\fR] [\fB-o \fIfile\fR]
 .SH DESCRIPTION
 The
 .I snap
@@ -31,6 +32,9 @@ Print a help message.
 \fB\-o \fIfile
 Specify the output path and filename (.tar required, .tar.gz optional)
 (default: snap.tar.gz).
+.TP
+\fB\-t
+Add hostname and timestamp to output filename.
 .TP
 .B \-v
 verbose output

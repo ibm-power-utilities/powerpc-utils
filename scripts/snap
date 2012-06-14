@@ -23,11 +23,15 @@
 
 use strict;
 use Getopt::Std;
+use POSIX qw(strftime);
+use Sys::Hostname;
 
-my $outdir = "/tmp/ibmsupt";	# note NO trailing /
-my $outfile = "snap.tar.gz";	# in the working dir.
+my $outdir = "/tmp/ibmsupt";		# note NO trailing /
+my $outfile = "snap.tar.gz";		# in the working dir.
+my $cmddir = "snap_commands";		# cmd output dir.
+my $cmdoutdir = "$outdir/$cmddir";	# in outdir dir.
 
-our($opt_a, $opt_d, $opt_h, $opt_o, $opt_v);
+our($opt_a, $opt_d, $opt_h, $opt_o, $opt_t, $opt_v);
 
 #  Files to include in all snaps
 my @snap_paths_general = (
@@ -124,15 +128,16 @@ sub error {
 }
 
 sub print_usage {
-	print "Usage: $0 [-ahv] [-d dir] [-o file]\n\n";
+	print "Usage: $0 [-athv] [-d dir] [-o file]\n\n";
 	print "  Command-line parameters:\n";
 	print "    a:       all data; collect detailed information (more files and output)\n";
 	print "    d dir:   specify the directory where files and output will be collected\n";
 	print "               (default: /tmp/ibmsupt)\n";
-	print "    h:       print this help message\n";
 	print "    o file:  specify the output file (.tar required, .tar.gz optional)\n";
 	print "               (default: snap.tar.gz)\n";
+	print "    t:       add hostname and timestamp to output filename\n";
 	print "    v:       verbose output\n\n";
+	print "    h:       print this help message\n";
 	print "  Exit codes (view with \"echo \$?\" immediately after running):\n";
 	print "    0:  snap data was successfully captured\n";
 	print "    1:  invalid command line\n";
@@ -264,13 +269,20 @@ sub snap_paths {
 sub snap_commands {
 	my ($path, @junk, @path, $filename, $command, $exit_value);
 
+	if (!(-d $cmdoutdir)) {
+		if (!mkdir($cmdoutdir, 0644)) {
+			error(0, "Cannot create directory: $cmdoutdir");
+			return;
+		}
+	}
+
 	foreach $command (@_) {
 		# Retrieve the name of the binary to run (for output file name)
 		($path, @junk) = split / /, $command;
 		@path = reverse(split /\//, $path);
 		$filename = shift @path;
 
-		system("$command > $outdir/$filename.out 2>&1");
+		system("$command > $cmdoutdir/$filename.out 2>&1");
 		if ($exit_value = $? >> 8) {
 			error(0, "\"$command\" returned $exit_value");
 		}
@@ -279,7 +291,7 @@ sub snap_commands {
 
 $< == 0 or error(1, "Must be executed as root");
 
-if (!getopts('ad:ho:v')) {
+if (!getopts('atd:ho:v')) {
 	print_usage;
 	exit 1;
 }
@@ -291,6 +303,7 @@ if ($opt_h) {
 
 if ($opt_d) {
 	$outdir = $opt_d;
+	$cmdoutdir = "$opt_d/$cmddir";
 }
 
 if (-e $outdir) {
@@ -310,6 +323,17 @@ if ($opt_o) {
 	else {
 		$outfile = $opt_o;
 	}
+}
+
+if ($opt_t) {
+	my $host = `hostname`;
+	chomp($host);
+	my @halias = split(/\./, $host);
+
+	my $time = strftime('%Y%m%d%H%M%S',localtime);
+	my $temp = substr $outfile, 0, rindex($outfile, ".tar");
+	my $temp1 = substr $outfile, rindex($outfile, ".tar") + 1;
+	$outfile = "$temp-$halias[0]-$time.$temp1";
 }
 
 if (-e $outfile) {
@@ -337,8 +361,10 @@ if ($opt_a) {
 }
 
 my ($basefile, $extension) = split /\.tar/, $outfile;
+my $basedir = substr $outdir, 0, rindex($outdir, "/");
+my $compressdir = substr $outdir, rindex($outdir, "/") + 1;
 
-system ("tar -cf $basefile.tar $outdir 2>/dev/null");
+system ("tar -cf $basefile.tar --directory=$basedir $compressdir 2>/dev/null");
 
 if ($extension eq ".gz") {
 	system ("gzip -f $basefile.tar");
