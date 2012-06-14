@@ -291,13 +291,17 @@ if ($opt_h) {
 
 if ($opt_d) {
 	$outdir = $opt_d;
-	if ($outdir eq "/") {
-		error(1, "Cannot use / as the output directory");
-	}
-	if (substr($outdir, -1) eq "/") {
-		$outdir = substr $outdir, 0, -1;
-	}
 }
+
+if (-e $outdir) {
+	print "$0: cannot run; $outdir already exists.\n";
+	exit 2;
+}
+
+if (substr($outdir, -1) eq "/") {
+	$outdir = substr $outdir, 0, -1;
+}
+
 if ($opt_o) {
 	if ($opt_o !~ /.tar/) {
 		print "$0: The filename provided, $opt_o, does not contain .tar;";
@@ -306,6 +310,11 @@ if ($opt_o) {
 	else {
 		$outfile = $opt_o;
 	}
+}
+
+if (-e $outfile) {
+	print "$0: cannot run; $outfile already exits.\n";
+	exit 2;
 }
 
 snap_paths(@snap_paths_general);
