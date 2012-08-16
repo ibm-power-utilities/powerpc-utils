@@ -41,7 +41,6 @@ my @snap_paths_general = (
 #  "/proc/bus/pci",	?? binary file
   "/proc/cmdline",
   "/proc/cpuinfo",
-#  "/proc/device-tree",  must summarize device-tree (a la dmpdt_chrp) instead of dumping whole thing
   "/proc/devices",
   "/proc/dma",
   "/proc/filesystems",
@@ -94,21 +93,31 @@ my @snap_paths_general_RedHat = (
 my @snap_paths_detailed = (
   "/proc/tty",
   "/etc/inittab",
-  "/proc/ppc64/paca",
-  "/proc/ppc64/naca",
-  "/proc/ppc64/pmc",
-  "/proc/ppc64/pcifr",
+  "/proc/ppc64/",
+  "/proc/device-tree/",
 );
 
 #  Command output to include in all snaps
 my @snap_commands_general = (
   "lscfg -vp",
   "ifconfig -a",
+  "lspci -vvv"
 );
 
 #  Command output to include only in detailed snaps (-a option)
 my @snap_commands_detailed = (
   "rpm -qa",
+  "servicelog --dump",
+  "servicelog_notify --list",
+  "usysattn",
+  "usysident",
+  "serv_config -l",
+  "bootlist -m both -r",
+  "lparstat -i",
+  "lsmcode -A",
+  "lsvpd --debug",
+  "lsvio -des",
+  "ppc64_cpu --smt --cores-present --cores-on --run-mode --frequency --dscr",
 );
 
 sub recurse_dir($);		# function prototype
