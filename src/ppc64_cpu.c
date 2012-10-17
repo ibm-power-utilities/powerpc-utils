@@ -20,6 +20,8 @@
 #include <assert.h>
 #include <pthread.h>
 #include <sys/ioctl.h>
+#include <sys/ptrace.h>
+#include <sys/wait.h>
 #ifdef HAVE_LINUX_PERF_EVENT_H
 #include <linux/perf_event.h>
 #endif
@@ -483,14 +485,60 @@ int do_smt(char *state)
 	return rc;
 }
 
-int do_dscr(char *state)
+#define PTRACE_DSCR 44
+
+int do_dscr_pid(int dscr_state, pid_t pid)
+{
+	int rc;
+
+	rc = ptrace(PTRACE_ATTACH, pid, NULL, NULL);
+	if (rc) {
+		fprintf(stderr, "Could not attach to process %d to %s the "
+			"DSCR value\n%s\n", pid, (dscr_state ? "set" : "get"),
+			strerror(errno));
+		return rc;
+	}
+
+	wait(NULL);
+
+	if (dscr_state) {
+		rc = ptrace(PTRACE_POKEUSER, pid, PTRACE_DSCR << 3, dscr_state);
+		if (rc) {
+			fprintf(stderr, "Could not set the DSCR value for pid "
+				"%d\n%s\n", pid, strerror(errno));
+			ptrace(PTRACE_DETACH, pid, NULL, NULL);
+			return rc;
+		}
+	}
+
+	rc = ptrace(PTRACE_PEEKUSER, pid, PTRACE_DSCR << 3, NULL);
+	if (errno) {
+		fprintf(stderr, "Could not get the DSCR value for pid "
+			"%d\n%s\n", pid, strerror(errno));
+		rc = -1;
+	} else {
+		printf("DSCR for pid %d is %d\n", pid, rc);
+	}
+
+	ptrace(PTRACE_DETACH, pid, NULL, NULL);
+	return rc;
+}
+
+int do_dscr(char *state, pid_t pid)
 {
 	int rc = 0;
+	int dscr_state = 0;
 
 	if (!is_dscr_capable()) {
 		fprintf(stderr, "Machine is not DSCR capable\n");
 		return -1;
 	}
+
+	if (state)
+		dscr_state = strtol(state, NULL, 0);
+
+	if (pid != -1)
+		return do_dscr_pid(dscr_state, pid);
 
 	if (!state) {
 		int dscr;
@@ -504,11 +552,11 @@ int do_dscr(char *state)
 			if (dscr == -1)
 				printf("Inconsistent DSCR\n");
 			else
-				printf("dscr is %d\n", dscr);
+				printf("DSCR is %d\n", dscr);
 			break;
 		}
 	} else
-		rc = set_dscr(strtol(state, NULL, 0));
+		rc = set_dscr(dscr_state);
 
 	return rc;
 }
@@ -908,20 +956,23 @@ int do_cores_online(char *state)
 
 void usage(void)
 {
-	printf("\tppc64_cpu --smt               # Get current SMT state\n"
-	       "\tppc64_cpu --smt={on|off}      # Turn SMT on/off\n"
-	       "\tppc64_cpu --smt=X             # Set SMT state to X\n\n"
-	       "\tppc64_cpu --cores-present     # Get the number of cores installed\n"
-	       "\tppc64_cpu --cores-on          # Get the number of cores currently online\n"
-	       "\tppc64_cpu --cores-on=X        # Put exactly X cores online\n\n"
-
-	       "\tppc64_cpu --dscr              # Get current DSCR setting\n"
-	       "\tppc64_cpu --dscr=<val>        # Change DSCR setting\n\n"
-	       "\tppc64_cpu --smt-snooze-delay  # Get current smt-snooze-delay setting\n"
-	       "\tppc64_cpu --smt-snooze-delay=<val> # Change smt-snooze-delay setting\n\n"
-	       "\tppc64_cpu --run-mode          # Get current diagnostics run mode\n"
-	       "\tppc64_cpu --run-mode=<val>    # Set current diagnostics run mode\n\n"
-	       "\tppc64_cpu --frequency         # Determine cpu frequency.\n\n");
+	printf(
+"Usage: ppc64_cpu [command] [options]\n"
+"ppc64_cpu --smt                     # Get current SMT state\n"
+"ppc64_cpu --smt={on|off}            # Turn SMT on/off\n"
+"ppc64_cpu --smt=X                   # Set SMT state to X\n\n"
+"ppc64_cpu --cores-present           # Get the number of cores present\n"
+"ppc64_cpu --cores-on                # Get the number of cores currently online\n"
+"ppc64_cpu --cores-on=X              # Put exactly X cores online\n\n"
+"ppc64_cpu --dscr                    # Get current DSCR system setting\n"
+"ppc64_cpu --dscr=<val>              # Change DSCR system setting\n"
+"ppc64_cpu --dscr [-p <pid>]         # Get DSCR setting for process <pid>\n"
+"ppc64_cpu --dscr=<val> [-p <pid>]   # Change DSCR setting for process <pid>\n\n"
+"ppc64_cpu --smt-snooze-delay        # Get current smt-snooze-delay setting\n"
+"ppc64_cpu --smt-snooze-delay=<val>  # Change smt-snooze-delay setting\n\n"
+"ppc64_cpu --run-mode                # Get current diagnostics run mode\n"
+"ppc64_cpu --run-mode=<val>          # Set current diagnostics run mode\n\n"
+"ppc64_cpu --frequency               # Determine cpu frequency.\n\n");
 }
 
 struct option longopts[] = {
@@ -939,8 +990,11 @@ struct option longopts[] = {
 int main(int argc, char *argv[])
 {
 	int rc = 0;
+	char *action;
+	char *action_arg = NULL;
+	char *equal_char;
 	int opt;
-	int option_index;
+	pid_t pid = -1;
 
 	if (argc == 1) {
 		usage();
@@ -953,47 +1007,67 @@ int main(int argc, char *argv[])
 		return rc;
 	}
 
+	/* The first arg is the action to be taken with an optional action
+	 * arg in the form --action=XXX. Parse this out so we can call the
+	 * appropriate action.
+	 */
+	action = argv[1];
+
+	/* skipp past the '--' */
+	action += 2;
+
+	equal_char = strchr(action, '=');
+	if (equal_char) {
+		*equal_char = '\0';
+		action_arg = equal_char + 1;
+	}
+
+	/* Now parse out any additional options. Currently there is only
+	 * the -p <pid> option for the --dscr action.
+	 */
+	optind = 2;
 	while (1) {
-		opt = getopt_long(argc, argv, "s::d::S::r::fCVc::", longopts,
-				  &option_index);
+		opt = getopt(argc, argv, "p:");
 		if (opt == -1)
 			break;
 
 		switch (opt) {
-		    case 's':
-			rc = do_smt(optarg);
-			break;
+		case 'p':
+			/* only valid for do_dscr option */
+			if (strcmp(action, "dscr")) {
+				fprintf(stderr, "The p option is only valid "
+					"with the --dscr option\n");
+				usage();
+				exit(-1);
+			}
 
-		    case 'd':
-			rc = do_dscr(optarg);
+			pid = atoi(optarg);
 			break;
-
-		    case 'S':
-			rc = do_smt_snooze_delay(optarg);
-			break;
-
-		    case 'r':
-			rc = do_run_mode(optarg);
-			break;
-
-		    case 'f':
-			rc = do_cpu_frequency();
-			break;
-
-		    case 'C':
-			rc = do_cores_present(optarg);
-			break;
-		    case 'c':
-			rc = do_cores_online(optarg);
-			break;
-		    case 'V':
-			printf("ppc64_cpu: version %s\n", PPC64_CPU_VERSION);
-			break;
-		    default:
+		default:
+			fprintf(stderr, "%c is not a valid option\n", opt);
 			usage();
-			break;
+			exit(-1);
 		}
 	}
+
+	if (!strcmp(action, "smt"))
+		rc = do_smt(action_arg);
+	else if (!strcmp(action, "dscr"))
+		rc = do_dscr(action_arg, pid);
+	else if (!strcmp(action, "smt-snooze-delay"))
+		rc = do_smt_snooze_delay(action_arg);
+	else if (!strcmp(action, "run-mode"))
+		rc = do_run_mode(action_arg);
+	else if (!strcmp(action, "frequency"))
+		rc = do_cpu_frequency();
+	else if (!strcmp(action, "cores-present"))
+		rc = do_cores_present(action_arg);
+	else if (!strcmp(action, "cores-on"))
+		rc = do_cores_online(action_arg);
+	else if (!strcmp(action, "version"))
+		printf("ppc64_cpu: version %s\n", PPC64_CPU_VERSION);
+	else
+		usage();
 
 	return rc;
 }
