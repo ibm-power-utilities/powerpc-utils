@@ -1,3 +1,32 @@
+powerpc-utils-1.2.14
+=====================================================================
+commit 54b295ff2ec131d173ebf3913565adbe4a5f0c2f
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Wed Oct 17 13:47:49 2012 -0400
+
+    The latest kernels allow for users to get/set the DSCR value on a per proces
+    This allows for more refined DSCR setting in applications. This is implement
+    by using the ptrace peekuser capabilites in the kernel and simply doing a
+    ptrace attach and peek from the ppc64_cpu command. Note: this does not actua
+    stop the process we are attaching to while under ptrace control.
+    
+    The patch does a little more than just adding this functionality since the
+    --dscr commad now takes an optional -p <pid> option. This required an
+    updated to the command parsing code to allow this.
+    
+    Signed-off-by: Nathan Fontenot <nfont@liunux.vnet.ibm.com>
+
+commit 90029c93af26f01ef37624fd9d27809d6734f5f7
+Author: Santiago Leon <santil@linux.vnet.ibm.com>
+Date:   Wed Oct 17 13:35:14 2012 -0400
+
+    Includes the status field for Ethernet devices.  This field is necessary for
+    the End-to-End Virtual Device View feature.  The field is blindly set to 1
+    because we're trying to mimic AIX's lsdevinfo behavior that always sets it t
+    unless the device doesn't have a driver, which can't happen in Linux.
+    
+    Signed-off-by: Santiago Leon <santil@linux.vnet.ibm.com>
+
 powerpc-utils-1.2.13
 =====================================================================
 commit 361dcc6ee5ca8a41b311b0c82c88d4633c884b2a
