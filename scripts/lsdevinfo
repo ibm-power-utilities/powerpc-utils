@@ -173,6 +173,7 @@ show_eth ()
         check_criteria "type"
         check_criteria "prefix"
         check_criteria "driver"
+        check_criteria "status"
     fi
 
     # print the info only if the device matches the criteria
@@ -186,6 +187,7 @@ show_eth ()
 	print_attr "type"
 	print_attr "prefix"
 	print_attr "driver"
+	print_attr "status"
 
 	# if there is no format in the command line or it contains "path", then
 	# print the path. Doesn't use print_attr because all of the fields in 
@@ -216,6 +218,7 @@ for dev in $($LS -d /proc/device-tree/vdevice/l-lan* 2> /dev/null); do
     type="IBM,l-lan"
     prefix="eth"
     driver="ibmveth"
+    status=1
 
     show=1
     show_eth
@@ -239,6 +242,7 @@ for pci_dev in $($LS -d /proc/device-tree/pci* 2> /dev/null); do
 	prefix="eth"
 	driver=$($LS -l /sys/class/net/$name/device/driver |
 		 $SED -e "s/^.*\///")
+	status=1
 
 	show=1
 	show_eth
