@@ -814,11 +814,11 @@ int do_cpu_frequency(void)
 		count++;
 	}
 
-	printf("min:\t%.2f GHz (cpu %ld)\n", 1.0 * min / 1000000000ULL,
+	printf("min:\t%.3f GHz (cpu %ld)\n", 1.0 * min / 1000000000ULL,
 	       min_cpu);
-	printf("max:\t%.2f GHz (cpu %ld)\n", 1.0 * max / 1000000000ULL,
+	printf("max:\t%.3f GHz (cpu %ld)\n", 1.0 * max / 1000000000ULL,
 	       max_cpu);
-	printf("avg:\t%.2f GHz\n\n", 1.0 * (sum / count) / 1000000000ULL);
+	printf("avg:\t%.3f GHz\n\n", 1.0 * (sum / count) / 1000000000ULL);
 	return 0;
 }
 
