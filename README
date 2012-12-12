@@ -16,17 +16,6 @@ update_flash:  system firmware update utility
 ------------
 A script that uses the rtas_flash kernel module to flash firmware.
 
-usysident:  identification indicator utility
----------
-A utility to view the status of device identification indicators
-(LEDs), and to turn the indicators on and off.
-
-usysattn, usysfault:  attention indicator utility
--------------------
-A utility to view the status of the system attention (fault) indicators
-(LEDs), and to turn the indicators off when after an event has been
-serviced.
-
 set_poweron_time:  configure time for system power-on
 ----------------
 A utility to set a time in the future for the system to automatically
@@ -87,6 +76,11 @@ lsdevinfo:
 ---------
 This utility provides the HMC or IVM with name information for
 virtual devices so they can be matched against the VIOS names.
+
+usysident, usysattn, usysfault:
+-------------------------------
+Deprecated. Moved to ppc64-diag package.
+http://sourceforge.net/projects/linux-diag/files/ppc64-diag/
 
 ===================
 

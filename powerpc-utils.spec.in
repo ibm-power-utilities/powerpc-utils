@@ -42,8 +42,6 @@ Utilities for maintaining and servicing PowerPC systems.
 
 /usr/sbin/update_flash
 /usr/sbin/activate_firmware
-/usr/sbin/usysident
-/usr/sbin/usysattn
 /usr/sbin/set_poweron_time
 /usr/sbin/rtas_ibm_get_vpd
 /usr/sbin/serv_config
@@ -70,8 +68,6 @@ Utilities for maintaining and servicing PowerPC systems.
 
 /usr/share/man/man8/update_flash.8.gz
 /usr/share/man/man8/activate_firmware.8.gz
-/usr/share/man/man8/usysident.8.gz
-/usr/share/man/man8/usysattn.8.gz
 /usr/share/man/man8/set_poweron_time.8.gz
 /usr/share/man/man8/rtas_ibm_get_vpd.8.gz
 /usr/share/man/man8/serv_config.8.gz
@@ -90,18 +86,14 @@ Utilities for maintaining and servicing PowerPC systems.
 
 %post
 # Post-install script -----------------------------------------------
-ln -sf /usr/sbin/usysattn usr/sbin/usysfault
 ln -sf /usr/sbin/serv_config usr/sbin/uspchrp
-ln -sf /usr/share/man/man8/usysattn.8 usr/share/man/man8/usysfault.8
 ln -sf /usr/share/man/man8/serv_config.8 usr/share/man/man8/uspchrp.8
 
 %postun
 # Post-uninstall script ---------------------------------------------
 if [ "$1" = "0" ]; then
 	# last uninstall
-	rm -f /usr/sbin/usysfault
 	rm -f /usr/sbin/uspchrp
-	rm -f /usr/share/man/man8/usysfault.8.gz
 	rm -f /usr/share/man/man8/uspchrp.8.gz
 fi
 

@@ -30,8 +30,8 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-sbin_PROGRAMS = activate_firmware$(EXEEXT) usysident$(EXEEXT) \
-	usysattn$(EXEEXT) set_poweron_time$(EXEEXT) \
+sbin_PROGRAMS = activate_firmware$(EXEEXT) \
+	set_poweron_time$(EXEEXT) \
 	rtas_ibm_get_vpd$(EXEEXT) serv_config$(EXEEXT) \
 	uesensor$(EXEEXT) rtas_event_decode$(EXEEXT) \
 	sys_ident$(EXEEXT) nvram$(EXEEXT) lsprop$(EXEEXT) \
@@ -82,12 +82,6 @@ sys_ident_DEPENDENCIES =
 am_uesensor_OBJECTS = uesensor.$(OBJEXT) librtas_error.$(OBJEXT)
 uesensor_OBJECTS = $(am_uesensor_OBJECTS)
 uesensor_DEPENDENCIES =
-am_usysattn_OBJECTS = usysident.$(OBJEXT) librtas_error.$(OBJEXT)
-usysattn_OBJECTS = $(am_usysattn_OBJECTS)
-usysattn_DEPENDENCIES =
-am_usysident_OBJECTS = usysident.$(OBJEXT) librtas_error.$(OBJEXT)
-usysident_OBJECTS = $(am_usysident_OBJECTS)
-usysident_DEPENDENCIES =
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__depfiles_maybe = depfiles
@@ -99,14 +93,12 @@ SOURCES = $(activate_firmware_SOURCES) $(lparstat_SOURCES) \
 	$(lsprop_SOURCES) $(nvram_SOURCES) $(ppc64_cpu_SOURCES) \
 	$(rtas_event_decode_SOURCES) $(rtas_ibm_get_vpd_SOURCES) \
 	$(serv_config_SOURCES) $(set_poweron_time_SOURCES) \
-	$(sys_ident_SOURCES) $(uesensor_SOURCES) $(usysattn_SOURCES) \
-	$(usysident_SOURCES)
+	$(sys_ident_SOURCES) $(uesensor_SOURCES)
 DIST_SOURCES = $(activate_firmware_SOURCES) $(lparstat_SOURCES) \
 	$(lsprop_SOURCES) $(nvram_SOURCES) $(ppc64_cpu_SOURCES) \
 	$(rtas_event_decode_SOURCES) $(rtas_ibm_get_vpd_SOURCES) \
 	$(serv_config_SOURCES) $(set_poweron_time_SOURCES) \
-	$(sys_ident_SOURCES) $(uesensor_SOURCES) $(usysattn_SOURCES) \
-	$(usysident_SOURCES)
+	$(sys_ident_SOURCES) $(uesensor_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	html-recursive info-recursive install-data-recursive \
 	install-dvi-recursive install-exec-recursive \
@@ -210,10 +202,6 @@ AM_LDFLAGS =
 SUBDIRS = drmgr
 activate_firmware_SOURCES = activate_fw.c
 activate_firmware_LDADD = -lrtas
-usysident_SOURCES = usysident.c librtas_error.c librtas_error.h
-usysident_LDADD = -lrtas
-usysattn_SOURCES = usysident.c librtas_error.c librtas_error.h
-usysattn_LDADD = -lrtas
 set_poweron_time_SOURCES = set_poweron_time.c librtas_error.c librtas_error.h
 set_poweron_time_LDADD = -lrtas
 rtas_ibm_get_vpd_SOURCES = rtas_ibm_get_vpd.c librtas_error.c librtas_error.h
@@ -321,12 +309,6 @@ sys_ident$(EXEEXT): $(sys_ident_OBJECTS) $(sys_ident_DEPENDENCIES)
 uesensor$(EXEEXT): $(uesensor_OBJECTS) $(uesensor_DEPENDENCIES) 
 	@rm -f uesensor$(EXEEXT)
 	$(LINK) $(uesensor_OBJECTS) $(uesensor_LDADD) $(LIBS)
-usysattn$(EXEEXT): $(usysattn_OBJECTS) $(usysattn_DEPENDENCIES) 
-	@rm -f usysattn$(EXEEXT)
-	$(LINK) $(usysattn_OBJECTS) $(usysattn_LDADD) $(LIBS)
-usysident$(EXEEXT): $(usysident_OBJECTS) $(usysident_DEPENDENCIES) 
-	@rm -f usysident$(EXEEXT)
-	$(LINK) $(usysident_OBJECTS) $(usysident_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -346,7 +328,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/set_poweron_time.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sys_ident.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/uesensor.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/usysident.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
