@@ -291,6 +291,13 @@ print_aliases()
     fi
 }
 
+get_slave()
+{
+	cd /sys/class/*/$1
+	while [[ -n "`ls slaves 2> /dev/null`" ]]; do cd slaves/*; done
+	$FIND /dev -name "`basename $PWD`"
+}
+
 #
 # logical_to_ofpathname
 # Conversion for logical device name to an Open Firmware device path
@@ -333,6 +340,11 @@ logical_to_ofpathname()
 		    fi ;;
         hd*)        l2of_ide ;;
         fd*)        echo "no fd support yet" ;;
+        dm-*)
+                    DEVNAME=`get_slave $DEVICE`
+                    logical_to_ofpathname
+                    exit
+                    ;;
     esac
 
     if [[ -z $OF_PATH ]]; then
