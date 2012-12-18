@@ -750,6 +750,72 @@ static void *soak(void *arg)
 		; /* Do Nothing */
 }
 
+char *power_mode(uint64_t mode)
+{
+	switch (mode) {
+	case 0x0001:
+		return "Dynamic, Favor Performance\n";
+	case 0x0002:
+		return "None\n";
+	case 0x0003:
+		return "Static\n";
+	case 0x00ff:
+		return "Dynamic, Favor Power\n";
+	default:
+		return "Unknown";
+	}
+}
+
+void report_system_power_mode(void)
+{
+	FILE *f;
+	char line[128];
+
+	f = fopen("/proc/ppc64/lparcfg", "r");
+	if (!f)
+		return;
+
+	while (fgets(line, 128, f) != NULL) {
+		char *name, *value;
+		uint64_t mode, system_mode, partition_mode;
+
+		if ((line[0] == '\n') || (!strncmp(&line[0], "lparcfg", 7)))
+			continue;
+
+		name = &line[0];
+		value = strchr(line, '=');
+		*value = '\0';
+		value++;
+
+		if (strcmp(name, "power_mode_data"))
+			continue;
+
+		/* The power mode result is defined as
+		 * XXXX XXXX XXXX XXXX
+		 * XXXX			: System Power Mode
+		 *                XXXX	: Partition Power Mode
+		 * They mode is the first 4 bytes of the value reported in
+		 * the lparcfg file.
+		 */
+		mode = strtoul(value, NULL, 16);
+		system_mode = (mode >> 48) & 0xffff;
+		partition_mode = mode & 0xffff;
+
+		if (system_mode != partition_mode) {
+			printf("System Power Savings Mode: %s",
+			       power_mode(system_mode));
+			printf("Partition Power Savings Mode: %s",
+			       power_mode(partition_mode));
+		} else {
+			printf("Power Savings Mode: %s",
+			       power_mode(system_mode));
+		}
+	}
+
+	fclose(f);
+	return;
+}
+
 int do_cpu_frequency(void)
 {
 	int i, rc;
@@ -814,6 +880,7 @@ int do_cpu_frequency(void)
 		count++;
 	}
 
+	report_system_power_mode();
 	printf("min:\t%.3f GHz (cpu %ld)\n", 1.0 * min / 1000000000ULL,
 	       min_cpu);
 	printf("max:\t%.3f GHz (cpu %ld)\n", 1.0 * max / 1000000000ULL,
