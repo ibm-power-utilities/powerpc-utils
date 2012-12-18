@@ -1,3 +1,75 @@
+powerpc-utils-1.2.15
+=====================================================================
+commit 3f31d1980331cb72d3328269f27de4c8d3132178
+Author: Anton Blanchard <anton@samba.org>
+Date:   Tue Dec 18 12:10:20 2012 -0600
+
+    The frequency determination for a system can fail if we can not open
+    enough files to make the determination. This patch pre-emptively
+    updates the rlimit to ensure we can open all the files necessary.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 8d8e98514aeae82966123eed1a4f5c79e2f1a758
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Tue Dec 18 12:02:48 2012 -0600
+
+    The latest firmware levels allow for setting different power savings
+    modes. This updates the ppc64_cpu command to display the power savings
+    mode that is currently set for the partition, or for the partition
+    and the system if they are different, when displaying the results
+    for the --frequency option.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit e22d290b980dedbe4e6d297e0a1f4c0517e7f9db
+Author: Gustavo Luiz Duarte <gustavold@linux.vnet.ibm.com>
+Date:   Thu Dec 13 09:26:49 2012 -0600
+
+    Add support to convert device-mapper multipath device names to OFW device pa
+th.
+    As multipath devices are seen by the OFW as multiple (equivalent) devices, o
+nly
+    one of them is printed so we don't break user scripts expecting one line
+    output. We can add an option later to print all the paths to the multipath
+    device.
+    
+    Signed-off-by: Gustavo Luiz Duarte <gustavold@linux.vnet.ibm.com>
+
+commit 3eacc075d455b91a23a2280ee726fd3d236abf77
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Wed Dec 12 10:08:38 2012 -0600
+
+    We have introduced full fledged Light Path Diagnostics support
+    on PowerLinux. To bring all Light Path Diagnostics related
+    code into common tree and re-use common functionalities across
+    tools, we have re-implemented usysident/usysattn commands. Light
+    Path Diagnostics including new implentation of usysident/usysattn
+    will be hosted in PowerLinux diagnostic package (ppc64-diag).
+    
+    ppc64-diag source:
+      http://sourceforge.net/projects/linux-diag/files/ppc64-diag/
+    
+    This will introduce package conflict between ppc64-diag and
+    powerpc-utils. To avoid the conflict we need to deprecate the
+    usysident/usysattn commands from powerpc-utils.
+    
+    This patch deprecates usysident/usysattn commands.
+    
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit 588df55fa1e0c0061776aa4338512a4b56614b93
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Wed Dec 12 09:24:17 2012 -0600
+
+    Update the values reported in the ppc64_cpu --frequency output to
+    be displayed to three digits of precision instead of two.
+    
+    This update to help with test teams that are making this update to their
+    code base already so as to get this precision in the reporting.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
 powerpc-utils-1.2.14
 =====================================================================
 commit 54b295ff2ec131d173ebf3913565adbe4a5f0c2f
