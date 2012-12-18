@@ -22,6 +22,7 @@
 #include <sys/ioctl.h>
 #include <sys/ptrace.h>
 #include <sys/wait.h>
+#include <sys/resource.h>
 #ifdef HAVE_LINUX_PERF_EVENT_H
 #include <linux/perf_event.h>
 #endif
@@ -816,6 +817,23 @@ void report_system_power_mode(void)
 	return;
 }
 
+/* We need an FD per CPU, with a few more for stdin/out/err etc */
+void setrlimit_open_files(void)
+{
+	struct rlimit old_rlim, new_rlim;
+	int new = threads_in_system + 8;
+
+	getrlimit(RLIMIT_NOFILE, &old_rlim);
+
+	if (old_rlim.rlim_cur > new)
+		return;
+
+	new_rlim.rlim_cur = new;
+	new_rlim.rlim_max = old_rlim.rlim_max;
+
+	setrlimit(RLIMIT_NOFILE, &new_rlim);
+}
+
 int do_cpu_frequency(void)
 {
 	int i, rc;
@@ -825,6 +843,8 @@ int do_cpu_frequency(void)
 	unsigned long max_cpu = -1UL;
 	unsigned long long sum = 0;
 	unsigned long count = 0;
+
+	setrlimit_open_files();
 
 	memset(cpu_freq, 0, sizeof(cpu_freq));
 	memset(counters, 0, sizeof(counters));
