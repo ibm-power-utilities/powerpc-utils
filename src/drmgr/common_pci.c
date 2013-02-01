@@ -922,12 +922,21 @@ get_node_by_name(const char *drc_name, uint32_t node_type)
 
 	for (node = all_nodes; node; node = node->next) {
 		struct dr_node *child;
+		uint32_t drc_index;
 
 		if (strcmp(node->drc_name, drc_name) == 0)
 			break;
 
+		/* See if the drc index was specified */
+		drc_index = strtoul(drc_name, NULL, 0);
+		if (node->drc_index == drc_index)
+			continue;
+
 		for (child = node->children; child; child = child->next) {
 			if (strcmp(drc_name, child->drc_name) == 0)
+				child_found = 1;
+
+			if (child->drc_index == drc_index)
 				child_found = 1;
 		}
 

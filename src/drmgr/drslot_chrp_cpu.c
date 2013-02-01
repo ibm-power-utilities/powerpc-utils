@@ -28,7 +28,7 @@ struct parm_to_func {
 };
 
 
-static char *usagestr = "-c cpu {-a | -r} {-q <quantity> -p {variable_weight | ent_capacity} [-s drc_names]";
+static char *usagestr = "-c cpu {-a | -r} {-q <quantity> -p {variable_weight | ent_capacity} [-s drc_name | drc_index]";
 
 /**
  * cpu_usage
@@ -44,9 +44,15 @@ static struct dr_node *
 get_cpu_by_name(struct dr_info *drinfo, const char *name)
 {
 	struct dr_node *cpu;
+	uint32_t drc_index;
 
 	for (cpu = drinfo->all_cpus; cpu; cpu = cpu->next) {
 		if (strcmp(cpu->drc_name, name) == 0)
+			break;
+
+		/* See if the drc index was specified */
+		drc_index = strtoul(name, NULL, 0);
+		if (cpu->drc_index == drc_index)
 			break;
 	}
 

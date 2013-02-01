@@ -18,7 +18,7 @@
 #include "drpci.h"
 #include "ofdt.h"
 
-static char *usagestr = "-c slot {-a | -r | -Q} -s drc_name";
+static char *usagestr = "-c slot {-a | -r | -Q} -s <drc_name | drc_index>";
 
 void
 slot_usage(char **pusage)

@@ -21,7 +21,7 @@
 static int block_sz_bytes = 0;
 static char *state_strs[] = {"offline", "online"};
 
-static char *usagestr = "-c mem {-a | -r} {-q <quantity> -p {variable_weight | ent_capacity} | {-q <quantity> | s <drc_name>}}";
+static char *usagestr = "-c mem {-a | -r} {-q <quantity> -p {variable_weight | ent_capacity} | {-q <quantity> | -s [<drc_name> | <drc_index>]}}";
 
 /**
  * mem_usage
@@ -432,6 +432,7 @@ get_lmbs(unsigned int sort)
 static struct dr_node *
 get_available_lmb(struct options *opts, struct dr_node *start_lmb)
 {
+	uint32_t drc_index;
 	struct dr_node *lmb;
 	struct dr_node *usable_lmb = NULL;
 	int balloon_active = ams_balloon_active();
@@ -439,9 +440,13 @@ get_available_lmb(struct options *opts, struct dr_node *start_lmb)
 	for (lmb = start_lmb; lmb; lmb = lmb->next) {
 		int rc;
 
-		if (opts->usr_drc_name)
-			if (strcmp(lmb->drc_name, opts->usr_drc_name))
+		if (opts->usr_drc_name) {
+			drc_index = strtoul(opts->usr_drc_name, NULL, 0);
+
+			if ((strcmp(lmb->drc_name, opts->usr_drc_name))
+			    && (lmb->drc_index != drc_index))
 				continue;
+		}
 
 		if (lmb->unusable)
 			continue;

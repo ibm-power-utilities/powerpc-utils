@@ -15,7 +15,7 @@
 #include "drpci.h"
 #include "ofdt.h"
 
-static char *usagestr = "-c phb [-Q | -r | -a] -s phb_name";
+static char *usagestr = "-c phb [-Q | -r | -a] -s <drc_name | drc_index>";
 
 static int release_phb(struct dr_node *);
 static int acquire_phb(char *, struct dr_node **);

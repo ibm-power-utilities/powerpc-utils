@@ -32,7 +32,7 @@ static char *speed_error = "Add operation failed. The 33MHz PCI card may\n"
 #define USER_QUIT  0		/* user wants to bail out of operation	 */
 #define USER_CONT  1		/* user wants to continue with operation */
 
-static char *usagestr = 	"-c pci -s slot {-i | -a [-I] | -r [-I] | -R [-I]}";
+static char *usagestr = 	"-c pci -s <drc_name | drc_index> {-i | -a [-I] | -r [-I] | -R [-I]}";
 /**
  * pci_usage
  *
