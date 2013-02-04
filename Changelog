@@ -1,3 +1,62 @@
+powerpc-utils-1.2.16
+=====================================================================
+commit 0c358d8d7391f99d02315786871735f73eba8af1
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Fri Feb 1 17:57:47 2013 -0600
+
+    The drmgr command does not currently allow users to specify the drc index of
+    the resource they wish to add/remove. This patch updates the drmgr command s
+o
+    that users can specify either a drc name or a drc index with the -s option.
+    
+    This functionality is needed for the upcoming userspace handling of PRRN RTA
+S
+    events. The rtas_errd will already have the drc index for the resources it
+    needs, adding the capability to parse drc names from the device tree is not
+    supported in rtas_errd though.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 91459f3188bb9db0ac8da23133d7330520520728
+Author: Robert Jennings <rcj@linux.vnet.ibm.com>
+Date:   Fri Feb 1 17:56:20 2013 -0600
+
+    Update the man page for update_flash which had an out of date link
+    to instructions for resetting a managed system to a non-partitioned
+    configuration.
+    
+    Also fix typos in the man page.
+    
+    Signed-off-by: Robert Jennings<rcj@linux.vnet.ibm.com>
+
+commit 837eaff650ab19784b6b04d2d14fb29c966a485f
+Author: Nishanth Aravamudan <nacc@us.ibm.com>
+Date:   Fri Feb 1 17:42:53 2013 -0600
+
+    The upstream kernel has a feature in the pseries PCI code called DDW
+    that inserts TCEs transparently to device drivers. The upstream kernel
+    was recently sent a fix for DLPAR that ensured those TCEs would get
+    cleared upon DLPAR remove (http://patchwork.ozlabs.org/patch/213735/),
+    but for it to work, we need a corresponding change to drmgr for, at
+    least, PHB remove, so that the notifier chain has fired before we call
+    into the slot isolate code. Without such a change, there is no way to
+    ensure the DDW TCEs are cleared, and the DLPAR will always fail.
+    
+    Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
+
+commit 85325c113104602a257a0f7cf3da0dbd5d222d56
+Author: Michael Ellerman <michael@ellerman.id.au>
+Date:   Mon Jan 7 20:42:01 2013 -0600
+
+    Add and use dt_swap_int() to byte swap on little endian.
+    
+    Also declare buf as unsigned char, so that we don't sign extend when
+    printing values from it.
+    
+    Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+    Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+
+
 powerpc-utils-1.2.15
 =====================================================================
 commit 3f31d1980331cb72d3328269f27de4c8d3132178
