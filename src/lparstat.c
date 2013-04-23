@@ -268,13 +268,10 @@ void get_capped_mode(struct sysentry *se, char *buf)
 
 void get_percent_entry(struct sysentry *se, char *buf)
 {
-	int value, p, r;
+	float value;
 
 	value = atoi(se->value);
-	p = value / 100;
-	r = value % 100;
-
-	sprintf(buf, "%d.%d", p, r);
+	sprintf(buf, "%.2f", (value /100));
 }
 
 void get_phys_cpu_percentage(struct sysentry *se, char *buf)
