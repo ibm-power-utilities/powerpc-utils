@@ -140,6 +140,9 @@ add_cpus(struct options *opts, struct dr_info *dr_info)
 
 	count = 0;
 	while (count < opts->quantity) {
+		if (drmgr_timed_out())
+			break;
+
 		cpu = get_available_cpu(opts, dr_info);
 		if (!cpu)
 			break;
@@ -192,6 +195,9 @@ remove_cpus(struct options *opts, struct dr_info *dr_info)
 	struct dr_node *cpu;
 
 	while (count < opts->quantity) {
+		if (drmgr_timed_out())
+			break;
+
 		cpu = get_available_cpu(opts, dr_info);
 		if (!cpu)
 			break;

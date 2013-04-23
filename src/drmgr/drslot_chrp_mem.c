@@ -856,6 +856,9 @@ add_lmbs(struct options *opts, struct lmb_list_head *lmb_list)
 
 	lmb_list->lmbs_modified = 0;
 	while (lmb_list->lmbs_modified < (int)opts->quantity) {
+		if (drmgr_timed_out())
+			break;
+
 		lmb = get_available_lmb(opts, lmb_head);
 		if (lmb == NULL)
 			return -1;
@@ -934,6 +937,9 @@ remove_lmbs(struct options *opts, struct lmb_list_head *lmb_list)
 	int rc;
 
 	while (lmb_list->lmbs_modified < (int)opts->quantity) {
+		if (drmgr_timed_out())
+			break;
+
 		lmb = get_available_lmb(opts, lmb_head);
 		if (!lmb)
 			return -1;

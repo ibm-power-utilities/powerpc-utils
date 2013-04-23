@@ -857,7 +857,7 @@ main(int argc, char *argv[])
 	opts.slot_type = SLOT;
 	parse_options(argc, argv, &opts);
 
-	rc = dr_lock(opts.timeout);
+	rc = dr_lock();
 	if (rc) {
 		say(ERROR, "Unable to obtain Dynamic Reconfiguration lock. "
 		    "Please try command again later.\n");

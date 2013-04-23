@@ -28,6 +28,7 @@ char *dlpar_remove_slot = DLPAR_REMOVE_SLOT;
 #define LPARCFG_PATH	"/proc/ppc64/lparcfg"
 
 static int dr_lock_fd = 0;
+static long dr_timeout;
 
 /**
  * set_output level
@@ -145,26 +146,55 @@ dr_fini(void)
 }
 
 /**
+ * set_timeout
+ *
+ */
+void set_timeout(int timeout)
+{
+	if (!timeout) {
+		dr_timeout = -1;
+		return;
+	}
+
+	dr_timeout = time((time_t *)0);
+	if (dr_timeout == -1)
+		return;
+
+	dr_timeout += timeout;
+}
+
+/**
+ *
+ */
+int drmgr_timed_out(void)
+{
+	if (dr_timeout == -1)
+		return 0;	/* No timeout specified */
+
+	if (dr_timeout > time((time_t *)0))
+		return 0;
+
+	say(WARN, "Drmgr has exceeded its specified wait time and will not "
+	    "continue\n");
+	return 1;
+}
+
+/**
  * dr_lock
  * @brief Attempt to lock a token
  *
  * This will attempt to lock a token (either file or directory) and wait
  * a specified amount of time if the lock cannot be granted.
  *
- * @param token token to lock
- * @param timeout timeout to wait before returning
  * @returns lock id if successful, -1 otherwise
  */
-int
-dr_lock(int timeout)
+int dr_lock(void)
 {
 	struct flock    dr_lock_info;
 	int             dr_lock_fd;
 	int             rc;
 	mode_t          old_mode;
-	long            start_time;	/* Beginning time. Used for timeout */
-	long            current_time;
-	int             first_try;
+	int             first_try = 1;
 
 	old_mode = umask(0);
 	dr_lock_fd = open(DR_LOCK_FILE, O_RDWR | O_CREAT,
@@ -178,24 +208,23 @@ dr_lock(int timeout)
 	dr_lock_info.l_start = 0;
 	dr_lock_info.l_len = 0;
 
-	first_try = 1;
-	start_time = time((long *) 0);	/* Pass 0 so that current time is
-					 * returned */
-	while (first_try || timeout == DR_WAIT ||
-	       timeout > (current_time = time((long *) 0)) - start_time)
-	{
-		if (!first_try)
+	do {
+		if (!first_try) {
 			sleep(1);
-		first_try = 0;
+			first_try = 0;
+		}
 
 		rc = fcntl(dr_lock_fd, F_SETLK, &dr_lock_info);
 		if (rc != -1)
 			return 0;
 
+		if (drmgr_timed_out())
+			break;
+
 		if (rc == -1 && errno == EACCES)
 			continue;
 
-	}
+	} while (1);
 
 	close(dr_lock_fd);
 	dr_lock_fd = 0;

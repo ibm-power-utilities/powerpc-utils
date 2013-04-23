@@ -50,10 +50,6 @@ static inline void *zalloc(size_t size)
 #define DR_COMMAND		"drslot_chrp_%s"
 #define DRMIG_COMMAND		"drmig_chrp_%s"
 
-#define DR_WAIT		-1    /* Wait forever  */
-#define DR_NOWAIT	0     /* Return immediately if lock cannot be granted */
-#define LOCK_TIMEOUT	5     /* Wait 5 seconds before giving up on dr_lock() */
-
 struct options {
 	int     action;	      /* remove, add, REPLACE, IDENTIFY ...           */
 #define NONE		0
@@ -66,8 +62,7 @@ struct options {
 #define HIBERNATE	7
 
 	int     no_ident;     /* used in drslot_chrp_pci                      */
-	int    timeout;       /* used in remove operation only. Default
-	                       * is 60 seconds. User input in minutes.        */
+	int 	timeout;      /* time (in seconds) to try operation           */
 	char   *usr_drc_name; /* pointer to user-specified drc-name
 	                       * of resource                                  */
 	int     noprompt;     /* 1 = do not prompt user for input, assume yes */
@@ -82,7 +77,9 @@ enum say_level { ERROR = 1, WARN, INFO, DEBUG};
 int say(enum say_level, char *, ...);
 void dr_init(void);
 void dr_fini(void);
-int dr_lock(int);
+void set_timeout(int);
+int drmgr_timed_out(void);
+int dr_lock(void);
 int dr_unlock(void);
 int valid_platform(const char *);
 

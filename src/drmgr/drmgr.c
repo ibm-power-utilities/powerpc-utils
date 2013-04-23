@@ -165,9 +165,6 @@ parse_options(int argc, char *argv[], struct options *opts)
 
 	memset(opts, 0, sizeof(*opts));
 
-	/* default timeout */
-	opts->timeout = DR_WAIT;
-
 	/* disable getopt error messages */
 	opterr = 0;
 
@@ -347,7 +344,8 @@ main(int argc, char *argv[])
 		goto exit;
 	}
 
-	rc = dr_lock(opts.timeout);
+	set_timeout(opts.timeout);
+	rc = dr_lock();
 	if (rc) {
 		say(ERROR, "Unable to obtain Dynamic Reconfiguration lock. "
 		    "Please try command again later.\n");
