@@ -28,6 +28,7 @@ E_MODULE=7	# Error loading module
 E_RTAS=8	# RTAS call failed
 E_USER=9	# User aborted operation
 E_OVERWRITE=10	# Auto overwrite permanent side image
+E_WRNTY=15	# Out of warranty
 
 # Script Constants
 PATH=/sbin:/usr/sbin:/bin:/usr/bin:$PATH
@@ -65,6 +66,7 @@ VALIDATE_CUR_UNKNOWN=3     	# RPA Section 7.3, Table 63
 VALIDATE_TMP_COMMIT_DL=4     	# RPA Section 7.3, Table 63
 VALIDATE_TMP_COMMIT=5     	# RPA Section 7.3, Table 63
 VALIDATE_TMP_UPDATE_DL=6     	# RPA Section 7.3, Table 63
+VALIDATE_OUT_OF_WRNTY=7     	# RPA Section 7.3, Table 63
 
 function error {
 	local exit_code=$1
@@ -142,6 +144,28 @@ function echo_validate_rtas_buf {
 	echo "New P Image:     $new_p_name"
 }
 
+function echo_entitlement_expiry_date {
+	local build_date=`cat $PROCVALIDATE | grep "^MG" | tail -n 1 | cut -d " " -f2`
+	local entl_date=`cat $PROCVALIDATE | grep "^ME" | cut -d " " -f2`
+
+	echo "The selected firmware image cannot be applied."
+	echo ""
+	echo -n "The Build Date of the firmware image selected is "
+	if [ "$build_date" != "" ]; then
+		echo "$(date --date=$build_date +"%B %d, %Y")."
+	else
+		echo "UNKNOWN."
+	fi
+
+	echo -n "The System's Microcode Entitlement Expiration Date is "
+	if [ "$entl_date" != "" ]; then
+		echo "$(date --date=$entl_date +"%B %d, %Y")."
+	else
+		echo "UNKNOWN."
+	fi
+	echo ""
+}
+
 function echo_validate_return_status {
 	local output="$1"
 	local rc=$(echo "$output" | head -n 1)
@@ -175,6 +199,9 @@ function echo_validate_return_status {
 	$VALIDATE_TMP_UPDATE_DL) 	
 		echo "info: Temporary side will be updated with a downlevel"
 		echo "image";;
+	$VALIDATE_OUT_OF_WRNTY)
+		echo_entitlement_expiry_date
+		error $E_WRNTY "Please contact your service support structure.";;
 	*) 	error $E_RTAS "RTAS: Unknown validate-flash-image Return Status"
 	esac
 
