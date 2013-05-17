@@ -27,6 +27,7 @@ E_PROC_FS=6	# Proc file either doesn't exist, or behaves unexpectedly
 E_MODULE=7	# Error loading module
 E_RTAS=8	# RTAS call failed
 E_USER=9	# User aborted operation
+E_OVERWRITE=10	# Auto overwrite permanent side image
 
 # Script Constants
 PATH=/sbin:/usr/sbin:/bin:/usr/bin:$PATH
@@ -79,12 +80,14 @@ function error {
 }
 
 function usage {
-	echo "USAGE:  update_flash [-s] {-r|-c| [-v] -f <filename>}" >&2
+	echo "USAGE:  update_flash [-s] {-r|-c| [-v|-n] -f <filename>}" >&2
 	echo "		-s		Determine if partition has access to" >&2
 	echo "				perform flash image management." >&2
 	echo "		-r 		Reject temporary image." >&2
 	echo "		-c		Commit temporary image." >&2
 	echo "		-v		Validate ONLY with given image file." >&2
+	echo "		-n		Do not overwrite Permanent side" >&2
+	echo "				image automatically." >&2
 	echo "		-f <filename>	Update with given image file.  If possible," >&2
 	echo "				the image is automatically validated prior" >&2 
 	echo "				to update." >&2
@@ -177,6 +180,15 @@ function echo_validate_return_status {
 
 	echo
 	echo_validate_rtas_buf "$rtas_buf"
+
+	# Do not commit T side image to P side
+	if [ $no_overwrite_opt -eq 1 ]; then
+		if [ $rc -eq $VALIDATE_TMP_COMMIT_DL ] || [ $rc -eq $VALIDATE_TMP_COMMIT ]; then
+			echo ""
+			echo "update_flash: Run without -n option to flash new image"
+			exit $E_OVERWRITE
+		fi
+	fi
 }
 
 function validate_flash {
@@ -345,6 +357,7 @@ check_opt=0
 commit_opt=0
 reject_opt=0
 validate_opt=0
+no_overwrite_opt=0
 file_opt=0
 
 [ -d /proc/device-tree ] || error $E_PROC_FS "iSeries or /proc not mounted"
@@ -360,6 +373,7 @@ while [ -n "$1" ]; do
 	  -c) commit_opt=1;;
 	  -r) reject_opt=1;;
 	  -v) validate_opt=1;;
+	  -n) no_overwrite_opt=1;;
 	  -f) file_opt=1; file="$1"; shift;;
 	  *) error $E_USAGE "unknown option $arg"
 	esac
@@ -368,6 +382,8 @@ done
 if [ -n "$file" ]; then
 	if [ $commit_opt -eq 1 ] || [ $reject_opt -eq 1 ] ||
 						[ $check_opt -eq 1 ]; then
+		usage
+	elif [ $validate_opt -eq 1 ] && [ $no_overwrite_opt -eq 1 ]; then
 		usage
 	elif [ $validate_opt -eq 1 ]; then
 		validate_flash_from_file $file
