@@ -24,6 +24,7 @@ struct drconf_mem {
 
 #define LMB_NORMAL_SORT		0
 #define LMB_REVERSE_SORT	1
+#define LMB_RANDOM_SORT		2
 
 struct lmb_list_head *get_lmbs(unsigned int);
 void free_lmbs(struct lmb_list_head *);

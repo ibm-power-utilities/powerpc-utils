@@ -332,6 +332,47 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
 }
 
 /**
+ * shuffle_lmbs
+ * @brief Randomly shuffle list of lmbs
+ *
+ * @param list pointer to lmb list to be randomly shuffled
+ * @param length number of lmbs in the list
+ *
+ * @return list of shuffled lmbs
+ */
+struct dr_node *
+shuffle_lmbs(struct dr_node *lmb_list, int length)
+{
+	struct dr_node **shuffled_lmbs, *lmb;
+	int i, j;
+	
+	srand(time(NULL));
+
+	shuffled_lmbs = zalloc(sizeof(*shuffled_lmbs) * length);
+
+	for (i = 0, lmb = lmb_list; lmb; i++, lmb = lmb->next) {
+		j = rand() % (i + 1);
+
+		if (j == i) {
+			shuffled_lmbs[i] = lmb;
+		} else {
+			shuffled_lmbs[i] = shuffled_lmbs[j];
+			shuffled_lmbs[j] = lmb;
+		}
+	}
+
+	for (i = 0; i < (length - 1); i++)
+		shuffled_lmbs[i]->next = shuffled_lmbs[i + 1];
+
+	shuffled_lmbs[length - 1]->next = NULL;
+
+	lmb = shuffled_lmbs[0];
+	free(shuffled_lmbs);
+
+	return lmb;
+}
+
+/**
  * get_lmbs
  * @brief Build a list of all possible lmbs for the system
  *
@@ -390,6 +431,9 @@ get_lmbs(unsigned int sort)
 		}
 		found++;
 	}
+
+	if (sort == LMB_RANDOM_SORT)
+		lmb_list->lmbs = shuffle_lmbs(lmb_list->lmbs, found);
 
 	say(INFO, "Maximum of %d LMBs\n", found);
 
@@ -1037,7 +1081,7 @@ mem_remove(struct options *opts)
 	unsigned int requested = opts->quantity;
 	int rc = 0;
 
-	lmb_list = get_lmbs(LMB_REVERSE_SORT);
+	lmb_list = get_lmbs(LMB_RANDOM_SORT);
 	if (lmb_list == NULL) {
 		say(ERROR, "Could not gather LMB (logical memory block "
 				"information.\n");
