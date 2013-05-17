@@ -127,10 +127,10 @@ function query_support {
 
 function echo_validate_rtas_buf {
 	local output="$1"
-	local cur_t_name=$(echo "$output" | head -n 1 | awk ' { print $2 } ')
-	local cur_p_name=$(echo "$output" | head -n 1 | awk ' { print $3 } ')
-	local new_t_name=$(echo "$output" | tail -n 1 | awk ' { print $2 } ')
-	local new_p_name=$(echo "$output" | tail -n 1 | awk ' { print $3 } ')
+	local cur_t_name=$(echo "$output" | grep "^MI" | head -n 1 | awk ' { print $2 } ')
+	local cur_p_name=$(echo "$output" | grep "^MI" | head -n 1 | awk ' { print $3 } ')
+	local new_t_name=$(echo "$output" | grep "^MI" | tail -n 1 | awk ' { print $2 } ')
+	local new_p_name=$(echo "$output" | grep "^MI" | tail -n 1 | awk ' { print $3 } ')
 
 	echo "Projected Flash Update Results:"
 	echo "Current T Image: $cur_t_name"
@@ -142,7 +142,7 @@ function echo_validate_rtas_buf {
 function echo_validate_return_status {
 	local output="$1"
 	local rc=$(echo "$output" | head -n 1)
-	local rtas_buf=$(echo "$output" | tail -n 2)
+	local rtas_buf=$(echo "$output" | tail -n +2)
 
 	[ $# -eq 1 ] || error $E_USAGE "echo_validate_return_status(): usage" 
 
