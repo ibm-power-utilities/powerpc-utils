@@ -67,6 +67,16 @@ int say(enum say_level lvl, char *fmt, ...)
 	return len;
 }
 
+void report_unknown_error(char *file, int line) {
+	say(ERROR, "Unexpected error (%s:%d).  Contact support and provide "
+			"debug log from %s.\n", file, line, DR_LOG_PATH);
+}
+
+void report_alloc_error() {
+	say(ERROR, "Program could not allocate memory, please "
+			"retry operation.\n");
+}
+
 /**
  * dr_init
  * @brief Initialization routine for drmgr and lsslot
@@ -548,7 +558,7 @@ update_property(const char *buf, size_t len)
 {
 	int fd, rc;
 
-	say(DEBUG, "Updating of property\n");
+	say(DEBUG, "Updating OF property\n");
 
 	fd = open(OFDTPATH, O_WRONLY);
 	if (fd <= 0) {

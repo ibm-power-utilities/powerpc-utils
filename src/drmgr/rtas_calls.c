@@ -437,7 +437,7 @@ acquire_drc(uint32_t drc_index)
 		return -1;
 	}
 
-	say(DEBUG, "setting allocation state to alloc usable\n");
+	say(DEBUG, "Setting allocation state to 'alloc usable'\n");
 	rc = rtas_set_indicator(ALLOCATION_STATE, drc_index, ALLOC_USABLE);
 	if (rc) {
 		say(ERROR, "Allocation failed for drc %x with %d\n%s\n",
@@ -445,7 +445,7 @@ acquire_drc(uint32_t drc_index)
 		return -1;
 	}
 
-	say(DEBUG, "setting indicator state to unisolate\n");
+	say(DEBUG, "Setting indicator state to 'unisolate'\n");
 	rc = rtas_set_indicator(ISOLATION_STATE, drc_index, UNISOLATE);
 	if (rc) {
 		int ret;
@@ -477,7 +477,7 @@ release_drc(int drc_index, uint32_t dev_type)
 		say(DEBUG, "drc_index %x sensor-state: %d\n%s\n", drc_index, rc,
 		    entity_sense_error(rc));
 
-	say(DEBUG, "setting isolation state to isolate\n");
+	say(DEBUG, "Setting isolation state to 'isolate'\n");
 	rc = rtas_set_indicator(ISOLATION_STATE, drc_index, ISOLATE);
 	if (rc) {
 		if (dev_type == PHB_DEV) {
@@ -501,7 +501,7 @@ release_drc(int drc_index, uint32_t dev_type)
 		}
 	}
 
-	say(DEBUG, "setting allocation state to alloc unusable\n");
+	say(DEBUG, "Setting allocation state to 'alloc unusable'\n");
 	rc = rtas_set_indicator(ALLOCATION_STATE, drc_index, ALLOC_UNUSABLE);
 	if (rc) {
 		say(ERROR, "Unable to un-allocate drc %x from the partition "
