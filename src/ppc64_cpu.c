@@ -152,7 +152,8 @@ int cpu_online(int thread)
 	return 1;
 }
 
-int get_system_attribute(char *attribute, const char *fmt, int *value)
+int get_system_attribute(char *attribute, const char *fmt, int *value,
+			 int *inconsistent)
 {
 	char path[SYSFS_PATH_MAX];
 	int i, rc;
@@ -168,8 +169,10 @@ int get_system_attribute(char *attribute, const char *fmt, int *value)
 
 		if (system_attribute == -1)
 			system_attribute = cpu_attribute;
-		else if (system_attribute != cpu_attribute)
+		else if (system_attribute != cpu_attribute) {
+			*inconsistent = 1;
 			return -1;
+		}
 	}
 
 	*value = system_attribute;
@@ -228,7 +231,7 @@ int set_dscr(int state)
 	return rc;
 }
 
-int get_dscr(int *value)
+int get_dscr(int *value, int *inconsistent)
 {
 	int rc;
 
@@ -245,7 +248,7 @@ int get_dscr(int *value)
 			return -2;
 		}
 
-		rc = get_system_attribute("dscr", "%x", value);
+		rc = get_system_attribute("dscr", "%x", value, inconsistent);
 	}
 
 	return rc;
@@ -261,14 +264,15 @@ int set_smt_snooze_delay(int delay)
 	return set_system_attribute("smt_snooze_delay", "%d", delay);
 }
 
-int get_smt_snooze_delay(int *delay)
+int get_smt_snooze_delay(int *delay, int *inconsistent)
 {
 	if (!sysattr_is_readable("smt_snooze_delay")) {
 		perror("Cannot retrieve smt snooze delay");
 		return -2;
 	}
 
-	return get_system_attribute("smt_snooze_delay", "%d", delay);
+	return get_system_attribute("smt_snooze_delay", "%d", delay,
+				    inconsistent);
 }
 
 int online_thread(const char *path)
@@ -400,13 +404,14 @@ int set_smt_state(int smt_state)
 {
 	int i, rc;
 	int ssd, update_ssd = 1;
+	int inconsistent = 0;
 
 	if (!sysattr_is_writeable("online")) {
 		perror("Cannot set smt state");
 		return -1;
 	}
 
-	rc = get_smt_snooze_delay(&ssd);
+	rc = get_smt_snooze_delay(&ssd, &inconsistent);
 	if (rc)
 		update_ssd = 0;
 
@@ -542,19 +547,16 @@ int do_dscr(char *state, pid_t pid)
 		return do_dscr_pid(dscr_state, pid);
 
 	if (!state) {
-		int dscr;
+		int dscr, inconsistent = 0;
 
-		rc = get_dscr(&dscr);
-		switch (rc) {
-		    case -1:
-			printf("Could not retrieve DSCR\n");
-			break;
-		    case 0:
-			if (dscr == -1)
+		rc = get_dscr(&dscr, &inconsistent);
+		if (rc) {
+			if (inconsistent)
 				printf("Inconsistent DSCR\n");
 			else
-				printf("DSCR is %d\n", dscr);
-			break;
+				printf("Could not retrieve DSCR\n");
+		} else {
+			printf("DSCR is %d\n", dscr);
 		}
 	} else
 		rc = set_dscr(dscr_state);
@@ -572,15 +574,15 @@ int do_smt_snooze_delay(char *state)
 	}
 
 	if (!state) {
-		int ssd;
-		rc = get_smt_snooze_delay(&ssd);
+		int ssd, inconsistent = 0;
+		rc = get_smt_snooze_delay(&ssd, &inconsistent);
 		if (rc) {
-			printf("Could not retrieve smt_snooze_delay\n");
-		} else {
-			if (ssd == -1)
+			if (inconsistent)
 				printf("Inconsistent smt_snooze_delay\n");
 			else
-				printf("smt_snooze_delay is %d\n", ssd);
+				printf("Could not retrieve smt_snooze_delay\n");
+		} else {
+			printf("smt_snooze_delay is %d\n", ssd);
 		}
 	} else {
 		int delay;
