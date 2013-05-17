@@ -61,7 +61,7 @@ int say(enum say_level lvl, char *fmt, ...)
 	if (log_fd)
 		rc = write(log_fd, buf, len);
 
-	if (lvl >= output_level)
+	if (lvl <= output_level)
 		fprintf(stderr, "%s", buf);
 
 	return len;
