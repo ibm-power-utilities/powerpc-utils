@@ -1270,13 +1270,18 @@ int ams_balloon_active(void)
 	char *ams_enabled = "/sys/devices/system/cmm/cmm0/loaned_kb";
 	char *cmm_param_path = "/sys/module/cmm/parameters";
 	struct stat sbuf;
-	int is_inactive = 1;
+	static int is_inactive = 1;
+	static int ams_checked = 0;
 
-	if (!stat(ams_enabled, &sbuf) && !stat(cmm_param_path, &sbuf)) {
-		get_int_attribute(cmm_param_path, "disable",
-				  &is_inactive, sizeof(is_inactive));
+	if (!ams_checked) {
+		if (!stat(ams_enabled, &sbuf) && !stat(cmm_param_path, &sbuf))
+			get_int_attribute(cmm_param_path, "disable",
+					  &is_inactive, sizeof(is_inactive));
+
+		say(DEBUG, "AMS ballooning %s active\n",
+		    is_inactive?"is not":"is");
+		ams_checked = 1;
 	}
 
-	say(DEBUG, "AMS ballooning %s active\n", is_inactive?"is not":"is");
 	return !is_inactive;
 }
