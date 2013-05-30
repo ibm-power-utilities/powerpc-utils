@@ -143,7 +143,45 @@ parse_eth_info()
 	echo "    Gateway: $item"
     fi
 } 
- 
+
+#
+# get_logical_device_name
+# Translate the provided boot device to its logical device name
+#
+# $1 device name to convert
+#
+get_logical_device_name()
+{
+    local devname=$1
+    local logical_name
+
+    logical_name=`$OFPATHNAME -l $devname 2>/dev/null`
+    if [[ $? -ne 0 ]]; then
+	echo ""
+    else
+	echo $logical_name
+    fi
+}
+
+#
+# get_of_device_name
+# Translate the provided boot device to its OF device name
+#
+# $1 device name to convert
+#
+get_of_device_name()
+{
+    local devname=$1
+    local of_name
+
+    of_name=`$OFPATHNAME $devname 2>/dev/null`
+    if [[ $? -ne 0 ]]; then
+	echo ""
+    else
+	echo $of_name
+    fi
+}
+
 #
 # show_bootlist
 # Retrieve a bootlist from nvram and print its contents
@@ -157,7 +195,7 @@ show_bootlist()
 
     for i in `$NVRAM --print-config=${devlist} | sed 's/ /\n/g'`; do
 	if [[ $TRANSLATE_NAMES = "yes" ]]; then
-	    name=`$OFPATHNAME -l $i`
+	    name=`get_logical_device_name $i`
 	    if [[ -z $name ]]; then
 	        echo "Could not translate $i to logical device name"
 	    else
@@ -381,26 +419,30 @@ fi
 if [[ ${#LOGICAL_NAMES[*]} -ne 0 ]]; then
     ctr=0
     while [[ $ctr -lt ${#LOGICAL_NAMES[*]} ]]; do
-        OF_DEVPATH[$ctr]=`$OFPATHNAME ${LOGICAL_NAMES[$ctr]}`
-        if [[ $? -ne 0 ]]; then
-	    # Assume the name is an OF pathname
-	    OF_DEVPATH[$ctr]=${LOGICAL_NAMES[$ctr]}
+        OF_DEVPATH[$ctr]=`get_logical_device_name ${LOGICAL_NAMES[$ctr]}`
+        if [[ -z ${OF_DEVPATH[$ctr]} ]]; then
+	    # See if this is an OF pathname
+	    OF_DEVPATH[$ctr]=`get_of_device_name ${LOGICAL_NAMES[$ctr]}`
         fi
 
-	# See if this is an ethernet adapter.  If so, the next entries
-	# may be parameters for the bootlist entry.
-	ethdev=`$OFPATHNAME -l ${OF_DEVPATH[$ctr]}`
-	ethdev=${ethdev%%[0-9]*}
-	if [[ $ethdev = "eth" ]]; then
-	    update_eth_dev
+        if [[ -z ${OF_DEVPATH[$ctr]} ]]; then
+	    echo "Device ${LOGICAL_NAMES[$ctr]} does not appear to be valid."
+	else
+	    # See if this is an ethernet adapter.  If so, the next entries
+	    # may be parameters for the bootlist entry.
+	    ethdev=`get_logical_device_name ${OF_DEVPATH[$ctr]}`
+	    ethdev=${ethdev%%[0-9]*}
+	    if [[ $ethdev = "eth" ]]; then
+		update_eth_dev
+	    fi
+
+            # bootlist entries cannot exceed more than 255 chars
+            if [[ ${#OF_DEVPATH[$ctr]} -gt 255 ]]; then
+                echo "Bootlist entries cannot exceed 255 characters"
+                echo "${OF_DEVPATH[$ctr]}"
+                exit -1
+            fi
 	fi
-
-        # bootlist entries cannot exceed more than 255 chars
-        if [[ ${#OF_DEVPATH[$ctr]} -gt 255 ]]; then
-            echo "Bootlist entries cannot exceed 255 characters"
-            echo "${OF_DEVPATH[$ctr]}"
-            exit -1
-        fi
 
         ctr=$[$ctr + 1]
     done
