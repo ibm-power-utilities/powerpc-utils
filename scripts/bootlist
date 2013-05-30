@@ -233,15 +233,15 @@ dm_to_part()
         local sddev=$3
         local dmmapper
 
-        partname=$(cat "/sys/block/$dmp/dm/name" | sed 's/[0-9]*$//g')
-        diskname=$(cat "/sys/block/$dmdev/dm/name")
+        partname=$(cat "/sys/block/$dmp/dm/name" 2>/dev/null | sed 's/[0-9]*$//g')
+        diskname=$(cat "/sys/block/$dmdev/dm/name" 2>/dev/null)
         delim=${partname##$diskname}
-        dmpmajmin=$(cat "/sys/block/$dmp/dev")
-        dmdevmajmin=$(cat "/sys/block/$dmdev/dev")
+        dmpmajmin=$(cat "/sys/block/$dmp/dev" 2>/dev/null)
+        dmdevmajmin=$(cat "/sys/block/$dmdev/dev" 2>/dev/null)
 
         for dmapper in /dev/mapper/* ; do
-                dmajor=$(stat -L --format="%t" $dmapper)
-                dminor=$(stat -L --format="%T" $dmapper)
+                dmajor=$(stat -L --format="%t" $dmapper 2>/dev/null)
+                dminor=$(stat -L --format="%T" $dmapper 2>/dev/null)
                 dmajmin=$(printf "%d:%d" 0x$dmajor 0x$dminor)
                 if [[ "$dmajmin" = "$dmdevmajmin" ]]; then
                         dmmapper=$dmapper;
@@ -252,13 +252,13 @@ dm_to_part()
 
         kpartx -p $delim -l $dmmapper | while read kp ; do
                 kpname=${kp%% *}
-                tmajor=$(stat -L --format="%t" /dev/mapper/$kpname)
-                tminor=$(stat -L --format="%T" /dev/mapper/$kpname)
+                tmajor=$(stat -L --format="%t" /dev/mapper/$kpname 2>/dev/null)
+                tminor=$(stat -L --format="%T" /dev/mapper/$kpname 2>/dev/null)
                 tmajmin=$(printf "%d:%d" 0x$tmajor 0x$tminor)
                 if [[ "$tmajmin" = "$dmpmajmin" ]]; then
                         partstart=${kp##* }
                         for part in `ls -1d /sys/block/$sddev/$sddev*`; do
-                                pstart=$(cat $part/start)
+                                pstart=$(cat $part/start 2>/dev/null)
                                 if [[ "$pstart" -eq "$partstart" ]] ; then
                                         echo "${part##*/}"
                                         return
@@ -284,67 +284,73 @@ add_logical()
         return
     fi
 
-    major=$(stat -L --format="%t" $DEVNAME)
-    minor=$(stat -L --format="%T" $DEVNAME)
+    major=$(stat -L --format="%t" $DEVNAME 2>/dev/null)
+    minor=$(stat -L --format="%T" $DEVNAME 2>/dev/null)
     majmin=$(printf "%d:%d" 0x$major 0x$minor)
 
     # Look for a matching multipath device
 
     for dm in /sys/block/dm*; do
         dmdev=${dm##*/}
-        devno=$(cat $dm/dev)
+        devno=$(cat $dm/dev 2>/dev/null)
         devmaj=${devno%:*}
         devmin=${devno#*:}
 
         if [[ ! -d $dm/slaves ]] ; then
-                # Old kernel for which there is no good way to reliably map a kpartx device with its parent
-                break;
+            # Old kernel for which there is no good way to reliably map
+	    # a kpartx device with its parent
+            break;
         fi
 
         if [[ ! -d $dm/dm ]] ; then
-                # Old kernel for which there is no good way to reliably map a kpartx device with its parent
-                break;
+            # Old kernel for which there is no good way to reliably map
+	    # a kpartx device with its parent
+            break;
         fi
 
         if [[ "$devno" = "$majmin" ]]; then
-                for slave in $dm/slaves/*; do
-                        slavedev=${slave##*/}
-                        if [[ "$slavedev" == dm-* ]] ; then
-                                for slave2 in $slave/slaves/*; do
-                                        slavedev2=${slave2##*/}
-                                        if [[ "$slavedev2" == dm-* ]] ; then
-                                                # dmdev is an LV on physical multipath partition
-                                                for slave3 in $slave2/slaves/*; do
-                                                        slavedev3=${slave3##*/}
-                                                        partdev=$(dm_to_part $slavedev $slavedev2 $slavedev3)
-                                                        if [[ ! -z "$partdev" ]] ; then
-                                                                LOGICAL_NAMES[$ctr]=$partdev
-                                                                ctr=$[$ctr + 1]
-                                                        fi
-                                                done
-                                        else # /sys/block/dm-2/slave/dm-0/slaves/sdb
-                                                kp=$(kpartx -l /dev/$slavedev)
+            for slave in $dm/slaves/*; do
+                slavedev=${slave##*/}
+                if [[ "$slavedev" == dm-* ]] ; then
+                    for slave2 in $slave/slaves/*; do
+                        slavedev2=${slave2##*/}
+                        if [[ "$slavedev2" == dm-* ]] ; then
+                            # dmdev is an LV on physical multipath partition
+                            for slave3 in $slave2/slaves/*; do
+                                slavedev3=${slave3##*/}
+                                partdev=$(dm_to_part $slavedev $slavedev2 $slavedev3)
+                                if [[ ! -z "$partdev" ]] ; then
+                                    LOGICAL_NAMES[$ctr]=$partdev
+                                    ctr=$[$ctr + 1]
+                                fi
+                             done
+                        else
+			     # /sys/block/dm-2/slave/dm-0/slaves/sdb
+                             kp=$(kpartx -l /dev/$slavedev)
 
-                                                if [[ -z "$kp" ]] ; then
-                                                        # dmdev is an LV on physical multipath disk LV->DMDEV->DEV
-                                                        LOGICAL_NAMES[$ctr]=$slavedev2
-                                                        ctr=$[$ctr + 1]
-                                                else
-                                                        # dmdev is multipath partition of slave DMP->DMDEV->DEV
-
-                                                        partdev=$(dm_to_part $dmdev $slavedev $slavedev2)
-                                                        if [[ ! -z "$partdev" ]] ; then
-                                                                LOGICAL_NAMES[$ctr]=$partdev
-                                                                ctr=$[$ctr + 1]
-                                                        fi
-                                                fi
-                                        fi
-                                done
-                        else # DMDEV is a multipath device on a physical device or a LV on a disk partition
-                                LOGICAL_NAMES[$ctr]=$slavedev
-                                ctr=$[$ctr + 1]
+                             if [[ -z "$kp" ]] ; then
+                                 # dmdev is an LV on physical multipath
+				 # disk LV->DMDEV->DEV
+                                 LOGICAL_NAMES[$ctr]=$slavedev2
+                                 ctr=$[$ctr + 1]
+                             else
+                                 # dmdev is multipath partition of slave
+				 # DMP->DMDEV->DEV
+                                 partdev=$(dm_to_part $dmdev $slavedev $slavedev2)
+                                 if [[ ! -z "$partdev" ]] ; then
+                                     LOGICAL_NAMES[$ctr]=$partdev
+                                     ctr=$[$ctr + 1]
+                                 fi
+                             fi
                         fi
-                done
+                    done
+                else
+		    # DMDEV is a multipath device on a physical device or
+		    # a LV on a disk partition
+                    LOGICAL_NAMES[$ctr]=$slavedev
+                    ctr=$[$ctr + 1]
+                fi
+            done
         fi
     done
 
@@ -370,7 +376,7 @@ while [[ -n $1 ]]; do
     elif [[ $1 = "-m" ]]; then
         shift
         if [[ ! -n $1 ]]; then
-            echo "did not specify \"normal\" or \"service\" mode with -m"
+            echo "did not specify \"normal\" or \"service\" mode with -m" >&2
             usage
             exit -1
         fi
@@ -382,14 +388,14 @@ while [[ -n $1 ]]; do
         elif [[ $1 = "both" ]]; then
             BOOTLIST_MODE=$1
         else
-            echo "invalid mode specified with -m; must be \"normal\", \"service\" or \"both\""
+            echo "invalid mode specified with -m; must be \"normal\", \"service\" or \"both\"" >&2
             usage
             exit -1
         fi
     elif [[ $1 = "-f" ]]; then
         # get bootlist names from specified file
 	if [[ ! -a $2 ]]; then
-	    echo "file $2 does not exist"
+	    echo "file $2 does not exist" >&2
 	fi
 
         for i in `cat $2 2>/dev/null`; do
@@ -409,7 +415,7 @@ while [[ -n $1 ]]; do
 done
 
 if [[ ${BOOTLIST_MODE} = "unknown" ]]; then
-    echo "The boot mode must be specified with the -m option"
+    echo "The boot mode must be specified with the -m option" >&2
     usage
     exit -1
 fi
@@ -426,7 +432,7 @@ if [[ ${#LOGICAL_NAMES[*]} -ne 0 ]]; then
         fi
 
         if [[ -z ${OF_DEVPATH[$ctr]} ]]; then
-	    echo "Device ${LOGICAL_NAMES[$ctr]} does not appear to be valid."
+	    echo "Device ${LOGICAL_NAMES[$ctr]} does not appear to be valid." >&2
 	else
 	    # See if this is an ethernet adapter.  If so, the next entries
 	    # may be parameters for the bootlist entry.
@@ -438,8 +444,8 @@ if [[ ${#LOGICAL_NAMES[*]} -ne 0 ]]; then
 
             # bootlist entries cannot exceed more than 255 chars
             if [[ ${#OF_DEVPATH[$ctr]} -gt 255 ]]; then
-                echo "Bootlist entries cannot exceed 255 characters"
-                echo "${OF_DEVPATH[$ctr]}"
+                echo "Bootlist entries cannot exceed 255 characters" >&2
+                echo "${OF_DEVPATH[$ctr]}" >&2
                 exit -1
             fi
 	fi
@@ -449,7 +455,7 @@ if [[ ${#LOGICAL_NAMES[*]} -ne 0 ]]; then
 
     # We cannot have a bootlist with more than five entries
     if [[ ${#OF_DEVPATH[*]} -gt 5 ]]; then
-        echo "More than five entries cannot be specified in the bootlist"
+        echo "More than five entries cannot be specified in the bootlist" >&2
         exit -1
     fi
 
@@ -457,17 +463,17 @@ if [[ ${#LOGICAL_NAMES[*]} -ne 0 ]]; then
     if [[ $BOOTLIST_MODE = "both" ]]; then
         $NVRAM --update-config "boot-device=${OF_DEVPATH[*]}" -pcommon
         if [[ $? -ne 0 ]]; then
-            echo "Could not update service-mode bootlist"
+            echo "Could not update service-mode bootlist" >&2
         fi
 
         $NVRAM --update-config "diag-device=${OF_DEVPATH[*]}" -pcommon
         if [[ $? -ne 0 ]]; then
-            echo "Could not update normal-mode bootlist"
+            echo "Could not update normal-mode bootlist" >&2
         fi
     else
         $NVRAM --update-config "${BOOTLIST_MODE}=${OF_DEVPATH[*]}" -pcommon
         if [[ $? -ne 0 ]]; then
-            echo "Could not update bootlist!"
+            echo "Could not update bootlist!" >&2
         fi
     fi
 fi
