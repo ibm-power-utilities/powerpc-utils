@@ -307,7 +307,7 @@ update_properties(unsigned int phandle)
 				    pname);
 				sprintf(cmd,"remove_property %u %s",
 					phandle, pname);
-				do_update(cmd, strlen(cmd));
+				do_update(cmd, strlen(cmd) + 1);
 				break;
 
 			default:
