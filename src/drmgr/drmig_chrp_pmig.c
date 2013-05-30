@@ -246,6 +246,7 @@ update_properties(unsigned int phandle)
 	unsigned int i;
 	int more = 0;
 	char *name = find_phandle(phandle);
+	int initial = 1;
 
 	memset(wa, 0x00, 16);
 	wa[0] = phandle;
@@ -267,6 +268,28 @@ update_properties(unsigned int phandle)
 
 		op = wa+4;
 		nprop = *op++;
+
+		/* After the initial call to rtas_update_properties the first
+ 		 * property value descriptor in the buffer is the path of the
+ 		 * node being updated. Format is as follows:
+ 		 *
+ 		 * property name - 1 byte set to NULL 0x00
+ 		 * value descriptor - 4 bytes containing length of value string
+ 		 * value string - fully qualified path name of updated node
+ 		 * */
+		if (initial) {
+			say(DEBUG, "Null byte = %2.2x, ", *((char *)op));
+			op = (unsigned int *)(((char *)op) + 1);
+			vd = *op++;
+			say(DEBUG, "string length = %u, path = %s\n", vd, ((char *)op));
+			op = (unsigned int *)(((char *)op) + vd);
+			initial = 0;
+
+			/* The path we are skipping is inclusive in the
+ 			 * property count.
+ 			 */
+			nprop--;
+		}
 
 		for (i = 0; i < nprop; i++) {
 			pname = (char *)op;
