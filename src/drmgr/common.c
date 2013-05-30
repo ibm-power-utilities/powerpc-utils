@@ -58,6 +58,11 @@ int say(enum say_level lvl, char *fmt, ...)
 	len = vsnprintf(buf, 256, fmt, ap);
 	va_end(ap);
 
+	if (len >= 256) {
+		strcpy(&buf[243], "<truncated>\n");
+		len = 255;
+	}
+
 	if (log_fd)
 		rc = write(log_fd, buf, len);
 
