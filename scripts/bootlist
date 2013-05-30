@@ -15,14 +15,13 @@ NVRAM=/usr/sbin/nvram
 # 
 usage()
 {
-    echo "Usage: $0 -m {normal|service|both} [-o] [-r]"
-    echo "             [-f <file>] [<device_list>]"
+    echo "Usage: $0 -m {normal|service|both} -o | -r"
+    echo "       $0 -m {normal|service|both} [-o | -r] -f <file>"
+    echo "       $0 -m {normal|service|both} [-o | -r] <device_list>"
     echo "View and update the system boot lists"
     echo ""
-    echo "Required argument:"
     echo "  -m {normal|service|both}"
     echo "                   Specify the boot mode for boolist manipulation"
-    echo "Optional arguments:"
     echo "  -o               Display bootlist entries as logical device names"
     echo "  -r               Display bootlist entries as Open Firmware device"
     echo "                   path names"

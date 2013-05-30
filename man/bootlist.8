@@ -2,23 +2,27 @@
 .\" Copyright (C) 2004 International Business Machines
 .\" Nathan Fontenot <nfont@linux.vnet.ibm.com>
 .\"
-.TH BOOTLIST 8 "April 2004" Linux "Linux on Power Service Tools"
+.TH BOOTLIST 8 "May 2013" Linux "Linux on Power Service Tools"
 .SH NAME
 bootlist - update and view the bootlist
 .SH SYNOPSIS
 .nf
-\fB/usr/sbin/bootlist \-m normal\fR|\fBservice\fR|\fBboth \fR[\fB-o\fR|\fB-r\fR] <\fIdev_list\fR>
-\fB/usr/sbin/bootlist \-m normal\fR|\fBservice\fR|\fBboth \fR[\fB-o\fR|\fB-r\fR] \fB-f \fIfile
+\fB/usr/sbin/bootlist \-m \fR{\fBnormal\fR|\fBservice\fR|\fBboth\fR}\fB -o\fR|\fB-r\fR
+\fB/usr/sbin/bootlist \-m \fR{\fBnormal\fR|\fBservice\fR|\fBboth\fR} [\fB-o\fR|\fB-r\fR] \fB-f \fIfile
+\fB/usr/sbin/bootlist \-m \fR{\fBnormal\fR|\fBservice\fR|\fBboth\fR} [\fB-o\fR|\fB-r\fR] <\fIdev_list\fR>
 .fi
 .SH DESCRIPTION
 The bootlist command allows users to view and update the system bootlist
-stored in NVRAM for PowerPC-64 machines.  The bootlist entries can be
-specified as either logical device names or Open Firmware device path names.
-The bootlist will convert all names to Open Firmware device path names using
-\fIofpathname\fR when updating the bootlist.  Then uses the \fInvram\fR
-command to update NVRAM.  If a list of devices is specified, the boot list
-will be updated with the list provided.  If a list is not specified, the
-current boot list will be printed.
+stored in NVRAM for PowerPC-64 machines. To update the list of boot devices
+one or more boot devices can be specified directly or read from a file. This
+list of devices may be specified as either logical device names or the
+full Open Firmware device path. The bootlist command uses the \fIofpathanme\fR
+script to convert between logical device names and Open Firmware device
+paths, and the \fInvram\fR command to update the stored boot list.
+
+If a list of devices is not specified, or the -o or -r options are specified,
+the current boot list stored in nvram is displayed.
+
 .SH OPTIONS
 .TP
 \fB\-m normal\fR|\fBservice\fR|\fBboth
@@ -55,5 +59,3 @@ Written by Nathan Fontenot
 .SH "SEE ALSO"
 .BR ofpathname (8),
 .BR nvram (8)
-
-
