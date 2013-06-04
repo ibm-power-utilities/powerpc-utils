@@ -239,7 +239,6 @@ char *iflag_entries[] = {
 	"MemTotal",
 	"MinMem",
 	"MaxMem",
-	"DesVarCapWt",
 	"MinEntCap",
 	"partition_max_entitled_capacity",
 	"CapInc",
