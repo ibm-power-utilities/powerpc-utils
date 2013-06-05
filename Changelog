@@ -1,3 +1,335 @@
+powerpc-utils-1.2.17
+=====================================================================
+commit f54dc396cba599b1dc81892348b5db92743c9ff5
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Tue Jun 4 06:17:07 2013 -0500
+
+    The 'Desired Variable Capacity Weight' field in the output from lparstat -i
+    is reported twice. This patch removes one of them so that it is only reporte
+d
+    once.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit e23f326d6c811bd923af97b7ce985961a4e42040
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Wed May 29 21:15:20 2013 -0500
+
+    This patch does a lot of cleanup of the indentation in places to use 4
+    spaces instead of tabs.  Note, this is not really what is preferred but
+    what is used by this script, this change tries to make indentation
+    consistent in the script.
+    
+    This patch also makes sure that any called commands redirect their
+    error messages to /dev/null and makes sure that bootlist error messages
+    are written to stderr.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit afd0a23bc1fe423ef53c914b88dc9c831a292c24
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Wed May 29 21:12:41 2013 -0500
+
+    The bootlist command uses the ofpathname command to convert between
+    logical device names and Open Firmware device path names. The current
+    use of ofpathname does not correctly interpret the output and whether
+    the ofpathname call succeeds or not.
+    
+    This patch updates the calling of ofpathname for the entire bootlist
+    script to properly handle the return values and success.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 7d036c414f607c84eec890cf6343df2ce1f8dedc
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Wed May 29 21:09:04 2013 -0500
+
+    The man page and usages statement incorrectly specify the -m option
+    as the only required option. One can run the command and only specify
+    the -m option, but this results in the script doing nothing.
+    
+    This patch updates the usage statement and man page to better specify
+    the options that need to be specified when using the bootlist command.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit e5240088a6c15d9220f7c373b1bd735295a37377
+Author: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+Date:   Wed May 29 21:07:12 2013 -0500
+
+    The call to do_update on a remove property doesn't account for the null
+    terminator in the length and results in the last character of the
+    property name being truncated in the log.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 5a803bf7232929d09ecb86d8f3c32c74dfd41755
+Author: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+Date:   Wed May 29 21:06:02 2013 -0500
+
+    The say() logging function allocates a static 256 byte buffer for
+    messages. Messages passed to say() larger than 256 bytes result in a
+    truncated message followed by garbage from past the end of the buffer being
+    written to the log file. This is a result of using the return value of
+    vsnprintf as the length input to the write function. Despite only
+    writing no more than 256 bytes (including the trailing \0) to the buffer
+    the return value of vsnprintf is actually the total number of bytes (not
+    including the trailing \0) that would have been written had the buffer
+    been long enough.
+    
+    This patch checks for truncation, labels the end of the message
+    stating as much, and corrects the message length passed to write.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 89e87c36ac6c74223054819e5a77b57b3acfaef1
+Author: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+Date:   Wed May 29 21:04:44 2013 -0500
+
+    This patch corrects the parsing of the work area buffer returned by
+    ibm,update-properties. The first property descriptor is slightly
+    different from the rest of the properties returned and needs to be
+    handled accordingly.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 8d818e2bd9f67aa5fad67dbe92fc294fcf52c333
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Fri May 17 13:30:11 2013 -0500
+
+    Rewrote update_flash man page. Also included below details:
+      - Explaination of when temporary image is committed to permanent
+        side during firmware update.
+      - Information on -s and -n option.
+      - Added exit status.
+      - Added few examples.
+    
+    Requested-by: Paul Clarke <pc@us.ibm.com>
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit 32581ebc8413cc2064ca25a27833d91708c72616
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Fri May 17 13:29:27 2013 -0500
+
+    Add new return code to check firmware entitlement expiry.
+    Also display firmware GA date and system firmware entitlement
+    expiry date, when we try to flash expired image (image GA date
+    is beyond system entitlement date).
+    
+    Upper layer software wants common exit code across OS when
+    entitlement expires. So I have added new exit code (E_WRNTY).
+    
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+    Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+
+commit 7d2762892d3c28d3264dd86baf43d6ed0857f6e3
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Fri May 17 13:28:35 2013 -0500
+
+    If machine supports two image areas and machine is running from
+    temporary side of image, then attempt to update flash image
+    may automatically commit temporary side of image to Permanent
+    side.
+    
+    This patch introduces new flag to stop auto overwrite.
+    
+    Requested-by: Paul Clarke <pc@us.ibm.com>
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit 0f9409e361e507ccbaf81f72bab3b27862723060
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Fri May 17 13:27:46 2013 -0500
+
+    Fixing output display issue.
+    
+    Sample output without this patch :
+    ---------------------------------
+    Projected Flash Update Results:
+    Current T Image: 20131015
+    Current P Image:
+    New T Image:     20131001
+    New P Image:
+    Flash image ready...rebooting the system...
+    
+    Sample output with this patch :
+    ------------------------------
+    Projected Flash Update Results:
+    Current T Image: ZL780_211
+    Current P Image: ZL780_111
+    New T Image:     ZL780_211
+    New P Image:     ZL780_211
+    Flash image ready...rebooting the system...
+    
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit 0deb9660cffb5b313605abfeb6a2efee1a92effd
+Author: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+Date:   Fri May 17 13:22:37 2013 -0500
+
+    Timing out memory remove operations before fulfilling the request can
+    result in attempts to unsuccesfully remove the same LMBs on repeated
+    requests. This patch implements a simple shuffle algorithm to randomize
+    the LMB list.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit f247375409a7beece8271833f8a924f3075086fc
+Author: Robert Jennings <rcj@linux.vnet.ibm.com>
+Date:   Fri May 17 13:18:23 2013 -0500
+
+    This patch changes logic around quanity requested and # sections removable
+    for memory remove.  Previously, if you had requested X but some non-zero
+    quantify less than X were available it would bail.  Now it will attempt
+    to remove as many as are available.  For this case it is still considered
+    a partial success and a non-zero (error) return code is given so that
+    output is displayed on the management console.
+    
+    Messages for the memory remove code path are impoved and some message
+    logging levels are changed.  Messages now indicate situations that are
+    really bugs and should be looked at by support.  For those cases it also
+    points the user to /var/log/drmgr for the debug logs.
+    
+    Here are output examples for the different levels:
+    
+    ERROR level (1):
+    HSCL2932 The dynamic removal of memory resources failed: The operating syste
+m prevented all of the requested memory from being removed. Amount of memory rem
+oved: 0 MB of 256 MB. The detailed output of the OS operation follows:
+    Validating Memory DLPAR capability...yes.
+    Removed 0 of 1 requested lmb(s)
+    Unable to hotplug remove the remaining 1 lmb(s)
+    
+    INFO level (3):
+    HSCL2932 The dynamic removal of memory resources failed: The operating syste
+m prevented all of the requested memory from being removed. Amount of memory rem
+oved: 0 MB of 1024 MB. The detailed output of the OS operation follows:
+    Validating Memory DLPAR capability...yes.
+    Maximum of 24 LMBs
+    Found 16 LMBs currently allocated
+    Only 2 LMBs are currently candidates for removal.
+    Attempting to offline LMB15.
+    Could not offline LMB15 at this time.
+    Attempting to offline LMB4.
+    Could not offline LMB4 at this time.
+    Removed 0 of 4 requested lmb(s)
+    Unable to hotplug remove the remaining 4 lmb(s)
+    
+    DEBUG level (4):
+    HSCL2932 The dynamic removal of memory resources failed: The operating syste
+m prevented all of the requested memory from being removed. Amount of memory rem
+oved: 0 MB of 1024 MB. The detailed output of the OS operation follows:
+    
+    drmgr: -r -c mem -q 4 -w 5 -d 4
+    Validating Memory DLPAR capability...yes.
+    Maximum of 24 LMBs
+    Found 16 LMBs currently allocated
+    AMS ballooning is not active
+    Only 2 LMBs are currently candidates for removal.
+    Attempting removal of 2 lmbs
+    AMS ballooning is not active
+    Found available LMB, LMB15, drc index 0x8000000e
+    Attempting to offline LMB15.
+    14:47:56: Marking /sys/devices/system/memory/memory224 offline
+    14:47:56: Could not offline /sys/devices/system/memory/memory224.
+    Could not offline LMB15 at this time.
+    AMS ballooning is not active
+    Found available LMB, LMB4, drc index 0x80000003
+    Attempting to offline LMB4.
+    14:47:57: Marking /sys/devices/system/memory/memory48 offline
+    14:47:57: Could not offline /sys/devices/system/memory/memory48.
+    Could not offline LMB4 at this time.
+    AMS ballooning is not active
+    Removed 0 of 4 requested lmb(s)
+    Unable to hotplug remove the remaining 4 lmb(s)
+    Rotating logs...
+    
+    Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
+
+commit 43b90cbd9d5c196e5a18151fb0c9ddaf944bf604
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Fri May 17 13:16:42 2013 -0500
+
+    The output level should check for a level less than or equal to the desired
+    output level. The current check is wrong and we always get all of the output
+.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+    Acked-by: Robert Jennings <rcj@linux.vnet.ibm.com>
+
+commit 0fd2eff3a908566132e845d606204192aae3ba92
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Fri May 17 13:15:31 2013 -0500
+
+    The code to see if AMS ballooning is active has the side affect of outputtin
+g
+    a message every time it is checked, which is often. This patch updates drmgr
+    so that the check for AMS ballooning and its message are only done once the
+    first time it is checked. Any subsequent checks just return the previous
+    results.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 69639d89d4f31df6591da4649627a8374252f90a
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Fri May 17 13:13:51 2013 -0500
+
+    The ppc64_cpu command incorrectly reports the smt snooze delay value of
+    -1 as an error in that the value is inconsistent across the cpus on the
+    system. This patch updates the command to properly this value by
+    separating the tracking of inconsistent values from the return codes from
+    retrieving the value.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+    Reported-and-tested-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+
+commit 38b53c903b1be01f177049a27cb77acc44828aef
+Merge: 2857828 1d06f70
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Fri May 17 08:44:01 2013 -0500
+
+    Merge branch 'master' of ssh://nfont@powerpc-utils.git.sourceforge.net/gitro
+ot/powerpc-utils/powerpc-utils
+
+commit 2857828cc6bfdb612c5b249be86692e4ac03d35f
+Author: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Date:   Tue Apr 23 08:46:10 2013 -0500
+
+    kernel commit 404e32e4a8f68d2, supports lower minimum entitlement
+    for virtual processors such as 0.05 processing units. This patch
+    modifies get_percent_entry() to support these lower values.
+    
+    Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+
+commit 1d06f7091ada23c8efa49b9af5b35e3b5e6b3547
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Tue Apr 23 08:46:10 2013 -0500
+
+    kernel commit 404e32e4a8f68d2, supports lower minimum entitlement
+    for virtual processors such as 0.05 processing units. This patch
+    modifies get_percent_entry() to support these lower values.
+    
+    Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+
+commit 7ad241bf127e3e0787140f4712f7f18be8f6f11d
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Tue Apr 23 08:43:46 2013 -0500
+
+    The drmgr command has always taken the -w option to specify
+    how long to try an operation before timing out. Historically
+    this option was always ignored, and then at some point used to
+    time out when trying to acquire the drmgr lock.
+    
+    As we see larger systems coming around we need to start honoring
+    this option so we do not consume unneeded time going through every
+    possible LMB and CPU on the system.
+    
+    This patch saves the timeout specified on the command line (-w)
+    and then checks it while trying to take the drmgr lock and before
+    each CPU/LMB it tries to add/remove. If no timeout is specified
+    then drmgr will never timeout.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
 powerpc-utils-1.2.16
 =====================================================================
 commit 0c358d8d7391f99d02315786871735f73eba8af1
