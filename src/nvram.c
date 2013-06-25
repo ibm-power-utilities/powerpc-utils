@@ -57,6 +57,7 @@ static int verbose;
 static struct option long_options[] = {
     {"verbose", 		optional_argument, NULL, 'v'},
     {"print-config",		optional_argument, NULL, 'o'},
+    {"zero",			optional_argument, NULL, '0'},
     {"print-vpd", 		optional_argument, NULL, 'V'},
     {"print-all-vpd", 		optional_argument, NULL, 'W'},
     {"print-err-log", 		no_argument, 	   NULL, 'e'},
@@ -84,6 +85,8 @@ help(void)
     "  --print-config[=var]\n"
     "          print value of a config variable, or print all variables in\n"
     "          the specified (or all) partitions\n"
+    "  --zero | -0\n"
+    "          terminate config pairs with a NUL character\n"
     "  --update-config <var>=<value>\n"
     "          update the config variable in the specified partition; the -p\n"
     "          option must also be specified\n"
@@ -1181,12 +1184,17 @@ static int num_name_value_parts = 3;
  * @return 0 on success, !0 otherwise
  */
 static int 
-print_of_config(struct nvram *nvram, char *config_var, char *pname)
+print_of_config(struct nvram *nvram, char *config_var, char *pname,
+	int zero_terminator)
 {
     struct partition_header *phead;
-    char *data;
+    char *data, terminator;
     int  i, varlen;
     int  rc = -1;
+
+    terminator = '\n';
+    if (zero_terminator)
+	terminator = '\0';
 
     /* if config_var is NULL , print the data from the
      * partition specified by pname or all of the
@@ -1224,7 +1232,7 @@ print_of_config(struct nvram *nvram, char *config_var, char *pname)
 	    while (*data != '\0') {
 	    	if ((data[varlen] == '=') && 
 		    strncmp(config_var, data, varlen) == 0) {
-    	            printf("%s\n", data + varlen + 1);
+    	            printf("%s%c", data + varlen + 1, terminator);
 		    rc = 0;
 		}
 	    	data += strlen(data) + 1;
@@ -1242,7 +1250,7 @@ print_of_config(struct nvram *nvram, char *config_var, char *pname)
 	while (*data != '\0') {
 	    if ((data[varlen] == '=') && 
 		strncmp(config_var, data, varlen) == 0) {
-		printf("%s\n", data + varlen + 1);
+		printf("%s%c", data + varlen + 1, terminator);
 		rc = 0;
 	    }
 	    data += strlen(data) + 1;
@@ -1403,6 +1411,7 @@ main (int argc, char *argv[])
     int print_errlog = 0;
     int print_event_scan = 0;
     int	print_config_var = 0;
+    int zero_terminator = 0;
     char *dump_name = NULL;
     char *ascii_name = NULL;
     char *zip_name = NULL;
@@ -1421,7 +1430,7 @@ main (int argc, char *argv[])
 	
     for (;;) {
 	option_index = 0;
-	ret = getopt_long(argc, argv, "+p:Vv::", long_options, &option_index);
+	ret = getopt_long(argc, argv, "+p:Vv::0", long_options, &option_index);
 	if (ret == -1)
 		break;
 	switch (ret) {
@@ -1446,6 +1455,9 @@ main (int argc, char *argv[])
 	    case 'o':	/*print-config */
 		print_config_var = 1;
 		of_config_var = optarg;
+		break;
+	    case '0':
+		zero_terminator = 1;
 		break;
 	    case 'P':	/* partitions */
 		print_partitions = 1;
@@ -1574,7 +1586,8 @@ main (int argc, char *argv[])
 	    ret = -1; 
     }
     if (print_config_var)
-	if (print_of_config(&nvram, of_config_var, config_pname) != 0)
+	if (print_of_config(&nvram, of_config_var, config_pname,
+		    zero_terminator) != 0)
 	    ret = -1;
     if (print_vpd)
 	if (dump_vpd(&nvram, print_vpd == 2) != 0)
