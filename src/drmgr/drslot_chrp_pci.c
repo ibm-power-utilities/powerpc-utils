@@ -133,6 +133,36 @@ find_slot(char *drc_name, struct dr_node *all_nodes)
 	return node;
 }
 
+static int check_card_presence(struct options *opts, struct dr_node *node)
+{
+	int i, state, keep_working;
+
+	say(DEBUG, "Waiting for the card to appear...\n");
+	do {
+		keep_working = 0;
+
+		for (i = 0; i < 30; i++) {
+			state = dr_entity_sense(node->drc_index);
+			if (state != EMPTY)
+				return state;
+
+			sleep(1);
+		}
+
+		if (0 == opts->noprompt) {
+			printf("The card still does not appear to be present"
+			       "\npress Enter to continue to wait or enter "
+			       "'x' to exit.\n");
+
+			if ((getchar() == '\n'))
+				keep_working = 1;
+                }
+
+        } while (keep_working);
+
+	return state;
+}
+
 /**
  * card_present
  * @brief Determines if there is a card present in the specified slot
@@ -144,22 +174,23 @@ find_slot(char *drc_name, struct dr_node *all_nodes)
  * maybe isolate and try sensing again. If we hit fatal errors, call
  * error_exit to clean up and exit the command.
  *
+ * @param opts
  * @param slot pointer to slot we're checking
  * @param power_state state of power when we leave this routine
  * @param isolate_state state of isolation when we leave this routine
  * @returns EMPTY or PRESENT
  */
 static int
-card_present(struct dr_node *node, int *power_state, int *isolate_state)
+card_present(struct options *opts, struct dr_node *node, int *power_state,
+	     int *isolate_state)
 {
 	int state, rc;
 
 	*power_state = POWER_OFF;	/* initialize */
 	*isolate_state = ISOLATE;
 
-	state = dr_entity_sense(node->drc_index);
+	state = check_card_presence(opts, node);
 	if ((state == EMPTY) || (state == PRESENT))
-		/* if we get an answer, we're done */
 		return state;
 
 	else if (state == HW_ERROR) {
@@ -211,7 +242,7 @@ card_present(struct dr_node *node, int *power_state, int *isolate_state)
 		/* Now we have power on, and the unisolate is done
 		 * if it was needed. check for card again.
 		 */
-		state = dr_entity_sense(node->drc_index);
+		state = check_card_presence(opts, node);
 		if ((state == EMPTY) || (state == PRESENT))
 			return state;
 
@@ -289,11 +320,12 @@ do_identify(struct options *opts, struct dr_node *all_nodes)
  * If the OF tree cannot be updated, the slot is powered
  * off, isolated, and the LED is turned off.
  *
+ * @param opts
  * @param slot
  * @returns 0 on success, !0 on failure
  */
 static int
-add_work(struct dr_node *node)
+add_work(struct options *opts, struct dr_node *node)
 {
 	int pow_state;	/* Tells us if power was turned on when	 */
 	int iso_state;	/* Tells us isolation state after 	 */
@@ -305,7 +337,7 @@ add_work(struct dr_node *node)
 		return -1;
 
 	say(DEBUG, "is calling card_present\n");
-	rc = card_present(node, &pow_state, &iso_state);
+	rc = card_present(opts, node, &pow_state, &iso_state);
 	if (!rc) {
 		say(ERROR, "No PCI card was detected in the specified "
 		    "PCI slot.\n");
@@ -482,7 +514,7 @@ do_add(struct options *opts, struct dr_node *all_nodes)
 	/* Call the routine which determines
 	 * what the user wants and does it.
 	 */
-	rc = add_work(node);
+	rc = add_work(opts, node);
 	if (rc)
 		return rc;
 
@@ -722,7 +754,7 @@ do_replace(struct options *opts, struct dr_node *all_nodes)
 		}
 	}
 
-	rc = add_work(repl_node);
+	rc = add_work(opts, repl_node);
 	if (rc)
 		return rc;
 
