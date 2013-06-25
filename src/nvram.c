@@ -1339,9 +1339,11 @@ update_of_config_var(struct nvram *nvram, char *config_var, char *pname)
 	return -1;
     }
 
-    strncpy(new_part_offset, config_var, strlen(config_var));
-    new_part_offset += strlen(config_var);
-    *new_part_offset++ = '\0';
+    if (strlen(new_config_value)) {
+	strncpy(new_part_offset, config_var, strlen(config_var));
+	new_part_offset += strlen(config_var);
+	*new_part_offset++ = '\0';
+    }
 
     /* Find the end of the name/value pairs in the partition so we
      * can copy them over to the new partition.
