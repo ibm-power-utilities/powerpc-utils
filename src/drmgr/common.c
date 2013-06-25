@@ -16,6 +16,7 @@
 #include <dirent.h>
 #include <execinfo.h>
 #include <ctype.h>
+#include <sys/wait.h>
 #include "dr.h"
 #include "ofdt.h"
 
@@ -1152,7 +1153,18 @@ mem_dlpar_capable(void)
 static int
 check_slot_phb_dlpar(const char *type)
 {
+	struct stat sbuf;
 	int rc;
+
+	/* Before checking for dlpar capability, we need to ensure that
+	 * rpadlpar_io module is loaded or built into the kernel. This
+	 * does make the checking a bit redundant though.
+	 */
+	if ((stat(dlpar_add_slot, &sbuf)) || (stat(DLPAR_ADD_SLOT2, &sbuf))) {
+		rc = system("/sbin/modprobe rpadlpar_io");
+		if (WIFEXITED(rc) && WEXITSTATUS(rc))
+			say(ERROR, "rpadlpar_io module was not loaded\n");
+	}
 
 	/* For unknown reasons the add_slot and remove_slot sysfs files
 	 * used for dlpar operations started appearing with quotes around
