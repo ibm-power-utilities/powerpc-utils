@@ -34,10 +34,6 @@
 #define NVRAM_FILENAME1		"/dev/nvram"
 #define NVRAM_FILENAME2		"/dev/misc/nvram"
 
-#define DEVICE_TREE "/proc/device-tree"
-#define NVRAM_DEFAULT DEVICE_TREE "/nvram"
-#define NVRAM_ALIAS DEVICE_TREE "/aliases/nvram"
-
 #define DEFAULT_NVRAM_SZ	(1024 * 1024)
 
 /**

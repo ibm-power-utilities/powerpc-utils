@@ -192,199 +192,6 @@ warn_msg(const char *fmt, ...)
 }
 
 /**
- * resolve_of_node
- * @brief resolve an Open Firmware node name
- *
- * In a device tree node with a single child, "foo@0", all of the following
- * names refer to that child: "foo@0", "foo", "@0".
- *
- * @param parent fully-qualified path to the parent device node
- * @param node the (possibly abbreviated) name of the child node
- * @param nodelen length of the node parameter
- * @param resolved pointer to return resolved node name in
- * @return 0 if a suitable child can be found, and 'resolved' is a
- * dynamically-allocated string containing the resolved node name.
- * Otherwise, -1.
- */
-static int
-resolve_of_node(const char *parent, const char *node, int nodelen,
-	    char **resolved)
-{
-    static char nodebuf[1024]; /* XXX hardcoded length */
-    struct stat sbuf;
-    glob_t pglob;
-    int rc;
-
-    *resolved = NULL;
-
-    snprintf(nodebuf, sizeof(nodebuf), "%s/%.*s", parent,
-	    nodelen, node);
-    rc = stat(nodebuf, &sbuf);
-    if (rc != -1) {
-	*resolved = malloc(nodelen+2);
-	snprintf(*resolved, nodelen+2, "/%.*s", nodelen, node);
-	goto out;
-    }
-    if (errno != ENOENT)
-	goto out; /* report unusual errors */
-
-    if (node[0] == '@') {
-	/* it's a unit address; glob for *@unitaddr */
-	snprintf(nodebuf, sizeof(nodebuf), "%s/*%.*s*", parent, nodelen, node);
-	rc = glob(nodebuf, 0, NULL, &pglob);
-	if (rc == 0) {
-	    if (pglob.gl_pathc > 1) {
-		err_msg("Ambiguous node name \"%.*s\"\n", nodelen, node);
-		while (pglob.gl_pathc) {
-		    free(pglob.gl_pathv[pglob.gl_pathc]);
-		    pglob.gl_pathc--;
-		}
-		goto out;
-	    }
-
-	    /* skip the leading fully-qualified path */
-	    *resolved = strdup(pglob.gl_pathv[0] + strlen(parent));
-	    free(pglob.gl_pathv[0]);
-	    goto out;
-	}
-    } else {
-	/* must be a node name; glob for node@* */
-	snprintf(nodebuf, sizeof(nodebuf), "%s/%.*s@*", parent, nodelen, node);
-	rc = glob(nodebuf, 0, NULL, &pglob);
-	if (rc == 0) {
-	    if (pglob.gl_pathc > 1) {
-		err_msg("Ambiguous node name \"%.*s\"\n", nodelen, node);
-		while (pglob.gl_pathc) {
-		    free(pglob.gl_pathv[pglob.gl_pathc]);
-		    pglob.gl_pathc--;
-		}
-		goto out;
-	    }
-
-	    /* skip the leading fully-qualified path */
-	    *resolved = strdup(pglob.gl_pathv[0] + strlen(parent));
-	    free(pglob.gl_pathv[0]);
-	    goto out;
-	}
-    }
-
-out:
-    if (*resolved != NULL)
-	return 0;
-    return -1;
-}
-
-/**
- * open_of_path
- * @brief open an Open Firmware path under DEVICE_TREE
- *
- * @param ofpath the path to open, such as "/pci/@d/mac-io/nvram/#bytes"
- *
- * An Open Firmware path may contain "shortcut" node names that are not present
- * under /proc/device-tree. In the above example, we may need to open
- * "pci@80000000" instead of "pci".
- *
- * @return file descriptor to the opened node, or -1 on failure
- */
-static int
-open_of_path(const char *ofpath)
-{
-    static char resolved_ofpath[1024]; /* XXX hardcoded length */
-    const char *node;
-    int fd = -1;
-    int rc = 0;
-
-    strcpy(resolved_ofpath, DEVICE_TREE);
-
-    while (ofpath) {
-	int nodelen;
-	char *resolved_node;
-
-	node = ofpath + 1;
-	ofpath = strchr(node + 1, '/');
-
-	nodelen = ofpath - node;
-	if (ofpath == NULL)
-	    nodelen = strlen(node);
-
-	rc = resolve_of_node(resolved_ofpath, node, nodelen, &resolved_node);
-	if (rc < 0)
-	    break;
-
-	strcat(resolved_ofpath, resolved_node);
-	free(resolved_node);
-    }
-
-    if (rc >= 0)
-	fd = open(resolved_ofpath, O_RDONLY);
-
-    return fd;
-}
-
-/**
- * get_of_nvram_size
- * @brief Get the size of nvram from the device tree
- *
- * Retrieve the size of nvram as specified by the Open Firmware
- * device tree.  If this fails we return a default size of
- * 1024 * 1024.
- *
- * @return size of nvram
- */
-static int 
-get_of_nvram_size(void)
-{
-    char buf[1024] = NVRAM_DEFAULT "/#bytes";
-    int fd;
-    int size, len;
-
-    fd = open(buf, O_RDONLY);
-    if (fd == -1) {
-	/* Check the aliases directory */
-	struct stat sbuf;
-	int offset;
-
-        fd = open(NVRAM_ALIAS, O_RDONLY);
-	if (fd == -1) {
-	    err_msg("%s", "Could not determine nvram size from "
-		    NVRAM_ALIAS "\n");
-	    return DEFAULT_NVRAM_SZ;
-	}
-
-	if (fstat(fd, &sbuf) != 0) {
-	    err_msg("%s", "Could not determine nvram size from "
-		    NVRAM_ALIAS "\n");
-	    close(fd);
-	    return DEFAULT_NVRAM_SZ;
-	}
-
-	offset = read(fd, buf, sbuf.st_size - 1);
-	offset += sprintf(buf + offset, "%s", "/#bytes");
-	buf[offset] = '\0';
-
-	close(fd);
-	fd = open_of_path(buf);
-    }
-
-    if (fd == -1) {
-	warn_msg("cannot open nvram node \"%s\" in device tree: %s\n", buf,
-		strerror(errno));
-	close(fd);
-	return DEFAULT_NVRAM_SZ;
-    }
-    
-    len = read(fd, &size, sizeof(size));
-    close(fd);
-    
-    if (len != sizeof(size)) {
-	perror("got odd size for nvram node in device tree");
-	return DEFAULT_NVRAM_SZ;
-    }
-    
-    return size;
-}
-
-/**
  * nvram_read
  * @brief read in the contents of nvram
  *
@@ -1588,7 +1395,6 @@ main (int argc, char *argv[])
     struct nvram nvram;
     struct stat sbuf;
     int ret = 0; 
-    int	of_nvram_size;
     int	option_index;
     char *endp;
     char *of_config_var = NULL;
@@ -1720,11 +1526,22 @@ main (int argc, char *argv[])
 	goto err_exit;
     }
 
-    of_nvram_size = get_of_nvram_size();
-    nvram.nbytes = sbuf.st_size ? sbuf.st_size : of_nvram_size;
-    if (nvram.nbytes != of_nvram_size) {
-	warn_msg("specified nvram size %d does not match this machine %d!\n", 
-		 nvram.nbytes, of_nvram_size);
+    if (!nvram.nbytes) {
+	ret = lseek(nvram.fd, 0, SEEK_END);
+	if (ret < 0) {
+	    err_msg("cannot seek(END) %s: %s\n", nvram.filename,
+		    strerror(errno));
+	    goto err_exit;
+	}
+
+	nvram.nbytes = ret;
+
+	ret = lseek(nvram.fd, 0, SEEK_SET);
+	if (ret < 0) {
+	    err_msg("cannot seek(SET) %s: %s\n", nvram.filename,
+		    strerror(errno));
+	    goto err_exit;
+	}
     }
 
     nvram.data = malloc(nvram.nbytes);
