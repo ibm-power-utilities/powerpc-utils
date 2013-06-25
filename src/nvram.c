@@ -1284,7 +1284,7 @@ update_of_config_var(struct nvram *nvram, char *config_var, char *pname)
     char *new_part_offset, *new_part_end;
     char *tmp_offset;
     int	config_name_len;
-    int	len, part_size;
+    int	len, rc, part_size;
 
     new_config_value = strchr(config_var, '=');
     if (!new_config_value) {
@@ -1383,7 +1383,12 @@ update_of_config_var(struct nvram *nvram, char *config_var, char *pname)
     }
     
     /* write the partition out to nvram */
-    len = write(nvram->fd, new_part, part_size);
+    for (rc = 0, len = 0; len < part_size; len += rc) {
+	rc = write(nvram->fd, new_part + len, part_size - len);
+	if (rc <= 0)
+	    break;
+    }
+
     if (len != part_size) {
         err_msg("only wrote %d bytes of the \"%s\" partition back\n"
 		"\tto %s, expected to write %d bytes\n",
