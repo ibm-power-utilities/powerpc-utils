@@ -1284,7 +1284,7 @@ update_of_config_var(struct nvram *nvram, char *config_var, char *pname)
     char *new_part_offset, *new_part_end;
     char *tmp_offset;
     int	config_name_len;
-    int	len, part_size, found = 0;
+    int	len, part_size;
 
     new_config_value = strchr(config_var, '=');
     if (!new_config_value) {
@@ -1316,20 +1316,9 @@ update_of_config_var(struct nvram *nvram, char *config_var, char *pname)
     
     /* now find this config variable in the partition */
     while (*data_offset != '\0') {
-	if (strncmp(data_offset, config_var, config_name_len) == 0) {
-            found = 1;
+	if (strncmp(data_offset, config_var, config_name_len) == 0)
 	    break;
-        }
-	else
-	    data_offset += strlen(data_offset) + 1;
-    }
-
-    if (!found) {
-        err_msg("cannot update %s\n"
-		"\tThe config var does not exist in the \"%s\" partition\n", 
-		config_var, pname);
-	free(new_part);
-	return -1;
+	data_offset += strlen(data_offset) + 1;
     }
 
     /* Copy everything up to the config name we are modifying 
