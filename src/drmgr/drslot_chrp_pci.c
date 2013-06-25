@@ -595,6 +595,13 @@ remove_work(struct options *opts, struct dr_node *all_nodes)
 			say(ERROR, "Unconfig adapter failed.\n");
 			return NULL;
 		}
+	} else {
+		/* In certain cases such as a complete failure of the
+		 * adapter there may not have been the possibility to clean
+		 * up everything. Mark these adapaters for additional
+		 * processing later.
+		 */
+		node->post_replace_processing = 1;
 	}
 
 	/* Call subroutine to remove node(s) from
@@ -763,7 +770,23 @@ do_replace(struct options *opts, struct dr_node *all_nodes)
 
 	set_hp_adapter_status(PHP_CONFIG_ADAPTER, repl_node->drc_name);
 
-	return 0;
+	if (repl_node->post_replace_processing) {
+		int prompt_save = opts->noprompt;
+
+		say(DEBUG, "Doing post replacement processing...\n");
+		/* disable prompting for post-processing */
+		opts->noprompt = 1;
+
+		repl_node = remove_work(opts, repl_node);
+		rc = add_work(opts, repl_node);
+		if (!rc)
+			set_hp_adapter_status(PHP_CONFIG_ADAPTER,
+					      repl_node->drc_name);
+
+		opts->noprompt = prompt_save;
+	}
+
+	return rc;
 }
 
 int

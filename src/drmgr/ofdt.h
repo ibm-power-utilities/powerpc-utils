@@ -70,7 +70,8 @@ struct dr_node {
 	uint32_t	skip:1;
 	uint32_t	unusable:1;
 	uint32_t	is_removable:1;
-	uint32_t	reserved:28;
+	uint32_t	post_replace_processing:1;
+	uint32_t	reserved:27;
 
 	union {
 		struct mem_info {
