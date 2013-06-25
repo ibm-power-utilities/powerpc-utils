@@ -1278,12 +1278,20 @@ int
 update_of_config_var(struct nvram *nvram, char *config_var, char *pname)
 {
     struct partition_header *phead, *new_phead;
+    char *new_config_value;
     char *data_offset;
     char *new_part;
     char *new_part_offset, *new_part_end;
     char *tmp_offset;
     int	config_name_len;
     int	len, part_size, found = 0;
+
+    new_config_value = strchr(config_var, '=');
+    if (!new_config_value) {
+	err_msg("config variables must be in the format \"name=value\"");
+	return -1;
+    }
+    new_config_value++;
 
     phead = nvram_find_partition(nvram, 0, pname, NULL);
     if (phead == NULL) {
