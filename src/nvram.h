@@ -35,6 +35,7 @@
 #define NVRAM_FILENAME2		"/dev/misc/nvram"
 
 #define DEFAULT_NVRAM_SZ	(1024 * 1024)
+#define OOPS_PARTITION_SZ	4000
 
 /**
  * @def MAX_CPUS
@@ -57,6 +58,13 @@ struct partition_header {
 struct err_log_info {
     int			error_type;
     unsigned int	seq_num;
+};
+
+/* lnx,oops-log header */
+struct oops_log_info {
+   unsigned short	version;
+   unsigned short	report_length;
+   unsigned long long	timestamp;
 };
 
 /* Internal representation of NVRAM. */

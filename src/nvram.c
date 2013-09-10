@@ -1109,7 +1109,16 @@ unzip_partition(struct nvram *nvram, char *name)
     next = start + sizeof(*phead);	/* Skip partition header. */
     next += sizeof(struct err_log_info);	/* Skip sub-header. */
     zipped_length = *((unsigned short*) next);
-    next += sizeof(unsigned short);		/* Skip compressed length. */
+    next += sizeof(unsigned short);
+
+   /* New format oops header, zipped_length > OOPS_PARTITION_SZ
+    * signifies the version of new header. Find out new zipped length
+    * and from where the compressed data starts.
+    */
+   if (zipped_length > OOPS_PARTITION_SZ) {
+        zipped_length = *((unsigned short*) next);
+        next += sizeof(struct oops_log_info) - sizeof(unsigned short);
+   }
 
     if ((next-start) + zipped_length > phead->length * NVRAM_BLOCK_SIZE) {
     	err_msg("bogus size for compressed data in partition %s: %u\n", name,
