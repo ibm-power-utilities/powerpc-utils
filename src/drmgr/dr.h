@@ -77,7 +77,7 @@ enum say_level { ERROR = 1, WARN, INFO, DEBUG};
 int say(enum say_level, char *, ...);
 void report_unknown_error(char *, int);
 void report_alloc_error();
-void dr_init(void);
+int dr_init(void);
 void dr_fini(void);
 void set_timeout(int);
 int drmgr_timed_out(void);

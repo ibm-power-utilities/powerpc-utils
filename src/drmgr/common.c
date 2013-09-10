@@ -88,9 +88,19 @@ void report_alloc_error() {
  * @brief Initialization routine for drmgr and lsslot
  *
  */
-inline void
+inline int
 dr_init(void)
 {
+	int rc;
+
+	rc = dr_lock();
+	if (rc) {
+		say(ERROR, "Unable to obtain Dynamic Reconfiguration lock. "
+		    "Please try command again later.\n");
+		return -1;
+	}
+
+
 	log_fd = open(DR_LOG_PATH, O_RDWR | O_CREAT | O_APPEND,
 		      S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 	if (log_fd == -1) {
@@ -106,6 +116,14 @@ dr_init(void)
 		strftime(tbuf, 128, "%b %d %T %G", localtime(&t));
 		say(DEBUG, "\n########## %s ##########\n", tbuf);
 	}
+
+	/* Mask signals so we do not get interrupted */
+	if (sig_setup()) {
+		say(ERROR, "Could not mask signals to avoid interrupts\n");
+		return -1;
+	}
+
+	return 0;
 }
 
 /**
@@ -159,6 +177,8 @@ dr_fini(void)
 			return;
 		}
 	}
+
+	dr_unlock();
 }
 
 /**
@@ -726,7 +746,6 @@ sighandler(int signo)
 		backtrace_symbols_fd(callstack, sz, log_fd);
 	}
 
-	dr_unlock();
 	dr_fini();
 	exit(-1);
 }

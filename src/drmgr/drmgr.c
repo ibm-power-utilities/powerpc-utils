@@ -299,59 +299,57 @@ int drmgr(struct options *opts) {
 	return -1;
 }
 
+struct command *
+parse_and_validate_options(int argc, char *argv[], struct options *opts)
+{
+	struct command *command = NULL;
+	int rc;
+
+	parse_options(argc, argv, opts);
+
+	if (display_capabilities) {
+		print_dlpar_capabilities();
+		return NULL;
+	}
+
+	command = get_command(opts);
+
+	if (display_usage) {
+		command_usage(command);
+		return NULL;
+	}
+
+	/* Validate the options for the action we want to perform */
+	rc = command->validate_options(opts);
+	if (rc)
+		return NULL;
+
+	/* Validate this platform */
+	if (!valid_platform("chrp"))
+		return NULL;
+
+	return command;
+}
+
 int
 main(int argc, char *argv[])
 {
 	struct options opts;
 	char log_msg[DR_PATH_MAX];
 	struct command *command;
-	int i, offset;
-	int rc;
+	int i, rc, offset;
 
-	parse_options(argc, argv, &opts);
-
-	if (display_capabilities) {
-		print_dlpar_capabilities();
-		rc = 0;
-		goto exit;
-	}
-
-	command = get_command(&opts);
-
-	if (display_usage) {
-		command_usage(command);
-		rc = 0;
-		goto exit;
-	}
-
-	dr_init();
-
-	/* Validate the options for the action we want to perform */
-	rc = command->validate_options(&opts);
+	rc = dr_init();
 	if (rc)
-		goto exit;
+		return rc;
 
-	/* Validate this platform */
-	if (! valid_platform("chrp")) {
-		rc = 1;
-		goto exit;
-	}
-
-	/* Mask signals so we do not get interrupted */
-	if (sig_setup()) {
-		say(ERROR, "Could not mask signals to avoid interrupts\n");
-		rc = -1;
-		goto exit;
+	command = parse_and_validate_options(argc, argv, &opts);
+	if (!command) {
+		dr_fini();
+		return -1;
 	}
 
 	set_timeout(opts.timeout);
-	rc = dr_lock();
-	if (rc) {
-		say(ERROR, "Unable to obtain Dynamic Reconfiguration lock. "
-		    "Please try command again later.\n");
-		rc = -1;
-		goto exit;
-	}
 
 	/* Log this invocation to /var/log/messages and /var/log/drmgr */
 	offset = sprintf(log_msg, "drmgr: ");
@@ -365,8 +363,5 @@ main(int argc, char *argv[])
 	/* Now, using the actual command, call out to the proper handler */
 	rc = command->func(&opts);
 
-	dr_unlock();
-exit:
-	dr_fini();
 	return rc;
 }
