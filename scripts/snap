@@ -30,6 +30,7 @@ my $outdir = "/tmp/ibmsupt";		# note NO trailing /
 my $outfile = "snap.tar.gz";		# in the working dir.
 my $cmddir = "snap_commands";		# cmd output dir.
 my $cmdoutdir = "$outdir/$cmddir";	# in outdir dir.
+my $rsxx_exists = 0;			# Does an IBM Flash Adapter exist?
 
 our($opt_a, $opt_d, $opt_h, $opt_o, $opt_t, $opt_v);
 
@@ -118,6 +119,11 @@ my @snap_commands_detailed = (
   "lsvpd --debug",
   "lsvio -des",
   "ppc64_cpu --smt --cores-present --cores-on --run-mode --frequency --dscr",
+);
+
+# Command output to include for IBM Flash Adapter(s)
+my @snap_command_rsxx = (
+  "rs_cardreport -d 'all'",
 );
 
 sub recurse_dir($);		# function prototype
@@ -350,6 +356,11 @@ if (-e $outfile) {
 	exit 2;
 }
 
+# Check to see if we need to gather information on IBM Flash Adapter(s).
+if (glob("/dev/rsxx*")) {
+	$rsxx_exists = 1;
+}
+
 snap_paths(@snap_paths_general);
 
 # Check distro
@@ -367,6 +378,19 @@ snap_commands(@snap_commands_general);
 if ($opt_a) {
 	snap_paths(@snap_paths_detailed);
 	snap_commands(@snap_commands_detailed);
+}
+
+# Gather information regarding IBM Flash Adapter(s)
+if ($rsxx_exists) {
+	# Verify the rsxx utils are installed.
+	system("rpm -qa | grep rsxx-utils > /dev/null");
+	if ($? == 0) {
+		snap_commands(@snap_command_rsxx);
+	} else {
+		print "Warning: The rsxx-utils RPM are not installed, ".
+		      "unable to gather IBM Flash Adapter information.\n".
+		      "\t Run 'yum install rsxx-utils' to install.\n";
+	}
 }
 
 my ($basefile, $extension) = split /\.tar/, $outfile;
