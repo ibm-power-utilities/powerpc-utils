@@ -828,17 +828,29 @@ char *php_slot_type_msg[]={
 	"PCI-E capable, Rev 2, 8x lanes",
 	"PCI-E capable, Rev 2, 16x lanes",
 	"PCI-E capable, Rev 2, 32x lanes",	/* 30 */
+	"PCI-E capable, Rev 3, 8x lanes with 1 lane connected",
+	"PCI-E capable, Rev 3, 8x lanes with 4x lanes connected",
+	"PCI-E capable, Rev 3, 8x lanes with 8x lanes connected",
+	"PCI-E capable, Rev 3, 16x lanes with 1 lane connected",
+	"PCI-E capable, Rev 3, 16x lanes with 8x lanes connected",  /* 35 */
+	"PCI-E capable, Rev 3, 16x lanes with 16x lanes connected",
+	"PCI-E capable, Rev 4, 8x lanes with 1 lane connected",
+	"PCI-E capable, Rev 4, 8x lanes with 4x lanes connected",
+	"PCI-E capable, Rev 4, 8x lanes with 8x lanes connected",
+	"PCI-E capable, Rev 4, 16x lanes with 1 lane connected",    /* 40 */
+	"PCI-E capable, Rev 4, 16x lanes with 8x lanes connected",
+	"PCI-E capable, Rev 4, 16x lanes with 16x lanes connected",
 };
 
 char *
 node_type(struct dr_node *node)
 {
 	int desc_msg_num;
-	char *desc;
+	char *desc = "Unknown";
 
 	desc_msg_num = atoi(node->drc_type);
 	if ((desc_msg_num >= 1 &&  desc_msg_num <= 8) ||
-	    (desc_msg_num >= 11 && desc_msg_num <= 30))
+	    (desc_msg_num >= 11 && desc_msg_num <= 42))
 		desc = php_slot_type_msg[desc_msg_num];
 	else {
 		switch (node->dev_type) {
