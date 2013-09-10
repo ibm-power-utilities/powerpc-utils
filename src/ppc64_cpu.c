@@ -836,7 +836,9 @@ void setrlimit_open_files(void)
 	setrlimit(RLIMIT_NOFILE, &new_rlim);
 }
 
-int do_cpu_frequency(void)
+#define freq_calc(cycles, time)	(1.0 * (cycles) / (time) / 1000000000ULL)
+
+int do_cpu_frequency(int sleep_time)
 {
 	int i, rc;
 	unsigned long long min = -1ULL;
@@ -874,8 +876,8 @@ int do_cpu_frequency(void)
 	usleep(1000000);
 
 	start_counters();
-	/* Count for 1 second */
-	usleep(1000000);
+	/* Count for specified timeout in seconds */
+	usleep(sleep_time * 1000000);
 	stop_counters();
 
 	read_counters();
@@ -903,11 +905,11 @@ int do_cpu_frequency(void)
 	}
 
 	report_system_power_mode();
-	printf("min:\t%.3f GHz (cpu %ld)\n", 1.0 * min / 1000000000ULL,
+	printf("min:\t%.3f GHz (cpu %ld)\n", freq_calc(min, sleep_time),
 	       min_cpu);
-	printf("max:\t%.3f GHz (cpu %ld)\n", 1.0 * max / 1000000000ULL,
+	printf("max:\t%.3f GHz (cpu %ld)\n", freq_calc(max, sleep_time),
 	       max_cpu);
-	printf("avg:\t%.3f GHz\n\n", 1.0 * (sum / count) / 1000000000ULL);
+	printf("avg:\t%.3f GHz\n\n", freq_calc((sum / count), sleep_time));
 	return 0;
 }
 
@@ -1061,7 +1063,8 @@ void usage(void)
 "ppc64_cpu --smt-snooze-delay=<val>  # Change smt-snooze-delay setting\n\n"
 "ppc64_cpu --run-mode                # Get current diagnostics run mode\n"
 "ppc64_cpu --run-mode=<val>          # Set current diagnostics run mode\n\n"
-"ppc64_cpu --frequency               # Determine cpu frequency.\n\n");
+"ppc64_cpu --frequency [-t <time>]   # Determine cpu frequency for <time>\n"
+"                                    # seconds, default is 1 second.\n\n");
 }
 
 struct option longopts[] = {
@@ -1083,6 +1086,7 @@ int main(int argc, char *argv[])
 	char *action_arg = NULL;
 	char *equal_char;
 	int opt;
+	int sleep_time = 1; /* default to one second */
 	pid_t pid = -1;
 
 	if (argc == 1) {
@@ -1111,12 +1115,10 @@ int main(int argc, char *argv[])
 		action_arg = equal_char + 1;
 	}
 
-	/* Now parse out any additional options. Currently there is only
-	 * the -p <pid> option for the --dscr action.
-	 */
+	/* Now parse out any additional options. */
 	optind = 2;
 	while (1) {
-		opt = getopt(argc, argv, "p:");
+		opt = getopt(argc, argv, "p:t:");
 		if (opt == -1)
 			break;
 
@@ -1131,6 +1133,17 @@ int main(int argc, char *argv[])
 			}
 
 			pid = atoi(optarg);
+			break;
+		case 't':
+			/* only valid for --frequency */
+			if (strcmp(action, "frequency")) {
+				fprintf(stderr, "The t option is only valid "
+					"with the --frequency option\n");
+				usage();
+				exit(-1);
+			}
+
+			sleep_time = atoi(optarg);
 			break;
 		default:
 			fprintf(stderr, "%c is not a valid option\n", opt);
@@ -1148,7 +1161,7 @@ int main(int argc, char *argv[])
 	else if (!strcmp(action, "run-mode"))
 		rc = do_run_mode(action_arg);
 	else if (!strcmp(action, "frequency"))
-		rc = do_cpu_frequency();
+		rc = do_cpu_frequency(sleep_time);
 	else if (!strcmp(action, "cores-present"))
 		rc = do_cores_present(action_arg);
 	else if (!strcmp(action, "cores-on"))
