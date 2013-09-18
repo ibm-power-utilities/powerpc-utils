@@ -30,8 +30,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-sbin_PROGRAMS = activate_firmware$(EXEEXT) \
-	set_poweron_time$(EXEEXT) \
+sbin_PROGRAMS = activate_firmware$(EXEEXT) set_poweron_time$(EXEEXT) \
 	rtas_ibm_get_vpd$(EXEEXT) serv_config$(EXEEXT) \
 	uesensor$(EXEEXT) rtas_event_decode$(EXEEXT) \
 	sys_ident$(EXEEXT) nvram$(EXEEXT) lsprop$(EXEEXT) \

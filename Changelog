@@ -1,3 +1,216 @@
+powerpc-utils-1.2.18
+=====================================================================
+commit 1cb9a27a8751ee0f0d5d54de2e9b3e086618fc82
+Author: Philip Kelleher <pjk1939@linux.vnet.ibm.com>
+Date:   Tue Sep 10 11:15:52 2013 -0500
+
+    From: Philip Kelleher <pjk1939@linux.vnet.ibm.com>
+    
+    Added support for IBM Flash Adapter devices within the
+    snap script.
+    
+    The script will check whether or not IBM Flash
+    Adapters are currently loaded in the system. If so, the
+    script will check them. If not, the script will do its
+    normal operations.
+    
+    It will, then, check whether or not the rsxx-utils are
+    installed on the system. If they are installed, the rs_cardreport
+    application will be ran. If not, the script will print out
+    a warning stating that IBM Flash Adapter information could
+    not be gathered. The script will continue normally either
+    way.
+    
+    Signed-off-by: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+
+commit 07165e5854b928d007ea2af1542a64c8d07c1336
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Tue Sep 10 11:13:49 2013 -0500
+
+    Allow frequency sampling for given time periods.
+    
+    This patch adds an option [-t <time> ] for the --frequency action in
+    ppc64_cpu so that users can specify the period in seconds over which
+    they want to do frequency sampling.
+    
+    Signed-off-by:Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit b2fb611e87ebdb27a6b923cf1ac076eb364870b8
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Tue Sep 10 11:12:19 2013 -0500
+
+    Acquire the dr_lock earlier in dr operations.
+    
+    The dr_lock used to serialize dr operations should be taken earlier.
+    The current code takes the lock after opening the log file, this can
+    lead to having multiple instances of drmgr writing to the file at the
+    same time.
+    
+    To do this, the patch moves the taking and releasing of the dr_lock into
+    the dr_init and dr_fini routines as well as cleans up main() to make
+    unlocking easier to handle.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit d6a24ab18d9e48aa90712c4dcda69425f246287b
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Tue Sep 10 10:46:33 2013 -0500
+
+    Update the drc-type descriptions for PCI-e Gen 3/4 slots
+    
+    This patch adds description strings for the newly added drc types
+    defined in the PAPR. Additionally, this initializes the description
+    string returned by node_type() to "Unknown", otherwise we could
+    return an uninitialized string.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 7b8150e442df2f41546cb3925019c9fcb8b5b59e
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Tue Sep 10 10:44:43 2013 -0500
+
+    Commit 8182dda resulted in excluding COPYRIGHT file from
+    gzip (make dist-gzip). This causes rpmbuild to fail.
+    
+    Adding COPYRIGHT file to EXTRA_DIST.
+    
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit affd141c66cdd46a3a25ed7ad66e5c8096979b34
+Author: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Date:   Tue Sep 10 10:42:54 2013 -0500
+
+    Handle addition of timestamp information in the oops header. New format
+    oops header has version in the same place as length in the old header.
+    Version is assigned a value greater than oops partition size (illegal length)
+    in kernel. If unzip_partition finds an illegal length, it will understand its
+    new style header and parse the information accordingly. With this --unzip
+    option will work with both old and new-style headers.
+    
+    Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+
+commit 06f85125973d87c12dd297dce51e5e5cf4d91f46
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Tue Jun 25 08:14:53 2013 -0500
+
+    drmgr: Post processing for PCI replace
+    
+    During a PCI replace operation we can hit scenarios where the adapter
+    was not able to completely clean everything up before it is removed.
+    Such a scenario would be an adapter completely failing or just being
+    pulled from its slot while the system is up.
+    
+    In these cases we need to add an additional remove and add to the flow
+    of operations in the replace code path. This allows us to add the
+    adapter back to the system which gives us enough to do a complete
+    remove and clean everything up, and then add the adapter again.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 04c9a8467022f75843e9a564f3b28e132544b9cc
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Tue Jun 25 08:14:06 2013 -0500
+
+    drmgr: Ensure devices are present during pci replacement
+    
+    In some instance during a PCI replacement operations (drmgr -c pci -R)
+    the adapter we are adding does not immediately appear. In these cases
+    a small wait is required for the adapter to appear.
+    
+    This patch adds a small loop checking for the adapter's presence before
+    continuing the replace operation. The update also adds an option for
+    users to exit the operation if the adapter does not appear.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit ff981e0e652364d9b3a3262d315d87e26c772135
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Tue Jun 25 08:12:40 2013 -0500
+
+    drmgr: Check for rpadlpar_io module
+    
+    When attempting to do slot or phb DLPAR we need to have the rpadlpar_io
+    kernel module loaded. This patch updates the check made for slot and
+    phb DLPAR capabilities to also load the module if it is not present.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 8182dda83cae0d81b7c12c745ccae1932b0a52ac
+Author: Jeremy Kerr <jk@ozlabs.org>
+Date:   Tue Jun 25 08:11:10 2013 -0500
+
+    Makefile: Don't install docs twice
+    
+    Signed-off-by: Jeremy Kerr <jk@ozlabs.org>
+
+commit 288989572bcfdc272bce45e8600e7ce293184a3b
+Author: Jeremy Kerr <jk@ozlabs.org>
+Date:   Tue Jun 25 08:09:31 2013 -0500
+
+    nvram: Allow deleting variables
+    
+    nvram --update-config myvar= to delete a variable.
+    
+    Signed-off-by: Jeremy Kerr <jk@ozlabs.org>
+
+commit c4ea6a1cbf3d3be8b47132b3e2c6bcad638e3ef6
+Author: Jeremy Kerr <jk@ozlabs.org>
+Date:   Tue Jun 25 08:08:01 2013 -0500
+
+    nvram: Write complete nvram data
+    
+    write() may not write the entire buffer we hand it. In this case, don't
+    fail, but advance along our buffer.
+    
+    Signed-off-by: Jeremy Kerr <jk@ozlabs.org>
+
+commit 1f7112d09affbf29bb354d7de3587fa2310a564d
+Author: Jeremy Kerr <jk@ozlabs.org>
+Date:   Tue Jun 25 08:07:11 2013 -0500
+
+    nvram: Allow new parameters to be added
+    
+    Currently, we exit from update_of_config_var if we don't see an existing
+    variable. This means we can't add new variables.
+    
+    Don't do this.
+    
+    Signed-off-by: Jeremy Kerr <jk@ozlabs.org>
+
+commit e2cc2e0e14f543a6b7e241d5a3951808eb829290
+Author: Jeremy Kerr <jk@ozlabs.org>
+Date:   Tue Jun 25 08:06:16 2013 -0500
+
+    nvram: Check --update-config variables for correct format
+    
+    Signed-off-by: Jeremy Kerr <jk@ozlabs.org>
+
+commit 976dbe9bb7b01b135cac3e7bbd1dce0cdc88636a
+Author: Jeremy Kerr <jk@ozlabs.org>
+Date:   Tue Jun 25 08:05:21 2013 -0500
+
+    nvram: Allow zero-terminated output
+    
+    Currently, there's no way to accurately parse the outout of nvram
+    --print-config: properties may contain a newline, which we can't
+    distinguish from the end-of-property token.
+    
+    This change adds a --zero/-0 option to terminate config pairs with a
+    NUL character instead.
+    
+    Signed-off-by: Jeremy Kerr <jk@ozlabs.org>
+
+commit 8d0fdf663e2a99b17bf8b001c59fb1cffaf7f185
+Author: Jeremy Kerr <jk@ozlabs.org>
+Date:   Tue Jun 25 08:03:55 2013 -0500
+
+    nvram: Don't use device tree for nvram size
+    
+    We can query the nvram size with a seek(), which means we don't need to
+    lookup in the device tree.
+    
+    Signed-off-by: Jeremy Kerr <jk@ozlabs.org>
+
 powerpc-utils-1.2.17
 =====================================================================
 commit f54dc396cba599b1dc81892348b5db92743c9ff5
