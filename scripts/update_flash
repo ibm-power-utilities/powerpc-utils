@@ -28,7 +28,7 @@ E_MODULE=7	# Error loading module
 E_RTAS=8	# RTAS call failed
 E_USER=9	# User aborted operation
 E_OVERWRITE=10	# Auto overwrite permanent side image
-E_WRNTY=15	# Out of warranty
+E_WRNTY=15	# Update Access Key Expired
 
 # Script Constants
 PATH=/sbin:/usr/sbin:/bin:/usr/bin:$PATH
@@ -157,7 +157,7 @@ function echo_entitlement_expiry_date {
 		echo "UNKNOWN."
 	fi
 
-	echo -n "The System's Microcode Entitlement Expiration Date is "
+	echo -n "The System's Update Access Key Expiration Date is "
 	if [ "$entl_date" != "" ]; then
 		echo "$(date --date=$entl_date +"%B %d, %Y")."
 	else
