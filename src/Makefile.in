@@ -30,11 +30,11 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-sbin_PROGRAMS = activate_firmware$(EXEEXT) set_poweron_time$(EXEEXT) \
-	rtas_ibm_get_vpd$(EXEEXT) serv_config$(EXEEXT) \
-	uesensor$(EXEEXT) rtas_event_decode$(EXEEXT) \
-	sys_ident$(EXEEXT) nvram$(EXEEXT) lsprop$(EXEEXT) \
-	ppc64_cpu$(EXEEXT) lparstat$(EXEEXT)
+sbin_PROGRAMS = nvram$(EXEEXT) lsprop$(EXEEXT) lparstat$(EXEEXT) \
+	$(am__EXEEXT_1)
+@WITH_LIBRTAS_TRUE@am__append_1 = activate_firmware set_poweron_time rtas_ibm_get_vpd	\
+@WITH_LIBRTAS_TRUE@       serv_config uesensor rtas_event_decode sys_ident ppc64_cpu
+
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -43,10 +43,18 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
 CONFIG_CLEAN_FILES =
+@WITH_LIBRTAS_TRUE@am__EXEEXT_1 = activate_firmware$(EXEEXT) \
+@WITH_LIBRTAS_TRUE@	set_poweron_time$(EXEEXT) \
+@WITH_LIBRTAS_TRUE@	rtas_ibm_get_vpd$(EXEEXT) \
+@WITH_LIBRTAS_TRUE@	serv_config$(EXEEXT) uesensor$(EXEEXT) \
+@WITH_LIBRTAS_TRUE@	rtas_event_decode$(EXEEXT) \
+@WITH_LIBRTAS_TRUE@	sys_ident$(EXEEXT) ppc64_cpu$(EXEEXT)
 am__installdirs = "$(DESTDIR)$(sbindir)"
 sbinPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(sbin_PROGRAMS)
-am_activate_firmware_OBJECTS = activate_fw.$(OBJEXT)
+am__activate_firmware_SOURCES_DIST = activate_fw.c
+@WITH_LIBRTAS_TRUE@am_activate_firmware_OBJECTS =  \
+@WITH_LIBRTAS_TRUE@	activate_fw.$(OBJEXT)
 activate_firmware_OBJECTS = $(am_activate_firmware_OBJECTS)
 activate_firmware_DEPENDENCIES =
 am_lparstat_OBJECTS = lparstat.$(OBJEXT)
@@ -58,27 +66,44 @@ lsprop_LDADD = $(LDADD)
 am_nvram_OBJECTS = nvram.$(OBJEXT)
 nvram_OBJECTS = $(am_nvram_OBJECTS)
 nvram_DEPENDENCIES =
-am_ppc64_cpu_OBJECTS = ppc64_cpu.$(OBJEXT) librtas_error.$(OBJEXT)
+am__ppc64_cpu_SOURCES_DIST = ppc64_cpu.c librtas_error.c \
+	librtas_error.h
+@WITH_LIBRTAS_TRUE@am_ppc64_cpu_OBJECTS = ppc64_cpu.$(OBJEXT) \
+@WITH_LIBRTAS_TRUE@	librtas_error.$(OBJEXT)
 ppc64_cpu_OBJECTS = $(am_ppc64_cpu_OBJECTS)
 ppc64_cpu_DEPENDENCIES =
-am_rtas_event_decode_OBJECTS = rtas_event_decode.$(OBJEXT)
+am__rtas_event_decode_SOURCES_DIST = rtas_event_decode.c
+@WITH_LIBRTAS_TRUE@am_rtas_event_decode_OBJECTS =  \
+@WITH_LIBRTAS_TRUE@	rtas_event_decode.$(OBJEXT)
 rtas_event_decode_OBJECTS = $(am_rtas_event_decode_OBJECTS)
 rtas_event_decode_DEPENDENCIES =
-am_rtas_ibm_get_vpd_OBJECTS = rtas_ibm_get_vpd.$(OBJEXT) \
-	librtas_error.$(OBJEXT)
+am__rtas_ibm_get_vpd_SOURCES_DIST = rtas_ibm_get_vpd.c librtas_error.c \
+	librtas_error.h
+@WITH_LIBRTAS_TRUE@am_rtas_ibm_get_vpd_OBJECTS =  \
+@WITH_LIBRTAS_TRUE@	rtas_ibm_get_vpd.$(OBJEXT) \
+@WITH_LIBRTAS_TRUE@	librtas_error.$(OBJEXT)
 rtas_ibm_get_vpd_OBJECTS = $(am_rtas_ibm_get_vpd_OBJECTS)
 rtas_ibm_get_vpd_DEPENDENCIES =
-am_serv_config_OBJECTS = serv_config.$(OBJEXT) librtas_error.$(OBJEXT)
+am__serv_config_SOURCES_DIST = serv_config.c librtas_error.c \
+	librtas_error.h
+@WITH_LIBRTAS_TRUE@am_serv_config_OBJECTS = serv_config.$(OBJEXT) \
+@WITH_LIBRTAS_TRUE@	librtas_error.$(OBJEXT)
 serv_config_OBJECTS = $(am_serv_config_OBJECTS)
 serv_config_DEPENDENCIES =
-am_set_poweron_time_OBJECTS = set_poweron_time.$(OBJEXT) \
-	librtas_error.$(OBJEXT)
+am__set_poweron_time_SOURCES_DIST = set_poweron_time.c librtas_error.c \
+	librtas_error.h
+@WITH_LIBRTAS_TRUE@am_set_poweron_time_OBJECTS =  \
+@WITH_LIBRTAS_TRUE@	set_poweron_time.$(OBJEXT) \
+@WITH_LIBRTAS_TRUE@	librtas_error.$(OBJEXT)
 set_poweron_time_OBJECTS = $(am_set_poweron_time_OBJECTS)
 set_poweron_time_DEPENDENCIES =
-am_sys_ident_OBJECTS = sys_ident.$(OBJEXT)
+am__sys_ident_SOURCES_DIST = sys_ident.c
+@WITH_LIBRTAS_TRUE@am_sys_ident_OBJECTS = sys_ident.$(OBJEXT)
 sys_ident_OBJECTS = $(am_sys_ident_OBJECTS)
 sys_ident_DEPENDENCIES =
-am_uesensor_OBJECTS = uesensor.$(OBJEXT) librtas_error.$(OBJEXT)
+am__uesensor_SOURCES_DIST = uesensor.c librtas_error.c librtas_error.h
+@WITH_LIBRTAS_TRUE@am_uesensor_OBJECTS = uesensor.$(OBJEXT) \
+@WITH_LIBRTAS_TRUE@	librtas_error.$(OBJEXT)
 uesensor_OBJECTS = $(am_uesensor_OBJECTS)
 uesensor_DEPENDENCIES =
 DEFAULT_INCLUDES = -I.@am__isrc@
@@ -93,11 +118,14 @@ SOURCES = $(activate_firmware_SOURCES) $(lparstat_SOURCES) \
 	$(rtas_event_decode_SOURCES) $(rtas_ibm_get_vpd_SOURCES) \
 	$(serv_config_SOURCES) $(set_poweron_time_SOURCES) \
 	$(sys_ident_SOURCES) $(uesensor_SOURCES)
-DIST_SOURCES = $(activate_firmware_SOURCES) $(lparstat_SOURCES) \
-	$(lsprop_SOURCES) $(nvram_SOURCES) $(ppc64_cpu_SOURCES) \
-	$(rtas_event_decode_SOURCES) $(rtas_ibm_get_vpd_SOURCES) \
-	$(serv_config_SOURCES) $(set_poweron_time_SOURCES) \
-	$(sys_ident_SOURCES) $(uesensor_SOURCES)
+DIST_SOURCES = $(am__activate_firmware_SOURCES_DIST) \
+	$(lparstat_SOURCES) $(lsprop_SOURCES) $(nvram_SOURCES) \
+	$(am__ppc64_cpu_SOURCES_DIST) \
+	$(am__rtas_event_decode_SOURCES_DIST) \
+	$(am__rtas_ibm_get_vpd_SOURCES_DIST) \
+	$(am__serv_config_SOURCES_DIST) \
+	$(am__set_poweron_time_SOURCES_DIST) \
+	$(am__sys_ident_SOURCES_DIST) $(am__uesensor_SOURCES_DIST)
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	html-recursive info-recursive install-data-recursive \
 	install-dvi-recursive install-exec-recursive \
@@ -199,25 +227,25 @@ top_srcdir = @top_srcdir@
 AM_CFLAGS = -Wall -g 
 AM_LDFLAGS = 
 SUBDIRS = drmgr
-activate_firmware_SOURCES = activate_fw.c
-activate_firmware_LDADD = -lrtas
-set_poweron_time_SOURCES = set_poweron_time.c librtas_error.c librtas_error.h
-set_poweron_time_LDADD = -lrtas
-rtas_ibm_get_vpd_SOURCES = rtas_ibm_get_vpd.c librtas_error.c librtas_error.h
-rtas_ibm_get_vpd_LDADD = -lrtas
-serv_config_SOURCES = serv_config.c librtas_error.c librtas_error.h
-serv_config_LDADD = -lrtas
-uesensor_SOURCES = uesensor.c librtas_error.c librtas_error.h
-uesensor_LDADD = -lrtas
-rtas_event_decode_SOURCES = rtas_event_decode.c
-rtas_event_decode_LDADD = -lrtasevent
-sys_ident_SOURCES = sys_ident.c
-sys_ident_LDADD = -lrtas
+@WITH_LIBRTAS_TRUE@activate_firmware_SOURCES = activate_fw.c
+@WITH_LIBRTAS_TRUE@activate_firmware_LDADD = -lrtas
+@WITH_LIBRTAS_TRUE@set_poweron_time_SOURCES = set_poweron_time.c librtas_error.c librtas_error.h
+@WITH_LIBRTAS_TRUE@set_poweron_time_LDADD = -lrtas
+@WITH_LIBRTAS_TRUE@rtas_ibm_get_vpd_SOURCES = rtas_ibm_get_vpd.c librtas_error.c librtas_error.h
+@WITH_LIBRTAS_TRUE@rtas_ibm_get_vpd_LDADD = -lrtas
+@WITH_LIBRTAS_TRUE@serv_config_SOURCES = serv_config.c librtas_error.c librtas_error.h
+@WITH_LIBRTAS_TRUE@serv_config_LDADD = -lrtas
+@WITH_LIBRTAS_TRUE@uesensor_SOURCES = uesensor.c librtas_error.c librtas_error.h
+@WITH_LIBRTAS_TRUE@uesensor_LDADD = -lrtas
+@WITH_LIBRTAS_TRUE@rtas_event_decode_SOURCES = rtas_event_decode.c
+@WITH_LIBRTAS_TRUE@rtas_event_decode_LDADD = -lrtasevent
+@WITH_LIBRTAS_TRUE@sys_ident_SOURCES = sys_ident.c
+@WITH_LIBRTAS_TRUE@sys_ident_LDADD = -lrtas
+@WITH_LIBRTAS_TRUE@ppc64_cpu_SOURCES = ppc64_cpu.c librtas_error.c librtas_error.h
+@WITH_LIBRTAS_TRUE@ppc64_cpu_LDADD = -lrtas -lpthread
 nvram_SOURCES = nvram.c nvram.h
 nvram_LDADD = -ldl -lz
 lsprop_SOURCES = lsprop.c
-ppc64_cpu_SOURCES = ppc64_cpu.c librtas_error.c librtas_error.h
-ppc64_cpu_LDADD = -lrtas -lpthread
 lparstat_SOURCES = lparstat.c lparstat.h
 all: all-recursive
 

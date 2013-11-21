@@ -1,6 +1,8 @@
 AM_CFLAGS = -Wall -g
 
+if WITH_LIBRTAS
 sbin_PROGRAMS = drmgr lsslot
+endif
 
 drmgr_SOURCES = common.c common_cpu.c common_ofdt.c common_pci.c	\
 		drcpu.h dr.h drmem.h drmgr.c drmig_chrp_pmig.c drpci.h	\

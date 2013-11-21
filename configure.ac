@@ -15,7 +15,6 @@ AC_PROG_INSTALL
 
 # Checks for header files.
 AC_CHECK_HEADERS([fcntl.h inttypes.h limits.h locale.h memory.h netinet/in.h nl_types.h stdint.h stdlib.h string.h sys/ioctl.h syslog.h unistd.h linux/perf_event.h])
-AC_CHECK_HEADER(librtas.h,,AC_MSG_ERROR(Cannot find librtas.h))
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
@@ -34,6 +33,24 @@ AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
 AC_FUNC_MALLOC
 AC_FUNC_MKTIME
 AC_CHECK_FUNCS([memset strchr strcspn strdup strerror strrchr strstr strtol strtoul strtoull])
+
+# check for librtas
+AC_ARG_WITH([librtas],
+    [AS_HELP_STRING([--without-librtas],
+        [disable building utilities that require librtas])],
+    [],
+    [with_librtas=yes]
+)
+
+AS_IF([test "x$with_librtas" != "xno"],
+	[AC_CHECK_HEADER([librtas.h],
+        [with_libtras=yes],
+        [AC_MSG_FAILURE(
+                [librtas test failed (--without-librtas to disable)])]
+    )]
+)
+
+AM_CONDITIONAL([WITH_LIBRTAS], [test "x$with_librtas" = "xyes"])
 
 echo "Configuring powerpc-utils.spec"
 sed "s|\@VERSION\@|ppu_version|g" powerpc-utils.spec.in > powerpc-utils.spec
