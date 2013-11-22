@@ -391,6 +391,22 @@ file_opt=0
 #XXX
 #[ "`whoami`" = "root" ] || error $E_PERM "must be root to execute this command"
 
+# Check for platform and if PowerNV call update_flash_nv
+
+# PowerNV update_flash tool
+UPDATE_FLASH_NV=$(dirname $0)/update_flash_nv
+
+machine=`uname -m`
+platform=`cat /proc/cpuinfo | grep platform | awk '{print $3}'`
+
+if [ "$machine" == "ppc64" ] && [ "$platform" == "PowerNV" ]; then
+	if [ ! -r "$UPDATE_FLASH_NV" ]; then
+		error $E_PERM "Couldn't find $UPDATE_FLASH_NV file."
+	fi
+	/bin/sh $UPDATE_FLASH_NV $@
+	exit $?
+fi
+
 while [ -n "$1" ]; do
 	arg="$1"
 	shift
