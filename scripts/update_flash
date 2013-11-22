@@ -68,7 +68,7 @@ VALIDATE_TMP_COMMIT=5     	# RPA Section 7.3, Table 63
 VALIDATE_TMP_UPDATE_DL=6     	# RPA Section 7.3, Table 63
 VALIDATE_OUT_OF_WRNTY=7     	# RPA Section 7.3, Table 63
 
-function error {
+error() {
 	local exit_code=$1
 
 	if [ $# -lt 1 ]; then
@@ -81,7 +81,7 @@ function error {
 	exit $exit_code
 }
 
-function usage {
+usage() {
 	echo "USAGE:  update_flash [-s] {-r|-c| [-v|-n] -f <filename>}" >&2
 	echo "		-s		Determine if partition has access to" >&2
 	echo "				perform flash image management." >&2
@@ -97,7 +97,7 @@ function usage {
 	exit $E_USAGE
 }
 
-function query_support {
+query_support() {
 	local exit_status=$E_UNSUPPORTED
 
 	if [ ! -r "$PROCVALIDATE" ]; then 
@@ -130,7 +130,7 @@ function query_support {
 	exit $exit_status;
 }
 
-function echo_validate_rtas_buf {
+echo_validate_rtas_buf() {
 	local output="$1"
 	local cur_t_name=$(echo "$output" | grep "^MI" | head -n 1 | awk ' { print $2 } ')
 	local cur_p_name=$(echo "$output" | grep "^MI" | head -n 1 | awk ' { print $3 } ')
@@ -144,7 +144,7 @@ function echo_validate_rtas_buf {
 	echo "New P Image:     $new_p_name"
 }
 
-function echo_entitlement_expiry_date {
+echo_entitlement_expiry_date() {
 	local build_date=`cat $PROCVALIDATE | grep "^MG" | tail -n 1 | cut -d " " -f2`
 	local entl_date=`cat $PROCVALIDATE | grep "^ME" | cut -d " " -f2`
 
@@ -166,7 +166,7 @@ function echo_entitlement_expiry_date {
 	echo ""
 }
 
-function echo_validate_return_status {
+echo_validate_return_status() {
 	local output="$1"
 	local rc=$(echo "$output" | head -n 1)
 	local rtas_buf=$(echo "$output" | tail -n +2)
@@ -218,7 +218,7 @@ function echo_validate_return_status {
 	fi
 }
 
-function validate_flash {
+validate_flash() {
 	local img_file=$1
 	local output=""
 
@@ -241,7 +241,7 @@ function validate_flash {
 	return 0
 }
 
-function validate_flash_from_file {
+validate_flash_from_file() {
 	local img_file=$1
 
 	[ $# -eq 1 ] || error $E_USAGE "validate_flash_from_file(): usage" 
@@ -261,7 +261,7 @@ function validate_flash_from_file {
 	fi
 }
 
-function echo_update_status {
+echo_update_status() {
 	local rc="$1"
 	
 	[ $# -eq 1 ] || error $E_USAGE "echo_update_status(): usage" 
@@ -281,7 +281,7 @@ function echo_update_status {
 	esac
 }
 
-function update_flash_from_file {
+update_flash_from_file() {
 	local img_file=$1
 	local output=""
 	local oldkernel=0
@@ -322,7 +322,7 @@ function update_flash_from_file {
 	return 0;
 }
 
-function echo_manage_return_status {
+echo_manage_return_status() {
 	local is_commit=$1
 	local output=$2
 	local rc=$(echo $output)
@@ -349,7 +349,7 @@ function echo_manage_return_status {
 	esac
 }
 
-function manage_flash {
+manage_flash() {
 	local is_commit=$1
 	local commit_str="1"
 	local reject_str="0"
