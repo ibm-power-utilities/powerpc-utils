@@ -41,6 +41,7 @@ Utilities for maintaining and servicing PowerPC systems.
 /usr/share/doc/packages/powerpc-utils/COPYRIGHT
 
 /usr/sbin/update_flash
+/usr/sbin/update_flash_nv
 /usr/sbin/activate_firmware
 /usr/sbin/set_poweron_time
 /usr/sbin/rtas_ibm_get_vpd
