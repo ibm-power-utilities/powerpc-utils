@@ -151,7 +151,7 @@ All cases:
  4 - Permission error
  6 - Unexpected problem with /proc filesystem access
  7 - Error loading module
- 8 - RTAS call failed
+ 8 - RTAS(pSeries)/OPAL(PowerNV) call failed
  9 - User aborted operation
 .fi
 .TP
@@ -179,10 +179,18 @@ Manage (-c|-r):
 .fi
 
 .SH FILES
-rtas_flash kernel module
-.P
-/proc/ppc64/rtas/firmware_flash (provided by kernel module)
-
+.TP
+.nf
+pSeries
+  rtas_flash kernel module
+  /proc/ppc64/rtas/firmware_flash (provided by kernel module)
+.fi
+.TP
+.nf
+PowerNV
+  /sys/firmware/opal/image
+  /sys/firmware/opal/{validate/manage/update}_flash
+.fi
 .SH NOTES
 Firmware may be downloaded from the IBM website. Instructions for
 downloading and installing the firmware image are also there, and
@@ -192,7 +200,11 @@ information there will be more up-to-date than this page.
 Various conditions can lead to a firmware update failure. If you
 receive an authentication-related error, such as:
 .P
+.nf
 update_flash: RTAS: validate() Partition does not have authority
+-or-
+update_flash: System does not have authority to perform firmware update.
+.fi
 .P
 This can reflect either 1) That the permission is not set (correctable
 through the ASM interface, System -> Firmware Update Policy, or through an
