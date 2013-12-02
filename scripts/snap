@@ -25,6 +25,7 @@ use strict;
 use Getopt::Std;
 use POSIX qw(strftime);
 use Sys::Hostname;
+use FileHandle;
 
 my $outdir = "/tmp/ibmsupt";		# note NO trailing /
 my $outfile = "snap.tar.gz";		# in the working dir.
@@ -185,7 +186,7 @@ sub copy {
 	}
 
 	# Copy file
-	if (!open(SRC, "<$source")) {
+	if (!sysopen(SRC, "$source", O_NONBLOCK|O_RDONLY)) {
 		error(0, "Cannot open file for reading: $source");
 		return;
 	}
