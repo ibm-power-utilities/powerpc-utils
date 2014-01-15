@@ -19,6 +19,7 @@
 PAGE_SIZE=4096
 
 # Error Codes
+E_SUCCESS=0     # Success
 E_UNSUPPORTED=1	# Flash update is not supported on this system
 E_USAGE=3	# Usage error
 E_PERM=4	# Permission error
@@ -82,7 +83,16 @@ error() {
 }
 
 usage() {
-	echo "USAGE:  update_flash [-s] {-r|-c| [-v|-n] -f <filename>}" >&2
+	local exit_code;
+
+	if [ "$1" == $E_SUCCESS ]; then
+		exit_code=$E_SUCCESS
+	else
+		exit_code=$E_USAGE
+	fi
+
+	echo "USAGE:  update_flash {-h | -s | -r | -c | [-v|-n] -f <image filename>}" >&2
+	echo "		-h		Print this message." >&2
 	echo "		-s		Determine if partition has access to" >&2
 	echo "				perform flash image management." >&2
 	echo "		-r 		Reject temporary image." >&2
@@ -94,7 +104,7 @@ usage() {
 	echo "				the image is automatically validated prior" >&2 
 	echo "				to update." >&2
 	echo "" >&2
-	exit $E_USAGE
+	exit $exit_code
 }
 
 query_support() {
@@ -412,6 +422,7 @@ while [ -n "$1" ]; do
 	shift
 	case "$arg" in
 	  -q|-l|-D|-S) error $E_USAGE "the $arg option is not implemented";;
+	  -h) usage $E_SUCCESS;;
 	  -s) check_opt=1;;
 	  -c) commit_opt=1;;
 	  -r) reject_opt=1;;

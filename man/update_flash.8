@@ -10,6 +10,7 @@ update_flash \- manage system and service processor firmware
 .SH SYNOPSIS
 .nf
 \fB/usr/sbin/update_flash \fR[\fB-v|-n\fR] \fB-f \fIfirmware.img
+.B /usr/sbin/update_flash -h
 .B /usr/sbin/update_flash -c
 .B /usr/sbin/update_flash -r
 .B /usr/sbin/update_flash -s
@@ -91,6 +92,9 @@ image -- for example, using the ASMI or HMC. This option is only useful on
 machines supporting two firmware image areas.
 
 .SH OPTIONS
+.TP
+.B\-h
+Print the usage message and exit.
 .TP
 \fB\-f \fIfilename
 Supply the filename to flash (required).
