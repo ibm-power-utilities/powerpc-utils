@@ -65,7 +65,7 @@ struct oops_log_info {
    unsigned short	version;
    unsigned short	report_length;
    unsigned long long	timestamp;
-};
+}__attribute__((packed));
 
 /* Internal representation of NVRAM. */
 #define MAX_PARTITIONS 50
