@@ -135,7 +135,8 @@ find_slot(char *drc_name, struct dr_node *all_nodes)
 
 static int check_card_presence(struct options *opts, struct dr_node *node)
 {
-	int i, state, keep_working;
+	int state = EMPTY;
+	int i, keep_working;
 
 	say(DEBUG, "Waiting for the card to appear...\n");
 	do {
