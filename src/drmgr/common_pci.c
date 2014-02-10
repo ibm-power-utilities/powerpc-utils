@@ -1151,42 +1151,39 @@ set_hp_adapter_status(uint operation, char *slot_name)
 int
 dlpar_io_kernel_op(char *interface_file, char *drc_name)
 {
-	int rc = 0, len, val = 0;
+	int rc = 0, len;
 	FILE *file;
 
+	len = strlen(drc_name);
 	say(DEBUG, "performing kernel op for %s, file is %s\n", drc_name,
 	    interface_file);
 
-    	file = fopen(interface_file, "r+");
-    	if (file == NULL) {
-		say(ERROR, "failed to open %s: %s\n", interface_file,
-		    strerror(errno));
-		return -ENODEV;
-    	}
+	do {
+		errno = 0;
 
-	len = strlen(drc_name);
-    	rc = fwrite(drc_name, 1, len, file);
-    	if (rc != len) {
-		say(ERROR, "write to interface file %s failed, rc = %d "
-		    "len = %d.\n%s\n", interface_file, rc, len,
-		    strerror(errno));
+    		file = fopen(interface_file, "r+");
+    		if (file == NULL) {
+			say(ERROR, "failed to open %s: %s\n", interface_file,
+			    strerror(errno));
+			return -ENODEV;
+    		}
+
+    		rc = fwrite(drc_name, 1, len, file);
 		fclose(file);
-        	return -errno;
+
+		sleep(1);
+		if (drmgr_timed_out())
+			return -1;
+	} while (errno == EBUSY);
+
+ 	if (errno || (rc != len)) {
+		say(ERROR, "kernel I/O op failed, rc = %d len = %d.\n%s\n",
+		    rc, len, strerror(errno));
+
+		return errno ? errno : rc;
 	}
 
-	rewind(file);
-	rc = fscanf(file, "%i", &val);
-	if (rc != 1) {
-		say(ERROR, "scan of interface file %s failed, rc = %d, should i"
-		    "be 1\n%s\n", interface_file, rc, strerror(errno));
-		fclose(file);
-		return -errno;
-	}
-
-	rc = val;
-	fclose(file);
-
-	return rc;
+	return 0;
 }
 
 void
