@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <dirent.h>
+#include <sys/stat.h>
 #include "dr.h"
 #include "ofdt.h"
 
@@ -69,9 +70,16 @@ get_of_list_prop(char *full_path, char *prop_name, struct of_list_prop *prop)
 static int
 get_drc_prop_grp(char *full_path, struct drc_prop_grp *group)
 {
+	struct stat sbuf;
+	char fname[DR_PATH_MAX];
 	int rc;
 
 	memset(group, 0, sizeof(*group));
+
+	sprintf(fname, "%s/%s", full_path, "ibm,drc-names");
+	rc = stat(fname, &sbuf);
+	if (rc)
+		return rc;
 
 	rc = get_of_list_prop(full_path, "ibm,drc-names", &group->drc_names);
 	if (rc)
