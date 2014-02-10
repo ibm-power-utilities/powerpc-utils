@@ -596,6 +596,31 @@ int do_hibernation(uint64_t stream_val)
 
 	return rc;
 }
+
+void post_mobility_update(int action)
+{
+	int rc;
+	int do_update = 0;
+	char *path;
+
+	if (action == HIBERNATE)
+		path = "/sys/devices/system/power/hibernate";
+	else
+		path = "/sys/kernel/mobility/migrate";
+
+	/* kernel will return 0 or sysfs attribute will be unreadable if drmgr
+	   needs to perform a device tree update */
+	rc = get_int_attribute(path, NULL, &do_update, sizeof(do_update));
+	if (rc)
+		say(DEBUG, "get_int_attribute returned %d for path %s\n", rc, path);
+
+	if (!do_update) {
+		rc = rtas_activate_firmware();
+		if (rc)
+			say(DEBUG, "rtas_activate_firmware() returned %d\n", rc);
+		devtree_update();
+	}
+}
 	
 int
 drmig_chrp_pmig(struct options *opts)
@@ -663,11 +688,7 @@ drmig_chrp_pmig(struct options *opts)
 	if (rc)
 		return rc;
 
-	devtree_update();
-	rc = rtas_activate_firmware();
-	if (rc)
-		say(DEBUG, "rtas_activate_firmware() returned %d\n", rc);
-	devtree_update();
+	post_mobility_update(action);
 
 	say(DEBUG, "Refreshing RMC via refrsrc\n");
 	rc = system("/usr/sbin/rsct/bin/refrsrc IBM.ManagementServer");
