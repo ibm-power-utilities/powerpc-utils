@@ -446,7 +446,7 @@ add_nodes(unsigned int *op, unsigned int n)
 {
 	unsigned int i, pphandle, drcindex;
 
-	for (i = 0; i < n; i += 2) {
+	for (i = 0; i < n; i++) {
 		pphandle = *op++;
 		drcindex = *op++;
 		say(DEBUG, "Add node with parent phandle %8.8x and drc index "
