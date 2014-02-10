@@ -78,9 +78,16 @@ void report_unknown_error(char *file, int line) {
 			"debug log from %s.\n", file, line, DR_LOG_PATH);
 }
 
-void report_alloc_error() {
-	say(ERROR, "Program could not allocate memory, please "
-			"retry operation.\n");
+void * __zalloc(size_t size, const char *func, int line)
+{
+	void *data;
+	data = malloc(size);
+	if (data)
+		memset(data, 0, size);
+	else
+		say(ERROR, "Allocation failure (%lx) at %s:%d\n", size, func, line);
+
+	return data;
 }
 
 /**

@@ -44,10 +44,8 @@ get_of_list_prop(char *full_path, char *prop_name, struct of_list_prop *prop)
 	size = get_property_size(full_path, prop_name);
 
 	prop->_data = zalloc(size);
-	if (prop->_data == NULL) {
-		report_alloc_error();
+	if (prop->_data == NULL)
 		return -1;
-	}
 
 	rc = get_property(full_path, prop_name, prop->_data, size);
 	if (rc) {
@@ -176,17 +174,13 @@ of_to_full_path(const char *of_path)
 
 	if (!strncmp(of_path, OFDT_BASE, strlen(OFDT_BASE))) {
 		full_path = strdup(of_path);
-		if (full_path == NULL) {
-			report_alloc_error();
+		if (full_path == NULL)
 			return NULL;
-		}
 	} else {
 		full_path_len = strlen(OFDT_BASE) + strlen(of_path) + 2;
 		full_path = zalloc(full_path_len);
-		if (full_path == NULL) {
-			report_alloc_error();
+		if (full_path == NULL)
 			return NULL;
-		}
 
 		if (*of_path == '/')
 			sprintf(full_path, "%s%s", OFDT_BASE, of_path);
@@ -240,7 +234,6 @@ get_drc_info(const char *of_path)
 
 	list = zalloc(n_drcs * sizeof(struct dr_connector));
 	if (list == NULL) {
-		report_alloc_error();
 		rc = 1;
 		goto done;
 	}

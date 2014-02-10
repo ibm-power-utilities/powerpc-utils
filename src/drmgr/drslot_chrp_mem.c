@@ -106,11 +106,8 @@ get_mem_scns(struct dr_node *lmb)
 		struct stat sbuf;
 
 		scn = zalloc(sizeof(*scn));
-		if (scn == NULL) {
-			report_alloc_error();
-			say(DEBUG, "Could not allocate memory section\n.");
+		if (scn == NULL)
 			return -1;
-		}
 
 		sprintf(scn->sysfs_path, sysfs_path, mem_scn);
 		scn->phys_addr = phys_addr;
@@ -275,7 +272,6 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
 						   "ibm,dynamic-memory");
 	lmb_list->drconf_buf = zalloc(lmb_list->drconf_buf_sz);
 	if (lmb_list->drconf_buf == NULL) {
-		report_alloc_error();
 		say(DEBUG, "Could not allocate buffer to get dynamic "
 		    "reconfigurable memory\n");
 		return -1;
@@ -399,7 +395,6 @@ get_lmbs(unsigned int sort)
 
 	lmb_list = zalloc(sizeof(*lmb_list));
 	if (lmb_list == NULL) {
-		report_alloc_error();
 		say(DEBUG, "Could not allocate LMB list head\n");
 		return NULL;
 	}
@@ -593,10 +588,8 @@ update_drconf_node(struct dr_node *lmb, struct lmb_list_head *lmb_list,
 	 */
 	prop_buf_sz = 128 + lmb_list->drconf_buf_sz;
 	prop_buf = zalloc(prop_buf_sz);
-	if (prop_buf == NULL) {
-		report_alloc_error();
+	if (prop_buf == NULL)
 		return -1;
-	}
 
 	rc = get_phandle(lmb->ofdt_path, &phandle);
 

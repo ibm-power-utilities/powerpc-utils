@@ -34,15 +34,8 @@ static inline int is_dot_dir(char * _p)
 	return (_p[0] == '.');
 }
 
-static inline void *zalloc(size_t size)
-{
-	void *data;
-	data = malloc(size);
-	if (data)
-		memset(data, 0, size);
-
-	return data;
-}
+void * __zalloc(size_t, const char *, int);
+#define zalloc(x)	__zalloc((x), __func__, __LINE__);
 
 #define DR_LOCK_FILE    	"/var/lock/dr_config_lock"
 #define PLATFORMPATH    	"/proc/device-tree/device_type"
@@ -76,7 +69,6 @@ enum say_level { ERROR = 1, WARN, INFO, DEBUG};
 /* The follwing are defined in common.c */
 int say(enum say_level, char *, ...);
 void report_unknown_error(char *, int);
-void report_alloc_error();
 int dr_init(void);
 void dr_fini(void);
 void set_timeout(int);
