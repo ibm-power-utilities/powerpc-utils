@@ -216,14 +216,11 @@ get_drc_info(const char *of_path)
 	struct of_list_prop *drc_names;
 	struct drc_prop_grp prop_grp;
 	char *full_path = NULL;
-	int n_drcs;
-	int rc;
+	int rc, n_drcs;
 
 	full_path = of_to_full_path(of_path);
-	if (full_path == NULL) {
-		rc = 1;
+	if (full_path == NULL)
 		goto done;
-	}
 
 	for (list = all_drc_lists; list; list = list->all_next) {
 		if (! strcmp(list->ofdt_path, of_path))
@@ -241,10 +238,8 @@ get_drc_info(const char *of_path)
 	n_drcs = drc_names->n_entries;
 
 	list = zalloc(n_drcs * sizeof(struct dr_connector));
-	if (list == NULL) {
-		rc = 1;
+	if (list == NULL)
 		goto done;
-	}
 
 	/* XXX Unchecked rc */
 	rc = build_connectors_list(&prop_grp, n_drcs, list);
