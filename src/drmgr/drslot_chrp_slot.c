@@ -88,7 +88,7 @@ remove_slot(struct dr_node *node)
 	 * "Hot unplug" the slot from pci world. unmap_bus_range will be
 	 * done here also.
 	 */
-	rc = dlpar_io_kernel_op(dlpar_remove_slot, node->drc_name);
+	rc = dlpar_remove_slot(node->drc_name);
 	if (rc) {
 		say(DEBUG, "remove %s from hotplug subsystem failed\n",
 		    node->drc_name);
@@ -108,7 +108,7 @@ remove_slot(struct dr_node *node)
 			return rc;
 		}
 
-		rc2 = dlpar_io_kernel_op(dlpar_add_slot, node->drc_name);
+		rc2 = dlpar_add_slot(node->drc_name);
 		if (rc2) {
 			say(ERROR, "Unknown failure %d. Data may be out of "
 			    "sync and\nthe system may require a reboot.\n", rc2);
@@ -209,7 +209,7 @@ add_slot(struct options *opts)
 	/* Need to add node into sysfs which will "Hot plug" the node into
 	 * pci world.
 	 */
-	rc = dlpar_io_kernel_op(dlpar_add_slot, node->drc_name);
+	rc = dlpar_add_slot(node->drc_name);
 	if (rc) {
 		if (n_children) {
 			if (release_hp_children(node->drc_name)) {
@@ -235,7 +235,7 @@ add_slot(struct options *opts)
 				    "a reboot.\n");
 			}
 			
-			if (dlpar_io_kernel_op(dlpar_remove_slot, node->drc_name)) {
+			if (dlpar_remove_slot(node->drc_name)) {
 				say(DEBUG, "remove %s from hotplug subsystem "
 				    "failed\n", node->drc_name);
 				say(ERROR, "Unknown failure. Data may be out "

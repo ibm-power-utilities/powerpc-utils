@@ -1148,8 +1148,7 @@ set_hp_adapter_status(uint operation, char *slot_name)
  * @param drc_name
  * @returns 0 on success, !0 otherwise
  */
-int
-dlpar_io_kernel_op(char *interface_file, char *drc_name)
+static int dlpar_io_kernel_op(const char *interface_file, const char *drc_name)
 {
 	int rc = 0, len;
 	FILE *file;
@@ -1184,6 +1183,16 @@ dlpar_io_kernel_op(char *interface_file, char *drc_name)
 	}
 
 	return 0;
+}
+
+int dlpar_remove_slot(const char *drc_name)
+{
+	return dlpar_io_kernel_op(remove_slot_fname, drc_name);
+}
+
+int dlpar_add_slot(const char *drc_name)
+{
+	return dlpar_io_kernel_op(add_slot_fname, drc_name);
 }
 
 void

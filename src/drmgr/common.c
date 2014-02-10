@@ -20,8 +20,8 @@
 #include "dr.h"
 #include "ofdt.h"
 
-char *dlpar_add_slot = DLPAR_ADD_SLOT;
-char *dlpar_remove_slot = DLPAR_REMOVE_SLOT;
+char *add_slot_fname = ADD_SLOT_FNAME;
+char *remove_slot_fname = REMOVE_SLOT_FNAME;
 
 #define DR_LOG_PATH	"/var/log/drmgr"
 #define DR_LOG_PATH0	"/var/log/drmgr.0"
@@ -1191,7 +1191,7 @@ check_slot_phb_dlpar(const char *type)
 	 * rpadlpar_io module is loaded or built into the kernel. This
 	 * does make the checking a bit redundant though.
 	 */
-	if ((stat(dlpar_add_slot, &sbuf)) || (stat(DLPAR_ADD_SLOT2, &sbuf))) {
+	if ((stat(add_slot_fname, &sbuf)) || (stat(ADD_SLOT_FNAME2, &sbuf))) {
 		rc = system("/sbin/modprobe rpadlpar_io");
 		if (WIFEXITED(rc) && WEXITSTATUS(rc))
 			say(ERROR, "rpadlpar_io module was not loaded\n");
@@ -1205,12 +1205,12 @@ check_slot_phb_dlpar(const char *type)
 	 * The default value is without the quotes.  This is what was and
 	 * what shall be again.
 	 */
-	rc = dlpar_capable(type, dlpar_add_slot);
+	rc = dlpar_capable(type, add_slot_fname);
 	if (! rc) {
-		dlpar_add_slot = DLPAR_ADD_SLOT2;
-		dlpar_remove_slot = DLPAR_REMOVE_SLOT2;
+		add_slot_fname = ADD_SLOT_FNAME2;
+		remove_slot_fname = REMOVE_SLOT_FNAME2;
 		
-		rc = dlpar_capable(type, dlpar_add_slot);
+		rc = dlpar_capable(type, add_slot_fname);
 	}
 	
 	return rc;

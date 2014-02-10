@@ -32,15 +32,15 @@
 #define CPU_DEV		8
 #define MEM_DEV		9
 
-#define DLPAR_ADD_SLOT    	"/sys/bus/pci/slots/control/add_slot"
-#define DLPAR_ADD_SLOT2    	"/sys/bus/pci/slots/control/\"add_slot\""
-#define DLPAR_REMOVE_SLOT    	"/sys/bus/pci/slots/control/remove_slot"
-#define DLPAR_REMOVE_SLOT2    	"/sys/bus/pci/slots/control/\"remove_slot\""
+#define ADD_SLOT_FNAME    	"/sys/bus/pci/slots/control/add_slot"
+#define ADD_SLOT_FNAME2    	"/sys/bus/pci/slots/control/\"add_slot\""
+#define REMOVE_SLOT_FNAME    	"/sys/bus/pci/slots/control/remove_slot"
+#define REMOVE_SLOT_FNAME2    	"/sys/bus/pci/slots/control/\"remove_slot\""
 
 #define IGNORE_HP_PO_PROP	"/proc/device-tree/ibm,ignore-hp-po-fails-for-dlpar"
 
-extern char *dlpar_add_slot;
-extern char *dlpar_remove_slot;
+extern char *add_slot_fname;
+extern char *remove_slot_fname;
 
 #define HEA_ADD_SLOT		"/sys/bus/ibmebus/probe"
 #define HEA_REMOVE_SLOT		"/sys/bus/ibmebus/remove"
@@ -62,7 +62,8 @@ void free_node(struct dr_node *);
 int get_hp_adapter_status(char *);
 int set_hp_adapter_status(uint, char *);
 int release_hp_children(char *);
-int dlpar_io_kernel_op(char *, char *);
+int dlpar_remove_slot(const char *);
+int dlpar_add_slot(const char *);
 int cmp_drcname(char *, char *);
 int acquire_hp_children(char *, int *);
 int enable_hp_children(char *);

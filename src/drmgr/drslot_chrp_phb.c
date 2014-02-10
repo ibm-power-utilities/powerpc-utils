@@ -291,7 +291,7 @@ remove_phb(struct options *opts)
 	if (rc)
 		goto phb_remove_error;
 
-	rc = dlpar_io_kernel_op(dlpar_remove_slot, phb->drc_name);
+	rc = dlpar_remove_slot(phb->drc_name);
 	if (rc) {
 		say(ERROR, "kernel remove failed for %s, rc = %d\n",
 			phb->drc_name, rc);
@@ -390,7 +390,7 @@ add_phb(struct options *opts)
 		goto phb_add_error;
 	}
 
-	rc = dlpar_io_kernel_op(dlpar_add_slot, phb->drc_name);
+	rc = dlpar_add_slot(phb->drc_name);
 	if (rc) {
 		if (n_children) {
 			if (release_hp_children(phb->drc_name)) {
@@ -417,7 +417,7 @@ add_phb(struct options *opts)
 				    "a reboot.\n");
 			}
 
-			if (dlpar_io_kernel_op(dlpar_remove_slot, phb->drc_name)) {
+			if (dlpar_remove_slot(phb->drc_name)) {
 				say(DEBUG, "remove %s from hotplug subsystem "
 				    "failed\n", phb->drc_name);
 				say(ERROR, "Unknown failure. Data may be out "
