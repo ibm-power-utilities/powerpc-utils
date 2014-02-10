@@ -299,40 +299,7 @@ int drmgr(struct options *opts) {
 	return -1;
 }
 
-struct command *
-parse_and_validate_options(int argc, char *argv[], struct options *opts)
-{
-	struct command *command = NULL;
-	int rc;
-
-	parse_options(argc, argv, opts);
-
-	if (display_capabilities) {
-		print_dlpar_capabilities();
-		return NULL;
-	}
-
-	command = get_command(opts);
-
-	if (display_usage) {
-		command_usage(command);
-		return NULL;
-	}
-
-	/* Validate the options for the action we want to perform */
-	rc = command->validate_options(opts);
-	if (rc)
-		return NULL;
-
-	/* Validate this platform */
-	if (!valid_platform("chrp"))
-		return NULL;
-
-	return command;
-}
-
-int
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	struct options opts;
 	char log_msg[DR_PATH_MAX];
@@ -343,10 +310,34 @@ main(int argc, char *argv[])
 	if (rc)
 		return rc;
 
-	command = parse_and_validate_options(argc, argv, &opts);
-	if (!command) {
+	parse_options(argc, argv, &opts);
+
+	if (display_capabilities) {
+		print_dlpar_capabilities();
+		dr_fini();
+		return 0;
+	}
+
+	command = get_command(&opts);
+
+	if (display_usage) {
+		command_usage(command);
+		dr_fini();
+		return 0;
+	}
+
+	/* Validate the options for the action we want to perform */
+	rc = command->validate_options(&opts);
+	if (rc) {
 		dr_fini();
 		return -1;
+	}
+
+	/* Validate this platform */
+	rc = valid_platform("chrp");
+	if (rc) {
+		dr_fini();
+		return rc;
 	}
 
 	set_timeout(opts.timeout);
@@ -363,5 +354,6 @@ main(int argc, char *argv[])
 	/* Now, using the actual command, call out to the proper handler */
 	rc = command->func(&opts);
 
+	dr_fini();
 	return rc;
 }
