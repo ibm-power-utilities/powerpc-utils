@@ -267,6 +267,35 @@ print_proc_sn_value(void)
 		case 5:
 			printf("00000000\n");
 			break;
+		case 6:
+			if (sssss[4] >= 71) {
+				p111.bit1 = 1;
+				p111.bit2 = 1;
+				p111.bit3 = 1;
+				p111.SF = char_to_enum(sssss[4])*POW_36_4 +
+					char_to_enum(sssss[0])*POW_36_3 +
+					char_to_enum(sssss[1])*POW_36_2 +
+					char_to_enum(sssss[2])*36 +
+					char_to_enum(sssss[3]);
+				p111.constant = 0x4b;
+				dump_hex((char *)&p111,
+					sizeof(struct proc_sn_111));
+			}
+			else {
+				p110.bit1 = 1;
+				p110.bit2 = 1;
+				p110.bit3 = 0;
+				p110.RV = 0;
+				p110.SF = char_to_enum(sssss[0])*POW_16_4 +
+					char_to_enum(sssss[1])*POW_16_3 +
+					char_to_enum(sssss[2])*POW_16_2 +
+					char_to_enum(sssss[3])*36 +
+					char_to_enum(sssss[4]);
+				p110.constant = 0x4b;
+				dump_hex((char *)&p110,
+					sizeof(struct proc_sn_110));
+			}
+			break;
 		default:
 			fprintf(stderr, "Unknown OF prefix: IBM,%02d\n",
 					prefix);
@@ -385,6 +414,7 @@ print_sys_part_id(void)
 				break;
 			}
 		case 4:
+		case 6:
 			id1.firstbit = 1;
 			id1.RV = 0;
 			id1.SF = char_to_enum(sssss[0])*POW_36_4 +
