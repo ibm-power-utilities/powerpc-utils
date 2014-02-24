@@ -16,6 +16,7 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include "lparstat.h"
+#include "pseries_platform.h"
 
 #define LPARCFG_FILE	"/proc/ppc64/lparcfg"
 #define SE_NOT_FOUND	"???"
@@ -503,6 +504,12 @@ int main(int argc, char *argv[])
 	int interval = 0, count = 0;
 	int c;
 	int i_option = 0;
+
+	if (get_platform() != PLATFORM_PSERIES_LPAR) {
+		fprintf(stderr, "%s: is not supported on the %s platform\n",
+							argv[0], platform_name);
+		exit(1);
+	}
 
 	while ((c = getopt(argc, argv, "i")) != -1) {
 		switch(c) {

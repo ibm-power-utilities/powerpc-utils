@@ -44,6 +44,7 @@
 #include <getopt.h>
 
 #include "librtas_error.h"
+#include "pseries_platform.h"
 
 #define NVRAM_PROGRAM     "/usr/sbin/nvram"
 #define PATH_GET_SYSPARM  "/proc/device-tree/rtas/ibm,get-system-parameter"
@@ -1511,6 +1512,13 @@ main(int argc, char *argv[]) {
 #endif
 
 	cmd = argv[0];
+
+	if (get_platform() != PLATFORM_PSERIES_LPAR) {
+		fprintf(stderr, "%s: is not supported on the %s platform\n",
+							cmd, platform_name);
+		exit(1);
+	}
+
 	if (argc == 1) {
 		print_usage();
 		return 1;

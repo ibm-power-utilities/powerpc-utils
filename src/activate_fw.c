@@ -33,6 +33,7 @@
 
 #include <stdio.h>
 #include "librtas.h"
+#include "pseries_platform.h"
 
 /**
  * @def say(_f, _a...)
@@ -48,6 +49,13 @@ int
 main(void)
 {
     int rc;
+
+    if (get_platform() != PLATFORM_PSERIES_LPAR) {
+	fprintf(stderr, "activate_firmware: is not supported on the %s "
+					"platform\n", platform_name);
+	return 1;
+    }
+
 
     rc = rtas_activate_firmware();
 

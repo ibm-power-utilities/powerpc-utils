@@ -60,6 +60,7 @@
 #include <librtas.h>
 
 #include "librtas_error.h"
+#include "pseries_platform.h"
 
 #define BUF_SIZE		1024
 #define PATH_RTAS_SENSORS	"/proc/device-tree/rtas/rtas-sensors"
@@ -300,11 +301,17 @@ int
 main (int argc, char **argv)
 {
 	int c, text=0, numerical=0, measured=0, i;
+	int platform=0;
 	int fd, rc;
 	uint32_t tok, max_index;
 	char *token=NULL, *index=NULL;
 
 	cmd = argv[0];
+	if (get_platform() != PLATFORM_PSERIES_LPAR) {
+		fprintf(stderr, "%s: is not supported on the %s platform\n",
+							cmd, platform_name);
+		return 1;
+	}
 
 	while ((c = getopt (argc, argv, "hlat:i:v")) != -1) {
 
