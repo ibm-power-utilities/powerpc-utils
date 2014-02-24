@@ -50,11 +50,11 @@ static int counters[MAX_NR_CPUS];
 
 #endif
 
-int threads_per_cpu = 0;
-int cpus_in_system = 0;
-int threads_in_system = 0;
+static int threads_per_cpu = 0;
+static int cpus_in_system = 0;
+static int threads_in_system = 0;
 
-int test_attr(char *path, char *perms)
+static int test_attr(char *path, char *perms)
 {
 	FILE *fp;
 
@@ -71,17 +71,17 @@ int test_attr(char *path, char *perms)
 	return 0;
 }
 
-int attr_is_readable(char *path)
+static int attr_is_readable(char *path)
 {
 	return test_attr(path, "r");
 }
 
-int attr_is_writeable(char *path)
+static int attr_is_writeable(char *path)
 {
 	return test_attr(path, "w");
 }
 
-int test_sysattr(char *attribute, char *perms)
+static int test_sysattr(char *attribute, char *perms)
 {
 	char path[SYSFS_PATH_MAX];
 	int i;
@@ -95,17 +95,17 @@ int test_sysattr(char *attribute, char *perms)
 	return 1;
 }
 
-int sysattr_is_readable(char *attribute)
+static int sysattr_is_readable(char *attribute)
 {
 	return test_sysattr(attribute, "r");
 }
 
-int sysattr_is_writeable(char *attribute)
+static int sysattr_is_writeable(char *attribute)
 {
 	return test_sysattr(attribute, "w");
 }
 
-int get_attribute(char *path, const char *fmt, int *value)
+static int get_attribute(char *path, const char *fmt, int *value)
 {
 	FILE *fp;
 	int rc;
@@ -125,7 +125,7 @@ int get_attribute(char *path, const char *fmt, int *value)
 	return 0;
 }
 
-int set_attribute(const char *path, const char *fmt, int value)
+static int set_attribute(const char *path, const char *fmt, int value)
 {
 	FILE *fp;
 
@@ -139,7 +139,7 @@ int set_attribute(const char *path, const char *fmt, int value)
 	return 0;
 }
 
-int cpu_online(int thread)
+static int cpu_online(int thread)
 {
 	char path[SYSFS_PATH_MAX];
 	int rc, online;
@@ -152,7 +152,7 @@ int cpu_online(int thread)
 	return 1;
 }
 
-int get_system_attribute(char *attribute, const char *fmt, int *value,
+static int get_system_attribute(char *attribute, const char *fmt, int *value,
 			 int *inconsistent)
 {
 	char path[SYSFS_PATH_MAX];
@@ -179,7 +179,7 @@ int get_system_attribute(char *attribute, const char *fmt, int *value,
 	return 0;
 }
 
-int set_system_attribute(char *attribute, const char *fmt, int state)
+static int set_system_attribute(char *attribute, const char *fmt, int state)
 {
 	char path[SYSFS_PATH_MAX];
 	int i, rc;
@@ -194,7 +194,7 @@ int set_system_attribute(char *attribute, const char *fmt, int state)
 	return 0;
 }
 
-int dscr_default_exists(void)
+static int dscr_default_exists(void)
 {
 	struct stat sb;
 
@@ -208,7 +208,7 @@ int dscr_default_exists(void)
  * specific dscr value.  This is because the dscr value is now thread
  * specific.
  */
-int set_dscr(int state)
+static int set_dscr(int state)
 {
 	int rc;
 
@@ -231,7 +231,7 @@ int set_dscr(int state)
 	return rc;
 }
 
-int get_dscr(int *value, int *inconsistent)
+static int get_dscr(int *value, int *inconsistent)
 {
 	int rc;
 
@@ -254,7 +254,7 @@ int get_dscr(int *value, int *inconsistent)
 	return rc;
 }
 
-int set_smt_snooze_delay(int delay)
+static int set_smt_snooze_delay(int delay)
 {
 	if (!sysattr_is_writeable("smt_snooze_delay")) {
 		perror("Cannot set smt snooze delay");
@@ -264,7 +264,7 @@ int set_smt_snooze_delay(int delay)
 	return set_system_attribute("smt_snooze_delay", "%d", delay);
 }
 
-int get_smt_snooze_delay(int *delay, int *inconsistent)
+static int get_smt_snooze_delay(int *delay, int *inconsistent)
 {
 	if (!sysattr_is_readable("smt_snooze_delay")) {
 		perror("Cannot retrieve smt snooze delay");
@@ -275,18 +275,18 @@ int get_smt_snooze_delay(int *delay, int *inconsistent)
 				    inconsistent);
 }
 
-int online_thread(const char *path)
+static int online_thread(const char *path)
 {
 	return set_attribute(path, "%d", 1);
 }
 
-int offline_thread(const char *path)
+static int offline_thread(const char *path)
 {
 	return set_attribute(path, "%d", 0);
 }
 
 
-int get_cpu_info(void)
+static int get_cpu_info(void)
 {
 	DIR *d;
 	struct dirent *de;
@@ -320,7 +320,7 @@ int get_cpu_info(void)
 	return 0;
 }
 
-int is_smt_capable(void)
+static int is_smt_capable(void)
 {
 	struct stat sb;
 	char path[SYSFS_PATH_MAX];
@@ -336,7 +336,7 @@ int is_smt_capable(void)
 	return 0;
 }
 
-int get_one_smt_state(int primary_thread)
+static int get_one_smt_state(int primary_thread)
 {
 	int thread_state;
 	int smt_state = 0;
@@ -350,7 +350,7 @@ int get_one_smt_state(int primary_thread)
 	return smt_state ? smt_state : -1;
 }
 
-int get_smt_state(void)
+static int get_smt_state(void)
 {
 	int system_state = -1;
 	int i;
@@ -376,7 +376,7 @@ int get_smt_state(void)
 	return system_state;
 }
 
-int set_one_smt_state(int thread, int online_threads)
+static int set_one_smt_state(int thread, int online_threads)
 {
 	char path[SYSFS_PATH_MAX];
 	int i, rc;
@@ -400,7 +400,7 @@ int set_one_smt_state(int thread, int online_threads)
 	return rc;
 }
 
-int set_smt_state(int smt_state)
+static int set_smt_state(int smt_state)
 {
 	int i, rc;
 	int ssd, update_ssd = 1;
@@ -429,7 +429,7 @@ int set_smt_state(int smt_state)
 	return rc;
 }
 
-int is_dscr_capable(void)
+static int is_dscr_capable(void)
 {
 	struct stat sb;
 	char path[SYSFS_PATH_MAX];
@@ -448,7 +448,7 @@ int is_dscr_capable(void)
 	return 0;
 }
 
-int do_smt(char *state)
+static int do_smt(char *state)
 {
 	int rc = 0;
 	int smt_state;
@@ -493,7 +493,7 @@ int do_smt(char *state)
 
 #define PTRACE_DSCR 44
 
-int do_dscr_pid(int dscr_state, pid_t pid)
+static int do_dscr_pid(int dscr_state, pid_t pid)
 {
 	int rc;
 
@@ -530,7 +530,7 @@ int do_dscr_pid(int dscr_state, pid_t pid)
 	return rc;
 }
 
-int do_dscr(char *state, pid_t pid)
+static int do_dscr(char *state, pid_t pid)
 {
 	int rc = 0;
 	int dscr_state = 0;
@@ -564,7 +564,7 @@ int do_dscr(char *state, pid_t pid)
 	return rc;
 }
 
-int do_smt_snooze_delay(char *state)
+static int do_smt_snooze_delay(char *state)
 {
 	int rc = 0;
 
@@ -598,7 +598,7 @@ int do_smt_snooze_delay(char *state)
 	return rc;
 }
 
-int do_run_mode(char *run_mode)
+static int do_run_mode(char *run_mode)
 {
 	char mode[3];
 	int rc;
@@ -753,7 +753,7 @@ static void *soak(void *arg)
 		; /* Do Nothing */
 }
 
-char *power_mode(uint64_t mode)
+static char *power_mode(uint64_t mode)
 {
 	switch (mode) {
 	case 0x0001:
@@ -769,7 +769,7 @@ char *power_mode(uint64_t mode)
 	}
 }
 
-void report_system_power_mode(void)
+static void report_system_power_mode(void)
 {
 	FILE *f;
 	char line[128];
@@ -820,7 +820,7 @@ void report_system_power_mode(void)
 }
 
 /* We need an FD per CPU, with a few more for stdin/out/err etc */
-void setrlimit_open_files(void)
+static void setrlimit_open_files(void)
 {
 	struct rlimit old_rlim, new_rlim;
 	int new = threads_in_system + 8;
@@ -838,7 +838,7 @@ void setrlimit_open_files(void)
 
 #define freq_calc(cycles, time)	(1.0 * (cycles) / (time) / 1000000000ULL)
 
-int do_cpu_frequency(int sleep_time)
+static int do_cpu_frequency(int sleep_time)
 {
 	int i, rc;
 	unsigned long long min = -1ULL;
@@ -915,7 +915,7 @@ int do_cpu_frequency(int sleep_time)
 
 #else
 
-int do_cpu_frequency(void)
+static int do_cpu_frequency(void)
 {
 	printf("CPU Frequency determination is not supported on this "
 	       "platfom.\n");
@@ -924,13 +924,13 @@ int do_cpu_frequency(void)
 
 #endif
 
-int do_cores_present(char * state)
+static int do_cores_present(char * state)
 {
 	printf("Number of cores present = %d\n", cpus_in_system);
 	return 0;
 }
 
-int set_all_threads_off(int cpu, int smt_state)
+static int set_all_threads_off(int cpu, int smt_state)
 {
 	int i;
 	char path[SYSFS_PATH_MAX];
@@ -946,7 +946,7 @@ int set_all_threads_off(int cpu, int smt_state)
 	return rc;
 }
 
-int set_one_core(int smt_state, int core, int state)
+static int set_one_core(int smt_state, int core, int state)
 {
 	int rc = 0;
 	int cpu = core * threads_per_cpu;
@@ -964,7 +964,7 @@ int set_one_core(int smt_state, int core, int state)
 	return rc;
 }
 
-int do_cores_online(char *state)
+static int do_cores_online(char *state)
 {
 	int smt_state;
 	int *core_state;
@@ -1045,7 +1045,7 @@ int do_cores_online(char *state)
 	return 0;
 }
 
-void usage(void)
+static void usage(void)
 {
 	printf(
 "Usage: ppc64_cpu [command] [options]\n"
