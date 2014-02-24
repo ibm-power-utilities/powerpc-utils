@@ -17,6 +17,7 @@ OFPATHNAME="ofpathname"
 VERSION="0.5"
 FIND=/usr/bin/find
 CAT=/bin/cat
+PSERIES_PLATFORM=$(dirname $0)/pseries_platform
 
 # Find out what platfrom we are running on.  Hopefully this
 # list will get expanded with time.
@@ -1223,6 +1224,12 @@ of2l_fc()
 #
 # Main
 #
+. $PSERIES_PLATFORM
+case "$platform" in
+	$PLATFORM_UNKNOWN | $PLATFORM_POWERKVM_HOST)
+		echo "$OFPATHNAME: is not supported on the $platform_name platform"
+		exit 1 ;;
+esac
 
 if [[ "$#" -eq 0 ]]; then
     usage

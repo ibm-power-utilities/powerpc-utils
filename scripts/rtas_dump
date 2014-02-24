@@ -13,6 +13,7 @@
 use vars qw/ %opt /;
 
 use Getopt::Long;
+use File::Basename;
 
 $re_decode = $ENV{RTAS_EVENT_DECODE} || "/usr/sbin/rtas_event_decode";
 
@@ -62,6 +63,20 @@ sub handle_rtas_event()
 #
 # Main
 #
+my $PSERIES_PLATFORM = dirname(__FILE__) . "/pseries_platform";
+
+my $perldumpenv='perl -MData::Dumper -e '."'".
+    '\$Data::Dumper::Terse=1;print Dumper(\%ENV);'."'";
+
+eval '%ENV=('.$1.')' if `bash -c "
+        . $PSERIES_PLATFORM;
+        $perldumpenv"`
+    =~ /^\s*\{(.*)\}\s*$/mxs;
+
+if ($ENV{'platform'} == $ENV{'PLATFORM_UNKNOWN'} || $ENV{'platform'} == $ENV{'PLATFORM_POWERKVM_HOST'}) {
+	print "rtas_dump: is not supported on the $ENV{'platform_name'} platform\n";
+	exit 1;
+}
 
 # process cmdline args
 Getopt::Long::Configure("bundling");

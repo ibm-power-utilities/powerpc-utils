@@ -26,7 +26,9 @@ use Getopt::Std;
 use POSIX qw(strftime);
 use Sys::Hostname;
 use FileHandle;
+use File::Basename;
 
+my $PSERIES_PLATFORM = dirname(__FILE__) . "/pseries_platform";
 my $outdir = "/tmp/ibmsupt";		# note NO trailing /
 my $outfile = "snap.tar.gz";		# in the working dir.
 my $cmddir = "snap_commands";		# cmd output dir.
@@ -306,6 +308,19 @@ sub snap_commands {
 }
 
 $< == 0 or error(1, "Must be executed as root");
+
+my $perldumpenv='perl -MData::Dumper -e '."'".
+    '\$Data::Dumper::Terse=1;print Dumper(\%ENV);'."'";
+
+eval '%ENV=('.$1.')' if `bash -c "
+        . $PSERIES_PLATFORM;
+        $perldumpenv"`
+    =~ /^\s*\{(.*)\}\s*$/mxs;
+
+if ($ENV{'platform'} == $ENV{'PLATFORM_UNKNOWN'} || $ENV{'platform'} == $ENV{'PLATFORM_POWERKVM_HOST'}) {
+        print "rtas_dump: is not supported on the $ENV{'platform_name'} platform\n";
+        exit 1;
+}
 
 if (!getopts('atd:ho:v')) {
 	print_usage;
