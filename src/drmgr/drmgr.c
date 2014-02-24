@@ -16,7 +16,7 @@
 #include "dr.h"
 #include "pseries_platform.h"
 
-#define DRMGR_ARGS	"ac:d:Iimnp:Qq:Rrs:w:t:hC"
+#define DRMGR_ARGS	"ac:d:Iimnp:Qq:Rrs:w:t:hCV"
 
 int output_level = 1; /* default to lowest output level */
 
@@ -238,6 +238,9 @@ parse_options(int argc, char *argv[], struct options *opts)
 		    	break;
 		    case 't': /* target lpid (pmig, not used) */
 			break;
+		    case 'V': /* qemu virtio pci device (workaround) */
+                        opts->pci_virtio = 1;
+                        break;
 
 		    default:
 			say(ERROR, "Invalid option specified '%c'\n", optopt);

@@ -63,6 +63,7 @@ struct options {
 	unsigned int quantity;  /* number of resources                        */
 	char	*ctype;
 	char	*p_option;
+	int     pci_virtio;     /* qemu virtio device (legacy guest workaround) */
 };
 
 enum say_level { ERROR = 1, WARN, INFO, DEBUG};

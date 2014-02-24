@@ -1141,6 +1141,59 @@ set_hp_adapter_status(uint operation, char *slot_name)
 }
 
 /**
+ * pci_rescan_bus
+*
+ * @returns 0 on success, !0 otherwise
+ */
+int
+pci_rescan_bus()
+{
+	int rc = 0;
+	FILE *file;
+
+	file = fopen(PCI_RESCAN_PATH, "w");
+	if (file == NULL) {
+		say(ERROR, "failed ot open %s: %s\n", PCI_RESCAN_PATH, strerror(errno));
+		return -ENODEV;
+	}
+
+	rc = fwrite("1", 1, 1, file);
+	if (rc != 1)
+		rc = -EACCES;
+
+	fclose(file);
+	return rc;
+}
+
+/**
+ * pci_remove_device
+ *
+ * @returns 0 on success, !0 otherwise
+ */
+
+int
+pci_remove_device(struct dr_node *node)
+{
+	int rc = 0;
+	FILE *file;
+	char path[DR_PATH_MAX];
+
+	sprintf(path, "%s/%s", node->sysfs_dev_path, "remove");
+	file = fopen(path, "w");
+	if (file == NULL) {
+		say(ERROR, "failed to open %s: %s\n", path, strerror(errno));
+		return -ENODEV;
+	}
+
+	rc = fwrite("1", 1, 1, file);
+	if (rc != 1)
+		rc = -EACCES;
+
+	fclose(file);
+	return rc;
+}
+
+/**
  * dlpar_io_kernel_op
  * @brief access kernel interface files
  *

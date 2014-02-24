@@ -17,6 +17,8 @@
 #define PHP_CONFIG_ADAPTER	1
 #define PHP_UNCONFIG_ADAPTER	0
 
+#define PCI_RESCAN_PATH         "/sys/bus/pci/rescan"
+
 /* The following defines are used for adapter status */
 #define EMPTY		0
 #define CONFIG		1
@@ -61,6 +63,8 @@ void free_node(struct dr_node *);
 /* Function prototypes for subroutines  */
 int get_hp_adapter_status(char *);
 int set_hp_adapter_status(uint, char *);
+int pci_rescan_bus();
+int pci_remove_device(struct dr_node *);
 int release_hp_children(char *);
 int dlpar_remove_slot(const char *);
 int dlpar_add_slot(const char *);

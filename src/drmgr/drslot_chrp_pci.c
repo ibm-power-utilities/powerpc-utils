@@ -543,8 +543,14 @@ do_add(struct options *opts, struct dr_node *all_nodes)
 
 	say(DEBUG, "is calling enable_slot to config adapter\n");
 
-	/* Try to config the adapter */
-	set_hp_adapter_status(PHP_CONFIG_ADAPTER, node->drc_name);
+	/* Try to config the adapter. The rpaphp module doesn't play well with
+	 * qemu pci slots so we let the generic kernel pci code probe the device
+	 * by rescanning the bus in the qemu virtio case.
+	 */
+	if (!opts->pci_virtio)
+		set_hp_adapter_status(PHP_CONFIG_ADAPTER, node->drc_name);
+	else
+		pci_rescan_bus();
 
 	return 0;
 }
@@ -605,26 +611,43 @@ remove_work(struct options *opts, struct dr_node *all_nodes)
 		return NULL;
 	}
 
-	/* Make sure all the devices are
-	 * not configured before proceeding
-	 */
-	if (get_hp_adapter_status(node->drc_name) == CONFIG) {
-		say(DEBUG, "unconfiguring adapter in slot[%s]\n",
-		    node->drc_name);
-		set_hp_adapter_status(PHP_UNCONFIG_ADAPTER, node->drc_name);
+	if (!opts->pci_virtio) {
+		/* Make sure all the devices are
+		 * not configured before proceeding
+		 */
+		if (get_hp_adapter_status(node->drc_name) == CONFIG) {
+			say(DEBUG, "unconfiguring adapter in slot[%s]\n",
+				node->drc_name);
+			set_hp_adapter_status(PHP_UNCONFIG_ADAPTER, node->drc_name);
 
-		int rc = get_hp_adapter_status(node->drc_name);
-		if (rc != NOT_CONFIG) {
-			say(ERROR, "Unconfig adapter failed.\n");
-			return NULL;
+			int rc = get_hp_adapter_status(node->drc_name);
+			if (rc != NOT_CONFIG) {
+				say(ERROR, "Unconfig adapter failed.\n");
+				return NULL;
+			}
+		} else {
+			/* In certain cases such as a complete failure of the
+			 * adapter there may not have been the possibility to clean
+			 * up everything. Mark these adapaters for additional
+			 * processing later.
+			 */
+			node->post_replace_processing = 1;
 		}
 	} else {
-		/* In certain cases such as a complete failure of the
-		 * adapter there may not have been the possibility to clean
-		 * up everything. Mark these adapaters for additional
-		 * processing later.
+		/* The rpaphp module fails to work with qemu pci slots so
+		 * so we rely on the devices remove attribute in sysfs to
+		 * inform the generic kernel pci code to remove the qemu virtio
+		 * device
 		 */
-		node->post_replace_processing = 1;
+		for (child = node->children; child; child = child->next)
+			pci_remove_device(child);
+
+		/* The kernel adds the pci device removal to a work queue which
+		 * makes the previous pci_remove_device call asynchronous. Need
+		 * to let kernel finish cleanup before informing qemu to isolate
+		 * and power down virtio pci device.
+		 */
+		sleep(3);
 	}
 
 	/* Call subroutine to remove node(s) from
