@@ -52,58 +52,69 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 sbinPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(sbin_PROGRAMS)
-am__activate_firmware_SOURCES_DIST = activate_fw.c
+am__activate_firmware_SOURCES_DIST = activate_fw.c \
+	common/pseries_platform.c common/pseries_platform.h
+am__objects_1 = pseries_platform.$(OBJEXT)
 @WITH_LIBRTAS_TRUE@am_activate_firmware_OBJECTS =  \
-@WITH_LIBRTAS_TRUE@	activate_fw.$(OBJEXT)
+@WITH_LIBRTAS_TRUE@	activate_fw.$(OBJEXT) $(am__objects_1)
 activate_firmware_OBJECTS = $(am_activate_firmware_OBJECTS)
 activate_firmware_DEPENDENCIES =
-am_lparstat_OBJECTS = lparstat.$(OBJEXT)
+am_lparstat_OBJECTS = lparstat.$(OBJEXT) $(am__objects_1)
 lparstat_OBJECTS = $(am_lparstat_OBJECTS)
 lparstat_LDADD = $(LDADD)
-am_lsprop_OBJECTS = lsprop.$(OBJEXT)
+am_lsprop_OBJECTS = lsprop.$(OBJEXT) $(am__objects_1)
 lsprop_OBJECTS = $(am_lsprop_OBJECTS)
 lsprop_LDADD = $(LDADD)
-am_nvram_OBJECTS = nvram.$(OBJEXT)
+am_nvram_OBJECTS = nvram.$(OBJEXT) $(am__objects_1)
 nvram_OBJECTS = $(am_nvram_OBJECTS)
 nvram_DEPENDENCIES =
 am__ppc64_cpu_SOURCES_DIST = ppc64_cpu.c librtas_error.c \
-	librtas_error.h
+	librtas_error.h common/pseries_platform.c \
+	common/pseries_platform.h
 @WITH_LIBRTAS_TRUE@am_ppc64_cpu_OBJECTS = ppc64_cpu.$(OBJEXT) \
-@WITH_LIBRTAS_TRUE@	librtas_error.$(OBJEXT)
+@WITH_LIBRTAS_TRUE@	librtas_error.$(OBJEXT) $(am__objects_1)
 ppc64_cpu_OBJECTS = $(am_ppc64_cpu_OBJECTS)
 ppc64_cpu_DEPENDENCIES =
-am__rtas_event_decode_SOURCES_DIST = rtas_event_decode.c
+am__rtas_event_decode_SOURCES_DIST = rtas_event_decode.c \
+	common/pseries_platform.c common/pseries_platform.h
 @WITH_LIBRTAS_TRUE@am_rtas_event_decode_OBJECTS =  \
-@WITH_LIBRTAS_TRUE@	rtas_event_decode.$(OBJEXT)
+@WITH_LIBRTAS_TRUE@	rtas_event_decode.$(OBJEXT) \
+@WITH_LIBRTAS_TRUE@	$(am__objects_1)
 rtas_event_decode_OBJECTS = $(am_rtas_event_decode_OBJECTS)
 rtas_event_decode_DEPENDENCIES =
 am__rtas_ibm_get_vpd_SOURCES_DIST = rtas_ibm_get_vpd.c librtas_error.c \
-	librtas_error.h
+	librtas_error.h common/pseries_platform.c \
+	common/pseries_platform.h
 @WITH_LIBRTAS_TRUE@am_rtas_ibm_get_vpd_OBJECTS =  \
 @WITH_LIBRTAS_TRUE@	rtas_ibm_get_vpd.$(OBJEXT) \
-@WITH_LIBRTAS_TRUE@	librtas_error.$(OBJEXT)
+@WITH_LIBRTAS_TRUE@	librtas_error.$(OBJEXT) $(am__objects_1)
 rtas_ibm_get_vpd_OBJECTS = $(am_rtas_ibm_get_vpd_OBJECTS)
 rtas_ibm_get_vpd_DEPENDENCIES =
 am__serv_config_SOURCES_DIST = serv_config.c librtas_error.c \
-	librtas_error.h
+	librtas_error.h common/pseries_platform.c \
+	common/pseries_platform.h
 @WITH_LIBRTAS_TRUE@am_serv_config_OBJECTS = serv_config.$(OBJEXT) \
-@WITH_LIBRTAS_TRUE@	librtas_error.$(OBJEXT)
+@WITH_LIBRTAS_TRUE@	librtas_error.$(OBJEXT) $(am__objects_1)
 serv_config_OBJECTS = $(am_serv_config_OBJECTS)
 serv_config_DEPENDENCIES =
 am__set_poweron_time_SOURCES_DIST = set_poweron_time.c librtas_error.c \
-	librtas_error.h
+	librtas_error.h common/pseries_platform.c \
+	common/pseries_platform.h
 @WITH_LIBRTAS_TRUE@am_set_poweron_time_OBJECTS =  \
 @WITH_LIBRTAS_TRUE@	set_poweron_time.$(OBJEXT) \
-@WITH_LIBRTAS_TRUE@	librtas_error.$(OBJEXT)
+@WITH_LIBRTAS_TRUE@	librtas_error.$(OBJEXT) $(am__objects_1)
 set_poweron_time_OBJECTS = $(am_set_poweron_time_OBJECTS)
 set_poweron_time_DEPENDENCIES =
-am__sys_ident_SOURCES_DIST = sys_ident.c
-@WITH_LIBRTAS_TRUE@am_sys_ident_OBJECTS = sys_ident.$(OBJEXT)
+am__sys_ident_SOURCES_DIST = sys_ident.c common/pseries_platform.c \
+	common/pseries_platform.h
+@WITH_LIBRTAS_TRUE@am_sys_ident_OBJECTS = sys_ident.$(OBJEXT) \
+@WITH_LIBRTAS_TRUE@	$(am__objects_1)
 sys_ident_OBJECTS = $(am_sys_ident_OBJECTS)
 sys_ident_DEPENDENCIES =
-am__uesensor_SOURCES_DIST = uesensor.c librtas_error.c librtas_error.h
+am__uesensor_SOURCES_DIST = uesensor.c librtas_error.c librtas_error.h \
+	common/pseries_platform.c common/pseries_platform.h
 @WITH_LIBRTAS_TRUE@am_uesensor_OBJECTS = uesensor.$(OBJEXT) \
-@WITH_LIBRTAS_TRUE@	librtas_error.$(OBJEXT)
+@WITH_LIBRTAS_TRUE@	librtas_error.$(OBJEXT) $(am__objects_1)
 uesensor_OBJECTS = $(am_uesensor_OBJECTS)
 uesensor_DEPENDENCIES =
 DEFAULT_INCLUDES = -I.@am__isrc@
@@ -224,29 +235,30 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CFLAGS = -Wall -g 
+AM_CFLAGS = -Wall -g -I common/ 
 AM_LDFLAGS = 
 SUBDIRS = drmgr
-@WITH_LIBRTAS_TRUE@activate_firmware_SOURCES = activate_fw.c
+pseries_platform_SOURCES = common/pseries_platform.c common/pseries_platform.h
+@WITH_LIBRTAS_TRUE@activate_firmware_SOURCES = activate_fw.c $(pseries_platform_SOURCES)
 @WITH_LIBRTAS_TRUE@activate_firmware_LDADD = -lrtas
-@WITH_LIBRTAS_TRUE@set_poweron_time_SOURCES = set_poweron_time.c librtas_error.c librtas_error.h
+@WITH_LIBRTAS_TRUE@set_poweron_time_SOURCES = set_poweron_time.c librtas_error.c librtas_error.h $(pseries_platform_SOURCES)
 @WITH_LIBRTAS_TRUE@set_poweron_time_LDADD = -lrtas
-@WITH_LIBRTAS_TRUE@rtas_ibm_get_vpd_SOURCES = rtas_ibm_get_vpd.c librtas_error.c librtas_error.h
+@WITH_LIBRTAS_TRUE@rtas_ibm_get_vpd_SOURCES = rtas_ibm_get_vpd.c librtas_error.c librtas_error.h $(pseries_platform_SOURCES)
 @WITH_LIBRTAS_TRUE@rtas_ibm_get_vpd_LDADD = -lrtas
-@WITH_LIBRTAS_TRUE@serv_config_SOURCES = serv_config.c librtas_error.c librtas_error.h
+@WITH_LIBRTAS_TRUE@serv_config_SOURCES = serv_config.c librtas_error.c librtas_error.h $(pseries_platform_SOURCES)
 @WITH_LIBRTAS_TRUE@serv_config_LDADD = -lrtas
-@WITH_LIBRTAS_TRUE@uesensor_SOURCES = uesensor.c librtas_error.c librtas_error.h
+@WITH_LIBRTAS_TRUE@uesensor_SOURCES = uesensor.c librtas_error.c librtas_error.h $(pseries_platform_SOURCES)
 @WITH_LIBRTAS_TRUE@uesensor_LDADD = -lrtas
-@WITH_LIBRTAS_TRUE@rtas_event_decode_SOURCES = rtas_event_decode.c
+@WITH_LIBRTAS_TRUE@rtas_event_decode_SOURCES = rtas_event_decode.c $(pseries_platform_SOURCES)
 @WITH_LIBRTAS_TRUE@rtas_event_decode_LDADD = -lrtasevent
-@WITH_LIBRTAS_TRUE@sys_ident_SOURCES = sys_ident.c
+@WITH_LIBRTAS_TRUE@sys_ident_SOURCES = sys_ident.c $(pseries_platform_SOURCES)
 @WITH_LIBRTAS_TRUE@sys_ident_LDADD = -lrtas
-@WITH_LIBRTAS_TRUE@ppc64_cpu_SOURCES = ppc64_cpu.c librtas_error.c librtas_error.h
+@WITH_LIBRTAS_TRUE@ppc64_cpu_SOURCES = ppc64_cpu.c librtas_error.c librtas_error.h $(pseries_platform_SOURCES)
 @WITH_LIBRTAS_TRUE@ppc64_cpu_LDADD = -lrtas -lpthread
-nvram_SOURCES = nvram.c nvram.h
+nvram_SOURCES = nvram.c nvram.h $(pseries_platform_SOURCES)
 nvram_LDADD = -ldl -lz
-lsprop_SOURCES = lsprop.c
-lparstat_SOURCES = lparstat.c lparstat.h
+lsprop_SOURCES = lsprop.c $(pseries_platform_SOURCES)
+lparstat_SOURCES = lparstat.c lparstat.h $(pseries_platform_SOURCES)
 all: all-recursive
 
 .SUFFIXES:
@@ -349,6 +361,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lsprop.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nvram.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ppc64_cpu.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pseries_platform.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rtas_event_decode.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rtas_ibm_get_vpd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/serv_config.Po@am__quote@
@@ -369,6 +382,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
+
+pseries_platform.o: common/pseries_platform.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pseries_platform.o -MD -MP -MF $(DEPDIR)/pseries_platform.Tpo -c -o pseries_platform.o `test -f 'common/pseries_platform.c' || echo '$(srcdir)/'`common/pseries_platform.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/pseries_platform.Tpo $(DEPDIR)/pseries_platform.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='common/pseries_platform.c' object='pseries_platform.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pseries_platform.o `test -f 'common/pseries_platform.c' || echo '$(srcdir)/'`common/pseries_platform.c
+
+pseries_platform.obj: common/pseries_platform.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pseries_platform.obj -MD -MP -MF $(DEPDIR)/pseries_platform.Tpo -c -o pseries_platform.obj `if test -f 'common/pseries_platform.c'; then $(CYGPATH_W) 'common/pseries_platform.c'; else $(CYGPATH_W) '$(srcdir)/common/pseries_platform.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/pseries_platform.Tpo $(DEPDIR)/pseries_platform.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='common/pseries_platform.c' object='pseries_platform.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pseries_platform.obj `if test -f 'common/pseries_platform.c'; then $(CYGPATH_W) 'common/pseries_platform.c'; else $(CYGPATH_W) '$(srcdir)/common/pseries_platform.c'; fi`
 
 # This directory's subdirectories are mostly independent; you can cd
 # into them and run `make' without going through this Makefile.
