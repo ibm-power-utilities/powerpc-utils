@@ -134,7 +134,7 @@ top_srcdir = @top_srcdir@
 dist_bin_SCRIPTS = amsstat
 dist_sbin_SCRIPTS = update_flash update_flash_nv hvcsadmin rtas_dump	\
 	            snap bootlist ofpathname lsdevinfo ls-veth ls-vscsi	\
-		    ls-vdev
+		    ls-vdev pseries_platform
 
 all: all-am
 
