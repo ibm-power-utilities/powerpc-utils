@@ -15,6 +15,7 @@ OFPATHNAME="/usr/sbin/ofpathname"
 CAT="/bin/cat"
 LS="/bin/ls"
 SED="/bin/sed"
+PSERIES_PLATFORM=$(dirname $0)/pseries_platform
 
 usage()
 {
@@ -33,6 +34,11 @@ show_version()
     echo "Written by: Brian King <brking@linux.vnet.ibm.com>"
 }
 
+. $PSERIES_PLATFORM
+if [[ $platform != $PLATFORM_PSERIES_LPAR ]]; then
+      echo "$LSVETH: is not supported on the $platform_name platform"
+      exit 1
+fi
 
 while getopts ":Vh" flag ; do
     case "$flag" in

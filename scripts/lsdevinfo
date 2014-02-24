@@ -23,6 +23,7 @@ SED="/bin/sed"
 TR="/usr/bin/tr"
 OD="/usr/bin/od"
 CUT="/usr/bin/cut"
+PSERIES_PLATFORM=$(dirname $0)/pseries_platform
 
 # Usage statemnet
 usage()
@@ -114,6 +115,12 @@ criteria=""
 
 # default: display all attributes
 format=""
+
+. $PSERIES_PLATFORM
+if [[ $platform != $PLATFORM_PSERIES_LPAR ]]; then
+     echo "$LSDEVINFO: is not supported on the $platform_name platform"
+     exit 1
+fi
 
 while getopts "cRq:F:Vh" flag ; do
     case "$flag" in

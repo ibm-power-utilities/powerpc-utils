@@ -13,6 +13,7 @@
 # For further details please reference man page vscsisadmin.8
 
 use strict;
+use File::Basename;
 
 use vars '$app_name';
 $app_name = "vscsiadmin";
@@ -1014,6 +1015,20 @@ sub stop() {
     #default, with no args is to stop it all
     stop_all();
 
+}
+my $PSERIES_PLATFORM = dirname(__FILE__) . "/pseries_platform";
+
+my $perldumpenv='perl -MData::Dumper -e '."'".
+    '\$Data::Dumper::Terse=1;print Dumper(\%ENV);'."'";
+
+eval '%ENV=('.$1.')' if `bash -c "
+        . $PSERIES_PLATFORM;
+        $perldumpenv"`
+    =~ /^\s*\{(.*)\}\s*$/mxs;
+
+if ($ENV{'platform'} != $ENV{'PLATFORM_PSERIES_LPAR'}) {
+	print "$app_name: is not supported on the $ENV{'platform_name'} platform\n";
+	exit 1;
 }
 
 my $help = '';

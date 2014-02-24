@@ -23,6 +23,8 @@ indent=-4
 devstat_data_spacing=-30
 lparcfg_data_spacing=-30
 lparcfg_file=/proc/ppc64/lparcfg
+# Hardcoding pseries_platform path as amstat will be placed in bin
+PSERIES_PLATFORM=/usr/sbin/pseries_platform
 
 function print_meminfo_stats {
     echo "System Memory Statistics:"
@@ -151,6 +153,18 @@ function print_vio_dev_stats {
         printf "%${indent}s No AMS devices found.\n" " "
     fi
 }
+
+if [ ! -f $PSERIES_PLATFORM ]; then
+	echo "$PSERIES_PLATFORM does not exist"
+	echo "amstat: is not supported on the Unknown platform"
+	exit 1;
+fi
+
+. $PSERIES_PLATFORM
+if [[ $platform != $PLATFORM_PSERIES_LPAR ]]; then
+     echo "amstat: is not supported on the $platform_name platform"
+     exit 1
+fi
 
 # Verify CMO is present and enabled
 enabled=`cat $lparcfg_file | grep "^cmo_enabled" | awk -F= '{print $2}'`

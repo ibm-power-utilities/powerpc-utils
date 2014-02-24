@@ -9,6 +9,7 @@
 
 OFPATHNAME=/usr/sbin/ofpathname
 NVRAM=/usr/sbin/nvram
+PSERIES_PLATFORM=$(dirname $0)/pseries_platform
 
 #
 # usage
@@ -213,6 +214,12 @@ show_bootlist()
 #
 # Main
 #
+
+. $PSERIES_PLATFORM
+if [[ $platform != $PLATFORM_PSERIES_LPAR ]]; then
+    echo "bootlist: is not supported on the $platform_name platform"
+    exit 1
+fi
 
 # make sure we can parse names
 if [[ ! -a $OFPATHNAME ]]; then
