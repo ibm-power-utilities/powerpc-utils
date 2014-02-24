@@ -32,6 +32,7 @@
 #define PPC64_CPU_VERSION	"1.1"
 
 #define SYSFS_CPUDIR	"/sys/devices/system/cpu/cpu%d"
+#define SYSFS_SUBCORES	"/sys/devices/system/cpu/subcores_per_core"
 #define DSCR_DEFAULT_PATH "/sys/devices/system/cpu/dscr_default"
 #define INTSERV_PATH	"/proc/device-tree/cpus/%s/ibm,ppc-interrupt-server#s"
 
@@ -287,6 +288,19 @@ static int offline_thread(const char *path)
 	return set_attribute(path, "%d", 0);
 }
 
+static int is_subcore_capable(void)
+{
+	return attr_is_readable(SYSFS_SUBCORES) == 1;
+}
+
+static int num_subcores(void)
+{
+	int rc, subcores;
+	rc = get_attribute(SYSFS_SUBCORES, "%d", &subcores);
+	if (rc)
+		return -1;
+	return subcores;
+}
 
 static int get_cpu_info(void)
 {
@@ -488,6 +502,51 @@ static int do_smt(char *state)
 		}
 
 		rc = set_smt_state(smt_state);
+	}
+
+	return rc;
+}
+
+static int do_subcores_per_core(char *state)
+{
+	int rc = 0;
+	int subcore_state = 0;
+
+	/* Check SMT machine. */
+	if (!is_smt_capable()) {
+		fprintf(stderr, "Machine is not SMT capable\n");
+		return -1;
+	}
+
+	/* Check subcore capable machine/kernel. */
+	if (!is_subcore_capable()) {
+		fprintf(stderr, "Machine is not subcore capable\n");
+		return -1;
+	}
+
+	if (!state) {
+		/* Display current status. */
+		subcore_state = num_subcores();
+		if (subcore_state < 0) {
+			fprintf(stderr, "Could not read subcore state.\n");
+			return -1;
+		}
+		printf("Subcores per core: %d\n", subcore_state);
+	} else {
+		subcore_state = strtol(state, NULL, 0);
+		/* Validate option: we only suport 1 or 4. */
+		if (subcore_state != 1 && subcore_state != 4) {
+			fprintf(stderr, "subcores-per-core=%d invalid.\n", subcore_state);
+			return -1;
+		}
+
+		rc = set_attribute(SYSFS_SUBCORES, "%d", subcore_state);
+		if (rc) {
+			fprintf(stderr, "Failed to set subcore option.\n");
+			return rc;
+		}
+
+		printf("Subcores per core set to %d\n", subcore_state);
 	}
 
 	return rc;
@@ -1066,7 +1125,9 @@ static void usage(void)
 "ppc64_cpu --run-mode                # Get current diagnostics run mode\n"
 "ppc64_cpu --run-mode=<val>          # Set current diagnostics run mode\n\n"
 "ppc64_cpu --frequency [-t <time>]   # Determine cpu frequency for <time>\n"
-"                                    # seconds, default is 1 second.\n\n");
+"                                    # seconds, default is 1 second.\n\n"
+"ppc64_cpu --subcores-per-core       # Get number of subcores per core\n"
+"ppc64_cpu --subcores-per-core=X     # Set subcores per core to X (1 or 4)\n");
 }
 
 struct option longopts[] = {
@@ -1077,6 +1138,7 @@ struct option longopts[] = {
 	{"frequency",		no_argument,	   NULL, 'f'},
 	{"cores-present",	no_argument,	   NULL, 'C'},
 	{"cores-on",		optional_argument, NULL, 'c'},
+	{"subcores-per-core",	optional_argument, NULL, 'n'},
 	{"version",		no_argument,	   NULL, 'V'},
 	{0,0,0,0}
 };
@@ -1168,6 +1230,8 @@ int main(int argc, char *argv[])
 		rc = do_cores_present(action_arg);
 	else if (!strcmp(action, "cores-on"))
 		rc = do_cores_online(action_arg);
+	else if (!strcmp(action, "subcores-per-core"))
+		rc = do_subcores_per_core(action_arg);
 	else if (!strcmp(action, "version"))
 		printf("ppc64_cpu: version %s\n", PPC64_CPU_VERSION);
 	else
