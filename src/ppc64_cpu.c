@@ -125,21 +125,28 @@ static int get_attribute(char *path, const char *fmt, int *value)
 	rc = fscanf(fp, fmt, value);
 	fclose(fp);
 
+	if (rc == EOF)
+		return -1;
+
 	return 0;
 }
 
 static int set_attribute(const char *path, const char *fmt, int value)
 {
 	FILE *fp;
+	int rc;
 
 	fp = fopen(path, "w");
 	if (fp == NULL)
 		return -1;
 
-	fprintf(fp, fmt, value);
+	rc = fprintf(fp, fmt, value);
 	fclose(fp);
 
-	return 0;
+	if (rc > 0)
+		return 0;
+
+	return rc;
 }
 
 static int cpu_online(int thread)
