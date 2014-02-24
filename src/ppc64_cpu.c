@@ -64,9 +64,11 @@ static int test_attr(char *path, char *perms)
 		return 1;
 	}
 
-	if (errno == ENOENT)
-		/* cpu probably offline */
-		return 1;
+	if (errno == ENOENT) {
+		/* When CPU is offline, attr may not exist. Return 2 so caller
+		 * will not see 'false' and continue to try next CPU. */
+		return 2;
+	}
 
 	return 0;
 }
