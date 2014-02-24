@@ -1125,6 +1125,35 @@ static int do_cores_online(char *state)
 	return 0;
 }
 
+static int do_info(char *arg)
+{
+	int i, j, thread_num;
+	char online;
+	int subcores = 0;
+
+	if (is_subcore_capable())
+		subcores = num_subcores();
+
+	for (i = 0; i < cpus_in_system; i++) {
+
+		if (subcores > 1) {
+			if (i % subcores == 0)
+				printf("Core %3d:\n", i/subcores);
+			printf("  Subcore %3d: ", i);
+		} else {
+			printf("Core %3d: ", i);
+		}
+
+		for (j = 0; j < threads_per_cpu; j++) {
+			thread_num = i*threads_per_cpu + j;
+			online = cpu_online(thread_num) ? '*' : ' ';
+			printf("%4d%c ", thread_num, online);
+		}
+		printf("\n");
+	}
+	return 0;
+}
+
 static void usage(void)
 {
 	printf(
@@ -1146,7 +1175,8 @@ static void usage(void)
 "ppc64_cpu --frequency [-t <time>]   # Determine cpu frequency for <time>\n"
 "                                    # seconds, default is 1 second.\n\n"
 "ppc64_cpu --subcores-per-core       # Get number of subcores per core\n"
-"ppc64_cpu --subcores-per-core=X     # Set subcores per core to X (1 or 4)\n");
+"ppc64_cpu --subcores-per-core=X     # Set subcores per core to X (1 or 4)\n"
+"ppc64_cpu --info                    # Display system state information)\n");
 }
 
 struct option longopts[] = {
@@ -1158,6 +1188,7 @@ struct option longopts[] = {
 	{"cores-present",	no_argument,	   NULL, 'C'},
 	{"cores-on",		optional_argument, NULL, 'c'},
 	{"subcores-per-core",	optional_argument, NULL, 'n'},
+	{"info",		no_argument,	   NULL, 'i'},
 	{"version",		no_argument,	   NULL, 'V'},
 	{0,0,0,0}
 };
@@ -1251,6 +1282,8 @@ int main(int argc, char *argv[])
 		rc = do_cores_online(action_arg);
 	else if (!strcmp(action, "subcores-per-core"))
 		rc = do_subcores_per_core(action_arg);
+	else if (!strcmp(action, "info"))
+		rc = do_info(action_arg);
 	else if (!strcmp(action, "version"))
 		printf("ppc64_cpu: version %s\n", PPC64_CPU_VERSION);
 	else
