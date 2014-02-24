@@ -308,6 +308,7 @@ static int get_cpu_info(void)
 	struct dirent *de;
 	int first_cpu = 1;
 	int rc;
+	int subcores;
 
 	d = opendir("/proc/device-tree/cpus");
 	if (!d)
@@ -333,6 +334,12 @@ static int get_cpu_info(void)
 
 	closedir(d);
 	threads_in_system = cpus_in_system * threads_per_cpu;
+
+	subcores = num_subcores();
+	if (is_subcore_capable() && subcores > 0) {
+		threads_per_cpu /= subcores;
+		cpus_in_system *= subcores;
+	}
 	return 0;
 }
 
