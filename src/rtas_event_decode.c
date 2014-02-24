@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <librtasevent.h>
+#include "pseries_platform.h"
 
 #define RTAS_BUF_SIZE   3000
 #define RTAS_STR_SIZE   1024
@@ -129,6 +130,13 @@ main(int argc , char *argv[])
     int     len = 0;
     int     c, rtas_buf_len;
 
+    switch (get_platform()) {
+    case PLATFORM_UNKNOWN:
+    case PLATFORM_POWERKVM_HOST:
+	fprintf(stderr, "%s: is not supported on the %s platform\n",
+						argv[0], platform_name);
+	exit(1);
+    }
     /* Suppress error messages from getopt */
     opterr = 0;
 

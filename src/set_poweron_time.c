@@ -58,6 +58,7 @@
 #include <string.h>
 #include <librtas.h>
 #include "librtas_error.h"
+#include "pseries_platform.h"
 
 #define PROC_FILE_RTAS_CALL "/proc/device-tree/rtas/set-time-for-power-on"
 #define PROC_FILE_MAX_LATENCY "/proc/device-tree/rtas/power-on-max-latency"
@@ -216,6 +217,14 @@ int main(int argc, char **argv) {
 	struct tm *loc, *utc;
 	char *shutdown_args[] = { "shutdown", "-h", "+1", NULL };
 	char error_buf[ERROR_BUF_SIZE];
+
+	switch (get_platform()) {
+	case PLATFORM_UNKNOWN:
+	case PLATFORM_POWERKVM_HOST:
+		fprintf(stderr, "%s: is not supported on the %s platform\n",
+							argv[0], platform_name);
+		return 1;
+	}
 
 	/* Parse command line options */
 	opterr = 0;

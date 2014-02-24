@@ -27,6 +27,7 @@
 #include <ctype.h>
 #include <librtas.h>
 #include "librtas_error.h"
+#include "pseries_platform.h"
 
 #define PROC_FILE_RTAS_CALL "/proc/device-tree/rtas/ibm,get-vpd"
 #define BUF_SIZE	2048
@@ -113,6 +114,14 @@ int main(int argc, char **argv)
 	int lflag = 0, rc, c;
 	unsigned int seq = 1, next_seq;
 	struct buf_element *list, *current;
+
+	switch (get_platform()) {
+	case PLATFORM_UNKNOWN:
+	case PLATFORM_POWERKVM_HOST:
+		fprintf(stderr, "%s: is not supported on the %s platform\n",
+							argv[0], platform_name);
+		exit(1);
+	}
 
 	if (!check_rtas_call()) {
 		fprintf(stderr, "The ibm,get-vpd RTAS call is not available "
