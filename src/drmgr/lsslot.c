@@ -14,6 +14,7 @@
 #include "dr.h"
 #include "lsslot.h"
 #include "drmem.h"
+#include "pseries_platform.h"
 
 int output_level = 0;
 int log_fd = 0;
@@ -846,6 +847,14 @@ main(int argc, char *argv[])
 {
 	struct cmd_opts opts;
 	int rc;
+
+	switch (get_platform()) {
+	case PLATFORM_UNKNOWN:
+	case PLATFORM_POWERKVM_HOST:
+		fprintf(stderr, "%s: is not supported on the %s platform\n",
+						argv[0], platform_name);
+		exit(1);
+	}
 
 	/* make sure that we're running on the proper platform.	*/
 	if (! valid_platform("chrp"))

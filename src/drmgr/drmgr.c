@@ -14,6 +14,7 @@
 #include <getopt.h>
 
 #include "dr.h"
+#include "pseries_platform.h"
 
 #define DRMGR_ARGS	"ac:d:Iimnp:Qq:Rrs:w:t:hC"
 
@@ -305,6 +306,14 @@ int main(int argc, char *argv[])
 	char log_msg[DR_PATH_MAX];
 	struct command *command;
 	int i, rc, offset;
+
+	switch (get_platform()) {
+	case PLATFORM_UNKNOWN:
+	case PLATFORM_POWERKVM_HOST:
+	   fprintf(stderr, "%s: is not supported on the %s platform\n",
+						argv[0], platform_name);
+	   exit(1);
+	}
 
 	rc = dr_init();
 	if (rc)

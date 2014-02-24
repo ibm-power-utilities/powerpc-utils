@@ -42,18 +42,20 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 sbinPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(sbin_PROGRAMS)
+am__objects_1 = pseries_platform.$(OBJEXT)
 am_drmgr_OBJECTS = common.$(OBJEXT) common_cpu.$(OBJEXT) \
 	common_ofdt.$(OBJEXT) common_pci.$(OBJEXT) drmgr.$(OBJEXT) \
 	drmig_chrp_pmig.$(OBJEXT) drslot_chrp_cpu.$(OBJEXT) \
 	drslot_chrp_hea.$(OBJEXT) drslot_chrp_mem.$(OBJEXT) \
 	drslot_chrp_pci.$(OBJEXT) drslot_chrp_phb.$(OBJEXT) \
-	drslot_chrp_slot.$(OBJEXT) rtas_calls.$(OBJEXT)
+	drslot_chrp_slot.$(OBJEXT) rtas_calls.$(OBJEXT) \
+	$(am__objects_1)
 drmgr_OBJECTS = $(am_drmgr_OBJECTS)
 drmgr_DEPENDENCIES =
 am_lsslot_OBJECTS = lsslot.$(OBJEXT) lsslot_chrp_cpu.$(OBJEXT) \
 	common.$(OBJEXT) common_cpu.$(OBJEXT) common_pci.$(OBJEXT) \
 	common_ofdt.$(OBJEXT) rtas_calls.$(OBJEXT) \
-	drslot_chrp_mem.$(OBJEXT)
+	drslot_chrp_mem.$(OBJEXT) $(am__objects_1)
 lsslot_OBJECTS = $(am_lsslot_OBJECTS)
 lsslot_DEPENDENCIES =
 DEFAULT_INCLUDES = -I.@am__isrc@
@@ -153,17 +155,19 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CFLAGS = -Wall -g
+COM_DIR = $(top_srcdir)/src/common
+AM_CFLAGS = -Wall -g -I $(COM_DIR)
+pseries_platform_SOURCES = $(COM_DIR)/pseries_platform.c $(COM_DIR)/pseries_platform.h
 drmgr_SOURCES = common.c common_cpu.c common_ofdt.c common_pci.c	\
 		drcpu.h dr.h drmem.h drmgr.c drmig_chrp_pmig.c drpci.h	\
 		drslot_chrp_cpu.c drslot_chrp_hea.c drslot_chrp_mem.c	\
 		drslot_chrp_pci.c drslot_chrp_phb.c drslot_chrp_slot.c	\
-		ofdt.h rtas_calls.c rtas_calls.h
+		ofdt.h rtas_calls.c rtas_calls.h $(pseries_platform_SOURCES)
 
 drmgr_LDADD = -lrtas
 lsslot_SOURCES = lsslot.c lsslot.h lsslot_chrp_cpu.c common.c		\
 		 common_cpu.c common_pci.c common_ofdt.c ofdt.h		\
-		 rtas_calls.c rtas_calls.h drslot_chrp_mem.c
+		 rtas_calls.c rtas_calls.h drslot_chrp_mem.c $(pseries_platform_SOURCES)
 
 lsslot_LDADD = -lrtas
 all: all-am
@@ -249,6 +253,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/drslot_chrp_slot.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lsslot.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lsslot_chrp_cpu.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pseries_platform.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rtas_calls.Po@am__quote@
 
 .c.o:
@@ -264,6 +269,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
+
+pseries_platform.o: $(COM_DIR)/pseries_platform.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pseries_platform.o -MD -MP -MF $(DEPDIR)/pseries_platform.Tpo -c -o pseries_platform.o `test -f '$(COM_DIR)/pseries_platform.c' || echo '$(srcdir)/'`$(COM_DIR)/pseries_platform.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/pseries_platform.Tpo $(DEPDIR)/pseries_platform.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(COM_DIR)/pseries_platform.c' object='pseries_platform.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pseries_platform.o `test -f '$(COM_DIR)/pseries_platform.c' || echo '$(srcdir)/'`$(COM_DIR)/pseries_platform.c
+
+pseries_platform.obj: $(COM_DIR)/pseries_platform.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pseries_platform.obj -MD -MP -MF $(DEPDIR)/pseries_platform.Tpo -c -o pseries_platform.obj `if test -f '$(COM_DIR)/pseries_platform.c'; then $(CYGPATH_W) '$(COM_DIR)/pseries_platform.c'; else $(CYGPATH_W) '$(srcdir)/$(COM_DIR)/pseries_platform.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/pseries_platform.Tpo $(DEPDIR)/pseries_platform.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(COM_DIR)/pseries_platform.c' object='pseries_platform.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pseries_platform.obj `if test -f '$(COM_DIR)/pseries_platform.c'; then $(CYGPATH_W) '$(COM_DIR)/pseries_platform.c'; else $(CYGPATH_W) '$(srcdir)/$(COM_DIR)/pseries_platform.c'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
