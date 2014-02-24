@@ -425,9 +425,10 @@ static int set_one_smt_state(int thread, int online_threads)
 
 static int set_smt_state(int smt_state)
 {
-	int i, rc;
+	int i, j, rc;
 	int ssd, update_ssd = 1;
 	int inconsistent = 0;
+	int error = 0;
 
 	if (!sysattr_is_writeable("online")) {
 		perror("Cannot set smt state");
@@ -439,16 +440,27 @@ static int set_smt_state(int smt_state)
 		update_ssd = 0;
 
 	for (i = 0; i < threads_in_system; i += threads_per_cpu) {
-		if (cpu_online(i)) {
+		/* Online means any thread on this core running, so check all
+		 * threads in the core, not just the first. */
+		for (j = 0; j < threads_per_cpu; j++) {
+			if (!cpu_online(i + j))
+				continue;
+
 			rc = set_one_smt_state(i, smt_state);
+			/* Record an error, but do not check result: if we
+			 * have failed to set this core, keep trying
+			 * subsequent ones. */
 			if (rc)
-				break;
+				error = 1;
+			break;
 		}
 	}
 
 	if (update_ssd)
 		set_smt_snooze_delay(ssd);
 
+	if (error)
+		return -1;
 	return rc;
 }
 
