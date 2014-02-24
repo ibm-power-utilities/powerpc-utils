@@ -58,6 +58,7 @@ struct options {
 	int 	timeout;      /* time (in seconds) to try operation           */
 	char   *usr_drc_name; /* pointer to user-specified drc-name
 	                       * of resource                                  */
+	uint32_t	usr_drc_index;
 	int     noprompt;     /* 1 = do not prompt user for input, assume yes */
 	unsigned int quantity;  /* number of resources                        */
 	char	*ctype;

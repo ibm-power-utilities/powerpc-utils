@@ -96,6 +96,28 @@ identify_slot(struct dr_node *node)
 		return (USER_QUIT);
 }
 
+static char *
+find_drc_name(uint32_t drc_index, struct dr_node *all_nodes)
+{
+	struct dr_node *node;
+
+	node = all_nodes;
+	while (node != NULL) {
+		say(DEBUG, "%#x =? %#x\n", drc_index, node->drc_index);
+		if (node->drc_index == drc_index) {
+			say(DEBUG, "Found drc_name %s\n", node->drc_name);
+			return node->drc_name;
+		} else
+			node = node->next;
+	}
+
+	if ((node == NULL))
+		say(ERROR, "Could not find drc_name for index %#x\n", drc_index);
+
+	return NULL;
+}
+
+
 /**
  * find_slot
  *
@@ -798,8 +820,8 @@ valid_pci_options(struct options *opts)
 		return -1;
 	}
 
-	if (opts->usr_drc_name == NULL) {
-		say(ERROR, "A drc name must be specified\n");
+	if (opts->usr_drc_name == NULL && !opts->usr_drc_index) {
+		say(ERROR, "A drc name or index must be specified\n");
 		return -1;
 	}
 
@@ -821,6 +843,9 @@ drslot_chrp_pci(struct options *opts)
 #ifdef DBG_HOT_PLUG
 	print_slots_list(all_nodes);
 #endif
+
+	if (!opts->usr_drc_name)
+		opts->usr_drc_name = find_drc_name(opts->usr_drc_index, all_nodes);
 
 	switch (opts->action) {
 	    case ADD:
