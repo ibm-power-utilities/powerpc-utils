@@ -37,6 +37,7 @@ PROCFLASH=/proc/ppc64/rtas/firmware_update
 PROCMANAGE=/proc/ppc64/rtas/manage_flash
 PROCVALIDATE=/proc/ppc64/rtas/validate_flash
 OLDPROCFLASH=/proc/ppc64/rtas/firmware_flash
+PSERIES_PLATFORM=$(dirname $0)/pseries_platform
 
 # firmware_update Status Values
 FLASH_AUTH=-9002		# RTAS Not Service Authority Partition
@@ -406,16 +407,18 @@ file_opt=0
 # PowerNV update_flash tool
 UPDATE_FLASH_NV=$(dirname $0)/update_flash_nv
 
-machine=`uname -m`
-platform=`cat /proc/cpuinfo | grep platform | awk '{print $3}'`
-
-if [ "$machine" == "ppc64" ] && [ "$platform" == "PowerNV" ]; then
+. $PSERIES_PLATFORM
+case "$platform" in
+    $PLATFORM_UNKNOWN | $PLATFORM_POWERKVM_GUEST)
+	echo "update_flash: is not supported on the $platform_name platform"
+	exit 1;;
+    $PLATFORM_POWERKVM_HOST)
 	if [ ! -r "$UPDATE_FLASH_NV" ]; then
 		error $E_PERM "Couldn't find $UPDATE_FLASH_NV file."
 	fi
 	/bin/sh $UPDATE_FLASH_NV $@
 	exit $?
-fi
+esac
 
 while [ -n "$1" ]; do
 	arg="$1"
