@@ -222,7 +222,7 @@ int parse_proc_stat()
 
 	statvals[0] = 0;
 	value = line;
-	for (i = 1; i <= entries; i++) {
+	for (i = 1; i <= (entries - 1); i++) {
 		int v;
 		value = strchr(value, ' ') + 1;
 		if (i == 1)
