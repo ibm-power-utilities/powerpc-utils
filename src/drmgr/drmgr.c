@@ -349,10 +349,9 @@ int main(int argc, char *argv[])
 	}
 
 	/* Validate this platform */
-	rc = valid_platform("chrp");
-	if (rc) {
+	if (!valid_platform("chrp")) {
 		dr_fini();
-		return rc;
+		return -1;
 	}
 
 	set_timeout(opts.timeout);
