@@ -409,20 +409,21 @@ static int get_smt_state(void)
 static int set_one_smt_state(int thread, int online_threads)
 {
 	char path[SYSFS_PATH_MAX];
-	int i, rc;
+	int i, rc = 0;
 
-	for (i = 0; i < online_threads; i++) {
+	for (i = 0; i < threads_per_cpu; i++) {
 		snprintf(path, SYSFS_PATH_MAX, SYSFS_CPUDIR"/%s", thread + i,
 			 "online");
-		rc = online_thread(path);
-		if (rc)
-			return rc;
-	}
+		if (i < online_threads)
+			rc = online_thread(path);
+		else
+			rc = offline_thread(path);
 
-	for (; i < threads_per_cpu; i++) {
-		snprintf(path, SYSFS_PATH_MAX, SYSFS_CPUDIR"/%s", thread + i,
-			 "online");
-		rc = offline_thread(path);
+		/* The 'online' sysfs file returns EINVAL if set to the current
+		 * setting. As this is not an error, reset rc and errno to avoid
+		 * returning failure. */
+		if (rc == -1 && errno == EINVAL)
+			rc = errno = 0;
 		if (rc)
 			break;
 	}
