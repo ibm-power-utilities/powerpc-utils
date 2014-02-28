@@ -313,7 +313,7 @@ update_flash_from_file() {
 	echo_update_return_status "$output"
 
 	# Reboot system, so that we can flash new image
-	shutdown -r now
+	reboot
 
 	exit $E_SUCCESS
 }

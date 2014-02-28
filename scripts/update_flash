@@ -328,7 +328,7 @@ update_flash_from_file() {
 	fi
 
 	#XXX
-	shutdown -r now
+	reboot
 
 	return 0;
 }
