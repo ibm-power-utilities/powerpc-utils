@@ -175,6 +175,8 @@ echo_entitlement_expiry_date() {
 		echo "UNKNOWN."
 	fi
 	echo ""
+	echo "Please go to http://www.ibm.com/servers/eserver/ess to obtain "
+	echo "a replacement update access key."
 }
 
 echo_validate_return_status() {
