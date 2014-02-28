@@ -14,7 +14,9 @@
 #include <string.h>
 #include <dirent.h>
 #include <librtas.h>
+#include <sys/types.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 #include <getopt.h>
 #include <sched.h>
 #include <assert.h>
@@ -133,19 +135,27 @@ static int get_attribute(char *path, const char *fmt, int *value)
 
 static int set_attribute(const char *path, const char *fmt, int value)
 {
-	FILE *fp;
-	int rc;
+	int fd, rc, len;
+	char *str;
 
-	fp = fopen(path, "w");
-	if (fp == NULL)
+	fd = open(path, O_WRONLY);
+	if (fd < 0)
 		return -1;
 
-	rc = fprintf(fp, fmt, value);
-	fclose(fp);
+	len = asprintf(&str, fmt, value);
+	if (len < 0) {
+		rc = -1;
+		goto close;
+	}
 
-	if (rc > 0)
-		return 0;
+	rc = write(fd, str, len);
+	free(str);
 
+	if (rc == len)
+		rc = 0;
+
+close:
+	close(fd);
 	return rc;
 }
 
