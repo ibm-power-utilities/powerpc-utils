@@ -197,6 +197,12 @@ static int set_system_attribute(char *attribute, const char *fmt, int state)
 	for (i = 0; i < threads_in_system; i++) {
 		sprintf(path, SYSFS_CPUDIR"/%s", i, attribute);
 		rc = set_attribute(path, fmt, state);
+		/* When a CPU is offline some sysfs files are removed from the CPU
+		 * directory, for example smt_snooze_delay and dscr. The absence of the
+		 * file is not an error, so detect and clear the error when
+		 * set_attribute indicates ENOENT. */
+		if (rc == -1 && errno == ENOENT)
+			rc = errno = 0;
 		if (rc)
 			return rc;
 	}
