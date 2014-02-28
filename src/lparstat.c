@@ -315,6 +315,10 @@ void get_name(const char *file, char *buf)
 	int rc;
 
 	f = fopen(file, "r");
+	if(!f) {
+		sprintf(buf, "%c", '\0');
+		return;
+	}
 	rc = fread(tmpbuf, 64, 1, f);
 	fclose(f);
 
