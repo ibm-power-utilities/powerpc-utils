@@ -17,6 +17,7 @@
 #include <execinfo.h>
 #include <ctype.h>
 #include <sys/wait.h>
+#include <endian.h>
 #include "dr.h"
 #include "ofdt.h"
 
@@ -708,6 +709,27 @@ get_str_attribute(const char *path, const char *attribute, void *buf,
 		  size_t buf_sz)
 {
 	return get_att_prop(path, attribute, buf, buf_sz, "%s");
+}
+
+/**
+ * get_ofdt_uint_property
+ * @brief retrieve an unsigned integer property from the device tree and
+ * byteswap if needed (device tree is big endian).
+ *
+ * @param path path to the property to retrieve
+ * @param name name of the property to retrieve
+ * @param data unsigned integer pointer to write property to
+ * @returns 0 on success, -1 otherwise
+ */
+int
+get_ofdt_uint_property(const char *path, const char *attribute, uint *data)
+{
+	uint tmp;
+	int rc;
+	rc = get_property(path, attribute, &tmp, sizeof(tmp));
+	if (!rc)
+		*data = be32toh(tmp);
+	return rc;
 }
 
 /**

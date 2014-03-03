@@ -279,12 +279,12 @@ add_child_node(struct dr_node *parent, char *child_path)
 	    case PCI_HP_DEV:
 	    case PCI_DLPAR_DEV:
 	    {
-		get_property(child_path, "vendor-id", &child->pci_vendor_id,
-			     sizeof(child->pci_vendor_id));
-		get_property(child_path, "device-id", &child->pci_device_id,
-			     sizeof(child->pci_device_id));
-		get_property(child_path, "class_code", &child->pci_class_code,
-			     sizeof(child->pci_class_code));
+		get_ofdt_uint_property(child_path, "vendor-id",
+				       &child->pci_vendor_id);
+		get_ofdt_uint_property(child_path, "device-id",
+				       &child->pci_device_id);
+		get_ofdt_uint_property(child_path, "class_code",
+				       &child->pci_class_code);
 		break;
 	    }
 
@@ -292,12 +292,10 @@ add_child_node(struct dr_node *parent, char *child_path)
 	    {
 		child->dev_type = HEA_PORT_DEV;
 
-		get_property(child_path, "ibm,hea-port-no",
-			     &child->hea_port_no,
-			     sizeof(child->hea_port_no));
-		get_property(child_path, "ibm,hea-port-tenure",
-			     &child->hea_port_tenure,
-			     sizeof(child->hea_port_tenure));
+		get_ofdt_uint_property(child_path, "ibm,hea-port-no",
+				       &child->hea_port_no);
+		get_ofdt_uint_property(child_path, "ibm,hea-port-tenure",
+				       &child->hea_port_tenure);
 		break;
 	    }
 	}

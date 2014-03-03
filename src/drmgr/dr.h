@@ -87,6 +87,7 @@ int update_property(const char *, size_t);
 int get_property(const char *, const char *, void *, size_t);
 int get_int_attribute(const char *, const char *, void *, size_t);
 int get_str_attribute(const char *, const char *, void *, size_t);
+int get_ofdt_uint_property(const char *, const char *, uint *);
 int get_property_size(const char *, const char *);
 int signal_handler(int, int, struct sigcontext *);
 int sig_setup(void);

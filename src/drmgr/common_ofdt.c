@@ -10,6 +10,7 @@
 #include <string.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <endian.h>
 #include "dr.h"
 #include "ofdt.h"
 
@@ -54,7 +55,7 @@ get_of_list_prop(char *full_path, char *prop_name, struct of_list_prop *prop)
 		return -1;
 	}
 
-	prop->n_entries = *(uint *)prop->_data;
+	prop->n_entries = be32toh(*(uint *)prop->_data);
 	prop->val = prop->_data + sizeof(uint);
 
 	return 0;
@@ -148,8 +149,8 @@ build_connectors_list(struct drc_prop_grp *group, int n_entries,
 	for (i = 0; i < n_entries; i++) {
 		entry = &list[i];
 
-		entry->index = *(index_ptr++);
-		entry->powerdomain = *(domain_ptr++);
+		entry->index = be32toh(*(index_ptr++));
+		entry->powerdomain = be32toh(*(domain_ptr++));
 
 		strncpy(entry->name, name_ptr, DRC_STR_MAX);
 		name_ptr += strlen(name_ptr) + 1;
@@ -340,8 +341,7 @@ get_my_drc_index(char *of_path, uint32_t *index)
 	if (full_path == NULL)
 		return -1;
 
-	rc = get_property(full_path, "ibm,my-drc-index", index,
-			  sizeof(*index));
+	rc = get_ofdt_uint_property(full_path, "ibm,my-drc-index", index);
 
 	free(full_path);
 
