@@ -1,3 +1,661 @@
+powerpc-utils-1.2.19
+=====================================================================
+
+commit 08fd1d73a0cb66ff9db5cc29c7f3d19182c1c5a0
+Author: Greg Kurz <gkurz@linux.vnet.ibm.com>
+Date:   Mon Mar 3 13:00:10 2014 -0600
+
+    drmgr: data comming from OF is big endian
+    
+    The chunk in get_of_list_prop() fixes the following:
+    
+    Allocation failure (8f00000000) at get_drc_info:240
+    
+    We also introduce the get_ofdt_int_property() helper to factor the many
+    places where byteswap is needed in the PCI code.
+    
+    Signed-off-by: Greg Kurz <gkurz@linux.vnet.ibm.com>
+
+commit 734983c5d40760848eee51d5b0915a1929416126
+Author: Greg Kurz <gkurz@linux.vnet.ibm.com>
+Date:   Mon Mar 3 12:57:49 2014 -0600
+
+    lsprop, nvram: use standard macros from <endian.h>
+    
+    Signed-off-by: Greg Kurz <gkurz@linux.vnet.ibm.com>
+
+commit 0af3468456d06f5e64fee36f80df605e4f3d15b8
+Author: Greg Kurz <gkurz@linux.vnet.ibm.com>
+Date:   Fri Feb 28 12:53:45 2014 -0600
+
+    drmgr: fix wrong check of valid_platform() return value
+    
+    Signed-off-by: Greg Kurz <gkurz@linux.vnet.ibm.com>
+
+commit 425fef8cfca8b8cd57b78aaecbba8cf2fb647cb1
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Fri Feb 28 12:51:25 2014 -0600
+
+    update_flash: Add update access key link
+    
+    Add link to get new access key.
+    
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit 62ac13a21a3f61e6974fd8df5a273635e691f7a6
+Author: Joel Stanley <joel@jms.id.au>
+Date:   Fri Feb 28 12:49:53 2014 -0600
+
+    ppc64_cpu: use write(2) when modifying sysfs
+    
+    This improves the error handling when setting attributes fails. fprintf
+    does not return an error when a sysfs write returns an error.  Using the
+    write(2), we can catch bad return codes and inform the user.
+    
+    The callers of set_attribute have been updated to ignore errors where
+    they are expected.
+    
+    This fixes the following bug:
+    
+     Modifying --subcores-per-core when a guest is running is not allowed.
+     sysfs reports -EBUSY but currently ppc64_cpu reports success, despite
+     not doing anything.
+    
+    Signed-off-by: Joel Stanley <joel@jms.id.au>
+
+commit 5a79c9af7001a0dccbe9793296eb2155eb6c6232
+Author: Joel Stanley <joel@jms.id.au>
+Date:   Fri Feb 28 12:48:25 2014 -0600
+
+    ppc64_cpu: handle offline cpus when setting attributes
+    
+    Signed-off-by: Joel Stanley <joel@jms.id.au>
+
+commit 95764cc11adf843de0486045c444011a0ee01a27
+Author: Joel Stanley <joel@jms.id.au>
+Date:   Fri Feb 28 12:47:22 2014 -0600
+
+    ppc64_cpu: work around bad sysfs online behaviour
+    
+    The sysfs file /sys/devices/system/cpu/cpuXX/online will return EINVAL
+    if set to 1 when already online, or 0 when already offline. This is not
+    a fatal error: it is normal behaviour when setting the smt mode.
+    
+    As we are stuck with the sysfs interface, work around it by looking at
+    errno after setting the CPU state, and ignoring the failure if errno is
+    set to EINVAL.
+    
+    While we are here, merge the two for loops into one to avoid duplicating
+    the error checking code.
+    
+    Signed-off-by: Joel Stanley <joel@jms.id.au>
+
+commit fdc3e894f5ef619175f16b0d0813fdd996c545a3
+Author: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Date:   Fri Feb 28 12:45:25 2014 -0600
+
+    pseries_platform: Convert the helper script from bash to dash
+    
+    As some of the scripts (for ex: update flash) can run in dash this
+    script cannot be invoked. Make the string comparison follow POSIX syntax.
+    
+    Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+
+commit 84cce814fbcd61bbf86da19c4697ec3759208f8f
+Author: Jeremy Kerr <jk@ozlabs.org>
+Date:   Fri Feb 28 12:43:18 2014 -0600
+
+    scripts/update_flash: Use reboot instead of shutdown
+    
+    We may not have a shutdown binary on lightweight systems. However,
+    reboot is much more likely.
+    
+    Signed-off-by: Jeremy Kerr <jk@ozlabs.org>
+
+commit 20124e108e76e7e9846294101190e87ad4a7f358
+Author: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+Date:   Fri Feb 28 12:40:46 2014 -0600
+
+    lparstat: handle unsupported files
+    
+    Add code to check the return value of fopen before
+    reading in to it. Incase of guest, some rtas files
+    does not exist. This causes a segv.
+    
+    Signed-off-by: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+
+commit 18d15de5455eedfd4bb7ad81a69b4b7173cc909a
+Author: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+Date:   Mon Feb 24 11:58:46 2014 -0600
+
+    lparstat: fix a segv in parse_proc_stat
+    
+    Signed-off-by: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+
+commit 4f542616dbd80ece536f5f23190d937b4e73dfd9
+Author: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+Date:   Mon Feb 24 11:51:30 2014 -0600
+
+    drmgr: workaround for qemu virtio hotplug devices
+    
+    QEMU wants to hotplug slots on a single bus. The Power rpaphp module is broken
+    and only plays nicely when slots are on their own bus. Workaround this limitation
+    by using the /sys/bus/pci/rescan interface to discover new devices. The device
+    /sys/devices/pci[busid]/[bus:slot:fn]/remove sysfs entry is used to remove the
+    device. A new "-V" option is introduced to identify that this workaround for
+    pci virtio devices is to be used.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit cfe38bd0994e4ea06d514eaee02325faa0c3369a
+Author: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+Date:   Mon Feb 24 11:50:14 2014 -0600
+
+    drmgr: lookup drc_name when drc_index is supplied for pci hotplug
+    
+    The -s option should accept a drc_name or drc_index. However, currently
+    passing a drc_index fails because the code always assumes a drc_name.
+    Added a find_drc_name function that takes a drc_index and returns the
+    associated drc_name.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 2bfe73145d397d84b533250784c730e5d14f243d
+Author: Joel Stanley <joel@jms.id.au>
+Date:   Mon Feb 24 11:47:12 2014 -0600
+
+    ppc64_cpu: Check {get,set}_attribute return values
+    
+    Take a look at the return value of the fprintf/scanf, and propagate
+    the return code. This removes a compiler warning.
+    
+    Signed-off-by: Joel Stanley <joel@jms.id.au>
+
+commit bbb1493170b10c017cf6e236b25432d5e1a8466b
+Author: Joel Stanley <joel@jms.id.au>
+Date:   Mon Feb 24 11:46:31 2014 -0600
+
+    ppc64_cpu: Add --info command
+    
+    This lists all threads on the system, grouped by the cores they belong
+    to. The online status of a thread is indicated by an asterisk.
+    
+      $ ppc64_cpu --info
+      Core   0:    0*    1*    2*    3*    4*    5*    6*    7*
+      Core   1:    8*    9*   10*   11*   12*   13*   14*   15*
+      Core   2:   16*   17*   18*   19*   20*   21*   22*   23*
+      Core   3:   24*   25*   26*   27*   28*   29*   30*   31*
+    
+    If a system supports subcores, and the user has permission to access the
+    sysfs files that indicate the subcore status, the threads will be
+    grouped by subcore.
+    
+      $ ppc64_cpu --info
+      Core   0:
+        Subcore   0:    0*    1
+        Subcore   1:    2     3
+        Subcore   2:    4     5
+        Subcore   3:    6     7
+      Core   1:
+        Subcore   4:    8*    9
+        Subcore   5:   10    11
+        Subcore   6:   12    13
+        Subcore   7:   14    15
+    
+    Signed-off-by: Joel Stanley <joel@jms.id.au>
+
+commit 5aab6796437ff766c4633edc7c9616448a9f68d4
+Author: Joel Stanley <joel@jms.id.au>
+Date:   Mon Feb 24 11:45:52 2014 -0600
+
+    ppc64_cpu: Core state should depend on all threads
+    
+    A core should be considered running when any thread is online.  The
+    previous test only looked at the first thread on a core, now we loop
+    through all cores in the core in question.
+    
+    Signed-off-by: Joel Stanley <joel@jms.id.au>
+
+commit 728ec6de660b3dc1fc88e993691f921e3c6b5f87
+Author: Joel Stanley <joel@jms.id.au>
+Date:   Mon Feb 24 11:40:46 2014 -0600
+
+    ppc64_cpu: Teach all options about subcores
+    
+    Commands such as --smt=on/off need to know about subcores so they can
+    online the required threads when a core is in split core mode.
+    
+    Instead of re-implementing commands so that subcores are treated
+    correctly, make the entire program treat subcores as cores. This means
+    that commands such as --cores-on report the number of subcores, not
+    physical cores.
+    
+    Signed-off-by: Joel Stanley <joel@jms.id.au>
+
+commit e1bf03ec85443ed8d6fd51bf31729f6db89f4960
+Author: Joel Stanley <joel@jms.id.au>
+Date:   Mon Feb 24 11:40:05 2014 -0600
+
+    ppc64_cpu: Add --subcores-per-core option
+    
+    Upcoming power8 chips support a concept called split core. This is where
+    the core can be split into subcores that although not full cores, are
+    able to appear as full cores to a guest.
+    
+    Currently the kernel supports setting subcores per core to 1 or 4,
+    through a sysfs interface.
+    
+    This command allows the split state to be queried, and set to 1 or 4.
+    
+    Signed-off-by: Joel Stanley <joel@jms.id.au>
+
+commit 3b343e0eba660da74362bfde3461812d674fa89d
+Author: Joel Stanley <joel@jms.id.au>
+Date:   Mon Feb 24 11:39:22 2014 -0600
+
+    ppc64_cpu: test_attr return 2 when file missing
+    
+    The old logic was to assume the attribute is readable when the sysfs
+    file does not exist. This makes it hard to detect when subcores are
+    available.
+    
+    However, the existing code relies on not returning an error when
+    iterating through the CPUs in sysfs. Compromise by returning 2, which
+    doesn't break existing code, and allows new users to ask precisely what
+    the state of the attribute is.
+    
+    Signed-off-by: Joel Stanley <joel@jms.id.au>
+
+commit 2ec5413a7256a4bdeaec2ed825353347df2f1c56
+Author: Joel Stanley <joel@jms.id.au>
+Date:   Mon Feb 24 11:38:21 2014 -0600
+
+    ppc64_cpu: make internal functions static
+    
+    A cleanup before making future changes; make all the internal
+    functions (in this case, everything except main) and global variables
+    static.
+    
+    Signed-off-by: Joel Stanley <joel@jms.id.au>
+
+commit 190bc260f91775ee3750cd213f7e505008bff676
+Author: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Date:   Mon Feb 24 11:34:35 2014 -0600
+
+    drmgr: Handle platform dependencies
+    
+    Supported platforms: PowerVm guest, BE guest
+    Unsupported platforms: PowerNV
+    
+    Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+
+commit 85f0eda1db3dcec957d313e46d64eb9fc6528277
+Author: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Date:   Mon Feb 24 11:33:20 2014 -0600
+
+    Handle Platform dependencies for PowerVM guests
+    
+    Supported platforms: PowerVM guest, BE guest
+    Unsupported platforms: PowerNV
+    
+    Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+
+commit 75aecae8c532d0c12f1540886c2c72463c51e72b
+Author: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Date:   Mon Feb 24 11:31:59 2014 -0600
+
+    Handle Platform dependenciesfor VM & BE guests
+    
+    Supported platforms: PowerVM guest, BE guest
+    Unsupported platforms: PowerNV
+    
+    Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+
+commit 9abbf45c163dc7ba5e3c9147339dbee3e0fbb6fc
+Author: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Date:   Mon Feb 24 11:30:16 2014 -0600
+
+    pseries_platform: Handle platform dependencies
+    
+    The patch will take care of identifying the platform and provides
+    a common function call (get_platform) which can be exported by
+    various other tools of powerpc-utils and display suitable result.
+    
+    Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+    Signed-off-by: Suzuki K. Poulose <suzuki@in.ibm.com>
+
+commit 41c0de6844b760bf9946ec350384e91cac8ac80e
+Author: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Date:   Mon Feb 24 11:28:46 2014 -0600
+
+    powerpc-utils/update_flash: Handle platform dependency
+    
+    Supported platform: PowerNV, PowerVM guest
+    Unsupported platform: BE guest
+    
+    Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+
+commit 12a7d1655864b51c7247302290ca00ba67728511
+Author: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Date:   Mon Feb 24 11:27:47 2014 -0600
+
+    powerpc-utils: pseries_platform tools supported on Pseries Lpar and guest
+    
+    Supported platform: PowerVM guest, BE guest
+    Unsupported platform: PowerNV
+    
+    Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+
+commit 6314289313d8c13a2b44e4d6324e34bb09e9e155
+Author: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Date:   Mon Feb 24 11:26:30 2014 -0600
+
+    powerpc-utils: pseries_platform for Tools supported on Pseries Lpar
+    
+    Supported platform: PowerVM guest
+    unsupported platform: PowerNV, BE guest
+    
+    Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+
+commit 39aaaca59b08e2c91b71070a1fad91eb184121c6
+Author: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Date:   Mon Feb 24 11:25:24 2014 -0600
+
+    powerpc-utils: Handle platform dependencies
+    
+    The patch will take care of identifying the platform and provides
+    a common script which can be called by various other tools of
+    powerpc-utils and display suitable result.
+    
+    Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+
+commit fdd92e0c5654fbc5eba06c9277d3acb7f37ec257
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Wed Feb 12 08:08:21 2014 -0600
+
+    sys_ident: Add support to recognize Power 8 systems.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 727785cf6f533d2408c65dc51b797cc04fac4b23
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Mon Feb 10 09:50:51 2014 -0600
+
+    The drmgr command incorrectly returns -1 when passed the --capabilities option.
+    This patch corrects drmgr to properly return zero when passed the
+    --capabilities flag.
+    
+    The fix for this involves getting rid of parse_and_validate_options()
+    so that we can handle cases where we just want to display the capabilites
+    or usage messages properly.
+    
+    This issue was introduced by this commit:
+    http://sourceforge.net/p/powerpc-utils/powerpc-utils/ci/b2fb611e87ebdb27a6b923cf1ac076eb364870b8
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 117f06d82f26fb685b45241c159179233dc7e38b
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Mon Feb 10 09:47:57 2014 -0600
+
+    Initialize the 'state' variable to get rid of a compiler warning.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 79879121c3a82063303319625d8a3c33222ec14e
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Mon Feb 10 09:47:07 2014 -0600
+
+    Remove useless instances of setting rc variable.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 8f859d2aa63c99ae52b5ef22833deb4005c6d825
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Mon Feb 10 09:46:20 2014 -0600
+
+    We can have device tree nodes that do not have any drc information in them.
+    This patch checks for this condition and handles it appropriately.
+    
+    Without this fix we get an allocation failure when trying to get the
+    size of a file that does not exist.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 20619e18339c5c15c1e88e031ffb38be5038ee3a
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Mon Feb 10 09:45:29 2014 -0600
+
+    This provides updates to drmgr's zalloc() routine to provide
+    additional debug information in the case of allocation failures.
+    The patch also gets rid of the report_alloc_error() routine
+    that does not really provide any information.
+    
+    The zalloc() routine is moved from being a static inline in dr.h to
+    an actual function in common.c with a #define front-end in dr.h
+    to grab function and line number.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit a52e903c5ae7fc142502585a4c832979673441e4
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Mon Feb 10 09:44:37 2014 -0600
+
+    This patch cleans up the naming of the routines/variables used
+    when writing to the kernel files (via sysfs) that are used in
+    adding or removing a slot. This is just to (hopefully) make
+    reading the code easier, there are no functional changes.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 6251ae1f558636f9c89f8183fa0b8ba7086a1f6c
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Mon Feb 10 09:43:03 2014 -0600
+
+    When trying to remove a slot by writing to the sysfs interface
+    we need to make sure we wait until the add/remove completes. The
+    write to this file will return EBUSY while the kernel is waiting
+    for the kernel to complete the work on the slot.
+    
+    This patch updates the write to the kernel interface file to loop
+    on EBUSY while waiting for the operation to complete.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 494bb8a1c99b058c165c5fecd7c8544cb19728e6
+Author: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+Date:   Mon Feb 10 09:41:51 2014 -0600
+
+    The ibm,update-nodes rtas call returns an operation list whose first 4 bytes
+    are composed of a 1-byte opcode and 3-bytes denoting the number of operands
+    in the list. For the add nodes case each operand is actually composed of a
+    phandle/drc-index pair. The current code increments the count while processing
+    the list for each value instead of each value pair resulting in only half the
+    returned nodes being added.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit b26714e71cdabb8959c9a4f28176621a9b4f34d5
+Author: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+Date:   Mon Feb 10 09:40:39 2014 -0600
+
+    By testing the hibernate and migrate sysfs attributes drmgr can determine if a
+    device tree update is required. If the update is done by the kernel reading
+    the attribute file will return 1. Otherwise, it should either return 0 or be
+    unreadable to indicate drmgr needs to update the device tree from userspace.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit aeb32757cab7b70ad67c20b7b1ebd4886fc707f4
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Tue Jan 14 19:57:32 2014 -0600
+
+    Presently update_flash_nv is not executable. So if we try to
+    execute this script we hit "Permission denied" error. This
+    patch makes update_flash_nv as executable.
+    
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit 776e6359a6141fd943755c3958e012a677021f2a
+Author: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Date:   Tue Jan 14 19:56:05 2014 -0600
+
+    Fix oops_log_info header in the oops record to ensure the header
+    size is same across all processors.
+    
+    Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+
+commit 99ca9bb86e370f630c25da46a95d540de11e6580
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Tue Jan 14 19:54:25 2014 -0600
+
+    Add -h flag to update_flash and update_flash_nv tool.
+    
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit dce5813f5ed7c38c7297f8d967a903abc3184853
+Author: Paul Mackerras <paulus@samba.org>
+Date:   Tue Jan 14 19:53:58 2014 -0600
+
+    From: Paul Mackerras <paulus@samba.og>
+    
+    Add the ability to convert a logical device path for
+    a virtio block device to its Open Firmware device path.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 0f1e70a274bbad5b08221dace596d016d77a12e9
+Author: Bharani C.V <bharanve@linux.vnet.ibm.com>
+Date:   Mon Dec 2 14:01:44 2013 -0600
+
+    snap command uses open call to open the input file and
+    then uses sysread call to copy content from soure file
+    to destination. Command hangs if input file is blocked.
+    This patch uses sysopen with NONBLOCK flag instead of
+    regular open call so that we don't hang.
+    
+    Signed-off-by: Bharani C.V. <bharanve@linux.vnet.ibm.com>
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit 55dc0d27a1402b0dda8d982f9539681b9d8cc040
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Mon Dec 2 13:03:44 2013 -0600
+
+    Man page update for PowerNV platform.
+    
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit 0646c2365d4a67b741d76da037d103869bbe3380
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Fri Nov 22 12:40:17 2013 -0600
+
+    Update Makefile and spec file to pickup update_flash_nv tool.
+    
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit aafc3ec5972c4263da3c0e421fffa53723925b96
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Fri Nov 22 12:39:27 2013 -0600
+
+    This patch checks for running paltform and if system is in PowerNV
+    mode it calls update_flash_nv tool.
+    
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit 5bacd664873bc84143a8ace6db745d7361a2b192
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Fri Nov 22 11:42:38 2013 -0600
+
+    This patch adds support for PowerNV platform.
+    
+    Code update procedure in both pSeries and PowerNV platform is same.
+    But return codes and interface to pass image to kernel differs. Also
+    in PowerNV by default inband code update is allowed. Hence I have
+    introduced new file (update_flash_nv) rather than updating existing
+    update_flash command.
+    
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit bbffa245e281626d6e3a9c689dc843bead7e2188
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Fri Nov 22 11:15:09 2013 -0600
+
+    The function keyword is a bashism and it will not be recognized by
+    other POSIX complaint shell. POSIX syntax does not use function and
+    mandates the use of parenthesis. Hence change all function definations
+    in update_flash tool to follow POSIX standard.
+    
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit 5e5f13fc0998e010b366f8d122ad90e07d948ae0
+Author: Cedric Le Goater <clg@fr.ibm.com>
+Date:   Thu Nov 21 14:07:04 2013 -0600
+
+    From: Cedric Le Goater <clg@fr.ibm.com>
+    
+    The nvram is in big endian order. The partition length needs to be
+    byte-swapped when it is read or written on little endian machines.
+    
+    Signed-off-by: Cedric Le Goater <clg@fr.ibm.com>
+
+commit 1e33a4f25f6b6d384b019c065eb1919e768eb876
+Author: Jeremy Kerr <jk@ozlabs.org>
+Date:   Thu Nov 21 14:01:49 2013 -0600
+
+    f we're only interested in building the OF tools (nvram, lsprop, etc),
+    then requiring librtas is a little unnecessary.
+    
+    This change adds --without-librtas to allow building without librtas
+    present.
+    
+    Requires an autoreconf.
+    
+    Signed-off-by: Jeremy Kerr <jk@ozlabs.org>
+    
+    Since this required an autoreconf I am including the diffstat from the
+    original patch to hopefully make picking out the code changes (and
+    not updates to to sutoreconf) easier.
+    
+     configure.ac          |   19 ++++++++++++++++++-
+     src/Makefile.am       |   15 +++++++++------
+     src/drmgr/Makefile.am |    2 ++
+     3 files changed, 29 insertions(+), 7 deletions(-)
+
+commit db5449adfea023c54b5f5f339cde6be6cdbb97b0
+Author: Jeremy Kerr <jk@ozlabs.org>
+Date:   Wed Nov 20 10:03:02 2013 -0600
+
+    On a ppc64 f18 machine, I see the following error during make install:
+    
+     make[3]: Entering directory `powerpc-utils/scripts'
+     make[3]: Nothing to be done for `install-data-am'.
+      /usr/bin/mkdir -p '/usr/bin'
+      /usr/bin/mkdir -p '/usr/bin'
+      /usr/bin/mkdir -p '/usr/sbin'
+      /usr/bin/mkdir -p '/usr/sbin'
+      /usr/bin/install -c amsstat '/usr/bin'
+      /usr/bin/install -c amsstat '/usr/bin'
+      /usr/bin/install -c update_flash hvcsadmin rtas_dump snap bootlist ofpathname lsdevinfo ls-veth ls-vscsi ls-vdev '/usr/sbin'
+     /usr/bin/install: cannot create regular file ‘/usr/bin/amsstat’: File exists
+     make[3]: *** [install-dist_binSCRIPTS] Error 1
+    
+    We seem to have duplicate install rules due to the separate dist_ rules
+    in scripts/Makefile.am.
+    
+    Since the dist_*_SCRIPTS rule also implies *_SCRIPTS, we can remove the
+    non-dist_ versions.
+    
+    Signed-off-by: Jeremy Kerr <jk@ozlabs.org>
+    Reviewed-by: <hegdevasant@linux.vnet.ibm.com>
+
+commit 87c7651947143e8697ccf669307b577415359007
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Wed Nov 20 10:01:41 2013 -0600
+
+    Update FW entitlement message to reflect IBM preferred wordings.
+    
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
 powerpc-utils-1.2.18
 =====================================================================
 commit 1cb9a27a8751ee0f0d5d54de2e9b3e086618fc82
