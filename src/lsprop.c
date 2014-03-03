@@ -14,16 +14,6 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <endian.h>
-#include <byteswap.h>
-
-static inline unsigned int dt_swap_int(unsigned int data)
-{
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-	return bswap_32(data);
-#else
-	return data;
-#endif
-}
 
 int recurse;
 int maxbytes = 128;
@@ -194,7 +184,7 @@ void lsprop(FILE *f, char *name)
     } else if ((n & 3) == 0) {
 	nw = n >> 2;
 	if (nw == 1) {
-	    i = dt_swap_int(*(int *)buf);
+	    i = be32toh(*(int *)buf);
 	    printf(" %.8x", i);
 	    if (i > -0x10000 && !(i >= 0 && i <= 9))
 		printf(" (%d)", i);
@@ -212,7 +202,7 @@ void lsprop(FILE *f, char *name)
 		if (i != 0)
 		    printf("\n\t\t");
 		for (j = 0; j < npl && i + j < nw; ++j)
-		    printf(" %.8x", dt_swap_int(((unsigned int *)buf)[i+j]));
+		    printf(" %.8x", be32toh(((unsigned int *)buf)[i+j]));
 	    }
 	}
     } else {

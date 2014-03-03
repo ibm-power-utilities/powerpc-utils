@@ -45,7 +45,6 @@
 #include <inttypes.h>
 #include <zlib.h>
 #include <endian.h>
-#include <byteswap.h>
 
 #include "nvram.h"
 
@@ -409,16 +408,6 @@ parse_of_common(char *data, int data_len, char *outname, char *outval)
     return p - data;
 }
 
-static inline unsigned short
-nvram_swap_short(unsigned short length)
-{
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-	return bswap_16(length);
-#else
-	return length;
-#endif
-}
-
 /**
  * nvram_parse_partitions
  * @brief fill in the nvram structure with data from nvram 
@@ -451,7 +440,7 @@ nvram_parse_partitions(struct nvram *nvram)
 	c_sum = checksum(phead);
 	if (c_sum != phead->checksum)
 	    warn_msg("this partition checksum should be %02x!\n", c_sum);
-	phead->length = nvram_swap_short(phead->length);
+	phead->length = be16toh(phead->length);
 	p_start += phead->length * NVRAM_BLOCK_SIZE;
     }
 
@@ -498,7 +487,7 @@ nvram_find_fd_partition(struct nvram *nvram, char *name)
 	    found = 1;
 	else {
 	    int offset =
-		    nvram_swap_short(phead.length) * NVRAM_BLOCK_SIZE - len;
+		    be16toh(phead.length) * NVRAM_BLOCK_SIZE - len;
 	    if (lseek(nvram->fd, offset, SEEK_CUR) == -1) {
 	        err_msg("seek error in file %s: %s\n", nvram->filename,
 			strerror(errno));
@@ -1351,7 +1340,7 @@ update_of_config_var(struct nvram *nvram, char *config_var, char *pname)
 
     /* make sure the new config var will fit into the partition and add it */
     new_phead = (struct partition_header *)new_part;
-    new_phead->length = nvram_swap_short(new_phead->length);
+    new_phead->length = be16toh(new_phead->length);
     new_part_offset = new_part + (data_offset - (char *)phead);
     new_part_end = new_part + part_size;
 
