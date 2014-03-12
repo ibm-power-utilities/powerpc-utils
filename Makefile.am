@@ -1,4 +1,4 @@
-AUTOMAKE_OPTIONS = foreign
+AUTOMAKE_OPTIONS = foreign subdir-objects
 SUBDIRS = src man scripts
 
 docdir = $(datadir)/doc/packages/@PACKAGE@

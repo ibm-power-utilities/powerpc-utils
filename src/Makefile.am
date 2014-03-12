@@ -1,3 +1,5 @@
+AUTOMAKE_OPTIONS = subdir-objects
+
 AM_CFLAGS = -Wall -g -I common/ 
 AM_LDFLAGS =
 

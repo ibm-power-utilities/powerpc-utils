@@ -42,7 +42,8 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 sbinPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(sbin_PROGRAMS)
-am__objects_1 = pseries_platform.$(OBJEXT)
+am__dirstamp = $(am__leading_dot)dirstamp
+am__objects_1 = $(COM_DIR)/pseries_platform.$(OBJEXT)
 am_drmgr_OBJECTS = common.$(OBJEXT) common_cpu.$(OBJEXT) \
 	common_ofdt.$(OBJEXT) common_pci.$(OBJEXT) drmgr.$(OBJEXT) \
 	drmig_chrp_pmig.$(OBJEXT) drslot_chrp_cpu.$(OBJEXT) \
@@ -155,6 +156,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+AUTOMAKE_OPTIONS = subdir-objects
 COM_DIR = $(top_srcdir)/src/common
 AM_CFLAGS = -Wall -g -I $(COM_DIR)
 pseries_platform_SOURCES = $(COM_DIR)/pseries_platform.c $(COM_DIR)/pseries_platform.h
@@ -226,6 +228,14 @@ uninstall-sbinPROGRAMS:
 
 clean-sbinPROGRAMS:
 	-test -z "$(sbin_PROGRAMS)" || rm -f $(sbin_PROGRAMS)
+$(COM_DIR)/$(am__dirstamp):
+	@$(MKDIR_P) $(COM_DIR)
+	@: > $(COM_DIR)/$(am__dirstamp)
+$(COM_DIR)/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) $(COM_DIR)/$(DEPDIR)
+	@: > $(COM_DIR)/$(DEPDIR)/$(am__dirstamp)
+$(COM_DIR)/pseries_platform.$(OBJEXT): $(COM_DIR)/$(am__dirstamp) \
+	$(COM_DIR)/$(DEPDIR)/$(am__dirstamp)
 drmgr$(EXEEXT): $(drmgr_OBJECTS) $(drmgr_DEPENDENCIES) 
 	@rm -f drmgr$(EXEEXT)
 	$(LINK) $(drmgr_OBJECTS) $(drmgr_LDADD) $(LIBS)
@@ -235,10 +245,12 @@ lsslot$(EXEEXT): $(lsslot_OBJECTS) $(lsslot_DEPENDENCIES)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
+	-rm -f $(COM_DIR)/pseries_platform.$(OBJEXT)
 
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@$(COM_DIR)/$(DEPDIR)/pseries_platform.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/common.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/common_cpu.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/common_ofdt.Po@am__quote@
@@ -253,36 +265,23 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/drslot_chrp_slot.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lsslot.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lsslot_chrp_cpu.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pseries_platform.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rtas_calls.Po@am__quote@
 
 .c.o:
-@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	mv -f $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(COMPILE) -c $<
+@am__fastdepCC_FALSE@	$(COMPILE) -c -o $@ $<
 
 .c.obj:
-@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepCC_TRUE@	mv -f $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
-
-pseries_platform.o: $(COM_DIR)/pseries_platform.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pseries_platform.o -MD -MP -MF $(DEPDIR)/pseries_platform.Tpo -c -o pseries_platform.o `test -f '$(COM_DIR)/pseries_platform.c' || echo '$(srcdir)/'`$(COM_DIR)/pseries_platform.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/pseries_platform.Tpo $(DEPDIR)/pseries_platform.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(COM_DIR)/pseries_platform.c' object='pseries_platform.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pseries_platform.o `test -f '$(COM_DIR)/pseries_platform.c' || echo '$(srcdir)/'`$(COM_DIR)/pseries_platform.c
-
-pseries_platform.obj: $(COM_DIR)/pseries_platform.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pseries_platform.obj -MD -MP -MF $(DEPDIR)/pseries_platform.Tpo -c -o pseries_platform.obj `if test -f '$(COM_DIR)/pseries_platform.c'; then $(CYGPATH_W) '$(COM_DIR)/pseries_platform.c'; else $(CYGPATH_W) '$(srcdir)/$(COM_DIR)/pseries_platform.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/pseries_platform.Tpo $(DEPDIR)/pseries_platform.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(COM_DIR)/pseries_platform.c' object='pseries_platform.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pseries_platform.obj `if test -f '$(COM_DIR)/pseries_platform.c'; then $(CYGPATH_W) '$(COM_DIR)/pseries_platform.c'; else $(CYGPATH_W) '$(srcdir)/$(COM_DIR)/pseries_platform.c'; fi`
+@am__fastdepCC_FALSE@	$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
@@ -384,6 +383,8 @@ clean-generic:
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
+	-test -z "$(COM_DIR)/$(DEPDIR)/$(am__dirstamp)" || rm -f $(COM_DIR)/$(DEPDIR)/$(am__dirstamp)
+	-test -z "$(COM_DIR)/$(am__dirstamp)" || rm -f $(COM_DIR)/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -393,7 +394,7 @@ clean: clean-am
 clean-am: clean-generic clean-sbinPROGRAMS mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf ./$(DEPDIR)
+	-rm -rf $(COM_DIR)/$(DEPDIR) ./$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -427,7 +428,7 @@ install-ps: install-ps-am
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf ./$(DEPDIR)
+	-rm -rf $(COM_DIR)/$(DEPDIR) ./$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
