@@ -10,6 +10,7 @@
 #include <fcntl.h>
 #include <memory.h>
 #include <errno.h>
+#include <endian.h>
 #include "rtas_calls.h"
 #include "dr.h"
 #include "ofdt.h"
@@ -39,7 +40,7 @@ get_node(char *workarea)
 		return NULL;
 
 	work_int = (int *)workarea;
-	node_name = workarea + work_int[2];
+	node_name = workarea + be32toh(work_int[2]);
 	node->name = (char *)zalloc(strlen(node_name)+1);
 	if (node->name == NULL) {
 		/* Malloc error */
@@ -110,7 +111,7 @@ get_rtas_property(char *workarea)
 		/* Initialize the new property structure */
 		work_int = (int *)workarea;
 		prop->next = NULL;
-		name = workarea + work_int[2];
+		name = workarea + be32toh(work_int[2]);
 		prop->name = (char *)zalloc(strlen(name)+1);
 		if (prop->name == NULL) {
 			/* Malloc error */
@@ -118,8 +119,8 @@ get_rtas_property(char *workarea)
 			return NULL;
 		}
 		strcpy(prop->name, name);
-		prop->length = work_int[3];
-		value = workarea + work_int[4];
+		prop->length = be32toh(work_int[3]);
+		value = workarea + be32toh(work_int[4]);
 		prop->value = (char *)zalloc(prop->length);
 		if (prop->value == NULL) {
 			/* Malloc error */
@@ -275,7 +276,7 @@ configure_connector(int index)
 
 	/* initialize work area and args structure */
 	work_int = (int *) &workarea[0];
-	work_int[0] = index;
+	work_int[0] = htobe32(index);
 	work_int[1] = 0;
 
 	while (1) {
