@@ -216,10 +216,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 			action_cnt++;
 			break;
 		    case 's':
-			if(!strncmp(optarg, "0x", 2))
-				opts->usr_drc_index = strtoul(optarg, NULL, 16);
-			else
-				opts->usr_drc_name = optarg;
+			opts->usr_drc_name = optarg;
 			break;
 		    case 'Q':
 			opts->action = QUERY;
