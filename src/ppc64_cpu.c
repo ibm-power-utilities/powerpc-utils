@@ -31,7 +31,7 @@
 #include "librtas_error.h"
 #include <errno.h>
 
-#define PPC64_CPU_VERSION	"1.1"
+#define PPC64_CPU_VERSION	"1.2"
 
 #define SYSFS_CPUDIR	"/sys/devices/system/cpu/cpu%d"
 #define SYSFS_SUBCORES	"/sys/devices/system/cpu/subcores_per_core"
