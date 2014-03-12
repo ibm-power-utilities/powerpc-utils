@@ -253,6 +253,10 @@ sub recurse_dir ($) {
 sub snap_paths {
 	my ($file, $dir, $search, @contents);
 
+	# For now do not collect proc ppc64 files for guest.
+	next if ($file =~ "/proc/ppc64/" &&
+		$ENV{'platform'} == $ENV{'PLATFORM_POWERKVM_GUEST'});
+
 	foreach $file (@_) {
 		if (-d $file) {
 			recurse_dir $file;
