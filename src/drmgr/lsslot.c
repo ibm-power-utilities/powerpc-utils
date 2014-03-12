@@ -560,7 +560,7 @@ lsslot_chrp_pci(struct cmd_opts *opts)
 			    "this system.\n");
 		else
 			say(ERROR, "There are no DR slots on this system.\n");
-   		return 1;
+   		return 0;
 	}
 
 	print_node_list(all_nodes);
