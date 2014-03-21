@@ -855,9 +855,10 @@ of2l_ethernet()
 
     # strip off ip info if present
     local devname=${DEVNAME%%:*}
+    local netdir="/sys/class/net"
 
-    for dir in `$FIND /sys/class/net -name 'eth*'`; do
-	local devdir=`find_dir $dir device`
+    for dir in `ls $netdir`; do
+	local devdir=`find_dir $netdir/$dir device`
 	if [[ -z $devdir ]]; then
 	    continue
 	fi
