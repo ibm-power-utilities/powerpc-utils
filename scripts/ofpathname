@@ -90,6 +90,18 @@ err()
     exit 1
 }
 
+# is_hbtl
+# return true if the link is in HBTL (Host:Bus:Target ID:LUN) format
+is_hbtl()
+{
+        local ln_name=$1;
+        local tmp="${ln_name//[^:]}"
+        if [[ ${#tmp} = 3 ]]; then
+              echo 1
+        else
+              echo 0
+	fi
+}
 #
 # get_link
 # return the directory path that a link points to.
@@ -754,7 +766,7 @@ ofpathname_to_logical()
     fi
 
     case $DEVTYPE in
-        sd*           )  of2l_scsi ;;
+        sd* | scsi*   )  of2l_scsi ;;
         sas           )  of2l_sas ;;
         vfc           )  of2l_vfc ;;
         fc            )  of2l_fc ;;
@@ -924,7 +936,7 @@ of2l_scsi()
     DEV_LUN=${DEV_LUN%%:*}
 
     local dir
-    for dir in `$FIND /sys/block -name 's[dr]*'`; do
+    for dir in `$FIND /sys/block -name '[sv][dr]*'`; do
         # go up to find directory with 'device' link
 	local devdir=`find_dir $dir device`
 	if [[ -z $devdir ]]; then
@@ -938,15 +950,25 @@ of2l_scsi()
             err $ERR_NO_SYSFS_DEVINFO
         fi
 
-        get_hbtl $link
+        local hbtl=`is_hbtl $link`
+        # Do not call get_hbtl for virtio block devices
+        if [[ $hbtl = 1 ]]; then
+               get_hbtl $link
+	fi
         cd $link
 
         # save the name of the current directory, we may need it later...
         local device_dir=${PWD##/*/}
 
-        if [[ $ID = $DEV_TARGET && $LUN = $DEV_LUN ]]; then
+        if [[ !$hbtl || ($ID = $DEV_TARGET && $LUN = $DEV_LUN) ]]; then
             goto_dir $PWD "devspec"
             local devspec=`$CAT ./devspec 2>/dev/null`
+
+            # Handle virtio block devices
+            if [[ !$hbtl && $devspec = $DEVNAME ]]; then
+                LOGICAL_DEVNAME="${dir##*/}"
+                return
+            fi
 
             if [[ $devspec = $DEVPATH ]]; then
                 LOGICAL_DEVNAME="${dir##*/}"
