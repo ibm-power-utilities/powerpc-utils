@@ -115,9 +115,7 @@ int main(int argc, char **argv)
 	unsigned int seq = 1, next_seq;
 	struct buf_element *list, *current;
 
-	switch (get_platform()) {
-	case PLATFORM_UNKNOWN:
-	case PLATFORM_POWERKVM_HOST:
+	if (get_platform() != PLATFORM_PSERIES_LPAR) {
 		fprintf(stderr, "%s: is not supported on the %s platform\n",
 							argv[0], platform_name);
 		exit(1);

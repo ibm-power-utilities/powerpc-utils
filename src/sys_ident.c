@@ -35,6 +35,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <librtas.h>
+#include "pseries_platform.h"
 
 #define POW_36_4	(36*36*36*36)
 #define POW_36_3	(36*36*36)
@@ -439,6 +440,12 @@ int
 main (int argc, char **argv)
 {
 	int c, s_flag = 0, p_flag = 0;
+
+	if (get_platform() != PLATFORM_PSERIES_LPAR) {
+		fprintf(stderr, "%s: is not supported on the %s platform\n",
+							argv[0], platform_name);
+		return 1;
+	}
 
 	while ((c = getopt(argc, argv, "hps")) != -1) {
 
