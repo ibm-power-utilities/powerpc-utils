@@ -412,7 +412,22 @@ l2of_ide()
 #
 l2of_vd()
 {
-    cd /sys/block/$DEVICE
+    local found=0
+
+    # There may be many instances of DEVICE under /sys
+    for dir in `$FIND /sys -name $DEVICE`; do
+	# Move up until we find one with a device link
+	goto_dir $dir "device" 0
+	if [ $? -eq 0 ]; then
+	    found=1;
+	    break;
+	fi
+    done;
+
+    if [ $found -eq 0 ]; then
+        err $ERR_NOT_CONFIG
+    fi
+
     local link=`get_link "device"`
     if [[ -z $link ]]; then
         err $ERR_NO_SYSFS_DEVINFO
