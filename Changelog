@@ -1,3 +1,215 @@
+powerpc-utils-1.2.20
+=====================================================================
+commit 73c454bea39418872313cd960d005d4d20262f20
+Author: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Date:   Fri Mar 21 09:23:51 2014 -0500
+
+    powepcutils: Fix platform dependency
+    
+    Network interfaces can have prefix other than eth. Look for
+    all the interfaces in /sys/class/net.
+    
+    Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+    Reviewed-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit 3bf75d1fe9f1fbc24c34287b2fc50aae841ca2ca
+Author: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Date:   Fri Mar 21 09:16:08 2014 -0500
+
+    ofpathname: Convert OF format to logical device for ethernet devices
+    
+    Network interfaces can have prefix other than eth. Look for
+    all the interfaces in /sys/class/net.
+    
+    Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+
+commit 1e45fb89513b4f474308ac1684c378e67198a55f
+Author: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Date:   Fri Mar 21 09:14:46 2014 -0500
+
+    ofpathname: Convert logical path to OF device path for ethernet devices
+    
+    Network interface need not have name starting with eth. Check if
+    the device is a network interface and convert the logical
+    name to OF path.
+    
+    Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+
+commit ae566f77c7a176079ef868f52d5873096aa98655
+Author: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Date:   Fri Mar 21 09:13:10 2014 -0500
+
+    ofpathname: Convert OF format to logical device for virtual devices
+    
+    Add support to convert a Open Firmware device path to logical
+    device path for virtio block device.
+    
+    Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+    Acked-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit a2f49f551bb34023ab1052f92f8c06541e6f3474
+Author: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Date:   Fri Mar 21 09:10:38 2014 -0500
+
+    snap: Fix misplaced if block
+    
+    Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+    Acked-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit 7802242d9cadb475bbbae323c34bd177930dd52d
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Fri Mar 21 09:08:19 2014 -0500
+
+    ofpathname: Enable non-pseries platforms
+    
+    There are some non-pseries platforms that can (and do) use
+    the ofpathname script. This patch updates pseries_platform
+    check in ofpathname to allow for unknown platforms.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+    Reviewed-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+
+commit 74620d997eda9a8977a8132e06f30da3d46467c7
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Fri Mar 21 09:06:21 2014 -0500
+
+    ofpathname: Convert virtio block device to OF device path
+    
+    Add the ability to convert a logical device path for
+    a virtio block device to its Open Firmware device path.
+    
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit d3f442a8b3ac776395d03eb396a2bfc0ea95f0ba
+Author: Jeremy Kerr <jk@ozlabs.org>
+Date:   Wed Mar 12 09:20:54 2014 -0500
+
+    automake: Add subdir-objects automake option
+    
+    Current git builds fail for me, with:
+    
+      configure.ac:13: installing 'build-aux/compile'
+      automake: warnings are treated as errors
+      src/Makefile.am:8: warning: source file 'common/pseries_platform.c' is in 
+a subdirectory,
+      src/Makefile.am:8: but option 'subdir-objects' is disabled
+      automake: warning: possible forward-incompatibility.
+      automake: At least a source file is in a subdirectory, but the 'subdir-obj
+ects'
+      automake: automake option hasn't been enabled.  For now, the corresponding
+ output
+      automake: object file(s) will be placed in the top-level directory.  Howev
+er,
+      automake: this behaviour will change in future Automake versions: they wil
+l
+      automake: unconditionally cause object files to be placed in the same subd
+irectory
+      automake: of the corresponding sources.
+      automake: You are advised to start using 'subdir-objects' option throughou
+t your
+      automake: project, to avoid future incompatibilities.
+      src/drmgr/Makefile.am:9: warning: source file '$(COM_DIR)/pseries_platform
+.c' is in a subdirectory,
+      src/drmgr/Makefile.am:9: but option 'subdir-objects' is disabled
+      autoreconf: automake failed with exit status: 1
+    
+    Using:
+    
+    automake (GNU automake) 1.14.1
+    
+    Since we're using objects in subdirectories, we need the subdir-objects
+    atuomake option.
+    
+    Signed-off-by: Jeremy Kerr <jk@ozlabs.org>
+    
+    This commit also contains the updates from running autoreconf with this patc
+h.
+
+commit 8283cf470d0de18549443202c9fbabc742aa1975
+Author: Greg Kurz <gkurz@linux.vnet.ibm.com>
+Date:   Wed Mar 12 09:11:49 2014 -0500
+
+    drmgr: endian fixes for ibm,configure-connector
+    
+    The ibm,configure-connector RTAS call is supposed to be called several
+    times to do its job. It needs a work area to hold data between
+    subsequent calls. Among these data, there are integer values that
+    must be in big endian order when passed to RTAS.
+    
+    A buffer is setup by drmgr and passed to the rtas_cfg_connector() call
+    in librtas for this purpose. The rtas_cfg_connector() call manipulates
+    the work area as simple pointer to a char buffer and makes no assumptions
+    about its content. It is hence not convenient to ask librtas to fix the
+    endianness of the work area.
+    
+    Since the work area is entirely exposed in the drmgr code, it is far
+    easier and straightforward to handle endianess there. This patch
+    enforce the work area to be big endian, always, and drmgr to byteswap
+    when needed.
+    
+    Signed-off-by: Greg Kurz <gkurz@linux.vnet.ibm.com>
+
+commit 360eaf780748eb820ad97992db49f16962cbabf9
+Author: Joel Stanley <joel@jms.id.au>
+Date:   Wed Mar 12 08:43:48 2014 -0500
+
+    ppc64_cpu: bump internal version
+    
+    Bump the internal version so users know that have fixed subcore support.
+    
+    Signed-off-by: Joel Stanley <joel@jms.id.au>
+
+commit 4a2451399e3719d520f052d5180c72b2844ed902
+Author: Brian King <brking@linux.vnet.ibm.com>
+Date:   Wed Mar 12 08:40:44 2014 -0500
+
+    ofpathname: Fix OF to logical VFC lookup for non zero LUNs
+    
+    This patch fixes OF path to logical device name translation
+    for VFC devices with a non zero LUN when it has leading zeroes.
+    
+    Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
+
+commit 2f6c718ac7fdfa9757a8e446199d57f2648ac8e7
+Author: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Date:   Wed Mar 12 08:38:34 2014 -0500
+
+    snap: Fix call traces seen while capturing lparcfg and rtas files
+    
+    As the lparcfg and rtas procfs files are not populated properly by the
+    kernel on the PowerKVM guest do not capture it.
+    
+    Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+
+commit 05b14ae4cd87642c08a72c3c0a8bc2bb6a1b8d0b
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Wed Mar 12 08:16:45 2014 -0500
+
+    lsslot: Correct the return code when no DR slots found
+    
+    The lsslot command exits with a return code of 1 when there
+    are not any DR slots found. We should not consider it an error
+    that no DR capable slots are found.
+    
+    This patch updates lsslot to exit with zero if no DR capable
+    slots are found.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 500763c1058664b147523e68f4e046ecd5fa572c
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Wed Mar 12 08:13:38 2014 -0500
+
+    drmgr: Correct parsing of -s option
+    
+    The -s option can be used to specify a drc name or a drc index in
+    some cases. We need to leave the parsing of this value to the
+    individual commands in drmgr instead of always assuming that
+    strings starting with "0x" should be parsed into ints.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
 powerpc-utils-1.2.19
 =====================================================================
 
