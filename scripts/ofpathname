@@ -312,6 +312,22 @@ get_slave()
 }
 
 #
+# is_net_interface
+# Check to see if this is a network interface
+#
+is_net_interface()
+{
+    local res
+
+    res=`$FIND /sys/class/net -name $1`
+    if [[ ${#res} = 0 ]]; then
+	echo "no"
+    else
+	echo "yes"
+    fi
+}
+
+#
 # logical_to_ofpathname
 # Conversion for logical device name to an Open Firmware device path
 #
@@ -359,6 +375,11 @@ logical_to_ofpathname()
                     logical_to_ofpathname
                     exit
                     ;;
+	*)         # check if the device is a network interface
+                   is_net=$(is_net_interface $DEVICE)
+                   if [[ $is_net = "yes" ]]; then
+                      l2of_ethernet
+                   fi ;;
     esac
 
     if [[ -z $OF_PATH ]]; then
