@@ -1,5 +1,7 @@
 SUBDIRS = src man scripts
 
+ACLOCAL_AMFLAGS = -I m4
+
 docdir = $(datadir)/doc/packages/@PACKAGE@
 doc_DATA = README COPYRIGHT
 
