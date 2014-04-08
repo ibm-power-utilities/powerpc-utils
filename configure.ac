@@ -69,8 +69,5 @@ AC_DEFUN([LOCAL_CHECK_FLAGS],[
 ])
 LOCAL_CHECK_FLAGS
 
-echo "Configuring powerpc-utils.spec"
-sed "s|\@VERSION\@|ppu_version|g" powerpc-utils.spec.in > powerpc-utils.spec
-
-AC_CONFIG_FILES([Makefile src/Makefile src/drmgr/Makefile scripts/Makefile man/Makefile])
+AC_CONFIG_FILES([Makefile powerpc-utils.spec])
 AC_OUTPUT
