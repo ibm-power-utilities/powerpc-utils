@@ -4,7 +4,9 @@ m4_define([ppu_version], 1.2.20)
 
 AC_PREREQ([2.63])
 AC_INIT([powerpc-utils], ppu_version, [nfont@linux.vnet.ibm.com])
-AC_CONFIG_AUX_DIR([build-aux])
+AC_CONFIG_AUX_DIR([config])
+AC_CONFIG_MACRO_DIR([m4])
+
 AM_INIT_AUTOMAKE([1.10 -Wall subdir-objects -Werror foreign])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AC_CONFIG_SRCDIR([src/rtas_ibm_get_vpd.c])
@@ -12,6 +14,7 @@ AC_CONFIG_SRCDIR([src/rtas_ibm_get_vpd.c])
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
+AM_PROG_CC_C_O
 
 # Checks for header files.
 AC_CHECK_HEADERS([fcntl.h inttypes.h limits.h locale.h memory.h netinet/in.h nl_types.h stdint.h stdlib.h string.h sys/ioctl.h syslog.h unistd.h linux/perf_event.h])
