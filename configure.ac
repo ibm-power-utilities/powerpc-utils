@@ -5,7 +5,7 @@ m4_define([ppu_version], 1.2.20)
 AC_PREREQ([2.63])
 AC_INIT([powerpc-utils], ppu_version, [nfont@linux.vnet.ibm.com])
 AC_CONFIG_AUX_DIR([build-aux])
-AM_INIT_AUTOMAKE([1.10 -Wall -Werror foreign])
+AM_INIT_AUTOMAKE([1.10 -Wall subdir-objects -Werror foreign])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AC_CONFIG_SRCDIR([src/rtas_ibm_get_vpd.c])
 

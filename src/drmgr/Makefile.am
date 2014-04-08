@@ -1,5 +1,3 @@
-AUTOMAKE_OPTIONS = subdir-objects
-
 COM_DIR = $(top_srcdir)/src/common
 
 AM_CFLAGS = -Wall -g -I $(COM_DIR)

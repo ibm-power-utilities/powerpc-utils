@@ -1,4 +1,3 @@
-AUTOMAKE_OPTIONS = foreign subdir-objects
 SUBDIRS = src man scripts
 
 docdir = $(datadir)/doc/packages/@PACKAGE@
@@ -13,4 +12,3 @@ AC_CLEAN_FILES = aclocal.m4
 really-clean: maintainer-clean
 	-rm -f powerpc-utils.spec
 	-rm -f $(AC_CLEAN_FILES)
-	
