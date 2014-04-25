@@ -550,6 +550,11 @@ static int do_smt(char *state)
 	return rc;
 }
 
+static inline void do_threads_per_core()
+{
+	printf("Threads per core: %d\n", threads_per_cpu);
+}
+
 static int do_subcores_per_core(char *state)
 {
 	int rc = 0;
@@ -1028,10 +1033,9 @@ static int do_cpu_frequency(void)
 
 #endif
 
-static int do_cores_present(char * state)
+static inline void do_cores_present()
 {
 	printf("Number of cores present = %d\n", cpus_in_system);
-	return 0;
 }
 
 static int set_all_threads_off(int cpu, int smt_state)
@@ -1114,7 +1118,7 @@ static int do_cores_online(char *state)
 
 	if (number_to_have > cpus_in_system) {
 		printf("Cannot online more cores than are present.\n");
-		do_cores_present(NULL);
+		do_cores_present();
 		return -1;
 	}
 
@@ -1200,6 +1204,7 @@ static void usage(void)
 "                                    # seconds, default is 1 second.\n\n"
 "ppc64_cpu --subcores-per-core       # Get number of subcores per core\n"
 "ppc64_cpu --subcores-per-core=X     # Set subcores per core to X (1 or 4)\n"
+"ppc64_cpu --threads-per-core        # Get threads per core\n"
 "ppc64_cpu --info                    # Display system state information)\n");
 }
 
@@ -1301,11 +1306,13 @@ int main(int argc, char *argv[])
 	else if (!strcmp(action, "frequency"))
 		rc = do_cpu_frequency(sleep_time);
 	else if (!strcmp(action, "cores-present"))
-		rc = do_cores_present(action_arg);
+		do_cores_present();
 	else if (!strcmp(action, "cores-on"))
 		rc = do_cores_online(action_arg);
 	else if (!strcmp(action, "subcores-per-core"))
 		rc = do_subcores_per_core(action_arg);
+	else if (!strcmp(action, "threads-per-core"))
+		do_threads_per_core();
 	else if (!strcmp(action, "info"))
 		rc = do_info(action_arg);
 	else if (!strcmp(action, "version"))
