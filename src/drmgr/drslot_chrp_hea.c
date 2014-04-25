@@ -320,6 +320,13 @@ valid_hea_options(struct options *opts)
 		return -1;
 	}
 
+	if ((opts->action != ADD) && (opts->action != REMOVE)
+	    && (opts->action != QUERY)) {
+		say(ERROR, "The '-r', '-a', or '-Q' option must be specified "
+		    "for HEA operations.\n");
+		return -1;
+	}
+
 	return 0;
 }
 

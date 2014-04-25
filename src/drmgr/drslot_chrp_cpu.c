@@ -278,7 +278,8 @@ valid_cpu_options(struct options *opts)
 		opts->quantity = 1;
 
 	if ((opts->action != ADD) && (opts->action != REMOVE)) {
-		say(ERROR, "Invalid action specified\n");
+		say(ERROR, "The '-r' or '-a' option must be specified for "
+		    "CPU operations.\n");
 		return -1;
 	}
 

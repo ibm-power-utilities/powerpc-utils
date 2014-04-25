@@ -854,6 +854,13 @@ valid_pci_options(struct options *opts)
 		return -1;
 	}
 
+	if ((opts->action != ADD) && (opts->action != REMOVE)
+	    && (opts->action != IDENTIFY)) {
+		say(ERROR, "The '-r', '-a', or '-i' option must be spcified "
+	 	    "for PCI operations\n");
+		return -1;
+	}
+
 	return 0;
 }
 
