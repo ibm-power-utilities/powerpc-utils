@@ -581,13 +581,9 @@ static int do_subcores_per_core(char *state)
 		}
 		printf("Subcores per core: %d\n", subcore_state);
 	} else {
+                /* Kernel decides what values are valid, so no need to
+                 * check here. */
 		subcore_state = strtol(state, NULL, 0);
-		/* Validate option: we only suport 1 or 4. */
-		if (subcore_state != 1 && subcore_state != 4) {
-			fprintf(stderr, "subcores-per-core=%d invalid.\n", subcore_state);
-			return -1;
-		}
-
 		rc = set_attribute(SYSFS_SUBCORES, "%d", subcore_state);
 		if (rc) {
 			fprintf(stderr, "Failed to set subcore option.\n");
