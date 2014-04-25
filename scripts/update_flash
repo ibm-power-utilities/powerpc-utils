@@ -86,7 +86,7 @@ error() {
 usage() {
 	local exit_code;
 
-	if [ "$1" == $E_SUCCESS ]; then
+	if [ "$1" = $E_SUCCESS ]; then
 		exit_code=$E_SUCCESS
 	else
 		exit_code=$E_USAGE

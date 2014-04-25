@@ -99,7 +99,7 @@ error() {
 usage() {
 	local exit_code;
 
-	if [ "$1" == $E_SUCCESS ]; then
+	if [ "$1" = $E_SUCCESS ]; then
 		exit_code=$E_SUCCESS
 	else
 		exit_code=$E_USAGE
@@ -200,8 +200,8 @@ echo_validate_buf() {
 
 echo_validate_return_status() {
 	local output="$1"
-	local rc=$(echo "$output" | head -n 1)
-	local opal_buf=$(echo "$output" | tail -n +2)
+	local rc="$(echo "$output" | head -n 1)"
+	local opal_buf="$(echo "$output" | tail -n +2)"
 
 	[ $# -eq 1 ] || error $E_USAGE "echo_validate_return_status(): usage."
 
@@ -372,7 +372,7 @@ no_overwrite_opt=0
 file_opt=0
 
 # Only root user can perform firmware update
-[ "`whoami`" == "root" ] || error $E_PERM "Must be root to execute this command."
+[ "`whoami`" = "root" ] || error $E_PERM "Must be root to execute this command."
 
 # Parse command line options
 while [ -n "$1" ]; do
