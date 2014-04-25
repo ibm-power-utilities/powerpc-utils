@@ -175,6 +175,62 @@ END\``
 }
 
 #
+# get_usb_vdisk_no
+# Given a path that ends in an HBTL, convert the HBTL values into a
+# virtual disk number (not sure what the real terminology is for it).
+# To do the conversion, the HBTL (A:B:C:D) is split apart and
+# calculated as;
+#     no = (0x1000000 | (usb_port << 16) | D);
+#
+# $1 path ending in HBTL
+#
+get_usb_vdisk_no()
+{
+        get_hbtl $1
+        local usb_port=$2
+        local B
+
+        B=$((0x$usb_port << 16))
+
+        local vdiskno vdisk
+        vdiskno=$((0x1000000 | $B | $LUN ))
+        vdisk=${vdiskno##-}
+
+vdisk=$(bc << END
+ibase=10
+obase=16
+$vdisk
+END
+)
+        local extrazeroes="00000000"
+        echo $vdisk$extrazeroes
+}
+
+#
+# get_usb_storage_no
+# Get usb device storage (port) number which is captured in
+# devpath file
+#
+# $1 starting directory to look for devpath file
+get_usb_storage_no()
+{
+    for dir in `$FIND /sys -name $1`; do
+        # Move up until we find one with a devpath link
+        goto_dir $dir "devpath" 0
+        if [ $? -eq 0 ]; then
+            break;
+        fi
+    done;
+
+    if [ -f $PWD/devpath ]; then
+	echo `$CAT $PWD/devpath`
+    else
+        err $ERR_NOT_CONFIG
+    fi
+
+}
+
+#
 # goto_dir
 # This looks for a given file in a given directory or any parents of the
 # given directory.
@@ -636,7 +692,24 @@ l2of_scsi()
         fi
     fi
 
-    if [[ $fc = "fibre-channel" ]]; then
+    if [[ $fc = "usb" ]]; then
+	 local hub_no storage_no disk_no
+
+        storage_no=`get_usb_storage_no $DEVICE`
+        if [[ $storage_no = *.* ]]; then
+                hub_no=${storage_no%%.*}
+                storage_no=${storage_no##*.}
+        fi
+
+        disk_no=`get_usb_vdisk_no $device_dir $storage_no`
+
+        if [[ -z $hub_no ]]; then
+                OF_PATH=$OF_PATH/storage\@$storage_no/disk\@$disk_no
+        else
+                OF_PATH=$OF_PATH/hub\@$hub_no/storage\@$storage_no/disk\@$disk_no
+        fi
+
+   elif [[ $fc = "fibre-channel" ]]; then
 	local wwpn=`get_fc_wwpn "$device_path/../../fc_remote_ports*"`
 
         if [[ ! -e /proc/device-tree$OF_PATH/disk ]]; then
