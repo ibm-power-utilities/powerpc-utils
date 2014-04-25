@@ -53,6 +53,8 @@ sbin_PROGRAMS += src/nvram src/lsprop src/lparstat
 
 pseries_platform_SOURCES = src/common/pseries_platform.c src/common/pseries_platform.h
 
+librtas_error_SOURCES = src/common/librtas_error.c src/common/librtas_error.h
+
 AM_CFLAGS = -Wall -g -I $(top_srcdir)/src/common/
 
 if WITH_LIBRTAS
@@ -69,16 +71,16 @@ sbin_PROGRAMS += \
 src_activate_firmware_SOURCES = src/activate_fw.c $(pseries_platform_SOURCES)
 src_activate_firmware_LDADD = -lrtas
 
-src_set_poweron_time_SOURCES = src/set_poweron_time.c src/librtas_error.c src/librtas_error.h $(pseries_platform_SOURCES)
+src_set_poweron_time_SOURCES = src/set_poweron_time.c $(librtas_error_SOURCES) $(pseries_platform_SOURCES)
 src_set_poweron_time_LDADD = -lrtas
 
-src_rtas_ibm_get_vpd_SOURCES = src/rtas_ibm_get_vpd.c src/librtas_error.c src/librtas_error.h $(pseries_platform_SOURCES)
+src_rtas_ibm_get_vpd_SOURCES = src/rtas_ibm_get_vpd.c $(librtas_error_SOURCES) $(pseries_platform_SOURCES)
 src_rtas_ibm_get_vpd_LDADD = -lrtas
 
-src_serv_config_SOURCES = src/serv_config.c src/librtas_error.c src/librtas_error.h $(pseries_platform_SOURCES)
+src_serv_config_SOURCES = src/serv_config.c $(librtas_error_SOURCES) $(pseries_platform_SOURCES)
 src_serv_config_LDADD = -lrtas
 
-src_uesensor_SOURCES = src/uesensor.c src/librtas_error.c src/librtas_error.h $(pseries_platform_SOURCES)
+src_uesensor_SOURCES = src/uesensor.c $(librtas_error_SOURCES) $(pseries_platform_SOURCES)
 src_uesensor_LDADD = -lrtas
 
 src_rtas_event_decode_SOURCES = src/rtas_event_decode.c $(pseries_platform_SOURCES)
@@ -87,7 +89,7 @@ src_rtas_event_decode_LDADD = -lrtasevent
 src_sys_ident_SOURCES = src/sys_ident.c $(pseries_platform_SOURCES)
 src_sys_ident_LDADD = -lrtas
 
-src_ppc64_cpu_SOURCES = src/ppc64_cpu.c src/librtas_error.c src/librtas_error.h $(pseries_platform_SOURCES)
+src_ppc64_cpu_SOURCES = src/ppc64_cpu.c $(librtas_error_SOURCES) $(pseries_platform_SOURCES)
 src_ppc64_cpu_LDADD = -lrtas -lpthread
 
 endif
