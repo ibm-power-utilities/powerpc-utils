@@ -848,6 +848,17 @@ ofpathname_to_logical()
         DEVTYPE="fc"
     fi
 
+    if [[ $DEVTYPE = "disk" && $FC = "storage" ]]; then
+        local devpath=$DEVPATH
+        DEVPATH=${devpath%/*}
+        DEVTYPE="usb"
+
+        if [[ $DEVNAME = *hub* ]]; then
+            devpath=$DEVPATH
+            DEVPATH=${devpath%/*}
+        fi
+    fi
+
     # Remove any possible cdrom data from DEVICE
     if [[ ${DEVICE##*,} = "\ppc\bootinfo.txt" ||
           ${DEVICE##*,} = \ppc\bootinfo.txt ]]; then
@@ -871,6 +882,7 @@ ofpathname_to_logical()
         eth* | l-lan  )  of2l_ethernet ;;
         hfi-ethernet* )  of2l_hfi ;;
         disk*         )  of2l_ide ;;
+        usb           )  of2l_usb ;;
     esac
 
     if [[ -z $LOGICAL_DEVNAME ]]; then
@@ -978,6 +990,50 @@ of2l_hfi()
             err $ERR_NO_LOGDEV
         fi
     fi
+}
+
+#
+# of2l_usb
+# Conversion routine for OF path => logical names of usb devices
+#
+of2l_usb()
+{
+    DEV_HBTL_NO=${DEVICE##*\@}
+
+    local dir
+    for dir in `$FIND /sys/block -name 's[dr]*'`; do
+        # go up to find directory with 'device' link
+        local devdir=`find_dir $dir device`
+        if [[ -z $devdir ]]; then
+            continue
+        fi
+
+        cd $devdir
+
+        local link=`get_link "device"`
+        local vdisk_no
+
+        if [[ -n $link ]]; then
+           local port_no storage_no target
+
+           target=${link##*/}
+           port_no=`get_usb_storage_no $target`
+           storage_no=${port_no##*.}
+
+           vdisk_no=`get_usb_vdisk_no $target $storage_no`
+
+           cd $link
+           if [[ $vdisk_no = $DEV_HBTL_NO ]]; then
+                goto_dir $PWD "devspec"
+                local devspec=`$CAT ./devspec 2>/dev/null`
+
+                if [[ $devspec = $DEVPATH ]]; then
+                    LOGICAL_DEVNAME=${dir##/*/}
+                    return
+                fi
+            fi
+        fi
+    done
 }
 
 #
