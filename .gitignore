@@ -32,14 +32,21 @@
 #
 /aclocal.m4
 /autom4te.cache/
+/config/
 /config.log
 /config.status
+/configure
 /Makefile
+/Makefile.in
 /man/Makefile
+/man/Makefile.in
 /powerpc-utils.spec
 /scripts/Makefile
+/scripts/Makefile.in
 /src/Makefile
+/src/Makefile.in
 /src/drmgr/Makefile
+/src/drmgr/Makefile.in
 
 #
 # git files that we don't want to ignore even it they are dot-files
