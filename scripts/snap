@@ -322,7 +322,7 @@ eval '%ENV=('.$1.')' if `bash -c "
     =~ /^\s*\{(.*)\}\s*$/mxs;
 
 if ($ENV{'platform'} == $ENV{'PLATFORM_UNKNOWN'} || $ENV{'platform'} == $ENV{'PLATFORM_POWERKVM_HOST'}) {
-        print "rtas_dump: is not supported on the $ENV{'platform_name'} platform\n";
+        print "snap: is not supported on the $ENV{'platform_name'} platform\n";
         exit 1;
 }
 
