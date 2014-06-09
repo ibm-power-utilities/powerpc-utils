@@ -57,43 +57,17 @@ static int threads_per_cpu = 0;
 static int cpus_in_system = 0;
 static int threads_in_system = 0;
 
-static int test_attr(char *path, char *perms)
-{
-	FILE *fp;
-
-	fp = fopen(path, perms);
-	if (fp) {
-		fclose(fp);
-		return 1;
-	}
-
-	if (errno == ENOENT) {
-		/* When CPU is offline, attr may not exist. Return 2 so caller
-		 * will not see 'false' and continue to try next CPU. */
-		return 2;
-	}
-
-	return 0;
-}
-
-static int attr_is_readable(char *path)
-{
-	return test_attr(path, "r");
-}
-
-static int attr_is_writeable(char *path)
-{
-	return test_attr(path, "w");
-}
-
-static int test_sysattr(char *attribute, char *perms)
+static int test_sysattr(char *attribute, int perms)
 {
 	char path[SYSFS_PATH_MAX];
 	int i;
 
 	for (i = 0; i < threads_in_system; i++) {
 		sprintf(path, SYSFS_CPUDIR"/%s", i, attribute);
-		if (!test_attr(path, perms))
+		if (access(path, F_OK))
+			continue;
+
+		if (access(path, perms))
 			return 0;
 	}
 
@@ -102,12 +76,12 @@ static int test_sysattr(char *attribute, char *perms)
 
 static int sysattr_is_readable(char *attribute)
 {
-	return test_sysattr(attribute, "r");
+	return test_sysattr(attribute, R_OK);
 }
 
 static int sysattr_is_writeable(char *attribute)
 {
-	return test_sysattr(attribute, "w");
+	return test_sysattr(attribute, W_OK);
 }
 
 static int get_attribute(char *path, const char *fmt, int *value)
@@ -115,14 +89,14 @@ static int get_attribute(char *path, const char *fmt, int *value)
 	FILE *fp;
 	int rc;
 
+	rc = access(path, F_OK);
+	if (rc)
+		return -1;
+
+
 	fp = fopen(path, "r");
-	if (fp == NULL) {
-		if (errno == ENOENT)
-			/* No attribute, cpu probably offline */
-			return 0;
-		else
-			return -1;
-	}
+	if (!fp)
+		return -1;
 
 	rc = fscanf(fp, fmt, value);
 	fclose(fp);
@@ -182,6 +156,9 @@ static int get_system_attribute(char *attribute, const char *fmt, int *value,
 	for (i = 0; i < threads_in_system; i++) {
 		int cpu_attribute;
 
+		if (!cpu_online(i))
+			continue;
+
 		sprintf(path, SYSFS_CPUDIR"/%s", i, attribute);
 		rc = get_attribute(path, fmt, &cpu_attribute);
 		if (rc)
@@ -239,7 +216,7 @@ static int set_dscr(int state)
 	int rc;
 
 	if (dscr_default_exists()) {
-		if (!attr_is_writeable(DSCR_DEFAULT_PATH)) {
+		if (access(DSCR_DEFAULT_PATH, W_OK)) {
 			perror("Cannot set default dscr value");
 			return -2;
 		}
@@ -262,7 +239,7 @@ static int get_dscr(int *value, int *inconsistent)
 	int rc;
 
 	if (dscr_default_exists()) {
-		if (!attr_is_readable(DSCR_DEFAULT_PATH)) {
+		if (access(DSCR_DEFAULT_PATH, R_OK)) {
 			perror("Cannot retrieve default dscr");
 			return -2;
 		}
@@ -313,7 +290,7 @@ static int offline_thread(const char *path)
 
 static int is_subcore_capable(void)
 {
-	return attr_is_readable(SYSFS_SUBCORES) == 1;
+	return access(SYSFS_SUBCORES, F_OK) == 0;
 }
 
 static int num_subcores(void)
