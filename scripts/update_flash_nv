@@ -32,6 +32,10 @@ SYS_VALIDATE_FLASH=/sys/firmware/opal/validate_flash
 SYS_MANAGE_FLASH=/sys/firmware/opal/manage_flash
 SYS_UPDATE_FLASH=/sys/firmware/opal/update_flash
 
+# Current firmware version files
+DT_FW_MI_FILE=/proc/device-tree/ibm,opal/firmware/mi-version
+DT_FW_ML_FILE=/proc/device-tree/ibm,opal/firmware/ml-version
+
 # Code update status values
 FLASH_SUCCESS=0			# Success
 FLASH_PARAM_ERR=-1		# Parameter error
@@ -105,12 +109,13 @@ usage() {
 		exit_code=$E_USAGE
 	fi
 
-	echo "USAGE: update_flash {-h | -s | -r | -c | [-v|-n] -f <image filename>}" >&2
+	echo "USAGE: update_flash {-h | -s | -r | -c | -d | [-v|-n] -f <image filename>}" >&2
 	echo "	-h		Print this message." >&2
 	echo "	-s		Determine if partition has access to" >&2
 	echo "			perform flash image management." >&2
 	echo "	-r		Reject temporary image." >&2
 	echo "	-c		Commit temporary image." >&2
+	echo "	-d		Display current firmware version." >&2
 	echo "	-v		Validate the given image file." >&2
 	echo "	-n		Do not overwrite Permanent side" >&2
 	echo "			image automatically." >&2
@@ -363,8 +368,35 @@ manage_flash() {
 	exit $E_SUCCESS
 }
 
+display_current_fw_version() {
+
+	if [ ! -r "$DT_FW_MI_FILE" ] || [ ! -r "$DT_FW_ML_FILE" ]; then
+		error $E_SYS_FS "Firmware version information is not available"
+	fi
+
+	echo "Current firwmare version :"
+
+	# P side
+	local ml_ver=`cat $DT_FW_ML_FILE | head -n 1 | awk ' { print $3 }'`
+	local mi_ver=`cat $DT_FW_MI_FILE | head -n 1 | awk ' { print $3 }'`
+	echo "  P side    : $ml_ver ($mi_ver)"
+
+	# T side
+	local ml_ver=`cat $DT_FW_ML_FILE | head -n 1 | awk ' { print $2 }'`
+	local mi_ver=`cat $DT_FW_MI_FILE | head -n 1 | awk ' { print $2 }'`
+	echo "  T side    : $ml_ver ($mi_ver)"
+
+	# Boot side
+	local ml_ver=`cat $DT_FW_ML_FILE | head -n 1 | awk ' { print $4 }'`
+	local mi_ver=`cat $DT_FW_MI_FILE | head -n 1 | awk ' { print $4 }'`
+	echo "  Boot side : $ml_ver ($mi_ver)"
+
+	exit $E_SUCCESS
+}
+
 file=""
 check_opt=0
+display_opt=0
 commit_opt=0
 reject_opt=0
 validate_opt=0
@@ -382,6 +414,7 @@ while [ -n "$1" ]; do
 	  -q|-l|-D|-S) error $E_USAGE "The $arg option is not implemented.";;
 	  -h) usage $E_SUCCESS;;
 	  -s) check_opt=1;;
+	  -d) display_opt=1;;
 	  -c) commit_opt=1;;
 	  -r) reject_opt=1;;
 	  -v) validate_opt=1;;
@@ -393,7 +426,7 @@ done
 
 if [ -n "$file" ]; then
 	if [ $commit_opt -eq 1 ] || [ $reject_opt -eq 1 ] ||
-						[ $check_opt -eq 1 ]; then
+		[ $display_opt -eq 1 ] || [ $check_opt -eq 1 ]; then
 		usage
 	elif [ $validate_opt -eq 1 ] && [ $no_overwrite_opt -eq 1 ]; then
 		usage
@@ -404,12 +437,23 @@ if [ -n "$file" ]; then
 	fi
 else
 	if [ $check_opt -eq 1 ]; then
-		if [ $commit_opt -eq 1 ] || [ $reject_opt -eq 1 ]; then
+		if [ $commit_opt -eq 1 ] || [ $reject_opt -eq 1 ] ||
+			[ $display_opt -eq 1 ]; then
 			usage
 		else
 			query_flash_support
 		fi
 	fi
+
+	# Display current firmware version
+	if [ $display_opt -eq 1 ]; then
+		if [ $commit_opt -eq 1 ] || [ $reject_opt -eq 1 ]; then
+			usage
+		else
+			display_current_fw_version
+		fi
+	fi
+
 	[ $commit_opt -eq 0 ] && [ $reject_opt -eq 0 ] && usage
 	[ $commit_opt -eq 1 ] && [ $reject_opt -eq 1 ] && usage
 	manage_flash $commit_opt
