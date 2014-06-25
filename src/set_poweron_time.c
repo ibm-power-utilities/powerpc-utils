@@ -142,6 +142,7 @@ uint32_t get_max_latency(void) {
 		return 28;	/* assumed default of 28 days, per RPA */
 	}
 	n = read(fd, &max, 4);
+        max = be32toh(max);
 	close(fd);
 
 	if (n != 4)
