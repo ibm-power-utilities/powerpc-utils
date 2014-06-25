@@ -717,7 +717,7 @@ static int do_run_mode(char *run_mode)
 			return -1;
 		}
 
-		*(short *)mode = 1;
+		*(short *)mode = htobe16(1);
 		mode[2] = rmode;
 
 		rc = rtas_set_sysparm(DIAGNOSTICS_RUN_MODE, mode);
