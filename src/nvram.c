@@ -113,7 +113,8 @@ help(void)
     "  --nvram-file <path>\n"
     "          specify alternate nvram data file (default is /dev/nvram)\n"
     "  --nvram-size\n"
-    "          specify size of nvram data (for repair operations)\n"
+    "          specify size of nvram data, must in multiples of 16 Bytes\n"
+    "          (for repair operations)\n"
     "  --verbose (-v)\n"
     "          be (more) verbose\n"
     "  --help\n"
@@ -1484,6 +1485,10 @@ main (int argc, char *argv[])
 		nvram.nbytes = strtoul(optarg, &endp, 10);
 		if (!*optarg || *endp) {
 		    err_msg("specify nvram-size as an integer\n");
+		    exit(1);
+		}
+		if (nvram.nbytes % NVRAM_BLOCK_SIZE) {
+		    err_msg("nvram-size must be a multiple of 16 Bytes\n");
 		    exit(1);
 		}
 		break;
