@@ -415,8 +415,9 @@ main (int argc, char **argv)
 
 		while (read(fd, (char *)&tok, sizeof(uint32_t)) ==
 					sizeof(uint32_t)) {
-
+			tok = be32toh(tok);
 			rc = read(fd, (char *)&max_index, sizeof(uint32_t));
+			max_index=be32toh(max_index);
 			if (rc != sizeof(uint32_t)) {
 				err_msg(ERR_MSG, "Error reading the "
 						"list of sensors.\n");
