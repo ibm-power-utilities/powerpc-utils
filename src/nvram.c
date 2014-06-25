@@ -205,17 +205,18 @@ warn_msg(const char *fmt, ...)
 int 
 nvram_read(struct nvram *nvram)
 {
-    int len, remaining;
+    int len, remaining, chunk;
     char *p;
 
     /* read in small chunks */
-    for (p = nvram->data, remaining = nvram->nbytes;
-           (len = read(nvram->fd, p, 512)) > 0;
-           p += len, remaining -= len) {
-           if (remaining <= 0) {
-               remaining = 0;
-               break;
-           }
+    p = nvram->data;
+    remaining = nvram->nbytes;
+    chunk = (NVRAM_READ_SIZE < remaining) ? NVRAM_READ_SIZE : remaining;
+
+    while ((len = read(nvram->fd, p, chunk)) > 0) {
+        p+=len;
+        remaining -= len;
+        chunk = (NVRAM_READ_SIZE < remaining) ? NVRAM_READ_SIZE : remaining;
     }
 
     if (len == -1) {

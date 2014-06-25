@@ -31,6 +31,7 @@
 #define printmap(ch)	(isgraph(ch) ? (ch) : '.')
 
 #define NVRAM_BLOCK_SIZE	16
+#define NVRAM_READ_SIZE		512
 #define NVRAM_FILENAME1		"/dev/nvram"
 #define NVRAM_FILENAME2		"/dev/misc/nvram"
 
