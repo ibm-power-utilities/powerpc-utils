@@ -709,7 +709,7 @@ lsslot_chrp_mem(void)
 	int lmb_offset = strlen(OFDT_BASE);
 
 	lmb_list = get_lmbs(LMB_NORMAL_SORT);
-	if (lmb_list == NULL)
+	if (lmb_list == NULL || lmb_list->lmbs == NULL)
 		return -1;
 
 	printf("lmb size: 0x%x\n", lmb_list->lmbs->lmb_size);
