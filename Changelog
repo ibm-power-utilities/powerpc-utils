@@ -1,3 +1,313 @@
+powerpc-utils-1.2.21
+=====================================================================
+commit a529515e6a78bc8d39b58122b99e009291048a78
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Wed Jun 25 16:11:37 2014 -0500
+
+    uesensor: remove unused platform variable
+    
+    Remove the unused platform variable that appears to be
+    an accidental leftover from updating the platform checking
+    code.
+    
+    This was producing a build warning.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit d840b6a2e4d7ee38b08b15c80c562e699f1f7b79
+Author: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+Date:   Wed Jun 25 16:06:17 2014 -0500
+
+    nvram: restrict --nvram-size to 16 byte multiples
+    
+    PAPR defines a 16 byte block size for nvram partitions. This patch restricts
+    the --nvram-size option to sizes that are multiples of 16.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 38f6cab58bd77d75d8bcf52c2b3a4b06002601eb
+Author: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+Date:   Wed Jun 25 16:01:41 2014 -0500
+
+    nvram: fix memory corruption when nvram->nbytes is less than actual nvram si
+ze
+    
+    The nvram_read function always calls read with a 512 byte chunk size. If the
+    actual nvram size is greater than nvram->nbytes, which can be overriden by t
+he
+    --nvram-size option, the allocated read buffer will be overrun.
+    
+    Fixed read logic to only read upto nvram->nbytes of data.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit ba2c2ad835339f52be8972a3207012ae54749113
+Author: Thomas Falcon <tlfalcon@linux.vnet.ibm.com>
+Date:   Wed Jun 25 15:58:24 2014 -0500
+
+    set_power_on: handle endianess reading max latency
+    
+    set_power_on reads device-tree to get the max latency value,
+    which is in a big endian format.  This needs to be converted
+    for little endian architectures.
+    
+    Signed-off-by: Thomas Falcon <tlfalcon@linux.vnet.ibm.com>
+
+commit 562526a14c3121e695ef782dc028c82e6e350bbf
+Author: Thomas Falcon <tlfalcon@linux.vnet.ibm.com>
+Date:   Wed Jun 25 15:31:54 2014 -0500
+
+    ppc64_cpu: handle endianess in rtas sysparm buffer
+    
+    ppc64_cpu passes a buffer to rtas_set_sysparm.  The first two
+    bytes of this buffer must encode a integer denoting the
+    size of the remaining the buffer. This integer must be in a
+    big endian format.
+    
+    Signed-off-by: Thomas Falcon <tlfalcon@linux.vnet.ibm.com>
+
+commit 7e781be45fbf87ccd1792a498788b9aaf3256b72
+Author: Thomas Falcon <tlfalcon@linux.vnet.ibm.com>
+Date:   Wed Jun 25 15:22:51 2014 -0500
+
+    uesensor: fix endian issues reading device-tree
+    
+    The values in /proc/device-tree/rtas/rtas-sensors are
+    big endian so this needs to be handled for little endian
+    architectures.
+    
+    Signed-off-by: Thomas Falcon <tlfalcon@linux.vnet.ibm.com>
+
+commit 9bfe5991bf5d8e1c047f45a664b636fa05dca39f
+Author: Thomas Falcon <tlfalcon@linux.vnet.ibm.com>
+Date:   Wed Jun 25 15:18:55 2014 -0500
+
+    serv_config: handle endianess in sysparm buffer
+    
+    rtas_get_sysparm and rtas_set_sysparm commands both
+    manipulate buffers in which the first two bytes are a big
+    endian integer indicating the size of the remaining buffer.
+    This patch makes sure those bytes are in the correct format.
+    
+    Signed-off-by: Thomas Falcon <tlfalcon@linux.vnet.ibm.com>
+
+commit a9f264ab1f84c20f144cba9c971883064e5430dd
+Author: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+Date:   Wed Jun 25 15:16:31 2014 -0500
+
+    lsslot: fix segfault when lmb_list->lmbs is NULL
+    
+    PowerKVM guests currently do not support dynamically reconfigurable
+    memory, and as such get_lmbs will return a lmb_list struct whose lmbs
+    field is NULL. Added a NULL check to avoid segfault for the case where
+    no LMB drc-names  are defined in device tree.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit d9f6fbcea7feeedf5d72ddddef33295cbbe6d622
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Mon Jun 9 06:44:58 2014 -0500
+
+    ppc64_cpu: update access validation routines
+    
+    The use of fopen() to check for read/write access of system attribute
+    files (i.e. sysfs) no longer works with kernels 3.14 and later. The man
+    page for fopen() states that there is an implied file creation if the
+    file does not exist. This now causes fopen() to return EACCES instead
+    of ENOENT for files that do not exist.
+    
+    This patch updates ppc64_cpu to use access() to validate file existence
+    and file read/write permissions.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+    Reviewed-by: Joel Stanley <joel@jms.id.au>
+    Acked-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit 38005d9cc59a5f81754b93b1479f8538c7151976
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Mon Jun 9 06:42:42 2014 -0500
+
+    update_flash: Fix typo in man page
+    
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit cc4589f43ae5ca2fffd9b96997ba09023f9e8999
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Mon Jun 9 06:39:26 2014 -0500
+
+    update_flash_nv: Display current FW version
+    
+    Add support to display current firmware version detail
+    on PowerKVM host.
+    
+    Sample output:
+    [root@abc123 tmp]# update_flash -d
+    Current firwmare version :
+      T side    : FW770.20 (ZL770_060)
+      P side    : FW770.20 (ZL770_060)
+      Boot side : FW770.20 (ZL770_060)
+    
+    Suggested-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit 2dfd19700a0dbe8df0c0cfc2b6c23ef42dbb6c11
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Mon Jun 9 06:37:41 2014 -0500
+
+    snap: Fix typo in output display
+    
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com
+
+commit 507d3ba46376f96094093bf8dbff0cbc7d158390
+Author: Anton Blanchard <anton@samba.org>
+Date:   Fri Apr 25 08:24:24 2014 -0500
+
+    update_flash: Remove some bashisms
+    
+    == is a bashism. Replace it with =.
+    
+    We also need to add quotes around some variables to avoid:
+    
+        local: FW710.00: bad variable name
+    
+    Signed-off-by: Anton Blanchard <anton@samba.org>
+    Reviewed-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit de159805368210c17d01bfe088c157d394406640
+Author: Joel Stanley <joel@jms.id.au>
+Date:   Fri Apr 25 08:22:32 2014 -0500
+
+    ppc64_cpu: Let kernel validate subcore options
+    
+    Previously we checked for valid subcore-per-core options, however, the
+    kernel knows better than we do as to what is valid. Remove the check.
+    
+    Signed-off-by: Joel Stanley <joel@jms.id.au>
+
+commit 6f11925411d334eb501cc2214e08d4eb596438cd
+Author: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Date:   Fri Apr 25 08:21:03 2014 -0500
+
+    ofpathname: Convert OF path to logical names for usb devices
+    
+    Add support to convert a Open Firmware device path to logical
+    device path for usb device.
+    
+    Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+
+commit 655649226d2b60eff1a1ef85f92a3ef5cd1b360b
+Author: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Date:   Fri Apr 25 08:20:09 2014 -0500
+
+    ofpathname: Convert logical device path to OF format for usb devices
+    
+    Add support to convert logical device path to Open firmware
+    device path for usb devices.
+    
+    Reported-by: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+    Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+
+commit 852e69a9a099273a3e49ebdfcc2afd13a8e9876e
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Fri Apr 25 08:18:26 2014 -0500
+
+    drmgr: Update action option validation
+    
+    The drmgr command does not do any validation of the action option
+    specified on the command line, except for some checking for CPU
+    operations.. The omission of an action option can lead to confusing
+    error messages or just exiting with an error.
+    
+    This patch updates each connector type with a validation check for
+    their respective valid action options.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 865171adc9d0f2a327ac892e99bf60add5255315
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Fri Apr 25 08:08:06 2014 -0500
+
+    Updating .gitignore fo files that are no longer in git.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit a13ddf3a0bda581984f77c1ca171b34ae90ef83a
+Author: Shivaprasad G Bhat <sbhat@linux.vnet.ibm.com>
+Date:   Fri Apr 25 07:59:51 2014 -0500
+
+    ppc64_cpu: Add option --threads-per-core
+    
+    The threads per core calculated in ppc64_cpu is more relaiable than the
+    same provided by any other utility. Expose the value through an option.
+    
+    Signed-off-by: Shivaprasad G Bhat <sbhat@linux.vnet.ibm.com>
+
+commit 6e5dfe8302966568e4e7eff6035d7cc5d46481f9
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Fri Apr 25 07:49:19 2014 -0500
+
+    Move librtas error code to common directory.
+    
+    Now that we have a src/common directory this patch moves the
+    librtas_error files to the common directory.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit e07b773c38effae0c9c16ddc20c423a166638194
+Author: Stewart Smith <stewart@linux.vnet.ibm.com>
+Date:   Tue Apr 8 15:13:39 2014 -0500
+
+    recursive make considered harmful
+    
+    Instead, we can use include/ for makefiles, or because we're a small
+    project, just put it in one makefile of ~150 lines.
+    
+    We also fix up the spec file version substitution to use autofoo.
+    
+    With these fixes, make distcheck works correctly.
+    
+    Signed-off-by: Stewart Smith <stewart@linux.vnet.ibm.com>
+
+commit f8b52ffb07006897e2b9df281f6aea83a5667c03
+Author: Stewart Smith <stewart@linux.vnet.ibm.com>
+Date:   Tue Apr 8 15:07:38 2014 -0500
+
+    add sys/time.h and gettimeofday detection to configure.ac courtesy autoscan
+    
+    Signed-off-by: Stewart Smith <stewart@linux.vnet.ibm.com>
+
+commit 475e60537c7f872ae44f89e72100d382986e1636
+Author: Stewart Smith <stewart@linux.vnet.ibm.com>
+Date:   Tue Apr 8 15:04:34 2014 -0500
+
+    check for and use gcc hardening flags if available
+    
+    Signed-off-by: Stewart Smith <stewart@linux.vnet.ibm.com>
+
+commit 63d6bcc2d79814fb625089b4f01d4fdba703ea03
+Author: Stewart Smith <stewart@linux.vnet.ibm.com>
+Date:   Tue Apr 8 15:00:48 2014 -0500
+
+    remove autogenerated files
+    
+    files such as Makefile.in and configure should not be checked into
+    source repositories as they'll be regenerated on build.
+    
+    Add a autogen.sh script to run autoreconf
+    
+    Signed-off-by: Stewart Smith <stewart@linux.vnet.ibm.com>
+
+commit 66c23d7323ba26757bd1a6b50b3db6c81c422822
+Author: Stewart Smith <stewart@linux.vnet.ibm.com>
+Date:   Tue Apr 8 14:44:32 2014 -0500
+
+    Move subdir-objects options to configure.ac rather than Makefile.am(s)
+    
+    Easier to keep it in one place than several
+    
+    Signed-off-by: Stewart Smith <stewart@linux.vnet.ibm.com>
+
 powerpc-utils-1.2.20
 =====================================================================
 commit 73c454bea39418872313cd960d005d4d20262f20
