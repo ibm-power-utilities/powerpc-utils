@@ -614,7 +614,7 @@ parse_call_home_buffer(char *var, char *buf, size_t size) {
 
 	if (!call_home_buffer) return RC_OTHER;	/* should never happen */
 
-	buf_size = *(uint16_t *)call_home_buffer;
+	buf_size = be16toh(*(uint16_t *)call_home_buffer);
 	loc = call_home_buffer + sizeof(uint16_t);
 
 	while (loc[0] != '\0') {
@@ -674,7 +674,7 @@ retrieve_value(struct service_var *var, char *buf, size_t size) {
 			if (var->sysparm_num == USE_CALL_HOME_SYSPARM)
 				break;
 
-			ret_size = *(uint16_t *)param;
+			ret_size = be16toh(*(uint16_t *)param);
 			if (!strcmp(var->nvram_var, "sp-ri-pon") ||
 				!strcmp(var->nvram_var, "sp-remote-pon") ||
 				!strcmp(var->nvram_var, "sp-sen")) {
@@ -825,7 +825,7 @@ update_value(struct service_var *var, char *val) {
 		if (!strcmp(var->nvram_var, "sp-ri-pon") ||
 				!strcmp(var->nvram_var, "sp-remote-pon") ||
 				!strcmp(var->nvram_var, "sp-sen")) {
-			*(uint16_t *)param = 1;
+			*(uint16_t *)param = htobe16(1);
 			if (!strcmp(val, "on"))
 				param[2] = (uint8_t)(1);
 			if (!strcmp(val, "off"))
@@ -837,11 +837,11 @@ update_value(struct service_var *var, char *val) {
 			 (var->type == TYPE_NUM_1_120) ||
 			 (var->type == TYPE_NUM_1_255)) {
 
-			*(uint16_t *)param = 1;
+			*(uint16_t *)param = htobe16(1);
 			param[2] = (uint8_t)atoi(val);
 		}
 		else {
-			*(uint16_t *)param = sizeof(val);
+			*(uint16_t *)param = htobe16(sizeof(val));
 			strncpy(param+2, val, BUF_SIZE-2);
 		}
 
