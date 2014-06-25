@@ -301,7 +301,6 @@ int
 main (int argc, char **argv)
 {
 	int c, text=0, numerical=0, measured=0, i;
-	int platform=0;
 	int fd, rc;
 	uint32_t tok, max_index;
 	char *token=NULL, *index=NULL;
