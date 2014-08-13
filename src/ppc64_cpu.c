@@ -57,6 +57,8 @@ static int threads_per_cpu = 0;
 static int cpus_in_system = 0;
 static int threads_in_system = 0;
 
+static int do_info(void);
+
 static int test_sysattr(char *attribute, int perms)
 {
 	char path[SYSFS_PATH_MAX];
@@ -1126,7 +1128,7 @@ static int do_cores_online(char *state)
 	return 0;
 }
 
-static int do_info(char *arg)
+static int do_info(void)
 {
 	int i, j, thread_num;
 	char online;
@@ -1287,7 +1289,7 @@ int main(int argc, char *argv[])
 	else if (!strcmp(action, "threads-per-core"))
 		do_threads_per_core();
 	else if (!strcmp(action, "info"))
-		rc = do_info(action_arg);
+		rc = do_info();
 	else if (!strcmp(action, "version"))
 		printf("ppc64_cpu: version %s\n", PPC64_CPU_VERSION);
 	else
