@@ -1070,7 +1070,9 @@ static int do_cores_online(char *state)
 
 	smt_state = get_smt_state();
 	if (smt_state == -1) {
-		printf("Bad or inconsistent SMT state\n");
+		printf("Bad or inconsistent SMT state: use ppc64_cpu --smt=on|off to set all\n"
+                       "cores to have the same number of online threads to continue.\n");
+		do_info();
 		return -1;
 	}
 
