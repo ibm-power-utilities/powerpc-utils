@@ -43,18 +43,15 @@ mem_usage(char **pusage)
  * @param int *  pointer to phandle
  */
 int
-get_phandle(char *path, int *phandle)
+get_phandle(char *path, uint *phandle)
 {
         int rc1,rc2;
 
         /* get "linux,phandle" property */
-        rc1 = get_property(path, "linux,phandle", phandle,
-                          sizeof(*phandle));
+        rc1 = get_ofdt_uint_property(path, "linux,phandle", phandle);
 
         /* overwrite with "ibm,handle" if it exists */
-        rc2 = get_property(path, "ibm,phandle", phandle,
-                          sizeof(*phandle));
-
+        rc2 = get_ofdt_uint_property(path, "ibm,phandle", phandle);
         /* return bad if both gets failed */
         if (rc1 && rc2)
                 return rc1;
@@ -158,7 +155,7 @@ get_lmb_size(struct dr_node *lmb)
 		return rc;
 	}
 
-	lmb->lmb_size = regs[3];
+	lmb->lmb_size = be32toh(regs[3]);
 	return 0;
 }
 
@@ -263,6 +260,10 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
 
 	rc = get_property(DYNAMIC_RECONFIG_MEM, "ibm,lmb-size",
 			  &lmb_sz, sizeof(lmb_sz));
+
+	/* convert for LE systems */
+	lmb_sz = be64toh(lmb_sz);
+
 	if (rc) {
 		say(DEBUG, "Could not retrieve drconf LMB size\n");
 		return rc;
@@ -288,11 +289,19 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
 	/* The first integer of the buffer is the number of entries */
 	num_entries = *(int *)lmb_list->drconf_buf;
 
+	/* convert for LE systems */
+	num_entries = be32toh(num_entries);
+
 	/* Followed by the actual entries */
 	drmem = (struct drconf_mem *)
 				(lmb_list->drconf_buf + sizeof(num_entries));
 	for (i = 0; i < num_entries; i++) {
 		struct dr_node *lmb;
+
+		/* convert for LE systems */
+		drmem->address = be64toh(drmem->address);
+		drmem->drc_index = be32toh(drmem->drc_index);
+		drmem->flags = be32toh(drmem->flags);
 
 		for (lmb = lmb_list->lmbs; lmb; lmb = lmb->next) {
 			if (lmb->drc_index == drmem->drc_index)
@@ -553,16 +562,24 @@ update_drconf_node(struct dr_node *lmb, struct lmb_list_head *lmb_list,
 	size_t prop_buf_sz;
 	char *tmp;
 	struct drconf_mem *drmem;
-	int phandle;
+	uint phandle;
 	int i, entries;
 	int rc;
 
 	/* The first int of the buffer is the number of entries */
 	entries = *(int *)lmb_list->drconf_buf;
 
+	/* convert for LE systems */
+	entries = be32toh(entries);
+
 	drmem = (struct drconf_mem *)(lmb_list->drconf_buf + sizeof(entries));
 
 	for (i = 0; i < entries; i++) {
+
+		/* convert for LE systems */
+		drmem->drc_index = be32toh(drmem->drc_index);
+		drmem->flags = be32toh(drmem->flags);
+
 		if (drmem->drc_index != lmb->drc_index) {
 			drmem++;
 			continue;
