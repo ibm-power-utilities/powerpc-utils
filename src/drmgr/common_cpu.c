@@ -205,7 +205,7 @@ update_cpu_node(struct dr_node *cpu, const char *path, struct dr_info *dr_info)
 {
 	struct stat sb;
 	char intserv_path[DR_PATH_MAX];
-	int rc;
+	int rc, i;
 
 	if (path) {
 		snprintf(cpu->ofdt_path, DR_PATH_MAX, "%s", path);
@@ -220,11 +220,15 @@ update_cpu_node(struct dr_node *cpu, const char *path, struct dr_info *dr_info)
 
 	/* Skip past CPU_OFDT_BASE plus the '/' */
 	cpu->name = cpu->ofdt_path + strlen(CPU_OFDT_BASE) + 1;
-
 	memset(&cpu->cpu_intserv_nums, -1, sizeof(cpu->cpu_intserv_nums));
 	rc = get_property(cpu->ofdt_path, "ibm,ppc-interrupt-server#s",
 			  &cpu->cpu_intserv_nums,
 			  sizeof(cpu->cpu_intserv_nums));
+
+	/* Making sure the intserv_nums are in correct endian format */
+        for (i = 0; i < MAX_CPU_INTSERV_NUMS; i++)
+                cpu->cpu_intserv_nums[i] = be32toh(cpu->cpu_intserv_nums[i]);
+
 	if (rc) {
 		say(ERROR, "Could not retrieve ibm,ppc-interrupt-server#s "
 		    "property for %s\n", cpu->name);
@@ -244,8 +248,7 @@ update_cpu_node(struct dr_node *cpu, const char *path, struct dr_info *dr_info)
 	else
 		cpu->cpu_nthreads = sb.st_size / 4;
 
-	rc = get_property(cpu->ofdt_path, "reg", &cpu->cpu_reg,
-			  sizeof(cpu->cpu_reg));
+	rc = get_ofdt_uint_property(cpu->ofdt_path, "reg", &cpu->cpu_reg);
 	if (rc) {
 		say(ERROR, "Could not retrieve reg property for %s\n",
 		    cpu->name);
@@ -254,8 +257,7 @@ update_cpu_node(struct dr_node *cpu, const char *path, struct dr_info *dr_info)
 
 	/* l2-cache may not exist */
 	cpu->cpu_l2cache = 0xffffffff;
-	get_property(cpu->ofdt_path, "l2-cache", &cpu->cpu_l2cache,
-		     sizeof(cpu->cpu_l2cache));
+	get_ofdt_uint_property(cpu->ofdt_path, "l2-cache", &cpu->cpu_l2cache);
 
 	get_cpu_threads(cpu, dr_info->all_threads);
 	cpu->is_owned = 1;
@@ -543,9 +545,8 @@ init_cache_info(struct dr_info *dr_info)
 			cache->next = cache_list;
 			cache_list = cache;
 
-			rc = get_property(cache->path, "ibm,phandle",
-					  &cache->phandle,
-					  sizeof(cache->phandle));
+			rc = get_ofdt_uint_property(cache->path, "ibm,phandle",
+						    &cache->phandle);
 			if (rc) {
 				say(ERROR, "Could not retreive ibm,phandle "
 				    "property for %s\n", cache->path);
@@ -555,8 +556,8 @@ init_cache_info(struct dr_info *dr_info)
 
 			/* l3-caches do not have a l2-cache property */
 			cache->l2cache = 0xffffffff;
-			get_property(cache->path, "l2-cache", &cache->l2cache,
-				     sizeof(cache->l2cache));
+			get_ofdt_uint_property(cache->path, "l2-cache",
+					       &cache->l2cache);
 
 			say(DEBUG, "Found cache %s\n", cache->name);
 		}
