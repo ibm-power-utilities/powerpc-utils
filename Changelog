@@ -1,3 +1,78 @@
+powerpc-utils-1.2.22
+=====================================================================
+commit 0a67ffbb5d40c49347cd85a74921693457331f82
+Author: Joel Stanley <joel@jms.id.au>
+Date:   Wed Aug 13 09:38:20 2014 -0500
+
+    ppc64_cpu: Be verbose about inconsistant SMT state
+    
+    With the use of splitcore, users are more likely to end up in a strange
+    SMT state. Be kind and display what the online state of all our CPUs is,
+    and explain how to get out of this hole.
+    
+    Signed-off-by: Joel Stanley <joel@jms.id.au>
+
+commit d3e016e9e5683a565824b9ec185901ff7feb25ed
+Author: Joel Stanley <joel@jms.id.au>
+Date:   Wed Aug 13 09:36:27 2014 -0500
+
+    ppc64_cpu: Remove parameter from do_info
+    
+    It is unused.
+    
+    Also add a forward declaration at the top so we can call do_info in other
+    interesting places.
+    
+    Signed-off-by: Joel Stanley <joel@jms.id.au>
+
+commit 2af3d960442be3d36d8aa8ac914928d4047a0f18
+Author: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Date:   Wed Aug 13 08:39:17 2014 -0500
+
+    nvram: Handle endianness in the nvram --unzip option.
+    
+    Handle endianness of the oops log size in the --unzip
+    option.
+    
+    Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+    Acked-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit 48d45ca2ba2f098a4a565dac6e74cafe8db808f9
+Author: Thomas Falcon <tlfalcon@linux.vnet.ibm.com>
+Date:   Wed Aug 13 08:35:30 2014 -0500
+
+    drmgr/lsslot: increase number of max cpu threads.
+    
+    The Power8 cpu can support eight threads per cpu core.  This
+    patch increases the maximum number of threads from four to eight.
+    
+    Signed-off-by: Thomas Falcon <tlfalcon@linux.vnet.ibm.com>
+
+commit 23872cbdce2107562b1b997cf306d6279ddf5d50
+Author: Thomas Falcon <tlfalcon@linux.vnet.ibm.com>
+Date:   Wed Aug 13 08:22:37 2014 -0500
+
+    lsslot/drmgr: little endian support for memory
+    
+    This patch adds some support in retrieving memory slot information
+    on little endian systems.  These changes have only been tested using
+    lsslot.  Adding or removing memory via drmgr has not been attempted.
+    
+    Signed-off-by: Thomas Falcon <tlfalcon@linux.vnet.ibm.com>
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit c0e6665d9da9797df4b7516f2ef14d7a45f5cb81
+Author: Thomas Falcon <tlfalcon@linux.vnet.ibm.com>
+Date:   Wed Aug 13 08:00:52 2014 -0500
+
+    lsslot/drmgr: little endian support for cpu
+    
+    This patch adds some support in retrieving cpu slot information
+    on little endian systems.  These changes have only been tested using
+    lsslot.  Adding or removing cpu's via drmgr has not been attempted.
+    
+    Signed-off-by: Thomas Falcon <tlfalcon@linux.vnet.ibm.com>
+
 powerpc-utils-1.2.21
 =====================================================================
 commit a529515e6a78bc8d39b58122b99e009291048a78
