@@ -14,7 +14,7 @@
 
 #define DR_PATH_MAX	1024
 #define DR_STR_MAX	128
-#define MAX_CPU_INTSERV_NUMS 4
+#define MAX_CPU_INTSERV_NUMS 8
 
 struct dr_connector {
 	char		name[DRC_STR_MAX];
