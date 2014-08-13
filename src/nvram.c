@@ -1113,7 +1113,7 @@ unzip_partition(struct nvram *nvram, char *name)
     start = (char*) phead;
     next = start + sizeof(*phead);	/* Skip partition header. */
     next += sizeof(struct err_log_info);	/* Skip sub-header. */
-    zipped_length = *((unsigned short*) next);
+    zipped_length = be16toh(*((unsigned short*) next));
     next += sizeof(unsigned short);
 
    /* New format oops header, zipped_length > OOPS_PARTITION_SZ
@@ -1121,7 +1121,7 @@ unzip_partition(struct nvram *nvram, char *name)
     * and from where the compressed data starts.
     */
    if (zipped_length > OOPS_PARTITION_SZ) {
-        zipped_length = *((unsigned short*) next);
+        zipped_length = be16toh(*((unsigned short*) next));
         next += sizeof(struct oops_log_info) - sizeof(unsigned short);
    }
 
