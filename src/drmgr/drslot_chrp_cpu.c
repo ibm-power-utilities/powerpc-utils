@@ -60,6 +60,28 @@ get_cpu_by_name(struct dr_info *drinfo, const char *name)
 }
 
 /**
+ * cpu_count
+ *
+ * Count the number of CPUs currently on the system
+ *
+ * @param dr_info cpu drc information
+ * @return number of cpus
+ */
+static int cpu_count(struct dr_info *dr_info)
+{
+	struct dr_node *cpu;
+	int cpu_count = 0;
+
+	for (cpu = dr_info->all_cpus; cpu; cpu = cpu->next) {
+		if (cpu->is_owned)
+			cpu_count++;
+	}
+
+	say(DEBUG, "Number of CPUs = %d\n", cpu_count);
+	return cpu_count;
+}
+
+/**
  * get_available_cpu
  *
  * Find an available cpu to that we can add or remove, depending
@@ -197,6 +219,12 @@ remove_cpus(struct options *opts, struct dr_info *dr_info)
 	while (count < opts->quantity) {
 		if (drmgr_timed_out())
 			break;
+		
+		if (cpu_count(dr_info) == 1) {
+			say(WARN, "Cannot remove the last CPU\n");
+			rc = -1;
+			break;
+		}
 
 		cpu = get_available_cpu(opts, dr_info);
 		if (!cpu)
