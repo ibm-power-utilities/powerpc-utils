@@ -139,6 +139,39 @@ get_hbtl()
 }
 
 #
+# get_scsi_disk_no
+# Given a path that ends in an HBTL, convert the HBTL values into a
+# virtual disk number (not sure what the real terminology is for it).
+# To do the conversion, the HBTL (A:B:C:D) is split apart and
+# calculated as;
+#	no = (0x1000000 | C << 16 | D)
+#
+# $1 path ending in HBTL
+get_scsi_disk_no()
+{
+    get_hbtl $1
+
+    local C D
+
+    C=$((0x$ID << 16))
+    D=$((0x$LUN))
+
+    local vdiskno vdisk
+    typeset -i vdiskno
+    vdiskno=$((0x1000000 | $C | $D ))
+    vdisk=${vdiskno##-}
+
+    vdisk=`echo \`bc << END
+ibase=10
+obase=16
+$vdisk
+END\``
+
+    local extrazeroes="00000000"
+    echo $vdisk$extrazeroes
+}
+
+#
 # get_vdisk_no
 # Given a path that ends in an HBTL, convert the HBTL values into a
 # virtual disk number (not sure what the real terminology is for it).
@@ -804,7 +837,19 @@ l2of_scsi()
             OF_PATH=$OF_PATH/$scsi_name
         fi
 
-        OF_PATH=$OF_PATH/sd@$ID,$LUN
+        local modalias=""
+        goto_dir $device_path "device"
+        if [ $? -eq 0 ]; then
+              modalias=`$CAT $PWD/modalias`
+        fi
+
+        if [[ $modalias =~ "virtio" ]]; then
+             local diskno
+             diskno=`get_scsi_disk_no $device_dir`
+             OF_PATH=$OF_PATH/disk\@$diskno
+        else
+             OF_PATH=$OF_PATH/sd@$ID,$LUN
+       fi
     fi
 }
 
