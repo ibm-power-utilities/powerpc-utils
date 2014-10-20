@@ -1214,9 +1214,18 @@ valid_mem_options(struct options *opts)
 	if ((opts->quantity == 0) && (opts->usr_drc_name == NULL))
 		opts->quantity = 1;
 
-	if ((opts->action != ADD) && (opts->action != REMOVE))
+	if ((opts->action != ADD) && (opts->action != REMOVE)) {
 		say(ERROR, "The '-r' or '-a' option must be specified for "
 		    "memory operations\n");
+		return -1;
+	}
+
+	/* The -s option can specify a drc name or drc index */
+	if (!strncmp(opts->usr_drc_name, "0x", 2)) {
+		opts->usr_drc_index = strtoul(opts->usr_drc_name, NULL, 16);
+		opts->usr_drc_name = NULL;
+	}
+
 	return 0;
 }
 

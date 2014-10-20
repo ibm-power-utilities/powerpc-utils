@@ -283,6 +283,12 @@ valid_cpu_options(struct options *opts)
 		return -1;
 	}
 
+	/* The -s option can specify a drc name or drc index */
+	if (!strncmp(opts->usr_drc_name, "0x", 2)) {
+		opts->usr_drc_index = strtoul(opts->usr_drc_name, NULL, 16);
+		opts->usr_drc_name = NULL;
+	}
+
 	return 0;
 }
 
