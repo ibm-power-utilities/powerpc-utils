@@ -1173,7 +1173,7 @@ of2l_scsi()
             local devspec=`$CAT ./devspec 2>/dev/null`
 
             # Handle virtio block devices
-            if [[ !$hbtl && $devspec = $DEVNAME ]]; then
+            if [[ $hbtl = 0 && $devspec = $DEVNAME ]]; then
                 LOGICAL_DEVNAME="${dir##*/}"
                 return
             fi
