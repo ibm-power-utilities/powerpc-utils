@@ -34,6 +34,7 @@ my $outfile = "snap.tar.gz";		# in the working dir.
 my $cmddir = "snap_commands";		# cmd output dir.
 my $cmdoutdir = "$outdir/$cmddir";	# in outdir dir.
 my $rsxx_exists = 0;			# Does an IBM Flash Adapter exist?
+my $distro_file = "/etc/issue"
 
 our($opt_a, $opt_d, $opt_h, $opt_o, $opt_t, $opt_v);
 
@@ -320,6 +321,13 @@ eval '%ENV=('.$1.')' if `bash -c "
         . $PSERIES_PLATFORM;
         $perldumpenv"`
     =~ /^\s*\{(.*)\}\s*$/mxs;
+
+open(my $input, "<", $distro_file);
+
+if (<$input> =~ /Ubuntu/) {
+	print "snap: is not supported on the Ubuntu platform\n";
+	exit 1;
+}
 
 if ($ENV{'platform'} == $ENV{'PLATFORM_UNKNOWN'} || $ENV{'platform'} == $ENV{'PLATFORM_POWERKVM_HOST'}) {
         print "snap: is not supported on the $ENV{'platform_name'} platform\n";
