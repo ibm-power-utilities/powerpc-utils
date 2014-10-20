@@ -205,7 +205,7 @@ get_mem_node_lmbs(struct lmb_list_head *lmb_list)
 
 		if (lmb == NULL) {
 			say(DEBUG, "Could not find LMB with drc-index of %x\n",
-			    lmb->drc_index);
+			    my_drc_index);
 			rc = -1;
 			break;
 		}
@@ -310,7 +310,7 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
 
 		if (lmb == NULL) {
 			say(DEBUG, "Could not find LMB with drc-index of %x\n",
-			    lmb->drc_index);
+			    drmem->drc_index);
 			rc = -1;
 			break;
 		}
