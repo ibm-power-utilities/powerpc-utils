@@ -304,7 +304,7 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
 		drmem->flags = be32toh(drmem->flags);
 
 		for (lmb = lmb_list->lmbs; lmb; lmb = lmb->next) {
-			if (lmb->drc_index == drmem->drc_index)
+			if (lmb->drc_index == be32toh(drmem->drc_index))
 				break;
 		}
 
@@ -317,9 +317,9 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
 
 		sprintf(lmb->ofdt_path, DYNAMIC_RECONFIG_MEM);
 		lmb->lmb_size = lmb_sz;
-		lmb->lmb_address = drmem->address;
+		lmb->lmb_address = be64toh(drmem->address);
 
-		if (drmem->flags & DRMEM_ASSIGNED) {
+		if (be32toh(drmem->flags) & DRMEM_ASSIGNED) {
 			found++;
 			lmb->is_owned = 1;
 
@@ -586,9 +586,9 @@ update_drconf_node(struct dr_node *lmb, struct lmb_list_head *lmb_list,
 		}
 
 		if (action == ADD)
-			drmem->flags |= DRMEM_ASSIGNED;
+			drmem->flags |= be32toh(DRMEM_ASSIGNED);
 		else
-			drmem->flags &= ~DRMEM_ASSIGNED;
+			drmem->flags &= be32toh(~DRMEM_ASSIGNED);
 
 		break;
 	}
