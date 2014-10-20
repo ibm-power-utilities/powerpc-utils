@@ -873,6 +873,14 @@ ofpathname_to_logical()
         DEVTYPE=${DEVICE%:*}
     fi
 
+    if [[ $DEVTYPE = "disk" && $FC = "v-scsi" ]]; then
+        DEVTYPE="v-scsi"
+    fi
+
+    if [[ $DEVTYPE = "disk" && $FC = "scsi" ]]; then
+        DEVTYPE="scsi"
+    fi
+
     if [[ $DEVTYPE = "disk" && $SAS = "sas" ]]; then
         DEVTYPE="sas"
     fi
@@ -1123,6 +1131,7 @@ of2l_vscsi()
 #
 of2l_scsi()
 {
+    DEV_HBTL_NO=${DEVICE##*\@}
     DEV_TARGET=${DEVICE##*\@}
     DEV_TARGET=${DEV_TARGET%%,*}
     DEV_LUN=${DEVICE##*,}
@@ -1147,16 +1156,19 @@ of2l_scsi()
         fi
 
         local hbtl=`is_hbtl $link`
+        local diskno
         # Do not call get_hbtl for virtio block devices
         if [[ $hbtl = 1 ]]; then
                get_hbtl $link
+               diskno=`get_scsi_disk_no $link`
 	fi
         cd $link
 
         # save the name of the current directory, we may need it later...
         local device_dir=${PWD##/*/}
 
-        if [[ !$hbtl || ($ID = $DEV_TARGET && $LUN = $DEV_LUN) ]]; then
+        if [[ $hbtl = 0 || $diskno = $DEV_HBTL_NO ||
+		($ID = $DEV_TARGET && $LUN = $DEV_LUN) ]]; then
             goto_dir $PWD "devspec"
             local devspec=`$CAT ./devspec 2>/dev/null`
 
