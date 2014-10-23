@@ -1,3 +1,106 @@
+powerpc-utils-1.2.23
+=====================================================================
+commit af84bc0c7647594083978ec31d619031c76f27b6
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Mon Oct 20 10:08:41 2014 -0400
+
+    drmgr: do not remove the last CPU
+    
+    The drmgr command should not attempt to remove the last cpu from the system.
+    
+    Normally this would not be an issue as cpu remove operations are initiated
+    from the HMC and the HMC will not allow the last cpu to be removed. This
+    issue does arise when handling PRRN events and trying to update the affinity
+    on a partition that only has one cpu.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 0089e0c03a5cd9e7b039c7206e7d7c88c654f75d
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Mon Oct 20 10:07:03 2014 -0400
+
+    drmgr: Correct -s option handling
+    
+    The usage statement for drmgr claims that we can add/remove memory and cpus
+    by drc name or drc index. The current code though assumes that any
+    use of the -s flag to specify this defaults to drc name.
+    
+    This patch updates the option checking for memory and cpu operations to
+    allow users to specify a drc index with the -s option. This will be
+    handled the same way the -s option for pci devices is handled, assume it
+    is a drc name unless it starts with '0x', indicating the string is
+    really a hex value, and switching it to a drc index.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit abfa87aa4ece22f56fcadae13a0d9f080d5aef85
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Mon Oct 20 10:05:32 2014 -0400
+
+    drmgr: Correct null pointer usage
+    
+    We can't de-reference NULL pointers, it's not a nice thing to do.
+    
+    I found these during some debugging, correcting to avoid future bugs.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 294c77fa79f69b361b014356cf101a4518572f1b
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Mon Oct 20 10:04:04 2014 -0400
+
+    ofpathname: Fix checking for hbtl
+    
+    Fix checking for hbtl in of2l_scsi ().
+    
+    Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+
+commit 493bfdda30b61be46d7d71e5e7bb05df9334ba81
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Mon Oct 20 09:47:50 2014 -0400
+
+    lsslot/drmgr: little endian support for memory
+    
+    This patch adds some support for memory slot listing
+    and memory hotplugging on little endian systems.
+    
+    Signed-off-by: Thomas Falcon <tlfalcon@linux.vnet.ibm.com>
+
+commit 1df19388f82883bf6a457f8a9913991ec4cd5cea
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Mon Oct 20 09:46:17 2014 -0400
+
+    ofpathname: Convert OF format to logical device for virtio-scsi devices
+    
+    Add support to convert a Open Firmware device path to logical
+    device path for virtio scsi device.
+    
+    Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+
+commit 70de5fdce708b9c339769ce4d58a27706788c7df
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Mon Oct 20 09:44:05 2014 -0400
+
+    ofpathname: Convert logical path to OF device path for virtio-scsi devices
+    
+    Add support to convert logical device path to Open firmware device path
+    for virtio-scsi devices.
+    
+    Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+
+commit 95596ab7764f294d5755756ba097159774f5a7bb
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Mon Oct 20 09:35:51 2014 -0400
+
+    snap: Display message for Ubuntu platform
+    
+    snap is not supported on the Ubuntu platform hence display
+    a suitable messsage. Ubuntu users can use log collection tool (apport-collec
+    provided by distro.
+    
+    Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+    Acked-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
 powerpc-utils-1.2.22
 =====================================================================
 commit 0a67ffbb5d40c49347cd85a74921693457331f82
