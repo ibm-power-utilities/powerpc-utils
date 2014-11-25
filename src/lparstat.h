@@ -168,7 +168,7 @@ struct sysentry system_data[] = {
 	/* ppc64_cpu --smt */
 	{.name = "smt_state",
 	 .descr = "SMT",
-	 .get = &get_smt_state},
+	 .get = &get_smt_mode},
 
 	/* /proc/stat */
 	{.name = "cpu_total",
