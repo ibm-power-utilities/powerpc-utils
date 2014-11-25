@@ -49,11 +49,22 @@ EXTRA_DIST += COPYRIGHT Changelog powerpc-utils.spec.in doc/activate_firmware.do
 	     doc/nvram.doxycfg doc/rtas_ibm_get_vpd.doxycfg doc/serv_config.doxycfg \
 	     doc/set_poweron_time.doxycfg doc/uesensor.doxycfg
 
-sbin_PROGRAMS += src/nvram src/lsprop src/lparstat
+sbin_PROGRAMS += src/nvram src/lsprop src/lparstat src/ppc64_cpu
 
 pseries_platform_SOURCES = src/common/pseries_platform.c src/common/pseries_platform.h
 
 librtas_error_SOURCES = src/common/librtas_error.c src/common/librtas_error.h
+
+src_nvram_SOURCES = src/nvram.c src/nvram.h $(pseries_platform_SOURCES)
+src_nvram_LDADD = -ldl -lz
+
+src_lsprop_SOURCES = src/lsprop.c $(pseries_platform_SOURCES)
+
+src_lparstat_SOURCES = src/lparstat.c src/lparstat.h $(pseries_platform_SOURCES)
+
+src_ppc64_cpu_SOURCES = src/ppc64_cpu.c $(pseries_platform_SOURCES)
+src_ppc64_cpu_LDADD = -lpthread
+
 
 AM_CFLAGS = -Wall -g -I $(top_srcdir)/src/common/
 
@@ -65,8 +76,7 @@ sbin_PROGRAMS += \
 	src/serv_config \
 	src/uesensor \
 	src/rtas_event_decode \
-	src/sys_ident \
-	src/ppc64_cpu
+	src/sys_ident
 
 src_activate_firmware_SOURCES = src/activate_fw.c $(pseries_platform_SOURCES)
 src_activate_firmware_LDADD = -lrtas
@@ -89,19 +99,9 @@ src_rtas_event_decode_LDADD = -lrtasevent
 src_sys_ident_SOURCES = src/sys_ident.c $(pseries_platform_SOURCES)
 src_sys_ident_LDADD = -lrtas
 
-src_ppc64_cpu_SOURCES = src/ppc64_cpu.c $(librtas_error_SOURCES) $(pseries_platform_SOURCES)
-src_ppc64_cpu_LDADD = -lrtas -lpthread
+src_ppc64_cpu_SOURCES += $(librtas_error_SOURCES)
+src_ppc64_cpu_LDADD += -lrtas
 
-endif
-
-src_nvram_SOURCES = src/nvram.c src/nvram.h $(pseries_platform_SOURCES)
-src_nvram_LDADD = -ldl -lz
-
-src_lsprop_SOURCES = src/lsprop.c $(pseries_platform_SOURCES)
-
-src_lparstat_SOURCES = src/lparstat.c src/lparstat.h $(pseries_platform_SOURCES)
-
-if WITH_LIBRTAS
 sbin_PROGRAMS += src/drmgr/drmgr src/drmgr/lsslot
 endif
 
