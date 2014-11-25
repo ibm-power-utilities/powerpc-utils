@@ -440,4 +440,5 @@ else {
 system("rm -rf $outdir");
 
 print "output written to $outfile\n";
+print "WARNING: archive may contain confidential data and/or cleartext passwords!\n";
 exit 0;
