@@ -10,10 +10,10 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <unistd.h>
 #include <string.h>
 #include <dirent.h>
-#include <librtas.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -25,10 +25,16 @@
 #include <sys/ptrace.h>
 #include <sys/wait.h>
 #include <sys/resource.h>
+
+#ifdef WITH_LIBRTAS
+#include <librtas.h>
+#include "librtas_error.h"
+#endif
+
 #ifdef HAVE_LINUX_PERF_EVENT_H
 #include <linux/perf_event.h>
 #endif
-#include "librtas_error.h"
+
 #include <errno.h>
 
 #define PPC64_CPU_VERSION	"1.2"
@@ -682,6 +688,8 @@ static int do_smt_snooze_delay(char *state)
 	return rc;
 }
 
+#ifdef WITH_LIBRTAS
+
 static int do_run_mode(char *run_mode)
 {
 	char mode[3];
@@ -743,6 +751,16 @@ static int do_run_mode(char *run_mode)
 
 	return rc;
 }
+
+#else
+
+static int do_run_mode(char *run_mode)
+{
+	printf("Run mode determination is not supported on this platfom.\n");
+	return -1;
+}
+
+#endif
 
 #ifdef HAVE_LINUX_PERF_EVENT_H
 

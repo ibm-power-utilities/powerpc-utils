@@ -47,7 +47,10 @@ AC_ARG_WITH([librtas],
 
 AS_IF([test "x$with_librtas" != "xno"],
 	[AC_CHECK_HEADER([librtas.h],
-        [with_libtras=yes],
+        [
+	    with_libtras=yes
+            AC_DEFINE(WITH_LIBRTAS)
+	],
         [AC_MSG_FAILURE(
                 [librtas test failed (--without-librtas to disable)])]
     )]
