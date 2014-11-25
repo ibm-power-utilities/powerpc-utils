@@ -375,12 +375,10 @@ void get_smt_mode(struct sysentry *se, char *buf)
 	unused = fgets(line, 128, f);
 	pclose(f);
 
-	/* The output is either "SMT is on" or "SMT is off", we can cheat
-	 * by looking at line[8] for either 'n' or 'f'.
+	/* The output is either "SMT=x" or "SMT is off", we can cheat
+	 * by looking at line[8] for an 'f'.
 	 */
-	if (line[8] == 'n')
-		sprintf(buf, "On");
-	else if (line[8] == 'f')
+	if (line[8] == 'f')
 		sprintf(buf, "Off");
 	else
 		sprintf(buf, "%c", line[4]);
