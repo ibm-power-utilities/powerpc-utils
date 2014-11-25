@@ -510,8 +510,6 @@ static int do_smt(char *state)
 
 		if (smt_state == 1)
 			printf("SMT is off\n");
-		else if (smt_state == threads_per_cpu)
-			printf("SMT is on\n");
 		else if (smt_state == -1)
 			printf("Inconsistent state: mix of ST and SMT cores\n");
 		else
