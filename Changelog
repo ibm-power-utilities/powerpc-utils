@@ -1,3 +1,125 @@
+powerpc-utils-1.2.24
+=====================================================================
+commit cccfb3c8d867e07a8f4b983858f04707e4131383
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Tue Nov 25 11:35:56 2014 -0500
+
+    lparstat: remove "On" from possible smt output
+    
+    The SMT row will only display the number of enabled SMT threads if
+    SMT is enabled.
+    
+    Signed-off-by: Thomas Falcon <tlfalcon@linux.vnet.ibm.com>
+
+commit 8249adcb95c2218704160a3a747859de95d1e3b9
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Tue Nov 25 10:55:12 2014 -0500
+
+    ppc64_cpu: output only the number of SMT threads when smt is on
+    
+    This patch removes "SMT is on" as a possible output when the smt option
+    is used. Instead, only the number of SMT threads will be displayed.
+    
+    Signed-off-by: Thomas Falcon <tlfalcon@linux.vnet.ibm.com>
+
+commit 17d6749f2af420dfcf74fc8ac9fb09719793e2b8
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Tue Nov 25 10:50:45 2014 -0500
+
+    drmgr: Correct the -s option handling correction
+    
+    In response to my earlier patch that attempted to correct the -s option hand
+    for drmgr I introduced a bug in which the usr_drc_name could be NULL causing
+    a segfault when attempting to use it.
+    
+    This patch adds a check to make sure it is not NULL.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 7759a4d35b9b79de171b39a02546cb7365e710ea
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Tue Nov 25 10:46:15 2014 -0500
+
+    lparstat: using get_smt_mode when showing SMT info
+    
+    get_smt_state is used in the system_data structure to display both the
+    shared_processor_mode and the smt_state members. After reviewing code and
+    documentation, it seems that the information in smt_state is meant to be
+    acquired from ppc64_cpu instead of lparcfg. With this change, the SMT listin
+    will be determined by the output of ppc64_cpu --smt.
+    
+    Signed-off-by: Thomas Falcon <tlfalcon@linux.vnet.ibm.com>
+
+commit 17d6749f2af420dfcf74fc8ac9fb09719793e2b8
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Tue Nov 25 10:50:45 2014 -0500
+
+    drmgr: Correct the -s option handling correction
+    
+    In response to my earlier patch that attempted to correct the -s option hand
+    for drmgr I introduced a bug in which the usr_drc_name could be NULL causing
+    a segfault when attempting to use it.
+    
+    This patch adds a check to make sure it is not NULL.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 7759a4d35b9b79de171b39a02546cb7365e710ea
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Tue Nov 25 10:46:15 2014 -0500
+
+    lparstat: using get_smt_mode when showing SMT info
+    
+    get_smt_state is used in the system_data structure to display both the
+    shared_processor_mode and the smt_state members. After reviewing code and
+    documentation, it seems that the information in smt_state is meant to be
+    acquired from ppc64_cpu instead of lparcfg. With this change, the SMT listin
+    will be determined by the output of ppc64_cpu --smt.
+    
+    Signed-off-by: Thomas Falcon <tlfalcon@linux.vnet.ibm.com>
+
+commit a822bb09ed6eb80f521b04208bd41c23f302351d
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Tue Nov 25 10:40:14 2014 -0500
+
+    ppc64_cpu: Allow builds without librtas
+    
+    Currently, --without-librtas disables ppc64_cpu.
+    
+    However, we only need librtas for the run-mode determination; other
+    functions will work fine without it.
+    
+    This change allows ppc64_cpu to be built without librtas, by
+    conditionally enabling run-mode, and restoring ppc64_cpu to be built
+    when --without-librtas is given.
+    
+    We need to re-work src/Makefile.am a little here - we use the +=
+    operator to include rtas-specific functionality, which means the
+    with-librtas cases need to be listed before the without ones.
+    
+    We also need to #include stdint.h, as ppc64_cpu.c uses inttypes from
+    here.
+    
+    Signed-off-by: Jeremy Kerr <jk@ozlabs.org>
+
+commit 7ab0e4dc62ba8787da05529bc5297a0161c12437
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Tue Nov 25 10:37:35 2014 -0500
+
+    From: Jan Loser <jloeser@suse.com>
+    
+    snap in powerpc-utils 1.2.20 produces an archive with fstab and
+    yaboot.conf files potentially containing cleartext passwords, and lacks
+    a warning about reviewing this archive to detect included passwords,
+    which might allow remote attackers to obtain sensitive information by
+    leveraging access to a technical-support data stream.
+    
+    Solution:
+    
+    print a warning that confidential data may be collected via snap
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
 powerpc-utils-1.2.23
 =====================================================================
 commit af84bc0c7647594083978ec31d619031c76f27b6
