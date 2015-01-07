@@ -298,11 +298,6 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
 	for (i = 0; i < num_entries; i++) {
 		struct dr_node *lmb;
 
-		/* convert for LE systems */
-		drmem->address = be64toh(drmem->address);
-		drmem->drc_index = be32toh(drmem->drc_index);
-		drmem->flags = be32toh(drmem->flags);
-
 		for (lmb = lmb_list->lmbs; lmb; lmb = lmb->next) {
 			if (lmb->drc_index == be32toh(drmem->drc_index))
 				break;
@@ -576,11 +571,7 @@ update_drconf_node(struct dr_node *lmb, struct lmb_list_head *lmb_list,
 
 	for (i = 0; i < entries; i++) {
 
-		/* convert for LE systems */
-		drmem->drc_index = be32toh(drmem->drc_index);
-		drmem->flags = be32toh(drmem->flags);
-
-		if (drmem->drc_index != lmb->drc_index) {
+		if (be32toh(drmem->drc_index) != lmb->drc_index) {
 			drmem++;
 			continue;
 		}
