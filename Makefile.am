@@ -49,6 +49,10 @@ EXTRA_DIST += COPYRIGHT Changelog powerpc-utils.spec.in doc/activate_firmware.do
 	     doc/nvram.doxycfg doc/rtas_ibm_get_vpd.doxycfg doc/serv_config.doxycfg \
 	     doc/set_poweron_time.doxycfg doc/uesensor.doxycfg
 
+if WITH_SYSTEMD
+EXTRA_DIST += systemd/smt_off.service.in
+endif
+
 sbin_PROGRAMS += src/nvram src/lsprop src/lparstat src/ppc64_cpu
 
 pseries_platform_SOURCES = src/common/pseries_platform.c src/common/pseries_platform.h
@@ -145,3 +149,10 @@ src_drmgr_lsslot_SOURCES = \
 	$(pseries_platform_SOURCES)
 
 src_drmgr_lsslot_LDADD = -lrtas
+
+if WITH_SYSTEMD
+install-data-hook: systemd/smt_off.service
+	$(MKDIR_P) @prefix@${systemd_unit_dir}
+	$(INSTALL_SCRIPT) $< @prefix@${systemd_unit_dir}/
+	sed -i -e 's,$${exec_prefix},@sbindir@,g' @prefix@${systemd_unit_dir}/smt_off.service
+endif
