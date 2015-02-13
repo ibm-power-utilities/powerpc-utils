@@ -40,7 +40,8 @@ man_MANS = \
 	man/sys_ident.8 \
 	man/lparcfg.5 \
 	man/lparstat.8 \
-	man/lsslot.8
+	man/lsslot.8 \
+	man/ppc64_cpu.8
 
 EXTRA_DIST += $(bin_SCRIPTS) $(sbin_SCRIPTS) $(man_MANS)
 
