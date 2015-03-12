@@ -34,7 +34,19 @@ my $outfile = "snap.tar.gz";		# in the working dir.
 my $cmddir = "snap_commands";		# cmd output dir.
 my $cmdoutdir = "$outdir/$cmddir";	# in outdir dir.
 my $rsxx_exists = 0;			# Does an IBM Flash Adapter exist?
-my $distro_file = "/etc/issue"
+my $distro_file = "/etc/issue";
+my $redhat_release_file = "/etc/redhat-release";
+
+if (-e $redhat_release_file) {
+	open(RELEASE, "< $redhat_release_file") or die "open: $!\n";
+	$_ = <RELEASE>;
+	my $redhat_version = (split / /, $_)[6];
+	if ($redhat_version >= 7.0) {
+		print "snap is not supported on the RHEL 7 onwards..!\n";
+		print "Please use sosreport to collect log data..!! \n";
+		exit 1;
+	}
+}
 
 our($opt_a, $opt_d, $opt_h, $opt_o, $opt_t, $opt_v);
 
