@@ -1,0 +1,12 @@
+[Unit]
+Description=ppc64 set SMT off
+Before=libvirt-bin.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStart=@sbindir@/ppc64_cpu --smt=off
+ExecStop=@sbindir@/ppc64_cpu --smt=on
+
+[Install]
+WantedBy=multi-user.target

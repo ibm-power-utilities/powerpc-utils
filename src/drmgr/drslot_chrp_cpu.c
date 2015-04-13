@@ -44,16 +44,25 @@ static struct dr_node *
 get_cpu_by_name(struct dr_info *drinfo, const char *name)
 {
 	struct dr_node *cpu;
-	uint32_t drc_index;
 
 	for (cpu = drinfo->all_cpus; cpu; cpu = cpu->next) {
-		if (strcmp(cpu->drc_name, name) == 0)
+		if (strcmp(cpu->drc_name, name) == 0) {
 			break;
+		}
+	}
 
-		/* See if the drc index was specified */
-		drc_index = strtoul(name, NULL, 0);
-		if (cpu->drc_index == drc_index)
+	return cpu;
+}
+
+static struct dr_node *
+get_cpu_by_index(struct dr_info *drinfo, uint32_t index)
+{
+	struct dr_node *cpu;
+
+	for (cpu = drinfo->all_cpus; cpu; cpu = cpu->next) {
+		if (cpu->drc_index == index) {
 			break;
+		}
 	}
 
 	return cpu;
@@ -103,6 +112,13 @@ get_available_cpu(struct options *opts, struct dr_info *dr_info)
 		if (!cpu)
 			say(ERROR, "Could not locate cpu %s\n",
 			    opts->usr_drc_name);
+
+		return cpu;
+	} else if (opts->usr_drc_index) {
+		cpu = get_cpu_by_index(dr_info, opts->usr_drc_index);
+		if (!cpu)
+			say(ERROR, "Could not locate cpu %x\n",
+			    opts->usr_drc_index);
 
 		return cpu;
 	}
@@ -261,6 +277,7 @@ static int
 smt_threads_func(struct options *opts, struct dr_info *dr_info)
 {
 	int rc;
+	struct dr_node *cpu;
 
 	if (opts->quantity != 1) {
 		say(ERROR, "Quantity option '-q' may not be specified with "
@@ -274,12 +291,23 @@ smt_threads_func(struct options *opts, struct dr_info *dr_info)
 	}
 
 	if (opts->usr_drc_name) {
-		struct dr_node *cpu;
-
 		cpu = get_cpu_by_name(dr_info, opts->usr_drc_name);
 		if (cpu == NULL) {
 			say(ERROR, "Could not find cpu %s\n",
 			    opts->usr_drc_name);
+			return -1;
+		}
+
+		if (opts->action == ADD)
+			rc = cpu_enable_smt(cpu, dr_info);
+		else if (opts->action == REMOVE)
+			rc = cpu_disable_smt(cpu);
+
+	} else if (opts->usr_drc_index) {
+		cpu = get_cpu_by_index(dr_info, opts->usr_drc_index);
+		if (cpu == NULL) {
+			say(ERROR, "Could not find cpu %x\n",
+			    opts->usr_drc_index);
 			return -1;
 		}
 
@@ -302,7 +330,7 @@ int
 valid_cpu_options(struct options *opts)
 {
 	/* default to a quantity of 1 */
-	if ((opts->quantity == 0) && (opts->usr_drc_name == NULL))
+	if ((opts->quantity == 0))
 		opts->quantity = 1;
 
 	if ((opts->action != ADD) && (opts->action != REMOVE)) {

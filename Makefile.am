@@ -40,7 +40,8 @@ man_MANS = \
 	man/sys_ident.8 \
 	man/lparcfg.5 \
 	man/lparstat.8 \
-	man/lsslot.8
+	man/lsslot.8 \
+	man/ppc64_cpu.8
 
 EXTRA_DIST += $(bin_SCRIPTS) $(sbin_SCRIPTS) $(man_MANS)
 
@@ -48,6 +49,10 @@ EXTRA_DIST += $(bin_SCRIPTS) $(sbin_SCRIPTS) $(man_MANS)
 EXTRA_DIST += COPYRIGHT Changelog powerpc-utils.spec.in doc/activate_firmware.doxycfg \
 	     doc/nvram.doxycfg doc/rtas_ibm_get_vpd.doxycfg doc/serv_config.doxycfg \
 	     doc/set_poweron_time.doxycfg doc/uesensor.doxycfg
+
+if WITH_SYSTEMD
+EXTRA_DIST += systemd/smt_off.service.in
+endif
 
 sbin_PROGRAMS += src/nvram src/lsprop src/lparstat src/ppc64_cpu
 
@@ -145,3 +150,10 @@ src_drmgr_lsslot_SOURCES = \
 	$(pseries_platform_SOURCES)
 
 src_drmgr_lsslot_LDADD = -lrtas
+
+if WITH_SYSTEMD
+install-data-hook: systemd/smt_off.service
+	$(MKDIR_P) @prefix@${systemd_unit_dir}
+	$(INSTALL_SCRIPT) $< @prefix@${systemd_unit_dir}/
+	sed -i -e 's,$${exec_prefix},@sbindir@,g' @prefix@${systemd_unit_dir}/smt_off.service
+endif

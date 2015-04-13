@@ -84,6 +84,7 @@ Utilities for maintaining and servicing PowerPC systems.
 /usr/share/man/man5/lparcfg.5.gz
 /usr/share/man/man8/lparstat.8.gz
 /usr/share/man/man8/lsslot.8.gz
+/usr/share/man/man8/ppc64_cpu.8.gz
 /usr/share/man/man1/amsstat.1.gz
 
 %post

@@ -1,0 +1,108 @@
+.\"
+.\" Copyright (C) 2015 International Business Machines
+.\"
+.TH PPC64_CPU 8 "January 2015" Linux "Linux on Power Service Tools"
+.SH NAME
+ppc64_cpu \- Display cpu characteristics of PowerPC systems
+.SH SYNOPSIS
+.B /usr/sbin/ppc64_cpu
+[ command ] [ options ]
+.SH DESCRIPTION
+The
+.I ppc64_cpu
+command is used to display and set cpu characteristics on PowerPC
+platforms.
+
+.SH OPTIONS
+.TP
+\fB\-\-smt\fR
+Display the current smt setting for the system. The output will state
+whether smt is off indicating there is only one thread per core online, smt
+is on indicating that all threads of every core is online, the smt is in
+a mixed state indicating that the number of threads online varies per core, or
+'SMT=X' indicating a specific smt state.
+
+.TP
+\fB\-\-smt\fR={\fIon\fR|\fIoff\fR}
+Set the current smt state for the system to either \fIon\fR, which will online
+every thread in every core on the system, or \fIoff\fR which will leave each
+core on the system with only one thread online.
+
+.TP
+\fB\-\-smt\fR=\fIvalue\fR
+Set the smt state for each core to the specified \fIvalue\fR.
+
+.TP
+\fB\-\-cores\-present\fR
+Display the number of cores present.
+
+.TP
+\fB\-\-cores\-on\fR
+Display the number of cores online.
+
+.TP
+\fB\-\-cores\-on\fR=\fIvalue\fR
+Put exactly \fIvalue\fR number of cores online. Note that this will either 
+online or offline cores to achieve the desired result.
+
+.TP
+\fB\-\-dscr\fR
+Display the current Data Stream Control Register (DSCR) setting for the system.
+
+.TP
+\fB\-\-dscr\fR=\fIvalue\fR
+Set the DSCR setting for the system to \fIvalue\fr.
+
+.TP
+\fB\-\-dscr\fR [\fIpid\fR]
+Display the DSCR setting for process \fIpid\fR.
+
+.TP
+\fB\-\-dscr\fR=\fIvalue\fR [\fIpid\fR]
+Set the DSCR to the specified \fIvalue\fR for process \fIpid\fR.
+
+.TP
+\fB\-\-smt\-snooze\-delay\fR
+Display the current smt\-snooze\-delay setting.
+
+.TP
+\fB\-\-smt\-snooze\-delay\fR=\fIvalue\fR
+Set the smt\-snooze\-delay to the specified \fIvalue\fR.
+
+.TP
+\fB\-\-run-mode\fR
+Display the current diagnostics run mode.
+
+.TP
+\fB\-\-run\-mode\fR=\fIvalue\fR
+Set the current diagnostics run mode to \fIvalue\fR.
+
+.TP
+\fB\-\-frequency\fR [\-t \fItime\fR]
+Determine the cpu frequency. The default sampling period is one second unless
+a time is specified with the \fB\-t \fItime\fR option.
+
+.TP
+\fB\-\-subcores\-per\-core\fR
+Display the number of subcores per core.
+
+.TP
+\fB\-\-subcores\-per\-core\fR=\fIvalue\fR
+Set the number of subcores per core to \fIvalue\fR.
+
+.TP
+\fB\-\-threads\-per\-core\fR
+Display the number of threads per core.
+
+.TP
+\fB\-\-info\fR
+Display system state information. The output will print a line for each core
+and possible sub\-core along with the thread numbers for each thread in the
+core with an asterick next to it if the thread is online.
+
+.TP
+\fB\-\-version\fR
+Print the version number.
+
+.SH AUTHOR
+Written by Anton Blanchard and Nathan Fontenot

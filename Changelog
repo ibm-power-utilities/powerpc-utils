@@ -1,3 +1,119 @@
+powerpc-utils-1.2.25
+=====================================================================
+commit 948bbf83b43c9a3bc00f521326e096ca6c7848c5
+Author: Bharata B Rao <bharata@linux.vnet.ibm.com>
+Date:   Mon Apr 13 11:20:00 2015 -0500
+
+    drmgr: Fix CPU/LMB add/removal using drc_index
+    
+    This patch fixes a few things:
+    
+    - Removing a CPU using drc_index is currently removing wrong CPU since
+      CPU removal code doesn't lookup CPU by index. Introduce a routine to
+      lookup by index and ensure that it gets used from the removal path.
+    - get_cpu_by_name() does an implicit looking up of index also. Fix this.
+    - drmgr -s option can mean both drc_index and drc_name. In case of
+      drc_index, rtas_errd will invoke drmgr without -q option which results
+      in no CPU or LMB being added. Make 1 as the default count of
+      CPUs unconditionally which applies to both the cases.
+    
+    After these fixes, I am able to get CPU hotplug and removal working
+    with QEMU on a PowerKVM host.
+    
+    Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
+
+commit 7f1ba6f2cefbc72112ee809d2b5fd90e7525417d
+Author: Mamatha Inamdar <mamatha4@linux.vnet.ibm.com>
+Date:   Tue Mar 31 18:27:06 2015 -0400
+
+    drmgr: Fix to check for drmgr REPLACE (-R) flag
+    
+    In drmgr command drmgr -R (REPLACE) flag check was missing, so
+    this patch is to fix drmgr -R flag in valid_pci_options() interface.
+    
+    *************************************************
+    Test results:
+    
+    before fixing the patch:
+    The '-r', '-a', or '-i' option must be spcified for PCI operation
+    
+    After fixing the patch:
+    
+    The specified PCI slot is either invalid
+    or does not support hot plug operations.xing the patch:
+    **************************************************************
+    
+    Signed-off-by: Mamatha Inamdar <mamatha4@linux.vnet.ibm.com>
+
+commit a941cdfb9609bba04c5bad18ab8af1c85b7b6a9b
+Author: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+Date:   Tue Mar 31 18:23:59 2015 -0400
+
+    drmgr: Use sysfs migration store to initiate migration when possible
+    
+    The sysfs attribute /sys/kernel/mobility/migration has been present for
+    sometime, but never actually used by drmgr. It can be used to initiate a
+    migration operation in place of the existing faux ibm,supsend-me rtas call.
+    Further, newer kernels are capable of doing the device tree update.
+    
+    We can test the /sys/kernel/mobility/api_version attribute to determine the
+    course of action drmgr should take. Newer kernels will return 1 indicating
+    the kernel is cabable of performing the migration and postmobility fixups.
+    If the attribute is unreadable or returns 0 drmgr should resort to initiatin
+    the migration via rtas, and communicate the post mobility device tree update
+    through the /proc/ppc64/ofdt interface to the kernel.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 62edbba0a29851db8089650e122facb95f40d317
+Author: Henish Patel <hpatel@linux.vnet.ibm.com>
+Date:   Wed Mar 11 21:34:32 2015 -0500
+
+    snap: Restrict the usage of snap on RHEL 7 onwards
+    
+    snap is not supported on the RHEL 7 onwards, because we have integrated snap
+    functionality in sosreport. So this patch displays a suitable message.
+    RHEL 7+ users can use sosreport to collect log data.
+    
+    Signed-off-by: Henish Patel <hpatel@linux.vnet.ibm.com>
+
+commit 63f9d99136c0630008cbb5fd241f46d6618e9b1b
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Fri Feb 13 10:15:44 2015 -0500
+
+    ppc64_cpu: Initial man page.
+    
+    Initial man page for the ppc64_cpu command.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit cb0c5c844b384b335cf50e92e20a080b5364e186
+Author: Paulo Flabiano Smorigo <pfsmorigo@linux.vnet.ibm.com>
+Date:   Fri Feb 13 10:13:03 2015 -0500
+
+    Add systemd unit (smt_off) to control smt status.
+    
+    This patch add a --with-systemd attribute to install a systemd unit
+    to turn smt on or off (permanently or not).
+    
+    After it's installed you can use systemd commands like: status, start,
+    stop, enable and disable to control it.
+    
+    Signed-off-by: Paulo Flabiano Smorigo <pfsmorigo@linux.vnet.ibm.com>
+
+commit acfa92352e3b2bddf256de23e7ef07ad3a47ec08
+Author: Thomas Falcon <tlfalcon@linux.vnet.ibm.com>
+Date:   Wed Jan 7 15:05:45 2015 -0500
+
+    drmgr/lsslot: Fix broken memory     support for little endian
+    
+    Commit 493bfdda30b61be46d7d71e5e7bb05df9334ba81 should have removed
+    some endian conversions included in previous commit. Unfortunately,
+    they were not removed, causing problems when hotplugging memory.
+    This patch removes those endian conversions.
+    
+    Signed-off-by: Thomas Falcon <tlfalcon@linux.vnet.ibm.com>
+
 powerpc-utils-1.2.24
 =====================================================================
 commit cccfb3c8d867e07a8f4b983858f04707e4131383

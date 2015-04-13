@@ -1,6 +1,6 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
-m4_define([ppu_version], 1.2.24)
+m4_define([ppu_version], 1.2.25)
 
 AC_PREREQ([2.63])
 AC_INIT([powerpc-utils], ppu_version, [nfont@linux.vnet.ibm.com])
@@ -58,6 +58,22 @@ AS_IF([test "x$with_librtas" != "xno"],
 
 AM_CONDITIONAL([WITH_LIBRTAS], [test "x$with_librtas" = "xyes"])
 
+# check for systemd
+systemd_unit_dir=/usr/lib/systemd/system
+AC_ARG_WITH([systemd],
+	[AC_HELP_STRING([--with-systemd@<:@=DIR@:>@],
+                    [install systemd unit files (not default and unit dir is /usr/lib/systemd/system)])],
+	[if test "$withval" = "no"; then
+		with_systemd=0
+	else
+		with_systemd=1
+		test $withval != "yes" && systemd_unit_dir=$withval
+	fi],
+	with_systemd=0
+	)
+AM_CONDITIONAL(WITH_SYSTEMD, [test "$with_systemd" = 1])
+AC_SUBST(systemd_unit_dir)
+
 AC_DEFUN([LOCAL_CHECK_FLAGS],[
   AC_REQUIRE([AX_CHECK_LINK_FLAG])
   AC_REQUIRE([AX_APPEND_COMPILE_FLAGS])
@@ -72,5 +88,5 @@ AC_DEFUN([LOCAL_CHECK_FLAGS],[
 ])
 LOCAL_CHECK_FLAGS
 
-AC_CONFIG_FILES([Makefile powerpc-utils.spec])
+AC_CONFIG_FILES([Makefile powerpc-utils.spec systemd/smt_off.service])
 AC_OUTPUT
