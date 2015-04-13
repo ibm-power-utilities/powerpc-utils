@@ -1202,7 +1202,7 @@ int
 valid_mem_options(struct options *opts)
 {
 	/* default to a quantity of 1 */
-	if ((opts->quantity == 0) && (opts->usr_drc_name == NULL))
+	if (opts->quantity == 0)
 		opts->quantity = 1;
 
 	if ((opts->action != ADD) && (opts->action != REMOVE)) {
