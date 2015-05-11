@@ -502,6 +502,9 @@ get_available_lmb(struct options *opts, struct dr_node *start_lmb)
 			if ((strcmp(lmb->drc_name, opts->usr_drc_name))
 			    && (lmb->drc_index != drc_index))
 				continue;
+		} else if (opts->usr_drc_index) {
+			if (lmb->drc_index != opts->usr_drc_index)
+				continue;
 		}
 
 		if (lmb->unusable)
