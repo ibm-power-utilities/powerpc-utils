@@ -544,6 +544,56 @@ get_available_lmb(struct options *opts, struct dr_node *start_lmb)
 	return usable_lmb;
 }
 
+static void update_drconf_affinity(struct dr_node *lmb,
+				   struct drconf_mem *drmem)
+{
+	struct of_node *node;
+	struct of_property *prop;
+	uint32_t assoc_prop_sz;
+	uint32_t *assoc_prop;
+	uint32_t assoc_entries;
+	uint32_t assoc_entry_sz;
+	uint32_t *prop_val;
+	int i;
+
+	/* find the ibm,associativity property */
+	node = lmb->lmb_of_node;
+	for (prop = node->properties; prop; prop = prop->next) {
+		if (!strcmp(prop->name, "ibm,associativity"))
+			break;
+	}
+
+	if (!prop)
+		return;
+
+	/* find the associtivity index atrrays */
+	assoc_prop_sz = get_property_size(DYNAMIC_RECONFIG_MEM,
+					  "ibm,associativity-lookup-arrays");
+	assoc_prop = zalloc(assoc_prop_sz);
+	if (!assoc_prop)
+		return;
+
+	get_property(DYNAMIC_RECONFIG_MEM, "ibm,associativity-lookup-arrays",
+		     assoc_prop, assoc_prop_sz);
+
+	assoc_entries = be32toh(assoc_prop[0]);
+	assoc_entry_sz = be32toh(assoc_prop[1]);
+
+	prop_val = (uint32_t *)prop->value;
+	for (i = 0; i < assoc_entries; i++) {
+		if (memcmp(&assoc_prop[(i * assoc_entry_sz) + 2], &prop_val[1],
+			   assoc_entry_sz * sizeof(uint32_t)))
+			continue;
+
+		/* found it */
+		drmem->assoc_index = htobe32(i);
+		break;
+	}
+
+	free(assoc_prop);
+	return;
+}
+	
 /**
  * update_drconf_node
  * @brief update the ibm,dynamic-memory property for added/removed memory
@@ -580,10 +630,12 @@ update_drconf_node(struct dr_node *lmb, struct lmb_list_head *lmb_list,
 			continue;
 		}
 
-		if (action == ADD)
+		if (action == ADD) {
 			drmem->flags |= be32toh(DRMEM_ASSIGNED);
-		else
+			update_drconf_affinity(lmb, drmem);
+		} else {
 			drmem->flags &= be32toh(~DRMEM_ASSIGNED);
+		}
 
 		break;
 	}
@@ -660,6 +712,12 @@ add_device_tree_lmb(struct dr_node *lmb, struct lmb_list_head *lmb_list)
 {
         int rc;
 
+	lmb->lmb_of_node = configure_connector(lmb->drc_index);
+	if (lmb->lmb_of_node == NULL) {
+		release_drc(lmb->drc_index, MEM_DEV);
+		return -1;
+	}
+	
 	if (lmb_list->drconf_buf) {
 		errno = 0;
 		rc = update_drconf_node(lmb, lmb_list, ADD);
@@ -672,11 +730,6 @@ add_device_tree_lmb(struct dr_node *lmb, struct lmb_list_head *lmb_list)
 			 */
 			say(DEBUG, "Assuming older kernel, trying to add "
 			    "node\n");
-			lmb->lmb_of_node = configure_connector(lmb->drc_index);
-			if (lmb->lmb_of_node == NULL) {
-				release_drc(lmb->drc_index, MEM_DEV);
-				return -1;
-			}
 
 			sprintf(lmb->ofdt_path, "%s/%s", OFDT_BASE,
 				lmb->lmb_of_node->name);
@@ -687,11 +740,6 @@ add_device_tree_lmb(struct dr_node *lmb, struct lmb_list_head *lmb_list)
 		}
 	} else {
 		/* Add the new nodes to the device tree */
-		lmb->lmb_of_node = configure_connector(lmb->drc_index);
-		if (lmb->lmb_of_node == NULL) {
-			release_drc(lmb->drc_index, MEM_DEV);
-			return -1;
-		}
 		sprintf(lmb->ofdt_path, "%s/%s", OFDT_BASE,
 			lmb->lmb_of_node->name);
 		rc = add_device_tree_nodes(OFDT_BASE, lmb->lmb_of_node);
