@@ -1492,9 +1492,12 @@ enable_hp_children(char *drc_name)
 int disable_hp_children(char *drc_name)
 {
 	if (get_hp_adapter_status(drc_name) != NOT_CONFIG) {
-		set_hp_adapter_status(PHP_UNCONFIG_ADAPTER, drc_name);
+		int status;
 
-		if (get_hp_adapter_status(drc_name) != NOT_CONFIG)
+		set_hp_adapter_status(PHP_UNCONFIG_ADAPTER, drc_name);
+		status = get_hp_adapter_status(drc_name);
+
+		if (status != NOT_CONFIG && status != EMPTY)
 			return 1;
 	}
 	return 0;
