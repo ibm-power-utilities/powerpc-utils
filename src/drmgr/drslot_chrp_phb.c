@@ -247,6 +247,7 @@ remove_phb(struct options *opts)
 {
 	struct dr_node *phb;
 	struct dr_node *child;
+	struct dr_node *hp_list;
 	int rc = 0;
 
 	phb = get_node_by_name(opts->usr_drc_name, PHB_NODES);
@@ -262,14 +263,24 @@ remove_phb(struct options *opts)
 	}
 
 	/* Now, disable any hotplug children */
+	hp_list = get_hp_nodes();
+
 	for (child = phb->children; child; child = child->next) {
+		struct dr_node *slot;
+
 		if (child->dev_type == PCI_HP_DEV) {
 			rc = disable_hp_children(child->drc_name);
 			if (rc)
 				say(ERROR,
 				    "failed to disable hotplug children\n");
 
-			rc = release_hp_children(child->drc_name);
+			/* find dr_node corresponding to child slot's drc_name */
+			for (slot = hp_list; slot; slot = slot->next)
+				if (!strcmp(child->drc_name, slot->drc_name))
+					break;
+
+			/* release any hp children from the slot */
+			rc = release_hp_children_from_node(slot);
 			if (rc && rc != -EINVAL) {
 				say(ERROR,
 				    "failed to release hotplug children\n");

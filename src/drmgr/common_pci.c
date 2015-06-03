@@ -1433,6 +1433,28 @@ release_hp_resource(struct dr_node *node)
 }
 
 /**
+ * release_hp_children_from_node
+ *
+ * @param parent_slot dr_node of slot to release children from
+ * @returns 0 on success, !0 otherwise
+ */
+int
+release_hp_children_from_node(struct dr_node *slot)
+{
+	struct dr_node *child;
+	int rc;
+
+	for (child = slot->children; child; child = child->next) {
+		rc = release_hp_resource(child);
+		if (rc)
+			return rc;
+	}
+
+	return 0;
+}
+
+
+/**
  * release_hp_children
  *
  * @param parent_drc_name
@@ -1441,7 +1463,7 @@ release_hp_resource(struct dr_node *node)
 int
 release_hp_children(char *parent_drc_name)
 {
-	struct dr_node *hp_list, *slot, *child;
+	struct dr_node *hp_list, *slot;
 	int rc;
 
 	hp_list = get_hp_nodes();
@@ -1450,16 +1472,13 @@ release_hp_children(char *parent_drc_name)
 			break;
 
 	if (slot == NULL) {
-		free_node(hp_list);
-		return -EINVAL;
+		rc = -EINVAL;
+		goto out;
 	}
 
-	for (child = slot->children; child; child = child->next) {
-		rc = release_hp_resource(child);
-		if (rc)
-			return rc;
-	}
+	rc = release_hp_children_from_node(slot);
 
+out:
 	free_node(hp_list);
 	return (rc < 0) ? rc : 0;
 }

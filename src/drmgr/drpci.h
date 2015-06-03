@@ -65,6 +65,7 @@ int get_hp_adapter_status(char *);
 int set_hp_adapter_status(uint, char *);
 int pci_rescan_bus();
 int pci_remove_device(struct dr_node *);
+int release_hp_children_from_node(struct dr_node *);
 int release_hp_children(char *);
 int dlpar_remove_slot(const char *);
 int dlpar_add_slot(const char *);
