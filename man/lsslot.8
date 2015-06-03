@@ -35,8 +35,9 @@ Display occupied slots, valid for "pci" slots only.
 .B \-p
 Display caches, valid for "cpu" slots only.
 .TP
-.B \-s <slot>
-Display characteristics of the specified slot.
+.B \-s [<slot> | <drc index>]
+Display characteristics of the specified slot or the LMB with the specified
+drc index.
 .TP
 .B \-F <delimiter>
 Specified a single character to delimit the output.  The
@@ -44,7 +45,8 @@ heading is not displayed and the columns are delimited by the
 specified character.
 .TP
 .B \-d
-Enable debugging output.
+Enable debugging output. When displaying memory information this flag will
+also enable printing information about LMBs not currently owned by the system.
 .TP
 .B \-w <timeout>
 Specify a timeout when attempting to acquire locks.

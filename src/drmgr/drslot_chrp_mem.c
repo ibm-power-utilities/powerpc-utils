@@ -313,6 +313,7 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
 		sprintf(lmb->ofdt_path, DYNAMIC_RECONFIG_MEM);
 		lmb->lmb_size = lmb_sz;
 		lmb->lmb_address = be64toh(drmem->address);
+		lmb->lmb_aa_index = be32toh(drmem->assoc_index);
 
 		if (be32toh(drmem->flags) & DRMEM_ASSIGNED) {
 			found++;

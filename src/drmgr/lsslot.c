@@ -64,16 +64,20 @@ usage(void)
 		"\"pci\" slots only.\n");
 	fprintf(stderr, "        -p      Display caches, valid for \"cpu\" "
 		"slots only.\n");
-	fprintf(stderr, "        -s <slot>\n");
+	fprintf(stderr, "        -s [<slot> | <drc index>]\n");
 	fprintf(stderr, "                Display characteristics of the "
-		"specified slot.\n");
+		"specified slot or the LMB\n");
+	fprintf(stderr, "                associated with drc index.\n");
 	fprintf(stderr, "        -F <delimiter>\n");
 	fprintf(stderr, "                Specified a single character to "
 		"delimit the output.  The \n");
 	fprintf(stderr, "                heading is not displayed and the "
 		"columns are delimited by the\n");
 	fprintf(stderr, "                specified character.\n");
-	fprintf(stderr, "        -d      Enable debugging output.\n");
+	fprintf(stderr, "        -d      Enable debugging output. When "
+		"displaying LMB information\n");
+	fprintf(stderr, "                this will enable printing of LMBs "
+		"not owned by the system.\n");
 	fprintf(stderr, "        -w <timeout>\n");
 	fprintf(stderr, "                Specify a timeout when attempting to "
 		"acquire locks.\n");
@@ -699,8 +703,88 @@ lsslot_chrp_phb(struct cmd_opts *opts)
 	return 0;
 }
 
+int print_drconf_mem(struct cmd_opts *opts, struct lmb_list_head *lmb_list)
+{
+	struct dr_node *lmb;
+	struct mem_scn *scn;
+	int scn_offset = strlen("/sys/devices/system/memory/memory");
+	char *aa_buf;
+	__be32 *aa;
+	int aa_size, aa_list_sz;
+	int i, rc;
+	uint32_t drc_index = 0;
+
+	aa_size = get_property_size(DYNAMIC_RECONFIG_MEM,
+				    "ibm,associativity-lookup-arrays");
+	aa_buf = zalloc(aa_size);
+	rc = get_property(DYNAMIC_RECONFIG_MEM,
+			  "ibm,associativity-lookup-arrays", aa_buf, aa_size);
+	if (rc) {
+		say(ERROR, "Could not get associativity information.\n");
+		return -1;
+	}
+
+	aa = (__be32 *)aa_buf;
+	/* skip past the number of associativity lists */
+	aa++;
+	aa_list_sz = be32toh(*aa++);
+
+	if (opts->s_name)
+		drc_index = strtol(opts->s_name, NULL, 0);
+
+	printf("Dynamic Reconfiguration Memory (LMB size 0x%x)\n",
+	       lmb_list->lmbs->lmb_size);
+
+	for (lmb = lmb_list->lmbs; lmb; lmb = lmb->next) {
+		int first = 1;
+		int aa_start, aa_end;
+
+		if (drc_index && drc_index != lmb->drc_index)
+			continue;
+		else if ((output_level < 4) && !lmb->is_owned)
+			continue;
+
+		printf("%s: %s\n", lmb->drc_name,
+		       lmb->is_owned ? "" : "Not Owned");
+
+		printf("    DRC Index: %x        Address: %lx\n",
+		       lmb->drc_index, lmb->lmb_address);
+		printf("    Removable: %s             Associativity: ",
+		       lmb->is_removable ? "Yes" : "No ");
+
+		if (lmb->lmb_aa_index == 0xffffffff) {
+			printf("Not Set\n");
+		} else {
+			printf("(index: %d) ", lmb->lmb_aa_index);
+			aa_start = lmb->lmb_aa_index * aa_list_sz;
+			aa_end = aa_start + aa_list_sz;
+			for (i = aa_start; i < aa_end; i++)
+				printf("%d ", be32toh(aa[i]));
+			printf("\n");
+		}
+
+		if (lmb->is_owned) {
+			printf("    Section(s):");
+			for (scn = lmb->lmb_mem_scns; scn; scn = scn->next) {
+				if (first) {
+					printf(" %s",
+					       &scn->sysfs_path[scn_offset]);
+					first = 0;
+				} else
+					printf(", %s",
+					       &scn->sysfs_path[scn_offset]);
+			}
+
+			printf("\n");
+		}
+	}
+
+	free(aa_buf);
+	return 0;
+}
+
 int
-lsslot_chrp_mem(void)
+lsslot_chrp_mem(struct cmd_opts *opts)
 {
 	struct lmb_list_head *lmb_list;
 	struct dr_node *lmb;
@@ -712,40 +796,40 @@ lsslot_chrp_mem(void)
 	if (lmb_list == NULL || lmb_list->lmbs == NULL)
 		return -1;
 
-	printf("lmb size: 0x%x\n", lmb_list->lmbs->lmb_size);
 	
 	if (lmb_list->drconf_buf) {
-		printf("ibm,dynamic-reconfiguration-memory\n");
-		printf("%-5s  %c  %s\n", "Name", 'R', "Sections");
-		printf("%-5s  %c  %s\n", "----", '-', "--------");
+		print_drconf_mem(opts, lmb_list);
 	} else {
+		printf("lmb size: 0x%x\n", lmb_list->lmbs->lmb_size);
 		printf("%-20s  %-5s  %c  %s\n", "Memory Node", "Name", 'R',
 		       "Sections");
 		printf("%-20s  %-5s  %c  %s\n", "-----------", "----", '-',
 		       "--------");
-	}
 
-	for (lmb = lmb_list->lmbs; lmb; lmb = lmb->next) {
-		int first = 1;
+		for (lmb = lmb_list->lmbs; lmb; lmb = lmb->next) {
+			int first = 1;
 
-		if (!lmb->is_owned)
-			continue;
+			if (!lmb->is_owned)
+				continue;
 
-		if (!lmb_list->drconf_buf)
-			printf("%-20s  ", &lmb->ofdt_path[lmb_offset]);
+			if (!lmb_list->drconf_buf)
+				printf("%-20s  ", &lmb->ofdt_path[lmb_offset]);
 
-		printf("%-5s  %c ", lmb->drc_name,
-		       lmb->is_removable ? 'Y' : 'N');
+			printf("%-5s  %c ", lmb->drc_name,
+			       lmb->is_removable ? 'Y' : 'N');
 		
-		for (scn = lmb->lmb_mem_scns; scn; scn = scn->next) {
-			if (first) {
-				printf(" %s", &scn->sysfs_path[scn_offset]);
-				first = 0;
-			} else
-				printf(", %s", &scn->sysfs_path[scn_offset]);
-		}
+			for (scn = lmb->lmb_mem_scns; scn; scn = scn->next) {
+				if (first) {
+					printf(" %s",
+					       &scn->sysfs_path[scn_offset]);
+					first = 0;
+				} else
+					printf(", %s",
+					       &scn->sysfs_path[scn_offset]);
+			}
 
-		printf("\n");
+			printf("\n");
+		}
 	}
 
 	free_lmbs(lmb_list);
@@ -888,7 +972,7 @@ main(int argc, char *argv[])
 		break;
 
 	    case MEM:
-		rc = lsslot_chrp_mem();
+		rc = lsslot_chrp_mem(&opts);
 		break;
 
 	    case PORT:
