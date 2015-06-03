@@ -456,8 +456,14 @@ phb_add_error:
 int
 valid_phb_options(struct options *opts)
 {
-	if (opts->usr_drc_name == NULL) {
-		say(ERROR, "A drc name must be specified\n");
+	/* The -s option can specify a drc name or drc index */
+	if (opts->usr_drc_name && !strncmp(opts->usr_drc_name, "0x", 2)) {
+		opts->usr_drc_index = strtoul(opts->usr_drc_name, NULL, 16);
+		opts->usr_drc_name = NULL;
+	}
+
+	if (opts->usr_drc_name == NULL && !opts->usr_drc_index) {
+		say(ERROR, "A drc name or index must be specified\n");
 		return -1;
 	}
 
@@ -480,6 +486,18 @@ drslot_chrp_phb(struct options *opts)
 		say(ERROR, "DLPAR PHB operations are not supported on"
 		    "this kernel.");
 		return rc;
+	}
+
+	if (!opts->usr_drc_name) {
+		struct dr_connector *drc_list = get_drc_info(OFDT_BASE);
+		opts->usr_drc_name = drc_index_to_name(opts->usr_drc_index,
+						       drc_list);
+		if (!opts->usr_drc_name) {
+			say(ERROR,
+			    "Could not locate DRC name for DRC index: 0x%x",
+			    opts->usr_drc_index);
+			return -1;
+		}
 	}
 
 	switch(opts->action) {
