@@ -75,9 +75,11 @@ release_phb(struct dr_node *phb)
 	if (rc)
 		return rc;
 
-	rc = remove_device_tree_nodes(phb->phb_ic_ofdt_path);
-	if (rc)
-		return rc;
+	if (phb->phb_ic_ofdt_path[0] != '\0') {
+		rc = remove_device_tree_nodes(phb->phb_ic_ofdt_path);
+		if (rc)
+			return rc;
+	}
 
 	rc = release_drc(phb->drc_index, PHB_DEV);
 
