@@ -348,7 +348,7 @@ if (<$input> =~ /Ubuntu/) {
 	exit 1;
 }
 
-if ($ENV{'platform'} == $ENV{'PLATFORM_UNKNOWN'} || $ENV{'platform'} == $ENV{'PLATFORM_POWERKVM_HOST'}) {
+if ($ENV{'platform'} == $ENV{'PLATFORM_UNKNOWN'} || $ENV{'platform'} == $ENV{'PLATFORM_POWERNV_HOST'}) {
         print "snap: is not supported on the $ENV{'platform_name'} platform\n";
         exit 1;
 }

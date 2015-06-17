@@ -1471,7 +1471,7 @@ of2l_fc()
 # Main
 #
 . $PSERIES_PLATFORM
-if [[ $platform = $PLATFORM_POWERKVM_HOST ]]; then
+if [[ $platform = $PLATFORM_POWERNV ]]; then
 	echo "$OFPATHNAME: is not supported on the $platform_name platform"
 	exit 1
 fi

@@ -73,7 +73,7 @@ eval '%ENV=('.$1.')' if `bash -c "
         $perldumpenv"`
     =~ /^\s*\{(.*)\}\s*$/mxs;
 
-if ($ENV{'platform'} == $ENV{'PLATFORM_UNKNOWN'} || $ENV{'platform'} == $ENV{'PLATFORM_POWERKVM_HOST'}) {
+if ($ENV{'platform'} == $ENV{'PLATFORM_UNKNOWN'} || $ENV{'platform'} == $ENV{'PLATFORM_POWERNV'}) {
 	print "rtas_dump: is not supported on the $ENV{'platform_name'} platform\n";
 	exit 1;
 }

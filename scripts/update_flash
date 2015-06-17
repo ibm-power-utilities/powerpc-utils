@@ -414,7 +414,7 @@ case "$platform" in
     $PLATFORM_UNKNOWN | $PLATFORM_POWERKVM_GUEST)
 	echo "update_flash: is not supported on the $platform_name platform"
 	exit 1;;
-    $PLATFORM_POWERKVM_HOST)
+    $PLATFORM_POWERNV)
 	if [ ! -r "$UPDATE_FLASH_NV" ]; then
 		error $E_PERM "Couldn't find $UPDATE_FLASH_NV file."
 	fi
