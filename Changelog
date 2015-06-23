@@ -1,3 +1,175 @@
+powerpc-utils-1.2.26
+=====================================================================
+commit 7653d5814de2abb209c198a8b763c99139bf750d
+Author: Dinar Valeev <dvaleev@suse.com>
+Date:   Wed Jun 17 16:46:48 2015 -0400
+
+    PowerKVM is a distro, not a platform
+    
+    Name OPAL platform correctly.. Bare metal systems are not
+    PowerKVM (which is IBM distro), but PowerNV.
+    
+    Signed-off-by: Dinar Valeev <dvaleev@suse.com>
+    Reviewed-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit 09630ae59954de064f379f085e710ba34b999ae4
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Wed Jun 3 08:21:09 2015 -0400
+
+    drmgr: Correct memory affinity when adding memory
+    
+    When adding a LMB we need to update the affinity as part of the add process.
+    The affinity for the LMB we are adding is conveyed in the
+    ibm,associativity property for the device tree node of the LMB we are adding
+    
+    To clarify, a little history. Previously LMB information in the device tree
+    was done as a node per LMB in the form memory@XXX, and all of the informatio
+    about the LMB as properties under this node. When we moved to using the
+    ibm,dynamic-reconfiguration-memory node to convey LMB information the
+    ibm,dynamic-memory property provides an index for each LMB into the
+    ibm,associativity-lookup-arrays property. This is where we determine the
+    affinity for each LMB.
+    
+    In order to update the affinity for a LMB we are adding we have to call
+    configure connector to get the memory@XXX node and its properties for the
+    LMB we are adding (yes, rtas did not change this part), find the
+    ibm,associativity property, then find the entry in the associativity
+    lookup array that matches it. We then update the ibm,dynamic-memory         
+    property with the proper index into the associativity lookup array.         
+                                                                                
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>                   
+    Tested-by: Bharata B Rao <bharata@linux.vnet.ibm.com>                       
+                                                                                
+commit f95a18deaaaa9c67ca1453e6f12784ecebf45e19                                 
+Author: Michael Roth <mdroth@linux.vnet.ibm.com>                                
+Date:   Wed Jun 3 08:19:04 2015 -0400                                           
+                                                                                
+    drmgr: allow PHBs to be specified using numerical DRC index                 
+                                                                                
+    For each invocation involving '-c phb', if a numerical value is given       
+    for -s do a lookup through PHB list to find the corresponding DRC           
+    name.                                                                       
+                                                                                
+    Signed-off-by: Michael Roth <mdroth@linux.vnet.ibm.com>
+
+commit 2f1227ca13f127005072d856e2f0686e41b83491                                 
+Author: Michael Roth <mdroth@linux.vnet.ibm.com>                                
+Date:   Wed Jun 3 08:18:19 2015 -0400                                           
+                                                                                
+    drmgr: don't remove PHB's interrupt node unless PHB actually has one        
+    
+    Currently we fail to release a PHB to firmware if we're unable to remove
+    the PHB's interrupt-controller node from the guest device tree.
+    
+    However, according to update_phb_ic_info():
+    
+    "... there can be more ICs than PHBs on a system. In this case, some
+    ICs won't have my-drc-index."
+    
+    In such cases, we don't assign the 'interrupt-controller*' path to the
+    PHB's OF node, so simply skip the IC node removal (it either doesn't
+    exist, or is not not owned by this PHB) when this occurs and proceed
+    with releasing the PHB.
+    
+    Signed-off-by: Michael Roth <mdroth@linux.vnet.ibm.com>
+
+commit 58d6afbbd4b101b7fe8d7b6edb71d27b5ff50c9e
+Author: Michael Roth <mdroth@linux.vnet.ibm.com>
+Date:   Wed Jun 3 08:17:32 2015 -0400
+
+    drmgr: improve PHB removal performance by avoiding hp_list rebuild
+    
+    Signed-off-by: Michael Roth <mdroth@linux.vnet.ibm.com>
+
+commit 7c115980147ab4916e25e796ee5ab002287ee3c7
+Author: Michael Roth <mdroth@linux.vnet.ibm.com>
+Date:   Wed Jun 3 08:14:19 2015 -0400
+
+    drmgr: allow 'empty' state when disabling hp slot/adapter
+    
+    Current code assumes that slots under a PHB are populated during PHB
+    removal. As a result, we attempt to unconfigure the slot/adapter by
+    powering it off, then checking for an 'unconfigured' state via
+    get_hp_adaptor_status/DR_ENTITY_SENSE. However, if the slot is empty
+    well get an 'emtpy' state instead.
+    
+    We can avoid this by simply not attempting to unconfigure/poweroff an
+    adapter if the slot is empty, but it's possible we rely on this in
+    some cases to safely power-off slots. Instead, simply allow
+    DR_ENTITY_SENSE to report 'empty' after power-off in addition to
+    'unconfigured'.
+    
+    Signed-by-off: Michael Roth <mdroth@linux.vnet.ibm.com>
+
+commit d7e9a49466143514e8d0b392aadf51f8d377406d
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Wed Jun 3 08:12:03 2015 -0400
+
+    lsslot: Enhance memory output
+    
+    This patch adds additional information to the output produced
+    by the lsslot command for dynamic reconfiguration memory. The
+    default output with this patch will add the address, drc index,
+    and associativity for each LMB.
+    
+    Dynamic Reconfiguration Memory (LMB size 0x10000000)
+    LMB2:
+        DRC Index: 80000001        Address: 10000000
+        Removable: Yes             Associativity: (index: 1) 0 1 2 2
+        Section(s): 1
+    -- snip --
+    
+    Additionally, this patch allows users to specify the -d 4 option
+    to lsslot for memory which will print information about all possible
+    LMBs, not just the LMBs owned by the system.
+    
+    This patch also adds the ability to print the information for a specific
+    LMB by specifyinf its drc index with the -s option.
+    
+    Dynamic Reconfiguration Memory (LMB size 0x10000000)
+    LMB191:
+        DRC Index: 800000be        Address: be0000000
+        Removable: No              Associativity: (index: 1) 0 1 2 2
+        Section(s): 190
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 40b7c2847318b5f9d0ac91aa7bbc37b6e4638f6f
+Author: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Date:   Wed Jun 3 08:08:02 2015 -0400
+
+    scripts/snap: Ignore deprecated /proc/ network files
+    
+    Teach snap to ignore deprecated sysctl network files, while
+    gathering information from /proc. Reading deprecated file,
+    throws warnings in /var/log/message like:
+    kernel: process `snap' is using deprecated sysctl (syscall)
+    net.ipv6.neigh.default.retrans_time; Use net.ipv6.neigh.default.retrans_time
+    
+    Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+    Cc: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+    Cc: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+    Acked-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+
+commit 7bc6978561aa994f7336318ef693bf8debeaac91
+Author: Bharata B Rao <bharata@linux.vnet.ibm.com>
+Date:   Mon May 11 11:23:05 2015 -0400
+
+    drmgr: Fix LMB lookup by index
+    
+    From: Bharata B Rao <bharata@linux.vnet.ibm.com>
+    
+    If drc_index is used with -s option and the drc_index specified
+    doesn't correspond to the first available unused LMB, get_available_lmb()
+    ends up returning first available LMB that doesn't match the requested
+    drc_index.
+
+    Fix this by explicitly checking for drc_index when drc_index is specified
+    with -s option.
+    
+    Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
+
+
 powerpc-utils-1.2.25
 =====================================================================
 commit 948bbf83b43c9a3bc00f521326e096ca6c7848c5
