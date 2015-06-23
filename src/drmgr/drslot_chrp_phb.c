@@ -75,9 +75,11 @@ release_phb(struct dr_node *phb)
 	if (rc)
 		return rc;
 
-	rc = remove_device_tree_nodes(phb->phb_ic_ofdt_path);
-	if (rc)
-		return rc;
+	if (phb->phb_ic_ofdt_path[0] != '\0') {
+		rc = remove_device_tree_nodes(phb->phb_ic_ofdt_path);
+		if (rc)
+			return rc;
+	}
 
 	rc = release_drc(phb->drc_index, PHB_DEV);
 
@@ -247,6 +249,7 @@ remove_phb(struct options *opts)
 {
 	struct dr_node *phb;
 	struct dr_node *child;
+	struct dr_node *hp_list;
 	int rc = 0;
 
 	phb = get_node_by_name(opts->usr_drc_name, PHB_NODES);
@@ -262,14 +265,24 @@ remove_phb(struct options *opts)
 	}
 
 	/* Now, disable any hotplug children */
+	hp_list = get_hp_nodes();
+
 	for (child = phb->children; child; child = child->next) {
+		struct dr_node *slot;
+
 		if (child->dev_type == PCI_HP_DEV) {
 			rc = disable_hp_children(child->drc_name);
 			if (rc)
 				say(ERROR,
 				    "failed to disable hotplug children\n");
 
-			rc = release_hp_children(child->drc_name);
+			/* find dr_node corresponding to child slot's drc_name */
+			for (slot = hp_list; slot; slot = slot->next)
+				if (!strcmp(child->drc_name, slot->drc_name))
+					break;
+
+			/* release any hp children from the slot */
+			rc = release_hp_children_from_node(slot);
 			if (rc && rc != -EINVAL) {
 				say(ERROR,
 				    "failed to release hotplug children\n");
@@ -443,8 +456,14 @@ phb_add_error:
 int
 valid_phb_options(struct options *opts)
 {
-	if (opts->usr_drc_name == NULL) {
-		say(ERROR, "A drc name must be specified\n");
+	/* The -s option can specify a drc name or drc index */
+	if (opts->usr_drc_name && !strncmp(opts->usr_drc_name, "0x", 2)) {
+		opts->usr_drc_index = strtoul(opts->usr_drc_name, NULL, 16);
+		opts->usr_drc_name = NULL;
+	}
+
+	if (opts->usr_drc_name == NULL && !opts->usr_drc_index) {
+		say(ERROR, "A drc name or index must be specified\n");
 		return -1;
 	}
 
@@ -467,6 +486,18 @@ drslot_chrp_phb(struct options *opts)
 		say(ERROR, "DLPAR PHB operations are not supported on"
 		    "this kernel.");
 		return rc;
+	}
+
+	if (!opts->usr_drc_name) {
+		struct dr_connector *drc_list = get_drc_info(OFDT_BASE);
+		opts->usr_drc_name = drc_index_to_name(opts->usr_drc_index,
+						       drc_list);
+		if (!opts->usr_drc_name) {
+			say(ERROR,
+			    "Could not locate DRC name for DRC index: 0x%x",
+			    opts->usr_drc_index);
+			return -1;
+		}
 	}
 
 	switch(opts->action) {

@@ -221,7 +221,7 @@ int main(int argc, char **argv) {
 
 	switch (get_platform()) {
 	case PLATFORM_UNKNOWN:
-	case PLATFORM_POWERKVM_HOST:
+	case PLATFORM_POWERNV:
 		fprintf(stderr, "%s: is not supported on the %s platform\n",
 							argv[0], platform_name);
 		return 1;

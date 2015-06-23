@@ -77,12 +77,14 @@ struct dr_node {
 		struct mem_info {
 			uint64_t	_address;
 			uint32_t	_lmb_size;
+			uint32_t	_lmb_aa_index;
 			struct mem_scn	*_mem_scns;
 			struct of_node	*_of_node;
 		} _smem;
 
 #define lmb_address	_node_u._smem._address
 #define lmb_size	_node_u._smem._lmb_size
+#define lmb_aa_index	_node_u._smem._lmb_aa_index
 #define lmb_mem_scns	_node_u._smem._mem_scns
 #define lmb_of_node	_node_u._smem._of_node
 

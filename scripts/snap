@@ -142,6 +142,12 @@ my @snap_command_rsxx = (
   "rs_cardreport -d 'all'",
 );
 
+# Files, which are to be ignored as they are deprecated
+my @snap_deprecated_files = (
+  "retrans_time",
+  "base_reachable_time",
+);
+
 sub recurse_dir($);		# function prototype
 
 sub error {
@@ -258,6 +264,7 @@ sub recurse_dir ($) {
 			recurse_dir "$dir/$file";
 		}
 		else {
+			next if  (grep { /$file/  } @snap_deprecated_files);
 			copy "$dir/$file", $outdir."$dir/$file";
 		}
 	}
@@ -341,7 +348,7 @@ if (<$input> =~ /Ubuntu/) {
 	exit 1;
 }
 
-if ($ENV{'platform'} == $ENV{'PLATFORM_UNKNOWN'} || $ENV{'platform'} == $ENV{'PLATFORM_POWERKVM_HOST'}) {
+if ($ENV{'platform'} == $ENV{'PLATFORM_UNKNOWN'} || $ENV{'platform'} == $ENV{'PLATFORM_POWERNV_HOST'}) {
         print "snap: is not supported on the $ENV{'platform_name'} platform\n";
         exit 1;
 }
