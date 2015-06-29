@@ -136,7 +136,7 @@ help(void)
  * @def MAXLINE
  * @brief maximum line length
  */
-#define MAXLINE		4096
+#define MAXLINE		512
 
 /**
  * _msg
@@ -152,10 +152,10 @@ _msg(int msg_type, const char *fmt, va_list ap)
     int	n;
     char buf[MAXLINE];
 
-    n = sprintf(buf, "%s: %s", nvram_cmdname, 
+    n = snprintf(buf, sizeof(buf), "%s: %s", nvram_cmdname,
 		(msg_type == WARN_MSG ? "WARNING: " : "ERROR: "));
 
-    vsprintf(buf + n, fmt, ap);
+    vsnprintf(buf + n, sizeof(buf) - n, fmt, ap);
 
     fflush(stderr);
     fputs(buf, stderr);
