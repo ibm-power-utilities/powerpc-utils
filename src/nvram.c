@@ -45,6 +45,7 @@
 #include <inttypes.h>
 #include <zlib.h>
 #include <endian.h>
+#include <stdbool.h>
 
 #include "nvram.h"
 
@@ -452,6 +453,16 @@ nvram_parse_partitions(struct nvram *nvram)
     return 0;
 }
 
+bool part_name_valid(const char *name)
+{
+    if (strlen(name) > MAX_PART_NAME) {
+        err_msg("partition name maximum length is %d\n", MAX_PART_NAME);
+        return false;
+    }
+
+    return true;
+}
+
 /**
  * nvram_find_fd_partition
  * @brief Find a particular nvram partition using a file descriptor
@@ -466,6 +477,9 @@ nvram_find_fd_partition(struct nvram *nvram, char *name)
     struct partition_header	phead;
     int				len;
     int				found = 0;
+
+    if (part_name_valid(name))
+	    return -1;
 
     if (lseek(nvram->fd, SEEK_SET, 0) == -1) {
         err_msg("could not seek to beginning of file %s\n", nvram->filename);
@@ -1461,12 +1475,18 @@ main (int argc, char *argv[])
 		break;
 	    case 'd':	/* dump */
 		dump_name = optarg;
+                if (!part_name_valid(dump_name))
+                    exit(1);
 		break;
 	    case 'a':	/* ASCII dump */
 	    	ascii_name = optarg;
+                if (!part_name_valid(ascii_name))
+                    exit(1);
 		break;
 	    case 'z':	/* dump compressed data */
-		zip_name = optarg;
+                zip_name = optarg;
+                if (!part_name_valid(zip_name))
+                    exit(1);
 		break;
 	    case 'n':	/* nvram-file */
 		nvram.filename = optarg;
@@ -1509,6 +1529,8 @@ main (int argc, char *argv[])
 		break;
 	    case 'p':	/* update-config partition name */
 	        config_pname = optarg;
+                if (!part_name_valid(config_pname))
+                    exit(1);
 		break;
 	    case '?':
 		exit(1);
