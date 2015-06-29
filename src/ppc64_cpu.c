@@ -980,8 +980,9 @@ static int do_cpu_frequency(int sleep_time)
 
 	setrlimit_open_files();
 
-	cpu_freqs = malloc(sizeof(*cpu_freqs) * threads_in_system);
-	memset(cpu_freqs, 0, sizeof(*cpu_freqs) * threads_in_system);
+	cpu_freqs = calloc(threads_in_system, sizeof(*cpu_freqs));
+	if (!cpu_freqs)
+		return -ENOMEM;
 
 	rc = setup_counters(cpu_freqs);
 	if (rc) {
@@ -1123,8 +1124,10 @@ static int do_cores_online(char *state)
 		return -1;
 	}
 
-	core_state = malloc(sizeof(int) * cpus_in_system);
-	memset(core_state, 0, sizeof(int) * cpus_in_system);
+	core_state = calloc(cpus_in_system, sizeof(int));
+	if (!core_state)
+		return -ENOMEM;
+
 	for (i = 0; i < cpus_in_system ; i++) {
 		core_state[i] = cpu_online(i * threads_per_cpu);
 		if (core_state[i])
