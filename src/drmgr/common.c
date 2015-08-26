@@ -53,7 +53,7 @@ int say(enum say_level lvl, char *fmt, ...)
 {
 	va_list ap;
 	char buf[256];
-	int len, rc;
+	int len;
 
 	va_start(ap, fmt);
 	memset(buf, 0, 256);
@@ -66,7 +66,7 @@ int say(enum say_level lvl, char *fmt, ...)
 	}
 
 	if (log_fd)
-		rc = write(log_fd, buf, len);
+		len = write(log_fd, buf, len);
 
 	if (lvl <= output_level)
 		fprintf(stderr, "%s", buf);
