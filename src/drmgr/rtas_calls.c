@@ -263,7 +263,7 @@ set_indicator_error(int error)
 struct of_node *
 configure_connector(int index)
 {
-	char workarea[WORK_SIZE];
+	char *workarea;
 	struct of_node *node;
 	struct of_node *first_node = NULL;
 	struct of_node *last_node = NULL;	/* Last node processed */
@@ -274,8 +274,12 @@ configure_connector(int index)
 
 	say(DEBUG, "Configuring connector for drc index %x\n", index);
 
+	workarea = zalloc(WORK_SIZE);
+	if (!workarea)
+		return NULL;
+
 	/* initialize work area and args structure */
-	work_int = (int *) &workarea[0];
+	work_int = (int *)workarea;
 	work_int[0] = htobe32(index);
 	work_int[1] = 0;
 
@@ -397,6 +401,7 @@ configure_connector(int index)
 		}
 	}
 
+	free(workarea);
 	return first_node;
 }
 
