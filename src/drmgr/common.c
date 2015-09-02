@@ -629,8 +629,9 @@ get_att_prop(const char *path, const char *name, char *buf, size_t buf_sz,
 	     const char *attr_type)
 {
 	FILE *fp;
-	int rc;
+	int rc = 0;
 	char dir[DR_PATH_MAX];
+	struct stat sbuf;
 
 	if (buf == NULL)
 		return -1;
@@ -651,7 +652,16 @@ get_att_prop(const char *path, const char *name, char *buf, size_t buf_sz,
 	 */
 	switch (dir[1]) {
 	    case 'p':	/* /proc */
-		rc = fread(buf, buf_sz, 1, fp);
+		rc = stat(dir, &sbuf);
+		if (rc)
+			break;
+
+		if (sbuf.st_size > buf_sz) {
+			rc = -1;
+			break;
+		}
+
+		rc = fread(buf, sbuf.st_size, 1, fp);
 		break;
 
 	    case 's':	/* sysfs */
@@ -660,6 +670,14 @@ get_att_prop(const char *path, const char *name, char *buf, size_t buf_sz,
 	}
 
 	fclose(fp);
+
+	/*
+	 * we're lucky, because if successed, both fread and fscanf will return
+	 * 1, so we can check whether rc is 1 for failures of reading files
+	 */
+	if (rc != 1)
+		return -1;
+
 	return 0;
 }
 
