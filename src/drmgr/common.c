@@ -400,6 +400,7 @@ add_node(char *path, struct of_node *new_nodes)
 	if (fd <= 0) {
 		say(ERROR, "Failed to open %s: %s\n", OFDTPATH,
 		    strerror(errno));
+		free(buf);
 		return errno;
 	}
 
@@ -410,6 +411,7 @@ add_node(char *path, struct of_node *new_nodes)
 	else
 		rc = 0;
 
+	free(buf);
 	close(fd);
 	return rc;
 }

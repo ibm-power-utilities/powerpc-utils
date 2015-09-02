@@ -1136,16 +1136,20 @@ static int do_cores_online(char *state)
 
 	if (!state) {
 		printf("Number of cores online = %d\n", cores_now_online);
+		free(core_state);
 		return 0;
 	}
 
 	number_to_have = strtol(state, NULL, 0);
-	if (number_to_have == cores_now_online)
+	if (number_to_have == cores_now_online) {
+		free(core_state);
 		return 0;
+	}
 
 	if (number_to_have > cpus_in_system) {
 		printf("Cannot online more cores than are present.\n");
 		do_cores_present();
+		free(core_state);
 		return -1;
 	}
 
@@ -1177,6 +1181,7 @@ static int do_cores_online(char *state)
 		}
 	}
 
+	free(core_state);
 	return 0;
 }
 
