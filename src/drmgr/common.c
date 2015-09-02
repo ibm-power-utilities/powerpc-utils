@@ -235,7 +235,6 @@ int drmgr_timed_out(void)
 int dr_lock(void)
 {
 	struct flock    dr_lock_info;
-	int             dr_lock_fd;
 	int             rc;
 	mode_t          old_mode;
 	int             first_try = 1;
