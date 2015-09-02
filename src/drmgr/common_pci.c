@@ -304,11 +304,6 @@ add_child_node(struct dr_node *parent, char *child_path)
 	parent->children = child;
 }
 
-/* This forward declaration is needed because init_node and examine_child
- * call each other.
- */
-static int examine_child(struct dr_node *, char *);
-
 /**
  * init_node
  *
@@ -318,82 +313,55 @@ static int examine_child(struct dr_node *, char *);
 static int
 init_node(struct dr_node *node)
 {
-	struct dirent **de_list, *de;
-	char *newpath;
-	int count;
-	int rc, i;
+	DIR *d;
+	struct dirent *de;
+	char child_path[DR_PATH_MAX];
+	uint32_t my_drc_index;
+	int rc;
 
 	if (node->is_owned)
 		find_ofdt_dname(node, node->ofdt_path);
 
-	count = scandir(node->ofdt_path, &de_list, 0, alphasort);
-	for (i = 0; i < count; i++) {
-		de = de_list[i];
+	d = opendir(node->ofdt_path);
+	if (!d)
+		return -1;
+
+	rc = 0;
+	while ((de = readdir(d)) != NULL) {
 		if ((de->d_type != DT_DIR) || is_dot_dir(de->d_name))
 			continue;
 
-		newpath = zalloc(strlen(node->ofdt_path) +
-				 strlen(de->d_name) + 2);
-		if (newpath == NULL) {
-			say(ERROR, "Could not allocate path for node at "
-			    "%s/%s\n", node->ofdt_path, de->d_name);
-			return 1;
-		}
+		sprintf(child_path, "%s/%s", node->ofdt_path, de->d_name);
 
-		sprintf(newpath, "%s/%s", node->ofdt_path, de->d_name);
-		rc = examine_child(node, newpath);
-		if (rc)
-			return rc;
-	}
+		if (get_my_drc_index(child_path, &my_drc_index))
+			continue;
 
-	return 0;
-}
-
-/**
- * examine_children
- *
- * @param node
- * @param child_path
- * @returns 0 on success, !0 otherwise
- */
-static int
-examine_child(struct dr_node *node, char *child_path)
-{
-	uint32_t my_drc_index;
-	int used = 0;
-	int rc = 0;
-
-	if (get_my_drc_index(child_path, &my_drc_index))
-		goto done;
-
-	if (node->dev_type == PCI_HP_DEV) {
-		if (node->drc_index == my_drc_index) {
-			/* Add hotplug children */
-			add_child_node(node, child_path);
-			used = 1;
-		}
-	} else {
-		if (! node->is_owned) {
+		if (node->dev_type == PCI_HP_DEV) {
 			if (node->drc_index == my_drc_index) {
-				/* Update node path */
-				snprintf(node->ofdt_path, DR_PATH_MAX, "%s",
-					 child_path);
-				node->is_owned = 1;
-				used = 1;
-
-				/* Populate w/ children */
-				rc = init_node(node);
+				/* Add hotplug children */
+				add_child_node(node, child_path);
 			}
 		} else {
-			/* Add all DR-capable children */
-			add_child_node(node, child_path);
-			used = 1;
+			if (!node->is_owned) {
+				if (node->drc_index == my_drc_index) {
+					/* Update node path */
+					snprintf(node->ofdt_path, DR_PATH_MAX,
+						 "%s", child_path);
+					node->is_owned = 1;
+
+					/* Populate w/ children */
+					rc = init_node(node);
+					if (rc)
+						break;
+				}
+			} else {
+				/* Add all DR-capable children */
+				add_child_node(node, child_path);
+			}
 		}
 	}
-done:
-	if (! used)
-		free(child_path);
 
+	closedir(d);
 	return rc;
 }
 
