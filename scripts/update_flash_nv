@@ -191,10 +191,10 @@ query_flash_support() {
 
 echo_validate_buf() {
 	local output="$1"
-	local cur_t=$(echo "$output" | grep "^MI" | head -n 1 | awk ' { print $2 } ')
-	local cur_p=$(echo "$output" | grep "^MI" | head -n 1 | awk ' { print $3 } ')
-	local new_t=$(echo "$output" | grep "^MI" | tail -n 1 | awk ' { print $2 } ')
-	local new_p=$(echo "$output" | grep "^MI" | tail -n 1 | awk ' { print $3 } ')
+	local cur_t="$(echo "$output" | grep "^MI" | head -n 1 | awk ' { print $2 } ')"
+	local cur_p="$(echo "$output" | grep "^MI" | head -n 1 | awk ' { print $3 } ')"
+	local new_t="$(echo "$output" | grep "^MI" | tail -n 1 | awk ' { print $2 } ')"
+	local new_p="$(echo "$output" | grep "^MI" | tail -n 1 | awk ' { print $3 } ')"
 
 	echo "Projected Flash Update Results:"
 	echo "Current T Image: $cur_t"
