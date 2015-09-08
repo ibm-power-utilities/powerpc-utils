@@ -253,8 +253,10 @@ remove_phb(struct options *opts)
 	int rc = 0;
 
 	phb = get_node_by_name(opts->usr_drc_name, PHB_NODES);
-	if (phb == NULL)
+	if (phb == NULL) {
+		say(ERROR, "Could not find PHB %s\n", opts->usr_drc_name);
 		return RC_NONEXISTENT;
+	}
 
 	/* If this PHB still owns children that are not hotplug, fail. */
 	for (child = phb->children; child; child = child->next) {
