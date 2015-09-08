@@ -109,18 +109,30 @@ get_available_cpu(struct options *opts, struct dr_info *dr_info)
 
 	if (opts->usr_drc_name) {
 		cpu = get_cpu_by_name(dr_info, opts->usr_drc_name);
-		if (!cpu)
+		if (!cpu) {
 			say(ERROR, "Could not locate cpu %s\n",
 			    opts->usr_drc_name);
-
-		return cpu;
+			return cpu;
+		} else if (cpu->unusable) {
+			say(ERROR, "Requested cpu %s is unusable\n",
+			    opts->usr_drc_name);
+			return NULL;
+		} else {
+			return cpu;
+		}
 	} else if (opts->usr_drc_index) {
 		cpu = get_cpu_by_index(dr_info, opts->usr_drc_index);
-		if (!cpu)
+		if (!cpu) {
 			say(ERROR, "Could not locate cpu %x\n",
 			    opts->usr_drc_index);
-
-		return cpu;
+			return cpu;
+		} else if (cpu->unusable) {
+			say(ERROR, "Requested cpu %x is unusable\n",
+			    opts->usr_drc_index);
+			return NULL;
+		} else {
+			return cpu;
+		}
 	}
 
 	switch (opts->action) {
