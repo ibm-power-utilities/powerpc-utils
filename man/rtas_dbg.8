@@ -1,0 +1,19 @@
+.\"
+.\" Copyright (C) 2015 International Business Machines
+.\"
+.TH RTAS_DBG 8 "September 2015" Linux "Linux on Power Service Tools"
+.SH NAME
+rtas_dbg \- enable debug output for a particular rtas call
+.SH SYNOPSIS
+.B /usr/local/sbin/rtas_dbg
+-l | \fIfunction\fR | \fItoken\fR
+
+.SH DESCRIPTION
+The \fIrtas_dbg\fR tool enables RTAS debug output for a particular RTAS call.
+Users can either supply the -l option to list the available functions or
+supply the function name or token value to enable RTAS debug output for that
+function. Currently, this tool is only supported on PowerVM systems.
+.SH OPTIONS
+.TP
+\fB\-l\fR
+list the rtas calls available to display debug output
