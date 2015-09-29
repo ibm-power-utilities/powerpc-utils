@@ -41,7 +41,9 @@ man_MANS = \
 	man/lparcfg.5 \
 	man/lparstat.8 \
 	man/lsslot.8 \
-	man/ppc64_cpu.8
+	man/ppc64_cpu.8 \
+	man/errinjct.8 \
+	man/rtas_dbg.8
 
 EXTRA_DIST += $(bin_SCRIPTS) $(sbin_SCRIPTS) $(man_MANS)
 
@@ -106,6 +108,27 @@ src_sys_ident_LDADD = -lrtas
 
 src_ppc64_cpu_SOURCES += $(librtas_error_SOURCES)
 src_ppc64_cpu_LDADD += -lrtas
+
+sbin_PROGRAMS += src/errinjct/errinjct src/rtas_dbg
+
+src_errinjct_errinjct_SOURCES = \
+	src/errinjct/dcache.c \
+	src/errinjct/errinjct.c \
+	src/errinjct/icache.c \
+	src/errinjct/ioa_bus_error.c \
+	src/errinjct/open_close.c \
+	src/errinjct/platform.c \
+	src/errinjct/slb.c \
+	src/errinjct/tlb.c \
+	$(pseries_platform_SOURCES)
+
+noinst_HEADERS += src/errinjct/errinjct.h
+
+src_errinjct_errinjct_LDADD = -lrtas
+
+src_rtas_dbg_SOURCES = src/rtas_dbg.c $(pseries_platform_SOURCES)
+
+src_rtas_dbg_LDADD = -lrtas
 
 sbin_PROGRAMS += src/drmgr/drmgr src/drmgr/lsslot
 endif

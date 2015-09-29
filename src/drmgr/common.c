@@ -53,7 +53,7 @@ int say(enum say_level lvl, char *fmt, ...)
 {
 	va_list ap;
 	char buf[256];
-	int len, rc;
+	int len;
 
 	va_start(ap, fmt);
 	memset(buf, 0, 256);
@@ -66,7 +66,7 @@ int say(enum say_level lvl, char *fmt, ...)
 	}
 
 	if (log_fd)
-		rc = write(log_fd, buf, len);
+		len = write(log_fd, buf, len);
 
 	if (lvl <= output_level)
 		fprintf(stderr, "%s", buf);
@@ -235,7 +235,6 @@ int drmgr_timed_out(void)
 int dr_lock(void)
 {
 	struct flock    dr_lock_info;
-	int             dr_lock_fd;
 	int             rc;
 	mode_t          old_mode;
 	int             first_try = 1;
@@ -400,6 +399,7 @@ add_node(char *path, struct of_node *new_nodes)
 	if (fd <= 0) {
 		say(ERROR, "Failed to open %s: %s\n", OFDTPATH,
 		    strerror(errno));
+		free(buf);
 		return errno;
 	}
 
@@ -410,6 +410,7 @@ add_node(char *path, struct of_node *new_nodes)
 	else
 		rc = 0;
 
+	free(buf);
 	close(fd);
 	return rc;
 }
@@ -627,8 +628,9 @@ get_att_prop(const char *path, const char *name, char *buf, size_t buf_sz,
 	     const char *attr_type)
 {
 	FILE *fp;
-	int rc;
+	int rc = 0;
 	char dir[DR_PATH_MAX];
+	struct stat sbuf;
 
 	if (buf == NULL)
 		return -1;
@@ -649,7 +651,16 @@ get_att_prop(const char *path, const char *name, char *buf, size_t buf_sz,
 	 */
 	switch (dir[1]) {
 	    case 'p':	/* /proc */
-		rc = fread(buf, buf_sz, 1, fp);
+		rc = stat(dir, &sbuf);
+		if (rc)
+			break;
+
+		if (sbuf.st_size > buf_sz) {
+			rc = -1;
+			break;
+		}
+
+		rc = fread(buf, sbuf.st_size, 1, fp);
 		break;
 
 	    case 's':	/* sysfs */
@@ -658,6 +669,14 @@ get_att_prop(const char *path, const char *name, char *buf, size_t buf_sz,
 	}
 
 	fclose(fp);
+
+	/*
+	 * we're lucky, because if successed, both fread and fscanf will return
+	 * 1, so we can check whether rc is 1 for failures of reading files
+	 */
+	if (rc != 1)
+		return -1;
+
 	return 0;
 }
 

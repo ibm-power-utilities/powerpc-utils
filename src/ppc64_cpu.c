@@ -50,8 +50,12 @@
 #define CPU_OFFLINE		-1
 
 #ifdef HAVE_LINUX_PERF_EVENT_H
-static unsigned long long cpu_freq[MAX_NR_CPUS];
-static int counters[MAX_NR_CPUS];
+struct cpu_freq {
+	int offline;
+	int counter;
+	pthread_t tid;
+	unsigned long long freq;
+};
 
 #ifndef __NR_perf_event_open
 #define __NR_perf_event_open	319
@@ -762,7 +766,7 @@ static int do_run_mode(char *run_mode)
 
 #ifdef HAVE_LINUX_PERF_EVENT_H
 
-static int setup_counters(void)
+static int setup_counters(struct cpu_freq *cpu_freqs)
 {
 	int i;
 	struct perf_event_attr attr;
@@ -774,13 +778,15 @@ static int setup_counters(void)
 	attr.size = sizeof(attr);
 
 	for (i = 0; i < threads_in_system; i++) {
-		if (!cpu_online(i))
+		if (!cpu_online(i)) {
+			cpu_freqs[i].offline = 1;
 			continue;
+		}
 
-		counters[i] = syscall(__NR_perf_event_open, &attr, -1,
-				      i, -1, 0);
+		cpu_freqs[i].counter = syscall(__NR_perf_event_open, &attr,
+					       -1, i, -1, 0);
 
-		if (counters[i] < 0) {
+		if (cpu_freqs[i].counter < 0) {
 			if (errno == ENOSYS)
 				fprintf(stderr, "frequency determination "
 					"not supported with this kernel.\n");
@@ -794,45 +800,68 @@ static int setup_counters(void)
 	return 0;
 }
 
-static void start_counters(void)
+static void start_counters(struct cpu_freq *cpu_freqs)
 {
 	int i;
 
 	for (i = 0; i < threads_in_system; i++) {
-		if (cpu_freq[i] == CPU_OFFLINE)
+		if (cpu_freqs[i].offline)
 			continue;
 
-		ioctl(counters[i], PERF_EVENT_IOC_ENABLE);
+		ioctl(cpu_freqs[i].counter, PERF_EVENT_IOC_ENABLE);
 	}
 }
 
-static void stop_counters(void)
+static void stop_counters(struct cpu_freq *cpu_freqs)
 {
 	int i;
 
 	for (i = 0; i < threads_in_system; i++) {
-		if (cpu_freq[i] == CPU_OFFLINE)
+		if (cpu_freqs[i].offline)
 			continue;
 
-		ioctl(counters[i], PERF_EVENT_IOC_DISABLE);
+		ioctl(cpu_freqs[i].counter, PERF_EVENT_IOC_DISABLE);
 	}
 }
 
-static void read_counters(void)
+static void read_counters(struct cpu_freq *cpu_freqs)
 {
 	int i;
 
 	for (i = 0; i < threads_in_system; i++) {
 		size_t res;
 
-		if (cpu_freq[i] == CPU_OFFLINE)
+		if (cpu_freqs[i].offline)
 			continue;
 
-		res = read(counters[i], &cpu_freq[i],
+		res = read(cpu_freqs[i].counter, &cpu_freqs[i].freq,
 			   sizeof(unsigned long long));
 		assert(res == sizeof(unsigned long long));
 
-		close(counters[i]);
+		close(cpu_freqs[i].counter);
+	}
+}
+
+static void check_threads(struct cpu_freq *cpu_freqs)
+{
+	int i;
+
+	for (i = 0; i < threads_in_system; i++) {
+		if (cpu_freqs[i].offline)
+			continue;
+
+		/* Sending signal 0 with pthread_kill will just check for
+		 * the existance of the thread without actually sending a
+		 * signal, we use this to see if the thread exited.
+		 */
+		if (pthread_kill(cpu_freqs[i].tid, 0)) {
+			/* pthread exited, mark it offline iso we don't use
+			 * it in our calculations and close its perf
+			 * counter.
+			 */
+			cpu_freqs[i].offline = 1;
+			close(cpu_freqs[i].counter);
+		}
 	}
 }
 
@@ -846,7 +875,7 @@ static void *soak(void *arg)
 
 	if (sched_setaffinity(0, sizeof(cpumask), &cpumask)) {
 		perror("sched_setaffinity");
-		exit(1);
+		pthread_exit(NULL);
 	}
 
 	while (1)
@@ -947,27 +976,29 @@ static int do_cpu_frequency(int sleep_time)
 	unsigned long max_cpu = -1UL;
 	unsigned long long sum = 0;
 	unsigned long count = 0;
+	struct cpu_freq *cpu_freqs;
 
 	setrlimit_open_files();
 
-	memset(cpu_freq, 0, sizeof(cpu_freq));
-	memset(counters, 0, sizeof(counters));
+	cpu_freqs = calloc(threads_in_system, sizeof(*cpu_freqs));
+	if (!cpu_freqs)
+		return -ENOMEM;
 
-	rc = setup_counters();
-	if (rc)
+	rc = setup_counters(cpu_freqs);
+	if (rc) {
+		free(cpu_freqs);
 		return rc;
+	}
 
 	/* Start a soak thread on each CPU */
 	for (i = 0; i < threads_in_system; i++) {
-		pthread_t tid;
-
-		if (!cpu_online(i)) {
-			cpu_freq[i] = CPU_OFFLINE;
+		if (cpu_freqs[i].offline)
 			continue;
-		}
 
-		if (pthread_create(&tid, NULL, soak, (void *)(long)i)) {
+		if (pthread_create(&cpu_freqs[i].tid, NULL, soak,
+				   (void *)(long)i)) {
 			perror("pthread_create");
+			free(cpu_freqs);
 			return -1;
 		}
 	}
@@ -975,32 +1006,31 @@ static int do_cpu_frequency(int sleep_time)
 	/* Wait for soak threads to start */
 	usleep(1000000);
 
-	start_counters();
+	start_counters(cpu_freqs);
 	/* Count for specified timeout in seconds */
 	usleep(sleep_time * 1000000);
-	stop_counters();
 
-	read_counters();
+	stop_counters(cpu_freqs);
+	check_threads(cpu_freqs);
+	read_counters(cpu_freqs);
 
 	for (i = 0; i < threads_in_system; i++) {
-		if (cpu_freq[i] == CPU_OFFLINE)
+		unsigned long long frequency;
+
+		if (cpu_freqs[i].offline)
 			continue;
 
-		/* No result - Couldn't schedule on that cpu */
-		if (cpu_freq[i] == 0) {
-			printf("WARNING: couldn't run on cpu %d\n", i);
-			continue;
-		}
+		frequency = cpu_freqs[i].freq;
 
-		if (cpu_freq[i] < min) {
-			min = cpu_freq[i];
+		if (frequency < min) {
+			min = frequency;
 			min_cpu = i;
 		}
-		if (cpu_freq[i] > max) {
-			max = cpu_freq[i];
+		if (frequency > max) {
+			max = frequency;
 			max_cpu = i;
 		}
-		sum += cpu_freq[i];
+		sum += frequency;
 		count++;
 	}
 
@@ -1010,6 +1040,8 @@ static int do_cpu_frequency(int sleep_time)
 	printf("max:\t%.3f GHz (cpu %ld)\n", freq_calc(max, sleep_time),
 	       max_cpu);
 	printf("avg:\t%.3f GHz\n\n", freq_calc((sum / count), sleep_time));
+
+	free(cpu_freqs);
 	return 0;
 }
 
@@ -1092,8 +1124,10 @@ static int do_cores_online(char *state)
 		return -1;
 	}
 
-	core_state = malloc(sizeof(int) * cpus_in_system);
-	memset(core_state, 0, sizeof(int) * cpus_in_system);
+	core_state = calloc(cpus_in_system, sizeof(int));
+	if (!core_state)
+		return -ENOMEM;
+
 	for (i = 0; i < cpus_in_system ; i++) {
 		core_state[i] = cpu_online(i * threads_per_cpu);
 		if (core_state[i])
@@ -1102,16 +1136,20 @@ static int do_cores_online(char *state)
 
 	if (!state) {
 		printf("Number of cores online = %d\n", cores_now_online);
+		free(core_state);
 		return 0;
 	}
 
 	number_to_have = strtol(state, NULL, 0);
-	if (number_to_have == cores_now_online)
+	if (number_to_have == cores_now_online) {
+		free(core_state);
 		return 0;
+	}
 
 	if (number_to_have > cpus_in_system) {
 		printf("Cannot online more cores than are present.\n");
 		do_cores_present();
+		free(core_state);
 		return -1;
 	}
 
@@ -1143,6 +1181,7 @@ static int do_cores_online(char *state)
 		}
 	}
 
+	free(core_state);
 	return 0;
 }
 

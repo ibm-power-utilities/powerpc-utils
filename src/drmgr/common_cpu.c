@@ -155,7 +155,7 @@ cpu_index_to_path(struct dr_node *cpu)
 	DIR *d;
 	struct dirent *de;
 	int found = 0;
-	int rc;
+	int rc = -1;
 	char path[DR_PATH_MAX];
 
 	d = opendir(CPU_OFDT_BASE);
@@ -194,8 +194,10 @@ cpu_index_to_path(struct dr_node *cpu)
 
 	closedir(d);
 
-	if (found)
+	if (found) {
 		snprintf(cpu->ofdt_path, DR_PATH_MAX, "%s", path);
+		rc = 0;
+	}
 
 	return rc;
 }

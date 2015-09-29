@@ -145,6 +145,7 @@ add_phandles(char *parent, char *p)
 		if (fread(&phandle,sizeof(phandle),1,fd) != 1) {
 			perror(path);
 			say(DEBUG, "Error reading phandle data!\n");
+			fclose(fd);
 			return 1;
 		}
 		*pend = '\0';
@@ -158,6 +159,7 @@ add_phandles(char *parent, char *p)
 		if (fread(&phandle,sizeof(phandle),1,fd) != 1) {
 			perror(path);
 			say(DEBUG, "Error reading phandle data!\n");
+			fclose(fd);
 			return 1;
 		}
 		*pend = '\0';

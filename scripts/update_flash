@@ -30,6 +30,7 @@ E_RTAS=8	# RTAS call failed
 E_USER=9	# User aborted operation
 E_OVERWRITE=10	# Auto overwrite permanent side image
 E_WRNTY=15	# Update Access Key Expired
+E_KEXEC=16	# Kexec service stop error
 
 # Script Constants
 PATH=/sbin:/usr/sbin:/bin:/usr/bin:$PATH
@@ -108,6 +109,35 @@ usage() {
 	exit $exit_code
 }
 
+# Check kexec service status
+check_kexec_service() {
+	# check systemctl command
+	which systemctl >/dev/null 2>&1
+	if [ $? -ne 0 ]; then
+		return 1
+	fi
+
+	# kexec service is running
+	systemctl status kexec.service | grep -w "active" >/dev/null 2>&1
+	if [ $? -eq 0 ]; then
+		return 0
+	fi
+
+	return 1
+}
+
+# Stop kexec service
+stop_kexec_service() {
+	systemctl stop kexec.service >/dev/null 2>&1
+	if [ $? -ne 0 ]; then
+		echo "update_flash: Failed to stop kexec service."
+		error $E_KEXEC "Please stop kexec service and retry."
+	fi
+
+	echo
+	echo "info: kexec service stopped."
+}
+
 query_support() {
 	local exit_status=$E_UNSUPPORTED
 
@@ -143,10 +173,10 @@ query_support() {
 
 echo_validate_rtas_buf() {
 	local output="$1"
-	local cur_t_name=$(echo "$output" | grep "^MI" | head -n 1 | awk ' { print $2 } ')
-	local cur_p_name=$(echo "$output" | grep "^MI" | head -n 1 | awk ' { print $3 } ')
-	local new_t_name=$(echo "$output" | grep "^MI" | tail -n 1 | awk ' { print $2 } ')
-	local new_p_name=$(echo "$output" | grep "^MI" | tail -n 1 | awk ' { print $3 } ')
+	local cur_t_name="$(echo "$output" | grep "^MI" | head -n 1 | awk ' { print $2 } ')"
+	local cur_p_name="$(echo "$output" | grep "^MI" | head -n 1 | awk ' { print $3 } ')"
+	local new_t_name="$(echo "$output" | grep "^MI" | tail -n 1 | awk ' { print $2 } ')"
+	local new_p_name="$(echo "$output" | grep "^MI" | tail -n 1 | awk ' { print $3 } ')"
 
 	echo "Projected Flash Update Results:"
 	echo "Current T Image: $cur_t_name"
@@ -182,7 +212,7 @@ echo_entitlement_expiry_date() {
 echo_validate_return_status() {
 	local output="$1"
 	local rc=$(echo "$output" | head -n 1)
-	local rtas_buf=$(echo "$output" | tail -n +2)
+	local rtas_buf="$(echo "$output" | tail -n +2)"
 
 	[ $# -eq 1 ] || error $E_USAGE "echo_validate_return_status(): usage" 
 
@@ -250,6 +280,13 @@ validate_flash() {
 	# Display appropriate message, exiting if necessary
 	output="$(cat $PROCVALIDATE)"
 	echo_validate_return_status "$output"
+
+	# Check kexec service status
+	check_kexec_service
+	if [ $? -eq 0 ]; then
+		echo
+		echo "info: kexec service is running. It will be stopped before flashing."
+	fi
 
 	return 0
 }
@@ -327,6 +364,12 @@ update_flash_from_file() {
 	else
 		dd if="$img_file" of="$OLDPROCFLASH" bs=PAGE_SIZE 2>/dev/null || error $E_PROC_FS "error copying flash image to rtas_flash kernel module"
 		cat "$OLDPROCFLASH"
+	fi
+
+	# Stop kexec service
+	check_kexec_service
+	if [ $? -eq 0 ]; then
+		stop_kexec_service
 	fi
 
 	#XXX

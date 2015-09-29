@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <locale.h>
+#include <linux/types.h>
 #include "rtas_calls.h"
 #include "drpci.h"
 #include "dr.h"

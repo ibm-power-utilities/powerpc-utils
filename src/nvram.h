@@ -45,14 +45,20 @@
 #define MAX_CPUS 128
 
 /**
+ * @def MAX_PART_NAME
+ * @brief maximum number of bytes in partition name
+ */
+#define MAX_PART_NAME 12
+
+/**
  * @struct partition_header
  * @brief nvram partition header data
  */
 struct partition_header {
-    unsigned char	signature;  /**< partition signature */
-    unsigned char 	checksum;   /**< partition checksum */
-    unsigned short 	length;     /**< partition length */
-    char 		name[12];   /**< partition name */
+    unsigned char	signature;		/**< partition signature */
+    unsigned char 	checksum;		/**< partition checksum */
+    unsigned short 	length;			/**< partition length */
+    char 		name[MAX_PART_NAME];	/**< partition name */
 };
 
 /* sub-header for error-log partitions */
