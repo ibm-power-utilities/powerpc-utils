@@ -1,3 +1,328 @@
+powerpc-utils-1.2.27
+=====================================================================
+commit 8e22e19dab80a1d17ca5ad5cdf112148282223eb
+Author: John Allen <jallen@linux.vnet.ibm.com>
+Date:   Tue Sep 29 14:41:14 2015 -0400
+
+    errinjct/rtas_dbg: Update Makefile
+    
+    This patch updates the Makefile to include errinjct and rtas_dbg.
+    
+    Signed-off-by: John Allen <jallen@linux.vnet.ibm.com>
+
+commit ef5f204ca2d5de67ef47de1ac29169e7e39b54a6
+Author: John Allen <jallen@linux.vnet.ibm.com>
+Date:   Tue Sep 29 14:37:12 2015 -0400
+
+    rtas_dbg: Initial contribution of the rtas_dbg tool
+    
+    This patch contributes the previously IBM internal rtas_dbg tool. The rtas_d
+    tool enables rtas debug output to the system console for a given rtas call.
+    This version of the code is functionally identical to the old internal versi
+    but I have made some superficial changes to remove IBM confidential informat
+    and improve coding style.
+    
+    Signed-off-by: John Allen <jallen@linux.vnet.ibm.com>
+
+commit 784885efc522d49e29c3f1fb679a31e7ba9b413d
+Author: John Allen <jallen@linux.vnet.ibm.com>
+Date:   Tue Sep 29 14:35:14 2015 -0400
+
+    errinjct: Initial contribution of errinjct tool
+    
+    This patch contributes the previously IBM internal errinjct tool. The errinj
+    tool is used to inject artificial hardware errors into a system. This versio
+    of the code is functionally identical to the old internal version, but I hav
+    made some superficial changes to remove IBM confidential information and
+    improve coding style.
+    
+    Changes in v2: Now checks for platform. If a user is not on a PowerVM system
+    the tool exits and prints a descriptive error message. Updated the man page 
+    document lack of support for non-PowerVM systems.
+    
+    Signed-off-by: John Allen <jallen@linux.vnet.ibm.com>
+
+commit 16e49f436470d597bb29656ed02b40fcdf47fcc5
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Wed Sep 9 10:30:53 2015 -0400
+
+    lparstat: print "Shared Physical CPUS in system" data
+    
+    The information for "Shared Physical CPUS in system" is not printed when
+    the lparstat command is run. This patch adds this information to the list
+    of items to print and modifies the name to match the output of the lparstat
+    command on other OS'es.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 4153cccdc21a0c8810aab169fb5b04a611c7b154
+Author: Bharata B Rao <bharata@linux.vnet.ibm.com>
+Date:   Tue Sep 8 11:38:35 2015 -0400
+
+    drmgr: Don't return unsuable CPU from get_available_cpu()
+    
+    From: Bharata B Rao <bharata@linux.vnet.ibm.com>
+    
+    When querying CPU by name or index (and not count), let
+    get_available_cpu() return NULL for CPU that is marked as unusable.
+    This will prevent the callers (eg. add_cpus()) from infinitely
+    querying for the same CPU.
+    
+    Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
+
+commit d291c43e4ad1141591008e39e77549a6fd33d48a
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Tue Sep 8 11:35:09 2015 -0400
+
+    drmgr: Generate error message when PHB is not found
+    
+    An error message should be generated when drmgr is asked to remove a PHB
+    that does not exist. The current behavior is to just exit without any
+    message.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 8ff5144da07985cd84508465007f9031840d4ecd
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Tue Sep 8 11:33:24 2015 -0400
+
+    update_flash: Stop kexec service before starting firmware update on PowerVM 
+    
+    We run 'reboot' call before initiating firmware update. If kexec service
+    is enabled, then we endup booting into new kernel instead of starting
+    firmware update.
+    
+    Commit 62dc6d38 fix this issue on PowerNV platform.. but missed to fix
+    PowerVM LPAR.  This patch fixes above described issue on PowerVM LPAR.
+    
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit 7a94345ff14fbb6d18a885616a5a7f347daa95f1
+Author: John Allen <jallen@linux.vnet.ibm.com>
+Date:   Wed Sep 2 12:43:15 2015 -0400
+
+    drmgr: Fix file leak in dr_lock/dr_unlock interaction
+    
+    This patch fixes a file leak in dr_lock(). The file descriptor
+    is meant to be saved to a global variable dr_lock_fd, but we
+    have an extraneous local variable named dr_lock_fd as well. So
+    When we get to dr_unlock, the global file descriptor that it
+    tries to close was never set and quietly fails.
+    
+    Signed-off-by: John Allen <jallen@linux.vnet.ibm.com>
+
+commit 29b8f317985249912b4025f704aae16811ea1775
+Author: Boqun Feng <boqun.feng@linux.vnet.ibm.com>
+Date:   Wed Sep 2 12:19:54 2015 -0400
+
+    drmgr: handle read failures in get_att_prop()
+    
+    In get_att_prop(), though rarely, reading from /proc or /sysfs may
+    fail. This patch handles failures of these readings based on the fact,
+    if we successfully read the property, both fread() and fscanf() will
+    return 1. This patch also updates the fread() path so that we only
+    try to read the size of the file and not the size of the buffer
+    passed in.
+    
+    This can also fix the compiler WARNING saying that 'rc' is unused
+    variable.
+    
+    Signed-off-by: Boqun Feng <boqun.feng@linux.vnet.ibm.com>
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 9b8a3b449de4508adca248631e7ffda62a9a4994
+Author: John Allen <jallen@linux.vnet.ibm.com>
+Date:   Wed Sep 2 12:14:09 2015 -0400
+
+    drmgr, ppc64_cpu: Fix several memory/file leaks
+    
+    This patch fixes a few resource leak problems discoverd through
+    static analysis.
+    
+    Signed-off-by: John Allen <jallen@linux.vnet.ibm.com>
+
+commit 5fee10ac758e16d49e42d5cf0855df44b1f90a7a
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Wed Sep 2 11:03:28 2015 -0400
+
+    drmgr: Combine the init_node() and examine_child() routines
+    
+    The complexity of the init_node() and examine_child() routines that call
+    each other recursively is causing drmgr to segfault in odd and sometimes
+    slightly differing ways. Each instance does involve drmgr segfaulting in
+    libc malloc code.
+    
+    This patch re-writes these two routines to combine them into a single
+    routine that is called recursively. The result is cleaner code that no
+    longer segfaults.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 96a83ab8b84576517a28bc8f4d8e684e6c86befd
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Wed Sep 2 10:36:25 2015 -0400
+
+    drmgr: Allocate workarea memory instead of using stack
+    
+    The configure_connector() routine declares a 4K buffer on the stack, this
+    is causing odd behaviors in drmgr such as segfaults in libc malloc code.
+    The workarea should be malloc()'ed instead of being on the stack.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 62dc6d38de177588f205e01cec15b93b3e2b9a30
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Wed Sep 2 10:26:23 2015 -0400
+
+    update_flash: Stop kexec service before starting firmware update
+    
+    We run 'reboot' call before initiating firmware update. If kexec service
+    is enabled, then we endup booting into new kernel instead of starting
+    firmware update.
+    
+    This patch validates kexec service and if required stops this service
+    before starting code update.
+    
+    Sample output:
+      update_flash -v -f /home/hegdevasant/01SV840_032_032.img
+      info: Current fixpack level is unknown.
+    
+      Projected Flash Update Results:
+      Current T Image: UNKNOWN
+      Current P Image: SV840_031
+      New T Image:     SV840_032
+      New P Image:     SV840_031
+    
+      info: kexec service is running. It will be stopped before flashing.
+    
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit 546174be41c74894126414515644888ed8b31584
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Wed Sep 2 10:23:21 2015 -0400
+
+    update_flash: Fix bad variable issue
+    
+    Shells like dash throws error if we try to assign string with space
+    without double quote. ex:
+     local bug=ML FW830.00 FW830.00
+    
+    Sample output without this patch:
+      update_flash -f 01SV840_016_016.img
+      /usr/sbin/update_flash: 185: local: FW830.00: bad variable name
+    
+    This patch fixes above issue by covering all string assignment with
+    double quote.
+    
+    sample output with patch:
+      info: Current Temporary side will be committed to
+      Permanent side before being replaced with the new
+      image.
+    
+      Projected Flash Update Results:
+      Current T Image: SV840_031
+      Current P Image: SV840_027
+      New T Image:     SV840_032
+      New P Image:     SV840_031
+    
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit 2d9c67ba3a0763b152be184f81841a6b8ea5580d
+Author: Boqun Feng <boqun.feng@linux.vnet.ibm.com>
+Date:   Wed Aug 26 12:13:41 2015 -0400
+
+    In cpu_index_to_path(), sometimes 'rc' may not be assigned to a certain
+    value, so we need to give 'rc' an initial value, as we may only success
+    if we find a path, so 'rc' is initialized to -1, which indicates
+    failure.
+    
+    Signed-off-by: Boqun Feng <boqun.feng@linux.vnet.ibm.com>
+
+commit b31215f78806bf0b511e39b3c76fc1b12234310a
+Author: Boqun Feng <boqun.feng@linux.vnet.ibm.com>
+Date:   Wed Aug 26 10:50:30 2015 -0400
+
+    In say(), we use variable 'rc' for the return value of write(), however
+    that return value is never used, though rarely, writting to log_fd may not
+    results in writting exact number of bytes we want. To be aware of the
+    return value of write() and also to remove unused variables, we update
+    'len' to the return value of write() if log_fd is not NULL.
+    
+    Signed-off-by: Boqun Feng <boqun.feng@linux.vnet.ibm.com>
+
+commit 8b654c544f5e6243df1a3694162dc466023b39c4
+Author: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Date:   Wed Aug 26 10:48:30 2015 -0400
+
+    Fix trivial spelling mistakes and trailing white spaces.
+    'avaiable' -> 'available'
+    'parmaeter' -> 'parameter'
+    'intialize' -> 'initialize'
+    
+    Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+
+commit f768e8c6465185255142cdfb0577bd3ed729494a
+Author: Joel Stanley <joel@jms.id.au>
+Date:   Mon Jun 29 11:07:28 2015 -0400
+
+    lsslot: Fix missing header for __be32 types
+    
+    On my system (Ubuntu 15.04) lsslot does not build as it's missing the
+    __be32 types.
+    
+     src/drmgr/lsslot.c: In function ‘print_drconf_mem’:
+     src/drmgr/lsslot.c:712:2: error: unknown type name ‘__be32’
+       __be32 *aa;
+    
+    Signed-off-by: Joel Stanley <joel@jms.id.au>
+
+commit b15b0a7f9ffcd1bc099a166723475bb53bc945cf
+Author: Joel Stanley <joel@jms.id.au>
+Date:   Mon Jun 29 11:04:24 2015 -0400
+
+    nvram: don't allow long names
+    
+    The maximum partition name length is 12 characters but nvram accepts
+    strings of any length. This change will enforce the maximum length
+    passed to options that take a partition name to avoid confusion.
+    
+    Signed-off-by: Joel Stanley <joel@jms.id.au>
+
+commit 9adb99b0490ca249ef1f2edfefe58d1369e2a278
+Author: Joel Stanley <joel@jms.id.au>
+Date:   Mon Jun 29 11:03:19 2015 -0400
+
+    nvram: fix stack overflow in logging function
+    
+    Signed-off-by: Joel Stanley <joel@jms.id.au>
+
+commit cfce8ea751cd7d87554e59197e8e0c8ab78a8a70
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Mon Jun 29 11:00:20 2015 -0400
+
+    ppc64_cpu: Use calloc for array allocation
+    
+    Use calloc instead of malloc + memset for array allocation.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+    Reviewed-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit b9af10826189fceaa0dd714e793c4753f8241eda
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Mon Jun 29 10:58:52 2015 -0400
+
+    ppc64_cpu: Correct pthread handling for exiting threads
+    
+    The pthread handling for checking cpu frequency in the ppc64_cpu
+    command does not properly handle 'soak' threads exiting from a failed
+    sched_setaffinity call.
+    
+    We need to update the number of threads handled to be dynamically set
+    instead of defining MAX_NR_CPUS, which is out of date. We also need to
+    check for 'soak' threads that have exited before reading the perf counters
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
 powerpc-utils-1.2.26
 =====================================================================
 commit 7653d5814de2abb209c198a8b763c99139bf750d
