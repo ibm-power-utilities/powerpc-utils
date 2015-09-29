@@ -1,0 +1,320 @@
+\."
+\." Copyright (C) 2004 International Business Machines
+\."
+.TH ERRINJCT 8 "June 2007" Linux "Linux on Power Service Tools"
+.SH NAME
+errinjct \- inject errors into a system via RTAS.
+.SH SYNOPSIS
+.B /usr/local/sbin/errinjct
+[ OPTIONS ]
+.SH DESCRIPTION
+The \fIerrinjct\fR tool enables RTAS to inject errors on a Power system.
+This tool is for IBM internal use only. Currently, errinjct is only
+supported on PowerVM systems.
+
+.SH OPTIONS
+The options to the \fIerrinjct\fR tool change depending on the functionality
+requested.  Run \fIerrinjct\fR without any arguments to see a list of
+supported functions.  See the explanations of the individual functions
+below for more information.
+
+.SH FUNCTIONS
+.TP
+\fBopen\fR
+Open the RTAS error injection facility.
+.TP
+\fBclose\fR
+Close the RTAS error injection facility
+.TP
+\fBcorrupted-dcache-start\fR
+Start causing LI data cache errors
+.TP
+\fBcorrupted-dcache-end\fR
+Stop causing LI data cache errors
+.TP
+\fBcorrupted-icache-start\fR
+Start causing instruction cache errors
+.TP
+\fBcorrupted-icache-end\fR
+Stop causing instruction cache errors
+.TP
+\fBcorrupted-slb\fR
+Corrupt the SLB entry associated with a specific effective address
+.TP
+\fBioa-bus-error\fR
+Simulate an error on the IOA bus
+.TP
+\fBplatform-specific\fR
+Request the firmware perform a specific platform specific injection
+.TP
+\fBcorrupted-tlb-start\fR
+Start corrupting TLB
+.TP
+\fBcorrupted-tlb-end\fR
+Stop corrupting TLB
+
+.SH open
+Open the RTAS error injection facility
+
+Usage: errinjct open [options]
+
+Optional arguments:
+  --dry-run      don't perform the action,
+                 just print what would have been done
+  -H --help      print usage information for a particular
+                 function
+  -v --verbose   be more verbose with messages
+  -q --quiet     shhhh.... only report errors
+
+.SH close
+Close the RTAS error injection facility
+
+Usage: errinjct close [optioons]
+
+Mandatory argument:
+  -k token       token returned from error inject open
+
+Optional arguments:
+  --dry-run      don't perform the action,
+                 just print what would have been done
+  -H --help      print usage information for a particular
+                 function
+  -v --verbose   be more verbose with messages
+  -q --quiet     shhhh.... only report errors
+  -C cpu         cpu to inject errors on
+
+.SH corrupted-dcache-start / corrupted-dcache-end
+Inject errors onto the L1 data cache.  Before using this option you
+need to open the RTAS error injection facility via "errinjct open".
+Afterwards pass this parameter in with the -k option and specify a
+cpu to run on with the -C option.  Please note that you need to specify
+the same cpu number to the dcache-start and dcache-end errinjct calls.
+
+Usage: errinjct corrupted-dcache-start [options]
+       errinjct dcache-start [options]
+
+       errinjct corrupted-dcache-end [options]
+       errinjct dcache-end [options]
+
+Mandatory Arguments:
+  -a action      type of D-cache error to inject
+                     0: parity error
+                     1: D-ERAT parity error
+                     2: tag parity error
+  -C cpu         cpu to inject errors on
+  -k token       token returned from error inject open
+
+Optional arguments:
+  --dry-run      don't perform the action,
+                 just print what would have been done
+  -H --help      print usage information for a particular
+                 function
+  -v --verbose   be more verbose with messages
+  -q --quiet     shhhh.... only report errors
+
+Example:
+  > errinjct open
+  Error inject token = 2
+  > errinjct corrupted-dcache-start -a 1 -k 2 -C 0
+  .
+  .
+  .
+  > errinjct corrupted-dcache-end -a 1 -k 2 -C 0
+  > errinjct close -k 2
+
+.SH corrupted-icache-start / corrupted-icache-end
+Inject errors into the instruction cache.  Before using this option you
+need to open the RTAS error injection facility via "errinjct open".
+Afterwards pass this parameter in with the -k option and specify a
+cpu to run on with the -C option.  Please note that you need to specify
+the same cpu number to the icache-start and icache-end errinjct calls.
+
+Usage: errinjct corrupted-icache-start [options]
+       errinjct icache-start [options]
+
+       errinjct corrupted-icache-end [options]
+       errinjct icache-end [options]
+
+Mandatory Arguments:
+  -a action      type of I-cache error to inject
+                     0: Parity error
+                     1: I-ERAT partiy error
+                     2: Cache directory 0 parity error
+                     3: Cache directory 1 parity error
+  -n nature      nature of I-cache error to inject
+                     0: Single
+                     1: Solid
+                     2: Hang
+  -C cpu         cpu to inject errors on
+  -k token       token returned from error inject open
+
+Optional arguments:
+  --dry-run      don't perform the action,
+                 just print what would have been done
+  -H --help      print usage information for a particular
+                 function
+  -v --verbose   be more verbose with messages
+  -q --quiet     shhhh.... only report errors
+
+Example:
+  > errinjct open
+  Error inject token = 2
+  > errinjct corrupted-icache-start -a 1 -n 0 -k 2 -C 0
+  .
+  .
+  .
+  > errinjct corrupted-icache-end -a 1 -n 0 -k 2 -C 0
+  > errinjct close -k 2
+
+.SH corrupted-slb
+Corrupt the SLB entry associated with the specified effective address.
+
+Usage: errinjct corrupted-slb [options]
+       errinjct slb [options]
+
+Mandatory Argument:
+  -a addr        effective address associated with the
+                 SLB entry to corrupt
+
+Optional arguments:
+  --dry-run      don't perform the action,
+                 just print what would have been done
+  -H --help      print usage information for a particular
+                 function
+  -v --verbose   be more verbose with messages
+  -q --quiet     shhhh.... only report errors
+  -C cpu         cpu to inject errors on
+  -k token       token returned from error inject open
+
+.SH ioa-bus-error
+Inject errors onto an IO adapter (PCI) bus slot.
+
+Usage: errinjct ioa-bus-error [options]
+       errinjct eeh [options]
+
+Mandatory arguments:
+  -f function    IOA bus error to inject
+
+  Specify a device either with the -s flag, the
+  -p flag, or use the explicit BUID/config address flags.
+  -s classpath   look up device by sysfs classpath
+                 for example -s net/eth3
+		 or -s scsi_host/host0
+
+  -p loc-code    look up device by location code
+                 for example -p "U0.1-P2-I1"
+
+  Explicit BUID/config mandatory arguments:
+  -c config_addr configure address of the IOA
+  -h high_bits   high bits of PHB unit id
+  -l lo_bits     lo bits of PHB unit id
+
+Optional arguments:
+  --dry-run      don't perform the action,
+                 just print what would have been done
+  -H --help      print usage information for a particular
+                 function
+  -v --verbose   be more verbose with messages
+  -q --quiet     shhhh.... only report errors
+  -a addr        address at which to report the error
+  -m mask        address mask (defaults to 0x00000000)
+  -C cpu         cpu to inject errors on
+  -k token       token returned from error inject open
+
+Functions for ioa-bus-error:
+  0 - Load to PCI Memory Address Space
+      inject an Address Parity Error
+  1 - Load to PCI Memory Address Space
+      inject a Data Parity Error
+  2 - Load to PCI I/O Address Space
+      inject an Address Parity Error
+  3 - Load to PCI I/O Address Space
+      inject a Data Parity Error
+  4 - Load to PCI Configuration Space
+      inject an Address Parity Error
+  5 - Load to PCI Configuration Space
+      inject a Data Parity Error
+  6 - Store to PCI Memory Address Space
+      inject an Address Parity Error
+  7 - Store to PCI Memory Address Space
+      inject a Data Parity Error
+  8 - Store to PCI I/O Address Space
+      inject an Address Parity Error
+  9 - Store to PCI I/O Address Space
+      inject a Data Parity Error
+ 10 - Store to PCI Configuration Space
+      inject an Address Parity Error
+ 11 - Store to PCI Configuration Space
+      inject a Data Parity Error
+ 12 - DMA read to PCI Memory Address Space
+      inject an Address Parity Error
+ 13 - DMA read to PCI Memory Address Space
+      inject a Data Parity Error
+ 14 - DMA read to PCI Memory Address Space
+      inject a Master Abort Error
+ 15 - DMA read to PCI Memory Address Space
+      inject a Target Abort Error
+ 16 - DMA write to PCI Memory Address Space
+      inject an Address Parity Error
+ 17 - DMA write to PCI Memory Address Space
+      inject a Data Parity Error
+ 18 - DMA write to PCI Memory Address Space
+      inject a Master Abort Error
+ 19 - DMA write to PCI Memory Address Space
+      inject a Target Abort Error
+
+.SH platform-specific
+Request the firmware perform a platform specific error injection.
+
+Usage: errinjct platform-specific [options]
+
+Mandatory argument:
+  -f fname       file name to read platform specific
+                 error injection data from
+Optional arguments:
+  --dry-run      don't perform the action,
+                 just print what would have been done
+  -H --help      print usage information for a particular
+                 function
+  -v --verbose   be more verbose with messages
+  -q --quiet     shhhh.... only report errors
+  -C cpu         cpu to inject errors on
+  -k token       token returned from error inject open
+
+.SH corrupted-tlb-start / corrupted-tlb-end
+Inject errors into the TLB. Before using this option you
+need to open the RTAS error injection facility via "errinjct open".
+Afterwards pass this parameter in with the -k option and specify a
+cpu to run on with the -C option.  Please note that you need to specify
+the same cpu number to the tlb-start and tlb-end errinjct calls.
+
+Usage: errinjct corrupted-tlb-start [options]
+       errinjct tlb-start [options]
+
+       errinjct corrupted-tlb-end [options]
+       errinjct tlb-end [options]
+
+Mandatory arguments:
+  -C cpu         cpu to inject errors on
+  -k token       token returned from error inject open
+
+Optional arguments:
+  --dry-run      don't perform the action,
+                 just print what would have been done
+  -H --help      print usage information for a particular
+                 function
+  -v --verbose   be more verbose with messages
+  -q --quiet     shhhh.... only report errors
+
+Example:
+  > errinjct open
+  Error inject token = 2
+  > errinjct corrupted-tlb-start -k 2 -C 0
+  .
+  .
+  .
+  > errinjct corrupted-tlb-end -k 2 -C 0
+  > errinjct close -k 2
+
+.SH Authors
+Written by Nathan Fontenot and Linas Vepstas
