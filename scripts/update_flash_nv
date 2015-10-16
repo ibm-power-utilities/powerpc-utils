@@ -5,8 +5,12 @@
 # Authors: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
 #
 # Simple script for code update on "PowerNV (Non-Virtualized)" platform.
-# This is a simple wrapper script to pass the image. The Linux kernel
-# and FW does the real work during system reboot.
+# This is a simple wrapper script to pass the image.
+# - On FSP based system, the Linux kernel and FW does the real work
+#   during system reboot.
+# - On OpenPower system, we use IPMI interface to pass image to service
+#   processor and service processor will update the image. Then we make
+#   reboot command to reboot the host.
 #
 # This script has minimal dependencies so it can operate in a
 # rescue environment.
@@ -26,6 +30,7 @@ E_USER=9	# User aborted operation
 E_OVERWRITE=10	# Auto overwrite permanent side image
 E_WRNTY=15	# Update Access Key Expired
 E_KEXEC=16	# Kexec service stop error
+E_IPMI=17	# ipmitool is not installed
 
 # Firmware update related files on FSP based platform
 SYS_IMAGE_FILE=/sys/firmware/opal/image
@@ -440,6 +445,114 @@ fsp_display_current_fw_version() {
 	exit $E_SUCCESS
 }
 
+
+# Check for ipmitool command
+check_ipmitool() {
+	which ipmitool >/dev/null 2>&1
+	if [ $? -ne 0 ]; then
+		echo "update_flash: ipmitool command not found."
+		error $E_IPMI "Please install ipmitool and retry."
+	fi
+}
+
+opp_query_flash_support() {
+	check_ipmitool
+
+	# By default PowerNV host supports firmware management
+	echo "update_flash: Firmware image management is supported."
+
+	exit $E_SUCCESS
+}
+
+opp_validate_flash_from_file() {
+	local img_file=$1
+
+	[ $# -eq 1 ] || error $E_USAGE "opp_validate_flash_from_file(): usage."
+
+	# Check ipmitool
+	check_ipmitool
+
+	# Check file exists
+	[ -r "$img_file" ] || error $E_IMAGE "Cannot read ${img_file}."
+
+	ipmitool -z 30000 -I usb hpm check ${img_file} >/dev/null 2>&1
+	if [ $? -ne 0 ]; then
+		error $E_IPMI "Invalid candidate image for this platform."
+	fi
+
+	echo "info: Boot side firmware will be updated."
+	echo
+	ipmitool -z 30000 -I usb hpm check ${img_file}
+
+	exit $E_SUCCESS
+}
+
+opp_update_flash_from_file() {
+	local img_file=$1
+
+	[ $# -eq 1 ] || error $E_USAGE "opp_update_flash_from_file(): usage."
+
+	# Check ipmitool
+	check_ipmitool
+
+	# -n option is not applicable for BMC based system
+	if [ $no_overwrite_opt -eq 1 ]; then
+		error $E_IMAGE "Option -n is not applicable on BMC based system."
+	fi
+
+	# Check file presence
+	[ -r "$img_file" ] || error $E_IMAGE "Cannot read ${img_file}."
+
+	# Protect BMC memory content, avoid loosing network settings
+	ipmitool raw 0x32 0xba 0x18 0x00
+	if [ $? -ne 0 ]; then
+		echo "update_flash: Failed to protect BMC memory content."
+		error $E_IPMI "Please try again."
+	fi
+
+	# Start firmware update
+	# XXX We have -v option to validate the firmware image. Also BMC
+	#     validates image before upgrading. Hence I think we do not
+	#     need user confirmation again. Lets pass the confirmation
+	#     message here.
+	echo "y" | ipmitool -z 30000 -I usb hpm upgrade $img_file all
+	if [ $? -ne 0 ]; then
+		echo "update_flash: Firmware update failed."
+		# XXX Looks like BMC expects host reboot to
+		#     retry firmware update.
+		error $E_IPMI "Please reboot and try again."
+	fi
+
+	# Reboot system
+	echo
+	echo "Firmware update complete."
+	echo "Rebooting the system..."
+	reboot
+
+	exit $E_SUCCESS
+}
+
+opp_manage_flash() {
+	echo "Commit/Reject operation is not supported on this platform."
+	exit $E_SUCCESS
+}
+
+opp_display_current_fw_version() {
+	check_ipmitool
+
+	echo
+	id=`ipmitool fru 2>/dev/null |grep "System Firmware" | cut -d " " -f8 | cut -d ")" -f1`
+	if [ "x$id" == "x" ]; then
+		error $E_IPMI "Failed to get firmware version."
+	fi
+
+	echo "Firmware version:"
+	ipmitool fru print $id
+
+	exit $E_SUCCESS
+}
+
+
 file=""
 check_opt=0
 display_opt=0
@@ -455,6 +568,8 @@ file_opt=0
 # Check for platform and call appropriate functions
 if [ -d ${DT_PATH}/fsps ]; then
 	platform="fsp"
+elif [ -d ${DT_PATH}/bmc ]; then
+	platform="opp"	# OpenPower platform
 else
 	echo "update_flash: Unknown platform"
 	exit $E_UNSUPPORTED
