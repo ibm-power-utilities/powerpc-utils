@@ -33,9 +33,12 @@ SYS_VALIDATE_FLASH=/sys/firmware/opal/validate_flash
 SYS_MANAGE_FLASH=/sys/firmware/opal/manage_flash
 SYS_UPDATE_FLASH=/sys/firmware/opal/update_flash
 
+# Device tree path
+DT_PATH=/proc/device-tree
+
 # Current firmware version files on FSP based platform
-DT_FW_MI_FILE=/proc/device-tree/ibm,opal/firmware/mi-version
-DT_FW_ML_FILE=/proc/device-tree/ibm,opal/firmware/ml-version
+DT_FW_MI_FILE=${DT_PATH}/ibm,opal/firmware/mi-version
+DT_FW_ML_FILE=${DT_PATH}/ibm,opal/firmware/ml-version
 
 # Code update status values
 FLASH_SUCCESS=0			# Success
@@ -449,6 +452,14 @@ file_opt=0
 # Only root user can perform firmware update
 [ "`whoami`" = "root" ] || error $E_PERM "Must be root to execute this command."
 
+# Check for platform and call appropriate functions
+if [ -d ${DT_PATH}/fsps ]; then
+	platform="fsp"
+else
+	echo "update_flash: Unknown platform"
+	exit $E_UNSUPPORTED
+fi
+
 # Parse command line options
 while [ -n "$1" ]; do
 	arg="$1"
@@ -474,9 +485,9 @@ if [ -n "$file" ]; then
 	elif [ $validate_opt -eq 1 ] && [ $no_overwrite_opt -eq 1 ]; then
 		usage
 	elif [ $validate_opt -eq 1 ]; then
-		fsp_validate_flash_from_file $file
+		${platform}_validate_flash_from_file $file
 	else
-		fsp_update_flash_from_file $file
+		${platform}_update_flash_from_file $file
 	fi
 else
 	if [ $check_opt -eq 1 ]; then
@@ -484,7 +495,7 @@ else
 			[ $display_opt -eq 1 ]; then
 			usage
 		else
-			fsp_query_flash_support
+			${platform}_query_flash_support
 		fi
 	fi
 
@@ -493,11 +504,11 @@ else
 		if [ $commit_opt -eq 1 ] || [ $reject_opt -eq 1 ]; then
 			usage
 		else
-			fsp_display_current_fw_version
+			${platform}_display_current_fw_version
 		fi
 	fi
 
 	[ $commit_opt -eq 0 ] && [ $reject_opt -eq 0 ] && usage
 	[ $commit_opt -eq 1 ] && [ $reject_opt -eq 1 ] && usage
-	fsp_manage_flash $commit_opt
+	${platform}_manage_flash $commit_opt
 fi
