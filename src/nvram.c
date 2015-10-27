@@ -769,7 +769,6 @@ dump_errlog(struct nvram *nvram)
     uint16_t *sys_regs;	    /* System specific registers 
                              * (e.g. bus arbitration chips, etc */
     uint16_t *cpu_regs[MAX_CPUS+1];
-    uint16_t *memctrl_data;
     uint16_t *ioctrl_data;
 
     phead = nvram_find_partition(nvram, NVRAM_SIG_SP, "ibm,err-log", NULL);
@@ -821,11 +820,11 @@ dump_errlog(struct nvram *nvram)
     num_memctrls = ntohs(p[i]);
     printf("Memory Controllers: %d\n", num_memctrls);
 
-    /* next index is offset of memory controller data */
+    /* next index is offset of memory controller data, we don't use
+     * this so no need to save it.
+     */
     i++;	/* ToDo: this may be a list of offsets...manual doesn't show 
 		   that but only 1 seems odd */
-    offset = ntohs(p[i])/2+1;
-    memctrl_data = offset + i < p_max ? p + offset + i : 0;
 
     /* next index is number of I/O Subsystem controllers */
     i++;
