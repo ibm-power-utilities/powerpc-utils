@@ -301,6 +301,9 @@ drslot_chrp_slot(struct options *opts)
 			    opts->usr_drc_name);
 			rc = RC_ALREADY_OWN;
 		} else {
+			free_node(node);
+			node = NULL;
+
 			rc = add_slot(opts);
 		}
 		break;
