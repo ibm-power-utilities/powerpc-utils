@@ -140,7 +140,7 @@ int parse_lparcfg()
 {
 	FILE *f;
 	char line[128];
-	char *unused;
+	char *first_line;
 
 	f = fopen(LPARCFG_FILE, "r");
 	if (!f) {
@@ -149,7 +149,14 @@ int parse_lparcfg()
 	}
 
 	/* parse the file skipping the first line */
-	unused = fgets(line, 128, f);
+	first_line = fgets(line, 128, f);
+	if (!first_line) {
+		fclose(f);
+		fprintf(stderr, "Could not read first line of %s\n",
+			LPARCFG_FILE);
+		return -1;
+	}
+
 	while (fgets(line, 128, f) != NULL) {
 		char *name, *value, *nl;
 		struct sysentry *se;
@@ -211,14 +218,19 @@ int parse_proc_stat()
 	int i, entries = 6;
 	long long statvals[entries];
 	struct sysentry *se;
-	char *unused;
+	char *first_line;
 	char *names[] = {"cpu_total", "cpu_user", "cpu_nice", "cpu_sys",
 			 "cpu_idle", "cpu_iowait"};
 
 	/* we just need the first line */
 	f = fopen("/proc/stat", "r");
-	unused = fgets(line, 128, f);
+	first_line = fgets(line, 128, f);
 	fclose(f);
+
+	if (!first_line) {
+		fprintf(stderr, "Could not read first line of /proc/stat\n");
+		return -1;
+	}
 
 	statvals[0] = 0;
 	value = line;
@@ -322,7 +334,8 @@ void get_name(const char *file, char *buf)
 	rc = fread(tmpbuf, 64, 1, f);
 	fclose(f);
 
-	sprintf(buf, "%s", tmpbuf);
+	if (!rc)
+		sprintf(buf, "%s", tmpbuf);
 }
 
 void get_node_name(struct sysentry *se, char *buf)
@@ -347,11 +360,16 @@ void get_mem_total(struct sysentry *se, char *buf)
 {
 	FILE *f;
 	char line[128];
-	char *mem, *nl, *unused;
+	char *mem, *nl, *first_line;
 
 	f = fopen("/proc/meminfo", "r");
-	unused = fgets(line, 128, f);
+	first_line = fgets(line, 128, f);
 	fclose(f);
+
+	if (!first_line) {
+		fprintf(stderr, "Could not read first line of /proc/meminfo\n");
+		return;
+	}
 
 	mem = strchr(line, ':');
 	do {
@@ -369,11 +387,16 @@ void get_smt_mode(struct sysentry *se, char *buf)
 	FILE *f;
 	char line[128];
 	char *cmd = "/usr/sbin/ppc64_cpu --smt";
-	char *unused;
+	char *first_line;
 
 	f = popen(cmd, "r");
-	unused = fgets(line, 128, f);
+	first_line = fgets(line, 128, f);
 	pclose(f);
+
+	if (!first_line) {
+		fprintf(stderr, "Could not read output of %s\n", cmd);
+		return;
+	}
 
 	/* The output is either "SMT=x" or "SMT is off", we can cheat
 	 * by looking at line[8] for an 'f'.
