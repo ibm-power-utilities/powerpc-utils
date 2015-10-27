@@ -72,6 +72,8 @@ free_lmbs(struct lmb_list_head *lmb_list)
 
 	if (lmb_list->drconf_buf)
 		free(lmb_list->drconf_buf);
+
+	free(lmb_list);
 }
 
 /**

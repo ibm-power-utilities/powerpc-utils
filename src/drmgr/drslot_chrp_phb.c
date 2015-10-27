@@ -249,7 +249,7 @@ remove_phb(struct options *opts)
 {
 	struct dr_node *phb;
 	struct dr_node *child;
-	struct dr_node *hp_list;
+	struct dr_node *hp_list = NULL;
 	int rc = 0;
 
 	phb = get_node_by_name(opts->usr_drc_name, PHB_NODES);
@@ -318,6 +318,9 @@ remove_phb(struct options *opts)
 phb_remove_error:
 	if (phb)
 		free_node(phb);
+
+	if (hp_list)
+		free_node(hp_list);
 
 	return rc;
 }

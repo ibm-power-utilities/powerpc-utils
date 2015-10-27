@@ -143,6 +143,7 @@ lsslot_chrp_cpu(struct cmd_opts *opts)
 	else
 		list_cpus(&dr_info);
 
+	free_cpu_drc_info(&dr_info);
 	return 0;
 }
 

@@ -701,6 +701,7 @@ lsslot_chrp_phb(struct cmd_opts *opts)
 			printf("\n\n");
 	}
 
+	free_node(phb_list);
 	return 0;
 }
 
@@ -981,6 +982,7 @@ main(int argc, char *argv[])
 		break;
 	}
 
+	free_drc_info();
 	dr_unlock();
 	exit(rc);
 }

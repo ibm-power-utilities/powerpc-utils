@@ -112,13 +112,13 @@ get_drc_prop_grp(char *full_path, struct drc_prop_grp *group)
 static void
 free_drc_props(struct drc_prop_grp *group)
 {
-	if (group->drc_names.val)
+	if (group->drc_names._data)
 		free(group->drc_names._data);
-	if (group->drc_types.val)
+	if (group->drc_types._data)
 		free(group->drc_types._data);
-	if (group->drc_indexes.val)
+	if (group->drc_indexes._data)
 		free(group->drc_indexes._data);
-	if (group->drc_domains.val)
+	if (group->drc_domains._data)
 		free(group->drc_domains._data);
 }
 
@@ -219,14 +219,14 @@ get_drc_info(const char *of_path)
 	char *full_path = NULL;
 	int rc, n_drcs;
 
-	full_path = of_to_full_path(of_path);
-	if (full_path == NULL)
-		goto done;
-
 	for (list = all_drc_lists; list; list = list->all_next) {
 		if (! strcmp(list->ofdt_path, of_path))
 			return list;
 	}
+
+	full_path = of_to_full_path(of_path);
+	if (full_path == NULL)
+		return NULL;
 	
 	rc = get_drc_prop_grp(full_path, &prop_grp);
 	if (rc) {
@@ -242,6 +242,7 @@ get_drc_info(const char *of_path)
 	if (list == NULL)
 		goto done;
 
+	say(ERROR, "drc info alloc %p\n", list);
 	/* XXX Unchecked rc */
 	rc = build_connectors_list(&prop_grp, n_drcs, list);
 
@@ -272,6 +273,7 @@ free_drc_info(void)
 		list = all_drc_lists;
 		all_drc_lists = list->all_next;
 
+		say(ERROR, "drc info free %p\n", list);
 		free(list);
 	}
 }
