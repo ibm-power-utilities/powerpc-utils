@@ -115,6 +115,7 @@ struct rtas_token *get_rtas_tokens(void)
 		FILE *fp;
 		struct rtas_token *tok;
 		char dir[128];
+		int rc;
 
 		if (dp->d_name[0] == '.')
 			continue;
@@ -141,7 +142,16 @@ struct rtas_token *get_rtas_tokens(void)
 			break;
 		}
 
-		fread(&betoken, sizeof(betoken), 1, fp);
+		rc = fread(&betoken, sizeof(betoken), 1, fp);
+		if (rc <= 0) {
+			fprintf(stderr, "Could not get rtas token for %s\n",
+				dp->d_name);
+			free_rtas_tokens(tok_list);
+			tok_list = NULL;
+			fclose(fp);
+			break;
+		}
+
 		tok->token = be32toh(betoken);
 
 		fclose(fp);
@@ -257,10 +267,12 @@ int main(int argc, char *argv[])
 		tok = get_rtas_token_by_name(dbg_arg, tok_list);
 
 	if (tok != NULL) {
-		if (print_tokens)
+		if (print_tokens) {
 			print_rtas_tokens(tok, tok_list);
-		else
+			rc = 0;
+		} else {
 			rc = set_rtas_dbg(tok);
+		}
 	} else {
 		fprintf(stderr, "Unknown rtas token or name specified: %s\n",
 			dbg_arg);
