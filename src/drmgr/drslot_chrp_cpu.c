@@ -426,7 +426,7 @@ int
 drslot_chrp_cpu(struct options *opts)
 {
 	struct dr_info dr_info;
-	int rc = -1;
+	int rc;
 
 	if (! cpu_dlpar_capable()) {
 		say(ERROR, "CPU DLPAR capability is not enabled on this "
@@ -460,15 +460,20 @@ drslot_chrp_cpu(struct options *opts)
 
 	if (opts->p_option && (strcmp(opts->p_option, "smt_threads") == 0)) {
 		rc = smt_threads_func(opts, &dr_info);
-	} else {
-		switch (opts->action) {
-		    case ADD:
-			rc = add_cpus(opts, &dr_info);
-			break;
-		    case REMOVE:
-			rc = remove_cpus(opts, &dr_info);
-			break;
-		}
+		free_cpu_drc_info(&dr_info);
+		return rc;
+	}
+
+	switch (opts->action) {
+	case ADD:
+		rc = add_cpus(opts, &dr_info);
+		break;
+	case REMOVE:
+		rc = remove_cpus(opts, &dr_info);
+		break;
+	default:
+		rc = -1;
+		break;
 	}
 
 	free_cpu_drc_info(&dr_info);

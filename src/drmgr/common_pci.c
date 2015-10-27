@@ -995,6 +995,7 @@ get_bus_id(char *loc_code)
 	while ((ent = readdir(d))) {
 		char path[DR_PATH_MAX], location[DR_BUF_SZ];
 		FILE *f;
+		int rc;
 
 		if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, ".."))
 			continue;
@@ -1005,8 +1006,13 @@ get_bus_id(char *loc_code)
 		if (f == NULL)
 			continue;
 
-		fread(location, sizeof(location), 1, f);
+		rc = fread(location, sizeof(location), 1, f);
 		fclose(f);
+
+		if (rc != 1) {
+			say(ERROR, "Could not %s, skipping\n", path);
+			continue;
+		}
 
 		/* Strip any newline from the location to compare */
 		if  ((ptr = strchr(location, '\n')) != NULL)

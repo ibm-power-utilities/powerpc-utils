@@ -673,7 +673,8 @@ update_drconf_node(struct dr_node *lmb, struct lmb_list_head *lmb_list,
 	memcpy(tmp, lmb_list->drconf_buf, lmb_list->drconf_buf_sz);
 	tmp += lmb_list->drconf_buf_sz;
 
-	tmp += sprintf(tmp, " %s %d ", (action == ADD ? "add" : "remove"),
+	tmp += sprintf(tmp, " %s %" PRId64 "d ",
+		       (action == ADD ? "add" : "remove"),
 		       sizeof(lmb->lmb_address));
 	memcpy(tmp, &lmb->lmb_address, sizeof(lmb->lmb_address));
 	tmp += sizeof(lmb->lmb_address);
@@ -831,7 +832,6 @@ set_mem_scn_state(struct mem_scn *mem_scn, int state)
 	int file;
 	char path[DR_PATH_MAX];
 	int rc = 0;
-	int unused;
 	time_t t;
 	char tbuf[128];
 
@@ -850,8 +850,14 @@ set_mem_scn_state(struct mem_scn *mem_scn, int state)
 		return -1;
 	}
 
-	unused = write(file, state_strs[state], strlen(state_strs[state]));
+	rc = write(file, state_strs[state], strlen(state_strs[state]));
 	close(file);
+
+	if (rc < 0) {
+		say(ERROR, "Could not write to %s to %s memory\n\t%s\n",
+		    path, state_strs[state], strerror(errno));
+		return rc;
+	}
 
 	if (get_mem_scn_state(mem_scn) != state) {
 		time(&t);

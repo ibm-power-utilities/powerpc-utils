@@ -13,6 +13,7 @@
 #include <ctype.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <inttypes.h>
 #include <dirent.h>
 #include <time.h>
 #include <librtas.h>
@@ -584,7 +585,7 @@ int do_migration(uint64_t stream_val)
 		rc = rtas_suspend_me(stream_val);
 		say(DEBUG, "ibm,suspend-me() returned %d\n", rc);
 	} else if (api_level == MIGRATION_API_V1) {
-		sprintf(buf, "0x%llx\n", stream_val);
+		sprintf(buf, "0x%" PRIx64 "\n", stream_val);
 
 		fd = open(SYSFS_MIGRATION_FILE, O_WRONLY);
 		if (fd == -1) {
@@ -618,7 +619,7 @@ int do_hibernation(uint64_t stream_val)
 	int rc, fd;
 	char buf[64];
 
-	sprintf(buf, "0x%llx\n", stream_val);
+	sprintf(buf, "0x%" PRIx64 "\n", stream_val);
 
 	fd = open(SYSFS_HIBERNATION_FILE, O_WRONLY);
 	if (fd == -1) {
