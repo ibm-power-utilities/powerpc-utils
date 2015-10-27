@@ -111,7 +111,7 @@ int main(int argc, char **argv)
 {
 	char *loc_code = "";
 	char err_buf[ERR_BUF_SIZE];
-	int lflag = 0, rc, c;
+	int rc, c;
 	unsigned int seq = 1, next_seq;
 	struct buf_element *list, *current;
 
@@ -133,7 +133,6 @@ int main(int argc, char **argv)
 		switch (c) {
 		case 'l':
 			loc_code = optarg;
-			lflag = 1;
 			break;
 		case 'h':
 			print_help(argv[0]);
