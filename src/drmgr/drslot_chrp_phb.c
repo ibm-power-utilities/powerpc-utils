@@ -139,7 +139,7 @@ static int get_os_hp_devices(struct hpdev **hpdev_list)
 		if (rc)
 			break;
 
-		say(DEBUG, "HPDEV: %s\n       %s\n", hpdev->path,
+		say(EXTRA_DEBUG, "HPDEV: %s\n       %s\n", hpdev->path,
 		    hpdev->devspec);
 		hpdev->next = hp_list;
 		hp_list = hpdev;

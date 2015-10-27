@@ -1220,10 +1220,14 @@ print_node_list(struct dr_node *first_node)
 	struct dr_node *parent;
 	struct dr_node *child;
 
+	/* Short-circuit printing nodes if not requested. */
+	if (output_level < EXTRA_DEBUG)
+		return;
+
 	parent = first_node;
-	say(DEBUG, "\nDR nodes list\n==============\n");
+	say(EXTRA_DEBUG, "\nDR nodes list\n==============\n");
 	while (parent) {
-		say(DEBUG, "%s: %s\n"
+		say(EXTRA_DEBUG, "%s: %s\n"
 		    "\tdrc index: 0x%x        description: %s\n"
 		    "\tdrc name: %s\n\tloc code: %s\n", 
 		    parent->ofdt_path, (parent->skip ? "(SKIP)" : ""),
@@ -1232,7 +1236,7 @@ print_node_list(struct dr_node *first_node)
 
 		child = parent->children;
 		while (child) {
-			say(DEBUG, "%s: %s\n"
+			say(EXTRA_DEBUG, "%s: %s\n"
 			    "\tdrc index: 0x%x        description: %s\n"
 			    "\tdrc name: %s\n\tloc code: %s\n",
 			    child->ofdt_path, (child->skip ? "(SKIP)" : ""),
@@ -1244,7 +1248,7 @@ print_node_list(struct dr_node *first_node)
 
 		parent = parent->next;
 	}
-	say(DEBUG, "\n");
+	say(EXTRA_DEBUG, "\n");
 }
 
 #define ACQUIRE_HP_START	2

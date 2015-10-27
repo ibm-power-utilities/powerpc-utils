@@ -742,7 +742,7 @@ int print_drconf_mem(struct cmd_opts *opts, struct lmb_list_head *lmb_list)
 
 		if (drc_index && drc_index != lmb->drc_index)
 			continue;
-		else if ((output_level < 4) && !lmb->is_owned)
+		else if ((output_level < DEBUG) && !lmb->is_owned)
 			continue;
 
 		printf("%s: %s\n", lmb->drc_name,

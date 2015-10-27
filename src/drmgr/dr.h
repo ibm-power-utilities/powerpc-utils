@@ -66,7 +66,7 @@ struct options {
 	int     pci_virtio;     /* qemu virtio device (legacy guest workaround) */
 };
 
-enum say_level { ERROR = 1, WARN, INFO, DEBUG};
+enum say_level { ERROR = 1, WARN, INFO, DEBUG, EXTRA_DEBUG};
 
 /* The follwing are defined in common.c */
 int say(enum say_level, char *, ...);
