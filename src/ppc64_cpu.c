@@ -722,6 +722,7 @@ static int do_run_mode(char *run_mode)
 		} else
 			printf("run-mode=%d\n", mode[2]);
 	} else {
+		uint16_t *first_16_bits = (uint16_t *)mode;
 		short rmode = atoi(run_mode);
 
 		if (rmode < 0 || rmode > 3) {
@@ -729,7 +730,7 @@ static int do_run_mode(char *run_mode)
 			return -1;
 		}
 
-		*(short *)mode = htobe16(1);
+		*first_16_bits = htobe16(1);
 		mode[2] = rmode;
 
 		rc = rtas_set_sysparm(DIAGNOSTICS_RUN_MODE, mode);
