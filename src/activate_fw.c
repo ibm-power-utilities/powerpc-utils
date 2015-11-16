@@ -32,6 +32,7 @@
  */
 
 #include <stdio.h>
+#include <err.h>
 #include <librtas.h>
 #include "pseries_platform.h"
 
@@ -109,12 +110,9 @@ static int activate_firmware(void)
 
 int main(void)
 {
-	if (get_platform() != PLATFORM_PSERIES_LPAR) {
-		fprintf(stderr,
-			"activate_firmware: is not supported on the %s platform\n",
-			platform_name);
-		return 1;
-	}
+	if (get_platform() != PLATFORM_PSERIES_LPAR)
+		errx(1,	"activate_firmware is not supported on the %s platform",
+		     platform_name);
 
 	return activate_firmware();
 }
