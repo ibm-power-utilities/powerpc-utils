@@ -33,6 +33,19 @@ phb_usage(char **pusage)
 	*pusage = usagestr;
 }
 
+static int phb_has_dlpar_children(struct dr_node *phb)
+{
+	struct dr_node *child;
+
+	/* If this PHB still owns children that are not hotplug, fail. */
+	for (child = phb->children; child; child = child->next) {
+		if ((child->is_owned) && (child->dev_type != PCI_HP_DEV))
+			return 1;
+	}
+
+	return 0;
+}
+
 /**
  * query_phb
  *
@@ -44,18 +57,14 @@ static int
 query_phb(struct options *opts)
 {
 	struct dr_node *phb;
-	struct dr_node *child;
 
 	phb = get_node_by_name(opts->usr_drc_name, PHB_NODES);
 	if (phb == NULL)
 		return RC_NONEXISTENT;
 
-	/* If this PHB still owns children that are not hotplug, fail. */
-	for (child = phb->children; child; child = child->next) {
-		if ((child->is_owned) && (child->dev_type != PCI_HP_DEV)) {
-			free_node(phb);
-			return RC_IN_USE;
-		}
+	if (phb_has_dlpar_children(phb)) {
+		free_node(phb);
+		return RC_IN_USE;
 	}
 
 	free_node(phb);
@@ -258,12 +267,9 @@ remove_phb(struct options *opts)
 		return RC_NONEXISTENT;
 	}
 
-	/* If this PHB still owns children that are not hotplug, fail. */
-	for (child = phb->children; child; child = child->next) {
-		if ((child->is_owned) && (child->dev_type != PCI_HP_DEV)) {
-			rc = -1;
-			goto phb_remove_error;
-		}
+	if (phb_has_dlpar_children(phb)) {
+		rc = -1;
+		goto phb_remove_error;
 	}
 
 	/* Now, disable any hotplug children */
