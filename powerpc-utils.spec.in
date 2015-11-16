@@ -32,7 +32,7 @@ Utilities for maintaining and servicing PowerPC systems.
 %{__make} %{?_smp_mflags}
 
 %install
-%{__rm} -rf $RPM_BULD_ROOT
+%{__rm} -rf $RPM_BUILD_ROOT
 %{__make} install DESTDIR=$RPM_BUILD_ROOT
 
 %files
