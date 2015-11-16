@@ -23,6 +23,7 @@
  *	5 - Memory/resource allocation error.<br>
  *	6 - General error.<br>
  *	7 - Error in case of getting UAK expiry date or setting UAK.<br>
+ *	8 - Parameter error when activating firmware.<br>
  *
  * For the specific mappings of librtas and rtas_call return codes (librtas
  * return codes are in all caps) to the return codes listed above see the
@@ -134,6 +135,12 @@ static int activate_firmware(void)
 		say("activate_fw: rtas call returned %d, converting to %d\n",
 		    rc, 5);
 		rc = 5;
+		break;
+
+	case -3:
+		say("activate_fw: rtas call returned %d, converting to %d\n",
+		    rc, 8);
+		rc = 8;
 		break;
 
 	/* 6 - catch all other return codes here */
