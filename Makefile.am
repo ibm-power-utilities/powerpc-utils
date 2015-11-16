@@ -85,8 +85,8 @@ sbin_PROGRAMS += \
 	src/rtas_event_decode \
 	src/sys_ident
 
-src_activate_firmware_SOURCES = src/activate_fw.c $(pseries_platform_SOURCES)
-src_activate_firmware_LDADD = -lrtas
+src_activate_firmware_SOURCES = src/activate_fw.c $(librtas_error_SOURCES) $(pseries_platform_SOURCES)
+src_activate_firmware_LDADD = -lrtas -lm
 
 src_set_poweron_time_SOURCES = src/set_poweron_time.c $(librtas_error_SOURCES) $(pseries_platform_SOURCES)
 src_set_poweron_time_LDADD = -lrtas
