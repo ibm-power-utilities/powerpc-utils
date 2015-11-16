@@ -45,16 +45,9 @@
 #define say(_f, _a...)
 #endif
 
-int main(void)
+static int activate_firmware(void)
 {
 	int rc;
-
-	if (get_platform() != PLATFORM_PSERIES_LPAR) {
-		fprintf(stderr,
-			"activate_firmware: is not supported on the %s platform\n",
-			platform_name);
-		return 1;
-	}
 
 	rc = rtas_activate_firmware();
 
@@ -112,4 +105,16 @@ int main(void)
 	}
 
 	return rc;
+}
+
+int main(void)
+{
+	if (get_platform() != PLATFORM_PSERIES_LPAR) {
+		fprintf(stderr,
+			"activate_firmware: is not supported on the %s platform\n",
+			platform_name);
+		return 1;
+	}
+
+	return activate_firmware();
 }
