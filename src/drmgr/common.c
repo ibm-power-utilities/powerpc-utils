@@ -1391,3 +1391,8 @@ int ams_balloon_active(void)
 
 	return !is_inactive;
 }
+
+int is_display_adapter(struct dr_node *node)
+{
+	return !strncmp(node->drc_type, "display", 7);
+}

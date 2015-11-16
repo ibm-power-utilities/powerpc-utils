@@ -46,6 +46,18 @@ static int phb_has_dlpar_children(struct dr_node *phb)
 	return 0;
 }
 
+static int phb_has_display_adapter(struct dr_node *phb)
+{
+	struct dr_node *child;
+
+	for (child = phb->children; child; child = child->next) {
+		if (is_display_adapter(child))
+			return 1;
+	}
+
+	return 0;
+}
+
 /**
  * query_phb
  *
@@ -57,18 +69,23 @@ static int
 query_phb(struct options *opts)
 {
 	struct dr_node *phb;
+	int rc;
 
 	phb = get_node_by_name(opts->usr_drc_name, PHB_NODES);
+
 	if (phb == NULL)
-		return RC_NONEXISTENT;
+		rc = RC_NONEXISTENT;
+	else if (phb_has_display_adapter(phb))
+		rc = RC_IN_USE;
+	else if (phb_has_dlpar_children(phb))
+		rc = RC_IN_USE;
+	else
+		rc = RC_LINUX_SLOT;
 
-	if (phb_has_dlpar_children(phb)) {
+	if (phb)
 		free_node(phb);
-		return RC_IN_USE;
-	}
 
-	free_node(phb);
-	return RC_LINUX_SLOT;
+	return rc;
 }
 
 /**
@@ -267,6 +284,12 @@ remove_phb(struct options *opts)
 		return RC_NONEXISTENT;
 	}
 
+	if (phb_has_display_adapter(phb)) {
+		say(ERROR, "This PHB contains a display adapter, DLPAR "
+		    "remove of display adapters is not supported.\n");
+		goto phb_remove_error;
+	}
+
 	if (phb_has_dlpar_children(phb)) {
 		rc = -1;
 		goto phb_remove_error;
@@ -398,6 +421,12 @@ add_phb(struct options *opts)
 	if (phb) {
 		say(ERROR, "PHB is already owned by this partition\n");
 		rc = RC_ALREADY_OWN;
+		goto phb_add_error;
+	}
+
+	if (phb_has_display_adapter(phb)) {
+		say(ERROR, "This PHB contains a display adapter, DLPAR "
+		    "add of display adapters is not supported.\n");
 		goto phb_add_error;
 	}
 

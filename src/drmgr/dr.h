@@ -142,4 +142,5 @@ void phib_usage(char **);
 
 int ams_balloon_active(void);
 
+int is_display_adapter(struct dr_node *);
 #endif

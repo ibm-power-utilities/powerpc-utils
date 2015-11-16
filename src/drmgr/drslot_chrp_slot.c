@@ -37,6 +37,11 @@ query_slot(struct dr_node *node, struct options *opts)
 		return RC_DONT_OWN;
 	}
 
+	if (is_display_adapter(node)) {
+		say(ERROR, "Display adapters adre not supported by drmgr.\n");
+		return RC_IN_USE;
+	}
+
 	/* Special case for HMC */
 	return RC_LINUX_SLOT;
 }
@@ -70,6 +75,11 @@ static int
 remove_slot(struct dr_node *node)
 {
 	int rc,rc2;
+
+	if (is_display_adapter(node)) {
+		say(ERROR, "DLPAR of display adapters is not supported.\n");
+		return -1;
+	}
 
 	rc = disable_hp_children(node->drc_name);
 	if (rc)
@@ -144,6 +154,11 @@ acquire_slot(char *drc_name, struct dr_node **slot)
 		say(ERROR, "Could not find drc index for %s, unable to add the"
 		    "slot.\n", drc_name);
 		return rc;
+	}
+
+	if (!strncmp(drc.type, "display", 7)) {
+		say(ERROR, "DLPAR of display adapters is not supported.\n");
+		return -1;
 	}
 
 	rc = acquire_drc(drc.index);

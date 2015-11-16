@@ -310,6 +310,11 @@ do_identify(struct options *opts, struct dr_node *all_nodes)
 	if (node == NULL)
 		return -1;
 
+	if (is_display_adapter(node)) {
+		say(ERROR, "Display adapters are not supported by drmgr.\n");
+		return -1;
+	}
+
 	usr_key = identify_slot(node);
 
 	/* when we're done with identify, put the LED back
@@ -459,6 +464,11 @@ do_add(struct options *opts, struct dr_node *all_nodes)
 	if (node == NULL)
 		return -1;
 
+	if (is_display_adapter(node)) {
+		say(ERROR, "DLPAR of display adapters is not supported.\n");
+		return -1;
+	}
+
 	/* Prompt user only if in interactive mode. */
 	if (0 == opts->noprompt) {
 		if (!opts->no_ident)
@@ -584,6 +594,11 @@ remove_work(struct options *opts, struct dr_node *all_nodes)
 
 	say(DEBUG, "found node: drc name=%s, index=0x%x, path=%s\n",
 	     node->drc_name, node->drc_index, node->ofdt_path);
+
+	if (is_display_adapter(node)) {
+		say(ERROR, "DLPAR of display adapters is not supported.\n");
+		return NULL;
+	}
 
 	/* Prompt user only if not in noprompt mode */
 	if (0 == opts->noprompt) {
