@@ -106,8 +106,8 @@ int main(void)
 	/* 6 - catch all other return codes here */
 	default:
 		say("activate_fw: rtas call returned %d, converting to %d\n",
-		    rc, 4);
-		rc = 4;
+		    rc, 6);
+		rc = 6;
 		break;
 	}
 
