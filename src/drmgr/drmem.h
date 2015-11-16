@@ -2,9 +2,11 @@
 
 struct lmb_list_head {
 	struct dr_node	*lmbs;
+	struct dr_node	*last;
 	char		*drconf_buf;
 	int		drconf_buf_sz;
 	int		lmbs_modified;
+	int		sort;
 };
 
 struct drconf_mem {
