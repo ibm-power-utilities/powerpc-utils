@@ -5,12 +5,18 @@
 .SH NAME
 activate_firmware - activate a firmware image that has been updated concurrently
 .SH SYNOPSIS
-\fB/usr/sbin/activate_firmware
+\fB/usr/sbin/activate_firmware [-e [keyfile]]
 .SH DESCRIPTION
-The activate_firmware utility will cause a firmware image that has already
-been flashed to be activated concurrently.  This utility will be invoked
-automatically when necessary, and as such should not be manually invoked
-at the command line.
+When used without options, the activate_firmware utility will cause a firmware
+image that has already been flashed to be activated concurrently. This utility
+will be invoked automatically when necessary, and as such should not be manually
+invoked at the command line.
+.SH OPTIONS
+.TP
+.B \-e [keyfile]
+When used with this option, the command either fetches the current Update Access
+Key expiry date or sets the Update Access Key expiry date if <keyfile> is
+provided.
 .SH "EXIT STATUS"
 .TP
 .B 0
@@ -33,3 +39,9 @@ Memory/resource allocation error.
 .TP
 .B 6
 General error.
+.TP
+.B 7
+Error in case of getting UAK expiry date or setting UAK. Exact error description is written to stderr.
+.TP
+.B 8
+Parameter error when activating firmware.
