@@ -65,6 +65,8 @@ Utilities for maintaining and servicing PowerPC systems.
 /usr/sbin/ls-vscsi
 /usr/sbin/lparstat
 /usr/sbin/pseries_platform
+/usr/sbin/errinjct
+/usr/sbin/rtas_dbg
 
 /usr/bin/amsstat
 
@@ -86,6 +88,8 @@ Utilities for maintaining and servicing PowerPC systems.
 /usr/share/man/man8/lsslot.8.gz
 /usr/share/man/man8/ppc64_cpu.8.gz
 /usr/share/man/man1/amsstat.1.gz
+/usr/share/man/man8/errinjct.8.gz
+/usr/share/man/man8/rtas_dbg.8.gz
 
 %post
 # Post-install script -----------------------------------------------
