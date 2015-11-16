@@ -237,7 +237,7 @@ void perr(int error, const char *fmt, ...)
 
 	buf[len] = '\0';
 
-	fprintf(stderr, buf);
+	fprintf(stderr, "%s\n", buf);
 	fflush(stderr);
 }
 
