@@ -21,6 +21,7 @@
 #include <sched.h>
 #include <assert.h>
 #include <pthread.h>
+#include <stdbool.h>
 #include <sys/ioctl.h>
 #include <sys/ptrace.h>
 #include <sys/wait.h>
@@ -1096,6 +1097,108 @@ static int set_one_core(int smt_state, int core, int state)
 	return rc;
 }
 
+static int do_online_cores(char *cores, int state)
+{
+	int smt_state;
+	int *core_state, *desired_core_state;
+	int i;
+	int core;
+	char *str, *token, *end_token;
+	bool err = false, first_core = true;
+
+	if (cores) {
+		if (!sysattr_is_writeable("online")) {
+			perror("Cannot set cores online");
+			return -1;
+		}
+	} else {
+		if (!sysattr_is_readable("online")) {
+			perror("Cannot get online cores");
+			return -1;
+		}
+	}
+
+	smt_state = get_smt_state();
+	if (smt_state == -1) {
+		printf("Bad or inconsistent SMT state: use ppc64_cpu --smt=on|off to set all\n"
+                       "cores to have the same number of online threads to continue.\n");
+		do_info();
+		return -1;
+	}
+
+	core_state = calloc(cpus_in_system, sizeof(int));
+	if (!core_state)
+		return -ENOMEM;
+
+	for (i = 0; i < cpus_in_system ; i++)
+		core_state[i] = cpu_online(i * threads_per_cpu);
+
+	if (!cores) {
+		printf("Cores %s = ", state == 0 ? "offline" : "online");
+		for (i = 0; i < cpus_in_system; i++) {
+			if (core_state[i] == state) {
+				if (first_core)
+					first_core = false;
+				else
+					printf(",");
+				printf("%d", i);
+			}
+		}
+		printf("\n");
+		free(core_state);
+		return 0;
+	}
+
+	desired_core_state = calloc(cpus_in_system, sizeof(int));
+	if (!desired_core_state) {
+		free(core_state);
+		return -ENOMEM;
+	}
+
+	for (i = 0; i < cpus_in_system; i++)
+		/*
+		 * Not specified on command-line
+		 */
+		desired_core_state[i] = -1;
+
+	str = cores;
+	while (1) {
+		token = strtok(str, ",");
+		if (!token)
+			break;
+		/* reuse the same string */
+		str = NULL;
+
+		core = strtol(token, &end_token, 0);
+		if (token == end_token || '\0' != *end_token) {
+			printf("Invalid core to %s: %s\n", state == 0 ? "offline" : "online", token);
+			err = true;
+			continue;
+		}
+		if (core > cpus_in_system || core < 0) {
+			printf("Invalid core to %s: %d\n", state == 0 ? "offline" : "online", core);
+			err = true;
+			continue;
+		}
+		desired_core_state[core] = state;
+	}
+
+	if (err) {
+		free(core_state);
+		free(desired_core_state);
+		return -1;
+	}
+
+	for (i = 0; i < cpus_in_system; i++) {
+		if (desired_core_state[i] != -1)
+			set_one_core(smt_state, i, state);
+	}
+
+	free(core_state);
+	free(desired_core_state);
+	return 0;
+}
+
 static int do_cores_on(char *state)
 {
 	int smt_state;
@@ -1237,6 +1340,8 @@ static void usage(void)
 "ppc64_cpu --cores-on                # Get the number of cores currently online\n"
 "ppc64_cpu --cores-on=X              # Put exactly X cores online\n"
 "ppc64_cpu --cores-on=all            # Put all cores online\n\n"
+"ppc64_cpu --online-cores=X[,Y...]   # Put specified cores online\n\n"
+"ppc64_cpu --offline-cores=X[,Y,...] # Put specified cores offline\n\n"
 "ppc64_cpu --dscr                    # Get current DSCR system setting\n"
 "ppc64_cpu --dscr=<val>              # Change DSCR system setting\n"
 "ppc64_cpu --dscr [-p <pid>]         # Get DSCR setting for process <pid>\n"
@@ -1261,6 +1366,8 @@ struct option longopts[] = {
 	{"frequency",		no_argument,	   NULL, 'f'},
 	{"cores-present",	no_argument,	   NULL, 'C'},
 	{"cores-on",		optional_argument, NULL, 'c'},
+	{"online-cores",	optional_argument, NULL, 'O'},
+	{"offline-cores",	optional_argument, NULL, 'F'},
 	{"subcores-per-core",	optional_argument, NULL, 'n'},
 	{"info",		no_argument,	   NULL, 'i'},
 	{"version",		no_argument,	   NULL, 'V'},
@@ -1354,6 +1461,10 @@ int main(int argc, char *argv[])
 		do_cores_present();
 	else if (!strcmp(action, "cores-on"))
 		rc = do_cores_on(action_arg);
+	else if (!strcmp(action, "online-cores"))
+		rc = do_online_cores(action_arg, 1);
+	else if (!strcmp(action, "offline-cores"))
+		rc = do_online_cores(action_arg, 0);
 	else if (!strcmp(action, "subcores-per-core"))
 		rc = do_subcores_per_core(action_arg);
 	else if (!strcmp(action, "threads-per-core"))
