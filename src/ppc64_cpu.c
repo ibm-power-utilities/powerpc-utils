@@ -1142,11 +1142,15 @@ static int do_cores_online(char *state)
 		return 0;
 	}
 
-	number_to_have = strtol(state, &end_state, 0);
-	/* No digits found or trailing characters */
-	if (state == end_state || '\0' != *end_state) {
-		printf("Invalid number of cores to online: %s\n", state);
-		return -1;
+	if (!strcmp(state, "all")) {
+		number_to_have = cpus_in_system;
+	} else {
+		number_to_have = strtol(state, &end_state, 0);
+		/* No digits found or trailing characters */
+		if (state == end_state || '\0' != *end_state) {
+			printf("Invalid number of cores to online: %s\n", state);
+			return -1;
+		}
 	}
 
 	if (number_to_have == cores_now_online) {
@@ -1231,7 +1235,8 @@ static void usage(void)
 "ppc64_cpu --smt=X                   # Set SMT state to X\n\n"
 "ppc64_cpu --cores-present           # Get the number of cores present\n"
 "ppc64_cpu --cores-on                # Get the number of cores currently online\n"
-"ppc64_cpu --cores-on=X              # Put exactly X cores online\n\n"
+"ppc64_cpu --cores-on=X              # Put exactly X cores online\n"
+"ppc64_cpu --cores-on=all            # Put all cores online\n\n"
 "ppc64_cpu --dscr                    # Get current DSCR system setting\n"
 "ppc64_cpu --dscr=<val>              # Change DSCR system setting\n"
 "ppc64_cpu --dscr [-p <pid>]         # Get DSCR setting for process <pid>\n"
