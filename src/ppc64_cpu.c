@@ -1104,6 +1104,7 @@ static int do_cores_online(char *state)
 	int i;
 	int number_to_have, number_to_change = 0, number_changed = 0;
 	int new_state;
+	char *end_state;
 
 	if (state) {
 		if (!sysattr_is_writeable("online")) {
@@ -1141,7 +1142,13 @@ static int do_cores_online(char *state)
 		return 0;
 	}
 
-	number_to_have = strtol(state, NULL, 0);
+	number_to_have = strtol(state, &end_state, 0);
+	/* No digits found or trailing characters */
+	if (state == end_state || '\0' != *end_state) {
+		printf("Invalid number of cores to online: %s\n", state);
+		return -1;
+	}
+
 	if (number_to_have == cores_now_online) {
 		free(core_state);
 		return 0;
