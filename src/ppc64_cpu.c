@@ -1096,7 +1096,7 @@ static int set_one_core(int smt_state, int core, int state)
 	return rc;
 }
 
-static int do_cores_online(char *state)
+static int do_cores_on(char *state)
 {
 	int smt_state;
 	int *core_state;
@@ -1353,7 +1353,7 @@ int main(int argc, char *argv[])
 	else if (!strcmp(action, "cores-present"))
 		do_cores_present();
 	else if (!strcmp(action, "cores-on"))
-		rc = do_cores_online(action_arg);
+		rc = do_cores_on(action_arg);
 	else if (!strcmp(action, "subcores-per-core"))
 		rc = do_subcores_per_core(action_arg);
 	else if (!strcmp(action, "threads-per-core"))
