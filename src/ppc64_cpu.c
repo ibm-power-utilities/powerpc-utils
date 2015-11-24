@@ -1104,7 +1104,7 @@ static int do_online_cores(char *cores, int state)
 	int i, rc = 0;
 	int core;
 	char *str, *token, *end_token;
-	bool err = false, first_core = true;
+	bool first_core = true;
 
 	if (cores) {
 		if (!sysattr_is_writeable("online")) {
@@ -1172,21 +1172,21 @@ static int do_online_cores(char *cores, int state)
 		core = strtol(token, &end_token, 0);
 		if (token == end_token || '\0' != *end_token) {
 			printf("Invalid core to %s: %s\n", state == 0 ? "offline" : "online", token);
-			err = true;
+			rc = -1;
 			continue;
 		}
 		if (core > cpus_in_system || core < 0) {
 			printf("Invalid core to %s: %d\n", state == 0 ? "offline" : "online", core);
-			err = true;
+			rc = -1;
 			continue;
 		}
 		desired_core_state[core] = state;
 	}
 
-	if (err) {
+	if (rc) {
 		free(core_state);
 		free(desired_core_state);
-		return -1;
+		return rc;
 	}
 
 	for (i = 0; i < cpus_in_system; i++) {
