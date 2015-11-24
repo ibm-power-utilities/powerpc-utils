@@ -1301,6 +1301,19 @@ static int do_cores_on(char *state)
 		}
 	}
 
+	if (number_changed != number_to_change) {
+		cores_now_online = 0;
+		for (i = 0; i < cpus_in_system ; i++) {
+			if (cpu_online(i * threads_per_cpu))
+				cores_now_online++;
+		}
+		printf("Failed to set requested number of cores online.\n"
+                       "Requested: %d cores, Onlined: %d cores\n",
+                       number_to_have, cores_now_online);
+		free(core_state);
+		return -1;
+	}
+
 	free(core_state);
 	return 0;
 }
