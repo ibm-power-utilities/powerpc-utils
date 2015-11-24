@@ -1101,7 +1101,7 @@ static int do_online_cores(char *cores, int state)
 {
 	int smt_state;
 	int *core_state, *desired_core_state;
-	int i;
+	int i, rc = 0;
 	int core;
 	char *str, *token, *end_token;
 	bool err = false, first_core = true;
@@ -1190,13 +1190,16 @@ static int do_online_cores(char *cores, int state)
 	}
 
 	for (i = 0; i < cpus_in_system; i++) {
-		if (desired_core_state[i] != -1)
-			set_one_core(smt_state, i, state);
+		if (desired_core_state[i] != -1) {
+			rc = set_one_core(smt_state, i, state);
+			if (rc)
+				break;
+		}
 	}
 
 	free(core_state);
 	free(desired_core_state);
-	return 0;
+	return rc;
 }
 
 static int do_cores_on(char *state)
@@ -1204,7 +1207,7 @@ static int do_cores_on(char *state)
 	int smt_state;
 	int *core_state;
 	int cores_now_online = 0;
-	int i;
+	int i, rc;
 	int number_to_have, number_to_change = 0, number_changed = 0;
 	int new_state;
 	char *end_state;
@@ -1279,8 +1282,9 @@ static int do_cores_on(char *state)
 	if (new_state) {
 		for (i = 0; i < cpus_in_system; i++) {
 			if (!core_state[i]) {
-				set_one_core(smt_state, i, new_state);
-				number_changed++;
+				rc = set_one_core(smt_state, i, new_state);
+				if (!rc)
+					number_changed++;
 				if (number_changed >= number_to_change)
 					break;
 			}
@@ -1288,8 +1292,9 @@ static int do_cores_on(char *state)
 	} else {
 		for (i = cpus_in_system - 1; i > 0; i--) {
 			if (core_state[i]) {
-				set_one_core(smt_state, i, new_state);
-				number_changed++;
+				rc = set_one_core(smt_state, i, new_state);
+				if (!rc)
+					number_changed++;
 				if (number_changed >= number_to_change)
 					break;
 			}
