@@ -887,6 +887,7 @@ set_mem_scn_state(struct mem_scn *mem_scn, int state)
 		strftime(tbuf, 128, "%T", localtime(&t));
 		say(DEBUG, "%s Completed marking %s %s.\n", tbuf,
 				mem_scn->sysfs_path, state_strs[state]);
+		rc = 0;
 	}
 
 	return rc;
