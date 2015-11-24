@@ -453,6 +453,13 @@ check_ipmitool() {
 		echo "update_flash: ipmitool command not found."
 		error $E_IPMI "Please install ipmitool and retry."
 	fi
+
+	# Is BMC alive ?
+	ipmitool -I usb mc info >/dev/null 2>&1 && break;
+	if [ $? -ne 0 ]; then
+		echo "update_flash: Failed to connect to BMC."
+		error $E_IPMI "Please try again."
+	fi
 }
 
 opp_query_flash_support() {
