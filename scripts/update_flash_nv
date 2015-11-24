@@ -487,6 +487,29 @@ opp_validate_flash_from_file() {
 	exit $E_SUCCESS
 }
 
+bmc_reset() {
+	local timeout=120
+
+	# We need to discard the errors as the USB device is reseted
+	# along with the BMC.
+	ipmitool -I usb mc reset cold >/dev/null 2>&1
+
+	# The restart should take more or less 80 seconds
+	for retry_count in 1 2; do
+		echo "Waiting for BMC to cold reset. Sleeping $timeout seconds"
+		sleep $timeout
+
+		ipmitool -I usb mc info >/dev/null 2>&1 && break;
+
+		retry_count=0
+	done
+
+	if [ $retry_count -eq 0 ]; then
+		echo "update_flash: Failed to reset BMC."
+		error $E_IPMI "Please try again."
+	fi
+}
+
 opp_update_flash_from_file() {
 	local img_file=$1
 
@@ -502,6 +525,9 @@ opp_update_flash_from_file() {
 
 	# Check file presence
 	[ -r "$img_file" ] || error $E_IMAGE "Cannot read ${img_file}."
+
+	# Start with a clean state: require a cold reset of the BMC.
+	bmc_reset
 
 	# Protect BMC memory content, avoid loosing network settings
 	ipmitool -I usb raw 0x32 0xba 0x18 0x00 >/dev/null 2>&1
@@ -522,6 +548,10 @@ opp_update_flash_from_file() {
 		#     retry firmware update.
 		error $E_IPMI "Please reboot and try again."
 	fi
+
+	# BMC should reset it self after the update of component 1. As
+	# we need to be sure or reboot will fail, force a reset.
+	bmc_reset
 
 	# Reboot system
 	echo
