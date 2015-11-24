@@ -293,7 +293,6 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
 	uint64_t lmb_sz;
 	int i, num_entries;
 	int rc = 0;
-	int found = 0;
 
 	rc = get_property(DYNAMIC_RECONFIG_MEM, "ibm,lmb-size",
 			  &lmb_sz, sizeof(lmb_sz));
@@ -349,7 +348,6 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
 		lmb->lmb_aa_index = be32toh(drmem->assoc_index);
 
 		if (be32toh(drmem->flags) & DRMEM_ASSIGNED) {
-			found++;
 			lmb->is_owned = 1;
 
 			/* find the associated sysfs memory blocks */
@@ -358,10 +356,11 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
 				break;
 		}
 
+		lmb_list->lmbs_found++;
 		drmem++; /* trust your compiler */
 	}
 
-	say(INFO, "Found %d LMBs currently allocated\n", found);
+	say(INFO, "Found %d LMBs currently allocated\n", lmb_list->lmbs_found);
 	return rc;
 }
 
@@ -371,20 +370,18 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
  *
  * @param list pointer to lmb list to be randomly shuffled
  * @param length number of lmbs in the list
- *
- * @return list of shuffled lmbs
  */
-struct dr_node *
-shuffle_lmbs(struct dr_node *lmb_list, int length)
+static void shuffle_lmbs(struct lmb_list_head *lmb_list)
 {
 	struct dr_node **shuffled_lmbs, *lmb;
+	int total_lmbs = lmb_list->lmbs_found;
 	int i, j;
 	
 	srand(time(NULL));
 
-	shuffled_lmbs = zalloc(sizeof(*shuffled_lmbs) * length);
+	shuffled_lmbs = zalloc(sizeof(*shuffled_lmbs) * total_lmbs);
 
-	for (i = 0, lmb = lmb_list; lmb; i++, lmb = lmb->next) {
+	for (i = 0, lmb = lmb_list->lmbs; lmb; i++, lmb = lmb->next) {
 		j = rand() % (i + 1);
 
 		if (j == i) {
@@ -395,15 +392,13 @@ shuffle_lmbs(struct dr_node *lmb_list, int length)
 		}
 	}
 
-	for (i = 0; i < (length - 1); i++)
+	for (i = 0; i < (total_lmbs - 1); i++)
 		shuffled_lmbs[i]->next = shuffled_lmbs[i + 1];
 
-	shuffled_lmbs[length - 1]->next = NULL;
+	shuffled_lmbs[total_lmbs - 1]->next = NULL;
 
-	lmb = shuffled_lmbs[0];
+	lmb_list->lmbs = shuffled_lmbs[0];
 	free(shuffled_lmbs);
-
-	return lmb;
 }
 
 /**
@@ -422,7 +417,6 @@ get_lmbs(unsigned int sort)
 	struct stat sbuf;
 	char buf[DR_STR_MAX];
 	int rc = 0;
-	int found = 0;
 
 	lmb_list = zalloc(sizeof(*lmb_list));
 	if (lmb_list == NULL) {
@@ -473,11 +467,11 @@ get_lmbs(unsigned int sort)
 					break;
 				}
 
-				found++;
+				lmb_list->lmbs_found++;
 			}
 		}
 
-		say(INFO, "Maximum of %d LMBs\n", found);
+		say(INFO, "Maximum of %d LMBs\n", lmb_list->lmbs_found);
 		rc = get_mem_node_lmbs(lmb_list);
 	} else {
 		/* A small hack to here to allow memory add to work in
@@ -495,7 +489,7 @@ get_lmbs(unsigned int sort)
 		free_lmbs(lmb_list);
 		lmb_list = NULL;
 	} else if (sort == LMB_RANDOM_SORT) {
-		lmb_list->lmbs = shuffle_lmbs(lmb_list->lmbs, found);
+		shuffle_lmbs(lmb_list);
 	}
 
 	return lmb_list;

@@ -7,6 +7,7 @@ struct lmb_list_head {
 	int		drconf_buf_sz;
 	int		lmbs_modified;
 	int		sort;
+	int		lmbs_found;
 };
 
 struct drconf_mem {
