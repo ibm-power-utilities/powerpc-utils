@@ -690,7 +690,7 @@ update_drconf_node(struct dr_node *lmb, struct lmb_list_head *lmb_list,
 	memcpy(tmp, lmb_list->drconf_buf, lmb_list->drconf_buf_sz);
 	tmp += lmb_list->drconf_buf_sz;
 
-	tmp += sprintf(tmp, " %s %" PRId64 "d ",
+	tmp += sprintf(tmp, " %s %" PRId64 " ",
 		       (action == ADD ? "add" : "remove"),
 		       sizeof(lmb->lmb_address));
 	memcpy(tmp, &lmb->lmb_address, sizeof(lmb->lmb_address));
