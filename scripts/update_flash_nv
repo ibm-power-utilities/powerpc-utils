@@ -504,7 +504,7 @@ opp_update_flash_from_file() {
 	[ -r "$img_file" ] || error $E_IMAGE "Cannot read ${img_file}."
 
 	# Protect BMC memory content, avoid loosing network settings
-	ipmitool raw 0x32 0xba 0x18 0x00
+	ipmitool -I usb raw 0x32 0xba 0x18 0x00 >/dev/null 2>&1
 	if [ $? -ne 0 ]; then
 		echo "update_flash: Failed to protect BMC memory content."
 		error $E_IPMI "Please try again."
@@ -541,13 +541,13 @@ opp_display_current_fw_version() {
 	check_ipmitool
 
 	echo
-	id=`ipmitool fru 2>/dev/null |grep "System Firmware" | cut -d " " -f8 | cut -d ")" -f1`
+	id=`ipmitool -I usb fru 2>/dev/null |grep "System Firmware" | cut -d " " -f8 | cut -d ")" -f1`
 	if [ "x$id" == "x" ]; then
 		error $E_IPMI "Failed to get firmware version."
 	fi
 
 	echo "Firmware version:"
-	ipmitool fru print $id
+	ipmitool -I usb fru print $id
 
 	exit $E_SUCCESS
 }
