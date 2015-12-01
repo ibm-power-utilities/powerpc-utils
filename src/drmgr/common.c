@@ -368,7 +368,6 @@ add_node(char *path, struct of_node *new_nodes)
 
 	strcpy(buf, "add_node ");
 	strcat(buf, add_path);
-	strcat(buf, " ");
 	pos = buf + strlen(buf);
 
 	/* this is less than optimal, iterating over the entire buffer
@@ -376,6 +375,8 @@ add_node(char *path, struct of_node *new_nodes)
 	 */
 	for (prop = new_nodes->properties; prop; prop = prop->next) {
 		char tmp[16] = { '\0' }; /* for length */
+
+		*pos++ = ' ';
 
 		memcpy(pos, prop->name, strlen(prop->name));
 		pos += strlen(prop->name);
@@ -388,7 +389,6 @@ add_node(char *path, struct of_node *new_nodes)
 
 		memcpy(pos, prop->value, prop->length);
 		pos += prop->length;
-		*pos++ = ' ';
 	}
 	*pos = '\0';
 
