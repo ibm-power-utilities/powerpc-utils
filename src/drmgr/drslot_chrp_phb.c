@@ -424,12 +424,6 @@ add_phb(struct options *opts)
 		goto phb_add_error;
 	}
 
-	if (phb_has_display_adapter(phb)) {
-		say(ERROR, "This PHB contains a display adapter, DLPAR "
-		    "add of display adapters is not supported.\n");
-		goto phb_add_error;
-	}
-
 	rc = acquire_phb(opts->usr_drc_name, &phb);
 	if (rc)
 		return rc;
