@@ -242,7 +242,6 @@ get_drc_info(const char *of_path)
 	if (list == NULL)
 		goto done;
 
-	say(ERROR, "drc info alloc %p\n", list);
 	/* XXX Unchecked rc */
 	rc = build_connectors_list(&prop_grp, n_drcs, list);
 
@@ -273,7 +272,6 @@ free_drc_info(void)
 		list = all_drc_lists;
 		all_drc_lists = list->all_next;
 
-		say(ERROR, "drc info free %p\n", list);
 		free(list);
 	}
 }
