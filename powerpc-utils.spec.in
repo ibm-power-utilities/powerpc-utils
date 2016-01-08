@@ -5,7 +5,7 @@ Summary:	Utilities for PowerPC platforms
 Name:		%{name}
 Version:	%{version}
 Release:	%{release}
-License:	IBM Common Public License (CPL)
+License:	GNU General Public License (GPL)
 Group:		System Environment
 Source:		powerpc-utils-%{version}.tar.gz
 BuildRoot:	/tmp/%{name}-buildroot/
@@ -38,7 +38,7 @@ Utilities for maintaining and servicing PowerPC systems.
 %files
 %defattr(-,root,root)
 /usr/share/doc/packages/powerpc-utils/README
-/usr/share/doc/packages/powerpc-utils/COPYRIGHT
+/usr/share/doc/packages/powerpc-utils/COPYING
 
 /usr/sbin/update_flash
 /usr/sbin/update_flash_nv

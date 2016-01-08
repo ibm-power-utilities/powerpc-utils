@@ -5,7 +5,7 @@ sbin_PROGRAMS =
 EXTRA_DIST =
 
 docdir = $(datadir)/doc/packages/@PACKAGE@
-doc_DATA = README COPYRIGHT
+doc_DATA = README COPYING
 
 bin_SCRIPTS = scripts/amsstat
 
@@ -48,7 +48,7 @@ man_MANS = \
 EXTRA_DIST += $(bin_SCRIPTS) $(sbin_SCRIPTS) $(man_MANS)
 
 
-EXTRA_DIST += COPYRIGHT Changelog powerpc-utils.spec.in doc/activate_firmware.doxycfg \
+EXTRA_DIST += COPYING Changelog powerpc-utils.spec.in doc/activate_firmware.doxycfg \
 	     doc/nvram.doxycfg doc/rtas_ibm_get_vpd.doxycfg doc/serv_config.doxycfg \
 	     doc/set_poweron_time.doxycfg doc/uesensor.doxycfg
 
