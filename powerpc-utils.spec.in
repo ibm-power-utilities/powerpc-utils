@@ -1,15 +1,15 @@
 %define name powerpc-utils
 %define version @PACKAGE_VERSION@
-%define release 2
+%define release 1
 Summary:	Utilities for PowerPC platforms
 Name:		%{name}
 Version:	%{version}
 Release:	%{release}
-License:	IBM Common Public License (CPL)
+License:	GNU General Public License (GPL)
 Group:		System Environment
 Source:		powerpc-utils-%{version}.tar.gz
 BuildRoot:	/tmp/%{name}-buildroot/
-Requires:	/bin/bash, /bin/sh, /bin/sed, /usr/bin/perl, librtas >= 1.3.0, zlib
+Requires:	/bin/bash, /bin/sh, /bin/sed, /usr/bin/perl, librtas >= 1.4.0, zlib
 Requires:	bc
 Requires:	coreutils
 Requires:	findutils
@@ -32,13 +32,13 @@ Utilities for maintaining and servicing PowerPC systems.
 %{__make} %{?_smp_mflags}
 
 %install
-%{__rm} -rf $RPM_BULD_ROOT
+%{__rm} -rf $RPM_BUILD_ROOT
 %{__make} install DESTDIR=$RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root)
 /usr/share/doc/packages/powerpc-utils/README
-/usr/share/doc/packages/powerpc-utils/COPYRIGHT
+/usr/share/doc/packages/powerpc-utils/COPYING
 
 /usr/sbin/update_flash
 /usr/sbin/update_flash_nv
@@ -65,6 +65,8 @@ Utilities for maintaining and servicing PowerPC systems.
 /usr/sbin/ls-vscsi
 /usr/sbin/lparstat
 /usr/sbin/pseries_platform
+/usr/sbin/errinjct
+/usr/sbin/rtas_dbg
 
 /usr/bin/amsstat
 
@@ -86,6 +88,8 @@ Utilities for maintaining and servicing PowerPC systems.
 /usr/share/man/man8/lsslot.8.gz
 /usr/share/man/man8/ppc64_cpu.8.gz
 /usr/share/man/man1/amsstat.1.gz
+/usr/share/man/man8/errinjct.8.gz
+/usr/share/man/man8/rtas_dbg.8.gz
 
 %post
 # Post-install script -----------------------------------------------

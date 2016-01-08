@@ -3,6 +3,20 @@
  * @brief Common routines for Open Firmware Device Tree access
  *
  * Copyright (C) IBM Corporation 2006
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 #include <stdio.h>
@@ -112,13 +126,13 @@ get_drc_prop_grp(char *full_path, struct drc_prop_grp *group)
 static void
 free_drc_props(struct drc_prop_grp *group)
 {
-	if (group->drc_names.val)
+	if (group->drc_names._data)
 		free(group->drc_names._data);
-	if (group->drc_types.val)
+	if (group->drc_types._data)
 		free(group->drc_types._data);
-	if (group->drc_indexes.val)
+	if (group->drc_indexes._data)
 		free(group->drc_indexes._data);
-	if (group->drc_domains.val)
+	if (group->drc_domains._data)
 		free(group->drc_domains._data);
 }
 
@@ -219,14 +233,14 @@ get_drc_info(const char *of_path)
 	char *full_path = NULL;
 	int rc, n_drcs;
 
-	full_path = of_to_full_path(of_path);
-	if (full_path == NULL)
-		goto done;
-
 	for (list = all_drc_lists; list; list = list->all_next) {
 		if (! strcmp(list->ofdt_path, of_path))
 			return list;
 	}
+
+	full_path = of_to_full_path(of_path);
+	if (full_path == NULL)
+		return NULL;
 	
 	rc = get_drc_prop_grp(full_path, &prop_grp);
 	if (rc) {

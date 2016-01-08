@@ -4,6 +4,19 @@
  *
  * Copyright (C) IBM Corporation 2006
  *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 #include <sys/types.h>
 #include <string.h>
@@ -995,6 +1008,7 @@ get_bus_id(char *loc_code)
 	while ((ent = readdir(d))) {
 		char path[DR_PATH_MAX], location[DR_BUF_SZ];
 		FILE *f;
+		int rc;
 
 		if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, ".."))
 			continue;
@@ -1005,8 +1019,13 @@ get_bus_id(char *loc_code)
 		if (f == NULL)
 			continue;
 
-		fread(location, sizeof(location), 1, f);
+		rc = fread(location, sizeof(location), 1, f);
 		fclose(f);
+
+		if (rc != 1) {
+			say(ERROR, "Could not %s, skipping\n", path);
+			continue;
+		}
 
 		/* Strip any newline from the location to compare */
 		if  ((ptr = strchr(location, '\n')) != NULL)
@@ -1220,10 +1239,14 @@ print_node_list(struct dr_node *first_node)
 	struct dr_node *parent;
 	struct dr_node *child;
 
+	/* Short-circuit printing nodes if not requested. */
+	if (output_level < EXTRA_DEBUG)
+		return;
+
 	parent = first_node;
-	say(DEBUG, "\nDR nodes list\n==============\n");
+	say(EXTRA_DEBUG, "\nDR nodes list\n==============\n");
 	while (parent) {
-		say(DEBUG, "%s: %s\n"
+		say(EXTRA_DEBUG, "%s: %s\n"
 		    "\tdrc index: 0x%x        description: %s\n"
 		    "\tdrc name: %s\n\tloc code: %s\n", 
 		    parent->ofdt_path, (parent->skip ? "(SKIP)" : ""),
@@ -1232,7 +1255,7 @@ print_node_list(struct dr_node *first_node)
 
 		child = parent->children;
 		while (child) {
-			say(DEBUG, "%s: %s\n"
+			say(EXTRA_DEBUG, "%s: %s\n"
 			    "\tdrc index: 0x%x        description: %s\n"
 			    "\tdrc name: %s\n\tloc code: %s\n",
 			    child->ofdt_path, (child->skip ? "(SKIP)" : ""),
@@ -1244,7 +1267,7 @@ print_node_list(struct dr_node *first_node)
 
 		parent = parent->next;
 	}
-	say(DEBUG, "\n");
+	say(EXTRA_DEBUG, "\n");
 }
 
 #define ACQUIRE_HP_START	2

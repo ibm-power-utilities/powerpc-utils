@@ -2,6 +2,20 @@
  * @file dr.h
  *
  * Copyright (C) IBM Corporation 2006
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 #ifndef _H_DR
@@ -66,7 +80,7 @@ struct options {
 	int     pci_virtio;     /* qemu virtio device (legacy guest workaround) */
 };
 
-enum say_level { ERROR = 1, WARN, INFO, DEBUG};
+enum say_level { ERROR = 1, WARN, INFO, DEBUG, EXTRA_DEBUG};
 
 /* The follwing are defined in common.c */
 int say(enum say_level, char *, ...);
@@ -142,4 +156,5 @@ void phib_usage(char **);
 
 int ams_balloon_active(void);
 
+int is_display_adapter(struct dr_node *);
 #endif

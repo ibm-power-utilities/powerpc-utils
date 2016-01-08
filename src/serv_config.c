@@ -7,8 +7,21 @@
  * @mainpage serv_config documentation
  * @section Copyright
  * Copyright (c) 2004 International Business Machines
- * Common Public License Version 1.0 (see COPYRIGHT)
  *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * 
  * @section Overview
  * This utility can be run in one of two modes: interactive mode, where
  * the user will be prompted for the value of each variable, or macro
@@ -463,7 +476,7 @@ int
 update_nvram(char *var, char *val, char *partition) {
 	char buf[256];
 	pid_t child;
-	int status, rc;
+	int status;
 	char *nvram_args[] = { "nvram", "--update-config",
 			buf, "-p", partition, NULL };
 
@@ -482,12 +495,12 @@ update_nvram(char *var, char *val, char *partition) {
 	}
 	else if (child == 0) {
 		/* child process */
-		rc = execv(NVRAM_PROGRAM, nvram_args);
-
-		/* shouldn't get here */
-		err_msg(ERR_MSG, "Could not exec %s to update NVRAM\n",
+		if (execv(NVRAM_PROGRAM, nvram_args)) {
+			/* shouldn't get here */
+			err_msg(ERR_MSG, "Could not exec %s to update NVRAM\n",
 				NVRAM_PROGRAM);
-		exit(1);
+			exit(1);
+		}
 	}
 	else {
 		/* parent process */
@@ -609,12 +622,13 @@ byte_to_string(uint8_t num, char *buf, size_t size) {
  */
 int
 parse_call_home_buffer(char *var, char *buf, size_t size) {
-	int buf_size;
 	char *loc;
 
 	if (!call_home_buffer) return RC_OTHER;	/* should never happen */
 
-	buf_size = be16toh(*(uint16_t *)call_home_buffer);
+	/* The first 16 bits of the call home buffer is the buffer size,
+	 * skip past this.
+	 */
 	loc = call_home_buffer + sizeof(uint16_t);
 
 	while (loc[0] != '\0') {
@@ -674,7 +688,7 @@ retrieve_value(struct service_var *var, char *buf, size_t size) {
 			if (var->sysparm_num == USE_CALL_HOME_SYSPARM)
 				break;
 
-			ret_size = be16toh(*(uint16_t *)param);
+			ret_size = be16toh(*param);
 			if (!strcmp(var->nvram_var, "sp-ri-pon") ||
 				!strcmp(var->nvram_var, "sp-remote-pon") ||
 				!strcmp(var->nvram_var, "sp-sen")) {
@@ -818,6 +832,8 @@ update_value(struct service_var *var, char *val) {
 
 	if (!no_rtas_set_sysparm && (var->sysparm_num != NO_SYSPARM_NUM))
 	{ 
+		uint16_t *first_16_bits = (uint16_t *)param;
+
 		if (verbose > 1)
 			printf("Updating sysparm: %d = %s\n", 
 					var->sysparm_num, val);
@@ -825,7 +841,7 @@ update_value(struct service_var *var, char *val) {
 		if (!strcmp(var->nvram_var, "sp-ri-pon") ||
 				!strcmp(var->nvram_var, "sp-remote-pon") ||
 				!strcmp(var->nvram_var, "sp-sen")) {
-			*(uint16_t *)param = htobe16(1);
+			*first_16_bits = htobe16(1);
 			if (!strcmp(val, "on"))
 				param[2] = (uint8_t)(1);
 			if (!strcmp(val, "off"))
@@ -837,11 +853,11 @@ update_value(struct service_var *var, char *val) {
 			 (var->type == TYPE_NUM_1_120) ||
 			 (var->type == TYPE_NUM_1_255)) {
 
-			*(uint16_t *)param = htobe16(1);
+			*first_16_bits = htobe16(1);
 			param[2] = (uint8_t)atoi(val);
 		}
 		else {
-			*(uint16_t *)param = htobe16(sizeof(val));
+			*first_16_bits = htobe16(sizeof(val));
 			strncpy(param+2, val, BUF_SIZE-2);
 		}
 

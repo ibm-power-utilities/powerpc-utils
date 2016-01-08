@@ -3,7 +3,20 @@
  * @brief rtas_dbg command
  *
  * Copyright (c) 2015 International Business Machines
- * Common Public License Version 1.0 (see COPYRIGHT)
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  * The rtas_dbg tool enables rtas debug output to the system console
  * for a given rtas call. Currently, rtas_dbg is only supported on
@@ -115,6 +128,7 @@ struct rtas_token *get_rtas_tokens(void)
 		FILE *fp;
 		struct rtas_token *tok;
 		char dir[128];
+		int rc;
 
 		if (dp->d_name[0] == '.')
 			continue;
@@ -141,7 +155,16 @@ struct rtas_token *get_rtas_tokens(void)
 			break;
 		}
 
-		fread(&betoken, sizeof(betoken), 1, fp);
+		rc = fread(&betoken, sizeof(betoken), 1, fp);
+		if (rc <= 0) {
+			fprintf(stderr, "Could not get rtas token for %s\n",
+				dp->d_name);
+			free_rtas_tokens(tok_list);
+			tok_list = NULL;
+			fclose(fp);
+			break;
+		}
+
 		tok->token = be32toh(betoken);
 
 		fclose(fp);
@@ -257,10 +280,12 @@ int main(int argc, char *argv[])
 		tok = get_rtas_token_by_name(dbg_arg, tok_list);
 
 	if (tok != NULL) {
-		if (print_tokens)
+		if (print_tokens) {
 			print_rtas_tokens(tok, tok_list);
-		else
+			rc = 0;
+		} else {
 			rc = set_rtas_dbg(tok);
+		}
 	} else {
 		fprintf(stderr, "Unknown rtas token or name specified: %s\n",
 			dbg_arg);

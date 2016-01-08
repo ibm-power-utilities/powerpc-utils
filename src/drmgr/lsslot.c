@@ -1,7 +1,21 @@
 /**
  * @file lsslot.c
  *
- * Copyriht (C) 2005 IBM Corporatio
+ * Copyright (C) IBM Corporation 2005
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 #include <sys/types.h>
@@ -701,6 +715,7 @@ lsslot_chrp_phb(struct cmd_opts *opts)
 			printf("\n\n");
 	}
 
+	free_node(phb_list);
 	return 0;
 }
 
@@ -742,7 +757,7 @@ int print_drconf_mem(struct cmd_opts *opts, struct lmb_list_head *lmb_list)
 
 		if (drc_index && drc_index != lmb->drc_index)
 			continue;
-		else if ((output_level < 4) && !lmb->is_owned)
+		else if ((output_level < DEBUG) && !lmb->is_owned)
 			continue;
 
 		printf("%s: %s\n", lmb->drc_name,
@@ -981,6 +996,7 @@ main(int argc, char *argv[])
 		break;
 	}
 
+	free_drc_info();
 	dr_unlock();
 	exit(rc);
 }

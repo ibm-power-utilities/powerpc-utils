@@ -3,6 +3,19 @@
  *
  * Copyright (C) IBM Corporation 2006
  *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 #include <sys/types.h>
@@ -35,6 +48,11 @@ query_slot(struct dr_node *node, struct options *opts)
 	if (! node->is_owned) {
 		say(ERROR, "%s not owned by partition\n", opts->usr_drc_name);
 		return RC_DONT_OWN;
+	}
+
+	if (is_display_adapter(node)) {
+		say(ERROR, "Display adapters adre not supported by drmgr.\n");
+		return RC_IN_USE;
 	}
 
 	/* Special case for HMC */
@@ -70,6 +88,11 @@ static int
 remove_slot(struct dr_node *node)
 {
 	int rc,rc2;
+
+	if (is_display_adapter(node)) {
+		say(ERROR, "DLPAR of display adapters is not supported.\n");
+		return -1;
+	}
 
 	rc = disable_hp_children(node->drc_name);
 	if (rc)
@@ -144,6 +167,11 @@ acquire_slot(char *drc_name, struct dr_node **slot)
 		say(ERROR, "Could not find drc index for %s, unable to add the"
 		    "slot.\n", drc_name);
 		return rc;
+	}
+
+	if (!strncmp(drc.type, "display", 7)) {
+		say(ERROR, "DLPAR of display adapters is not supported.\n");
+		return -1;
 	}
 
 	rc = acquire_drc(drc.index);
@@ -301,6 +329,9 @@ drslot_chrp_slot(struct options *opts)
 			    opts->usr_drc_name);
 			rc = RC_ALREADY_OWN;
 		} else {
+			free_node(node);
+			node = NULL;
+
 			rc = add_slot(opts);
 		}
 		break;

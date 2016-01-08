@@ -2,6 +2,20 @@
  * @file common.c
  *
  * Copyright (C) IBM Corporation 2006
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 #include <fcntl.h>
@@ -368,7 +382,6 @@ add_node(char *path, struct of_node *new_nodes)
 
 	strcpy(buf, "add_node ");
 	strcat(buf, add_path);
-	strcat(buf, " ");
 	pos = buf + strlen(buf);
 
 	/* this is less than optimal, iterating over the entire buffer
@@ -376,6 +389,8 @@ add_node(char *path, struct of_node *new_nodes)
 	 */
 	for (prop = new_nodes->properties; prop; prop = prop->next) {
 		char tmp[16] = { '\0' }; /* for length */
+
+		*pos++ = ' ';
 
 		memcpy(pos, prop->name, strlen(prop->name));
 		pos += strlen(prop->name);
@@ -388,7 +403,6 @@ add_node(char *path, struct of_node *new_nodes)
 
 		memcpy(pos, prop->value, prop->length);
 		pos += prop->length;
-		*pos++ = ' ';
 	}
 	*pos = '\0';
 
@@ -1390,4 +1404,9 @@ int ams_balloon_active(void)
 	}
 
 	return !is_inactive;
+}
+
+int is_display_adapter(struct dr_node *node)
+{
+	return !strncmp(node->drc_type, "display", 7);
 }

@@ -1,10 +1,19 @@
 /**
  * Copyright (C) 2007 Anton Blanchard <anton@au.ibm.com> IBM Corporation
- * Common Public License Version 1.0 (see COPYRIGHT)
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 #define _GNU_SOURCE
@@ -21,6 +30,7 @@
 #include <sched.h>
 #include <assert.h>
 #include <pthread.h>
+#include <stdbool.h>
 #include <sys/ioctl.h>
 #include <sys/ptrace.h>
 #include <sys/wait.h>
@@ -722,6 +732,7 @@ static int do_run_mode(char *run_mode)
 		} else
 			printf("run-mode=%d\n", mode[2]);
 	} else {
+		uint16_t *first_16_bits = (uint16_t *)mode;
 		short rmode = atoi(run_mode);
 
 		if (rmode < 0 || rmode > 3) {
@@ -729,7 +740,7 @@ static int do_run_mode(char *run_mode)
 			return -1;
 		}
 
-		*(short *)mode = htobe16(1);
+		*first_16_bits = htobe16(1);
 		mode[2] = rmode;
 
 		rc = rtas_set_sysparm(DIAGNOSTICS_RUN_MODE, mode);
@@ -1095,14 +1106,120 @@ static int set_one_core(int smt_state, int core, int state)
 	return rc;
 }
 
-static int do_cores_online(char *state)
+static int do_online_cores(char *cores, int state)
+{
+	int smt_state;
+	int *core_state, *desired_core_state;
+	int i, rc = 0;
+	int core;
+	char *str, *token, *end_token;
+	bool first_core = true;
+
+	if (cores) {
+		if (!sysattr_is_writeable("online")) {
+			perror("Cannot set cores online");
+			return -1;
+		}
+	} else {
+		if (!sysattr_is_readable("online")) {
+			perror("Cannot get online cores");
+			return -1;
+		}
+	}
+
+	smt_state = get_smt_state();
+	if (smt_state == -1) {
+		printf("Bad or inconsistent SMT state: use ppc64_cpu --smt=on|off to set all\n"
+                       "cores to have the same number of online threads to continue.\n");
+		do_info();
+		return -1;
+	}
+
+	core_state = calloc(cpus_in_system, sizeof(int));
+	if (!core_state)
+		return -ENOMEM;
+
+	for (i = 0; i < cpus_in_system ; i++)
+		core_state[i] = cpu_online(i * threads_per_cpu);
+
+	if (!cores) {
+		printf("Cores %s = ", state == 0 ? "offline" : "online");
+		for (i = 0; i < cpus_in_system; i++) {
+			if (core_state[i] == state) {
+				if (first_core)
+					first_core = false;
+				else
+					printf(",");
+				printf("%d", i);
+			}
+		}
+		printf("\n");
+		free(core_state);
+		return 0;
+	}
+
+	desired_core_state = calloc(cpus_in_system, sizeof(int));
+	if (!desired_core_state) {
+		free(core_state);
+		return -ENOMEM;
+	}
+
+	for (i = 0; i < cpus_in_system; i++)
+		/*
+		 * Not specified on command-line
+		 */
+		desired_core_state[i] = -1;
+
+	str = cores;
+	while (1) {
+		token = strtok(str, ",");
+		if (!token)
+			break;
+		/* reuse the same string */
+		str = NULL;
+
+		core = strtol(token, &end_token, 0);
+		if (token == end_token || '\0' != *end_token) {
+			printf("Invalid core to %s: %s\n", state == 0 ? "offline" : "online", token);
+			rc = -1;
+			continue;
+		}
+		if (core > cpus_in_system || core < 0) {
+			printf("Invalid core to %s: %d\n", state == 0 ? "offline" : "online", core);
+			rc = -1;
+			continue;
+		}
+		desired_core_state[core] = state;
+	}
+
+	if (rc) {
+		free(core_state);
+		free(desired_core_state);
+		return rc;
+	}
+
+	for (i = 0; i < cpus_in_system; i++) {
+		if (desired_core_state[i] != -1) {
+			rc = set_one_core(smt_state, i, state);
+			if (rc)
+				break;
+		}
+	}
+
+	free(core_state);
+	free(desired_core_state);
+	return rc;
+}
+
+static int do_cores_on(char *state)
 {
 	int smt_state;
 	int *core_state;
 	int cores_now_online = 0;
-	int i;
+	int i, rc;
 	int number_to_have, number_to_change = 0, number_changed = 0;
 	int new_state;
+	char *end_state;
 
 	if (state) {
 		if (!sysattr_is_writeable("online")) {
@@ -1140,7 +1257,17 @@ static int do_cores_online(char *state)
 		return 0;
 	}
 
-	number_to_have = strtol(state, NULL, 0);
+	if (!strcmp(state, "all")) {
+		number_to_have = cpus_in_system;
+	} else {
+		number_to_have = strtol(state, &end_state, 0);
+		/* No digits found or trailing characters */
+		if (state == end_state || '\0' != *end_state) {
+			printf("Invalid number of cores to online: %s\n", state);
+			return -1;
+		}
+	}
+
 	if (number_to_have == cores_now_online) {
 		free(core_state);
 		return 0;
@@ -1164,8 +1291,9 @@ static int do_cores_online(char *state)
 	if (new_state) {
 		for (i = 0; i < cpus_in_system; i++) {
 			if (!core_state[i]) {
-				set_one_core(smt_state, i, new_state);
-				number_changed++;
+				rc = set_one_core(smt_state, i, new_state);
+				if (!rc)
+					number_changed++;
 				if (number_changed >= number_to_change)
 					break;
 			}
@@ -1173,12 +1301,26 @@ static int do_cores_online(char *state)
 	} else {
 		for (i = cpus_in_system - 1; i > 0; i--) {
 			if (core_state[i]) {
-				set_one_core(smt_state, i, new_state);
-				number_changed++;
+				rc = set_one_core(smt_state, i, new_state);
+				if (!rc)
+					number_changed++;
 				if (number_changed >= number_to_change)
 					break;
 			}
 		}
+	}
+
+	if (number_changed != number_to_change) {
+		cores_now_online = 0;
+		for (i = 0; i < cpus_in_system ; i++) {
+			if (cpu_online(i * threads_per_cpu))
+				cores_now_online++;
+		}
+		printf("Failed to set requested number of cores online.\n"
+                       "Requested: %d cores, Onlined: %d cores\n",
+                       number_to_have, cores_now_online);
+		free(core_state);
+		return -1;
 	}
 
 	free(core_state);
@@ -1223,7 +1365,10 @@ static void usage(void)
 "ppc64_cpu --smt=X                   # Set SMT state to X\n\n"
 "ppc64_cpu --cores-present           # Get the number of cores present\n"
 "ppc64_cpu --cores-on                # Get the number of cores currently online\n"
-"ppc64_cpu --cores-on=X              # Put exactly X cores online\n\n"
+"ppc64_cpu --cores-on=X              # Put exactly X cores online\n"
+"ppc64_cpu --cores-on=all            # Put all cores online\n\n"
+"ppc64_cpu --online-cores=X[,Y...]   # Put specified cores online\n\n"
+"ppc64_cpu --offline-cores=X[,Y,...] # Put specified cores offline\n\n"
 "ppc64_cpu --dscr                    # Get current DSCR system setting\n"
 "ppc64_cpu --dscr=<val>              # Change DSCR system setting\n"
 "ppc64_cpu --dscr [-p <pid>]         # Get DSCR setting for process <pid>\n"
@@ -1248,6 +1393,8 @@ struct option longopts[] = {
 	{"frequency",		no_argument,	   NULL, 'f'},
 	{"cores-present",	no_argument,	   NULL, 'C'},
 	{"cores-on",		optional_argument, NULL, 'c'},
+	{"online-cores",	optional_argument, NULL, 'O'},
+	{"offline-cores",	optional_argument, NULL, 'F'},
 	{"subcores-per-core",	optional_argument, NULL, 'n'},
 	{"info",		no_argument,	   NULL, 'i'},
 	{"version",		no_argument,	   NULL, 'V'},
@@ -1340,7 +1487,11 @@ int main(int argc, char *argv[])
 	else if (!strcmp(action, "cores-present"))
 		do_cores_present();
 	else if (!strcmp(action, "cores-on"))
-		rc = do_cores_online(action_arg);
+		rc = do_cores_on(action_arg);
+	else if (!strcmp(action, "online-cores"))
+		rc = do_online_cores(action_arg, 1);
+	else if (!strcmp(action, "offline-cores"))
+		rc = do_online_cores(action_arg, 0);
 	else if (!strcmp(action, "subcores-per-core"))
 		rc = do_subcores_per_core(action_arg);
 	else if (!strcmp(action, "threads-per-core"))

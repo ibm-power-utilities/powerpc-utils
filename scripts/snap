@@ -1,6 +1,19 @@
 #!/usr/bin/perl -w
 # Copyright (c) 2003, 2004, 2012 International Business Machines
-# Common Public License Version 1.0 (see COPYRIGHT)
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
 # Author Todd Inglett <tinglett@us.ibm.com>
 # updates by Michael Strosaker <strosake@us.ibm.com>
@@ -34,18 +47,45 @@ my $outfile = "snap.tar.gz";		# in the working dir.
 my $cmddir = "snap_commands";		# cmd output dir.
 my $cmdoutdir = "$outdir/$cmddir";	# in outdir dir.
 my $rsxx_exists = 0;			# Does an IBM Flash Adapter exist?
-my $distro_file = "/etc/issue";
-my $redhat_release_file = "/etc/redhat-release";
 
-if (-e $redhat_release_file) {
-	open(RELEASE, "< $redhat_release_file") or die "open: $!\n";
-	$_ = <RELEASE>;
-	my $redhat_version = (split / /, $_)[6];
-	if ($redhat_version >= 7.0) {
-		print "snap is not supported on the RHEL 7 onwards..!\n";
-		print "Please use sosreport to collect log data..!! \n";
-		exit 1;
-	}
+sub check_distro_support {
+	my $redhat_release_file = "/etc/redhat-release";
+	my $suse_release_file = "/etc/SuSE-release";
+	my $distro_file = "/etc/issue";
+
+	if (-e $redhat_release_file) {
+		open(RELEASE, "< $redhat_release_file") or die "open: $!\n";
+		$_ = <RELEASE>;
+		my $redhat_version = (split / /, $_)[6];
+		if ($redhat_version >= 7.0) {
+			print "snap is not supported on the RHEL 7 onwards..!\n";
+			print "Please use sosreport to collect log data..!! \n";
+			close(RELEASE);
+			exit 1;
+		}
+		close(RELEASE);
+	} elsif (-e $suse_release_file) {
+		open(RELEASE, "< $suse_release_file") or die "open: $!\n";
+		while(<RELEASE>) {
+			if ($_ =~ /VERSION/) {
+				my $suse_version = (split /=/, $_)[1];
+				if ($suse_version >= 12) {
+					print "snap is deprecated from SLES 12 onwards..!\n";
+					print "Please use supportconfig to collect log data..!! \n";
+					close(RELEASE);
+					exit 1;
+				}
+			} # if
+		} # while
+		close(RELEASE);
+	} else {
+		open(RELEASE, "< $distro_file") or die "open: $!\n";
+		if (<RELEASE> =~ /Ubuntu/) {
+			print "snap: is not supported on the Ubuntu platform\n";
+			close(RELEASE);
+			exit 1;
+		} #if
+	} #else
 }
 
 our($opt_a, $opt_d, $opt_h, $opt_o, $opt_t, $opt_v);
@@ -333,6 +373,9 @@ sub snap_commands {
 
 $< == 0 or error(1, "Must be executed as root");
 
+#check for the distro version
+check_distro_support();
+
 my $perldumpenv='perl -MData::Dumper -e '."'".
     '\$Data::Dumper::Terse=1;print Dumper(\%ENV);'."'";
 
@@ -340,13 +383,6 @@ eval '%ENV=('.$1.')' if `bash -c "
         . $PSERIES_PLATFORM;
         $perldumpenv"`
     =~ /^\s*\{(.*)\}\s*$/mxs;
-
-open(my $input, "<", $distro_file);
-
-if (<$input> =~ /Ubuntu/) {
-	print "snap: is not supported on the Ubuntu platform\n";
-	exit 1;
-}
 
 if ($ENV{'platform'} == $ENV{'PLATFORM_UNKNOWN'} || $ENV{'platform'} == $ENV{'PLATFORM_POWERNV_HOST'}) {
         print "snap: is not supported on the $ENV{'platform_name'} platform\n";

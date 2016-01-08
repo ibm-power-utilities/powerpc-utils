@@ -1,8 +1,21 @@
 /**
  * @file drslot_chrp_phb.c
  *
- *
  * Copyright (C) IBM Corporation 2006
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 #include <stdio.h>
@@ -33,6 +46,31 @@ phb_usage(char **pusage)
 	*pusage = usagestr;
 }
 
+static int phb_has_dlpar_children(struct dr_node *phb)
+{
+	struct dr_node *child;
+
+	/* If this PHB still owns children that are not hotplug, fail. */
+	for (child = phb->children; child; child = child->next) {
+		if ((child->is_owned) && (child->dev_type != PCI_HP_DEV))
+			return 1;
+	}
+
+	return 0;
+}
+
+static int phb_has_display_adapter(struct dr_node *phb)
+{
+	struct dr_node *child;
+
+	for (child = phb->children; child; child = child->next) {
+		if (is_display_adapter(child))
+			return 1;
+	}
+
+	return 0;
+}
+
 /**
  * query_phb
  *
@@ -44,22 +82,23 @@ static int
 query_phb(struct options *opts)
 {
 	struct dr_node *phb;
-	struct dr_node *child;
+	int rc;
 
 	phb = get_node_by_name(opts->usr_drc_name, PHB_NODES);
+
 	if (phb == NULL)
-		return RC_NONEXISTENT;
+		rc = RC_NONEXISTENT;
+	else if (phb_has_display_adapter(phb))
+		rc = RC_IN_USE;
+	else if (phb_has_dlpar_children(phb))
+		rc = RC_IN_USE;
+	else
+		rc = RC_LINUX_SLOT;
 
-	/* If this PHB still owns children that are not hotplug, fail. */
-	for (child = phb->children; child; child = child->next) {
-		if ((child->is_owned) && (child->dev_type != PCI_HP_DEV)) {
-			free_node(phb);
-			return RC_IN_USE;
-		}
-	}
+	if (phb)
+		free_node(phb);
 
-	free_node(phb);
-	return RC_LINUX_SLOT;
+	return rc;
 }
 
 /**
@@ -139,7 +178,7 @@ static int get_os_hp_devices(struct hpdev **hpdev_list)
 		if (rc)
 			break;
 
-		say(DEBUG, "HPDEV: %s\n       %s\n", hpdev->path,
+		say(EXTRA_DEBUG, "HPDEV: %s\n       %s\n", hpdev->path,
 		    hpdev->devspec);
 		hpdev->next = hp_list;
 		hp_list = hpdev;
@@ -249,7 +288,7 @@ remove_phb(struct options *opts)
 {
 	struct dr_node *phb;
 	struct dr_node *child;
-	struct dr_node *hp_list;
+	struct dr_node *hp_list = NULL;
 	int rc = 0;
 
 	phb = get_node_by_name(opts->usr_drc_name, PHB_NODES);
@@ -258,12 +297,15 @@ remove_phb(struct options *opts)
 		return RC_NONEXISTENT;
 	}
 
-	/* If this PHB still owns children that are not hotplug, fail. */
-	for (child = phb->children; child; child = child->next) {
-		if ((child->is_owned) && (child->dev_type != PCI_HP_DEV)) {
-			rc = -1;
-			goto phb_remove_error;
-		}
+	if (phb_has_display_adapter(phb)) {
+		say(ERROR, "This PHB contains a display adapter, DLPAR "
+		    "remove of display adapters is not supported.\n");
+		goto phb_remove_error;
+	}
+
+	if (phb_has_dlpar_children(phb)) {
+		rc = -1;
+		goto phb_remove_error;
 	}
 
 	/* Now, disable any hotplug children */
@@ -318,6 +360,9 @@ remove_phb(struct options *opts)
 phb_remove_error:
 	if (phb)
 		free_node(phb);
+
+	if (hp_list)
+		free_node(hp_list);
 
 	return rc;
 }

@@ -1,8 +1,21 @@
 /**
  * @file drmig_chrp_pmig.c
  *
- * Copyright (C) IBM Corporation
+ * Copyright (C) IBM Corporation 2006
  *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 #include <stdio.h>
@@ -13,6 +26,7 @@
 #include <ctype.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <inttypes.h>
 #include <dirent.h>
 #include <time.h>
 #include <librtas.h>
@@ -584,7 +598,7 @@ int do_migration(uint64_t stream_val)
 		rc = rtas_suspend_me(stream_val);
 		say(DEBUG, "ibm,suspend-me() returned %d\n", rc);
 	} else if (api_level == MIGRATION_API_V1) {
-		sprintf(buf, "0x%llx\n", stream_val);
+		sprintf(buf, "0x%" PRIx64 "\n", stream_val);
 
 		fd = open(SYSFS_MIGRATION_FILE, O_WRONLY);
 		if (fd == -1) {
@@ -618,7 +632,7 @@ int do_hibernation(uint64_t stream_val)
 	int rc, fd;
 	char buf[64];
 
-	sprintf(buf, "0x%llx\n", stream_val);
+	sprintf(buf, "0x%" PRIx64 "\n", stream_val);
 
 	fd = open(SYSFS_HIBERNATION_FILE, O_WRONLY);
 	if (fd == -1) {

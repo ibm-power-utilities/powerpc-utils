@@ -4,6 +4,19 @@
  *
  * Copyright (C) IBM Corporation 2006
  *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 #include <stdio.h>
@@ -114,8 +127,6 @@ init_thread_info(struct dr_info *dr_info)
 
 	nr_threads = s.st_nlink - 2;
 
-	say(DEBUG, "Expecting %d threads...", nr_threads);
-
 	sprintf(path, DR_THREAD_DIR_PATH, i);
 	for (i = 0; 0 == stat(path, &s); i++) {
 		thread = zalloc(sizeof(*thread));
@@ -144,7 +155,8 @@ init_thread_info(struct dr_info *dr_info)
 		thread_cnt++;
 	}
 
-	say(DEBUG, "found %d.\n", thread_cnt);
+	say(EXTRA_DEBUG, "Expecting %d threads...found %d.\n", nr_threads,
+	    thread_cnt);
 	dr_info->all_threads = thread_list;
 	return 0;
 }
@@ -345,7 +357,7 @@ init_cpu_info(struct dr_info *dr_info)
 			if (rc)
 				break;
 
-			say(DEBUG, "Found cpu %s\n", cpu->name);
+			say(EXTRA_DEBUG, "Found cpu %s\n", cpu->name);
 		}
 	}
 
@@ -377,8 +389,8 @@ cpu_get_dependent_cache(struct dr_node *cpu, struct dr_info *dr_info)
 			continue;
 
 		if (cache->phandle == cpu->cpu_l2cache) {
-			say(DEBUG, "found cache %s for cpu %s\n", cache->name,
-			    cpu->name);
+			say(EXTRA_DEBUG, "found cache %s for cpu %s\n",
+			    cache->name, cpu->name);
 			return cache;
 		}
 	}
@@ -404,8 +416,8 @@ cache_get_dependent_cache(struct cache_info *cache, struct dr_info *dr_info)
 			continue;
 
 		if (cache->phandle == cache->l2cache) {
-			say(DEBUG, "found cache %s for cache %s\n", c->name,
-			    cache->name);
+			say(EXTRA_DEBUG, "found cache %s for cache %s\n",
+			    c->name, cache->name);
 			return c;
 		}
 	}
@@ -458,7 +470,7 @@ cache_get_use_count(struct cache_info *cache, struct dr_info *dr_info)
 			continue;
 
 		if (cache == cpu_get_dependent_cache(cpu, dr_info)) {
-			say(DEBUG, "Cache %s is a dependent of cpu %s\n",
+			say(EXTRA_DEBUG, "Cache %s is a dependent of cpu %s\n",
 			    cache->name, cpu->name);
 			count++;
 		}
@@ -466,13 +478,14 @@ cache_get_use_count(struct cache_info *cache, struct dr_info *dr_info)
 
 	for (c = dr_info->all_caches; c != NULL; c = c->next) {
 		if (cache == cache_get_dependent_cache(c, dr_info)) {
-			say(DEBUG, "Cache %s is a dependent of cache %s\n",
+			say(EXTRA_DEBUG, "Cache %s is a dependent of cache %s\n",
 			    cache->name, c->name);
 			count++;
 		}
 	}
 
-	say(DEBUG, "Cache %s dependency count: %d\n", cache->name, count);
+	say(EXTRA_DEBUG, "Cache %s dependency count: %d\n",
+	    cache->name, count);
 	return count;
 }
 
@@ -561,7 +574,7 @@ init_cache_info(struct dr_info *dr_info)
 			get_ofdt_uint_property(cache->path, "l2-cache",
 					       &cache->l2cache);
 
-			say(DEBUG, "Found cache %s\n", cache->name);
+			say(EXTRA_DEBUG, "Found cache %s\n", cache->name);
 		}
 	}
 
@@ -841,13 +854,17 @@ init_cpu_drc_info(struct dr_info *dr_info)
 		return -1;
 	}
 	
-	say(DEBUG, "Start CPU List.\n");
-	for (cpu = dr_info->all_cpus; cpu; cpu = cpu->next) {
-		say(DEBUG, "%x : %s\n", cpu->drc_index, cpu->drc_name);
-		for (t = cpu->cpu_threads; t; t = t->sibling)
-			say(DEBUG, "\tthread: %d: %s\n", t->phys_id, t->path);
+	if (output_level >= EXTRA_DEBUG) {
+		say(EXTRA_DEBUG, "Start CPU List.\n");
+		for (cpu = dr_info->all_cpus; cpu; cpu = cpu->next) {
+			say(EXTRA_DEBUG, "%x : %s\n", cpu->drc_index,
+			    cpu->drc_name);
+			for (t = cpu->cpu_threads; t; t = t->sibling)
+				say(EXTRA_DEBUG, "\tthread: %d: %s\n",
+				    t->phys_id, t->path);
+		}
+		say(EXTRA_DEBUG, "Done.\n");
 	}
-	say(DEBUG, "Done.\n");
 
 	return 0;
 }

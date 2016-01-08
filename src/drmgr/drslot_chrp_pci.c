@@ -3,6 +3,19 @@
  *
  * Copyright (C) IBM Corporation 2006
  *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 #include <sys/types.h>
@@ -310,6 +323,11 @@ do_identify(struct options *opts, struct dr_node *all_nodes)
 	if (node == NULL)
 		return -1;
 
+	if (is_display_adapter(node)) {
+		say(ERROR, "Display adapters are not supported by drmgr.\n");
+		return -1;
+	}
+
 	usr_key = identify_slot(node);
 
 	/* when we're done with identify, put the LED back
@@ -459,6 +477,11 @@ do_add(struct options *opts, struct dr_node *all_nodes)
 	if (node == NULL)
 		return -1;
 
+	if (is_display_adapter(node)) {
+		say(ERROR, "DLPAR of display adapters is not supported.\n");
+		return -1;
+	}
+
 	/* Prompt user only if in interactive mode. */
 	if (0 == opts->noprompt) {
 		if (!opts->no_ident)
@@ -584,6 +607,11 @@ remove_work(struct options *opts, struct dr_node *all_nodes)
 
 	say(DEBUG, "found node: drc name=%s, index=0x%x, path=%s\n",
 	     node->drc_name, node->drc_index, node->ofdt_path);
+
+	if (is_display_adapter(node)) {
+		say(ERROR, "DLPAR of display adapters is not supported.\n");
+		return NULL;
+	}
 
 	/* Prompt user only if not in noprompt mode */
 	if (0 == opts->noprompt) {

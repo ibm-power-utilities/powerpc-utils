@@ -6,7 +6,20 @@
  * @mainpage rtas_ibm_get_vpd documentation
  * @section Copyright
  * Copyright (c) 2004 International Business Machines
- * Common Public License Version 1.0 (see COPYRIGHT)
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  * @section Overview
  * The rtas_ibm_get_vpd utility is a utility to assist inventory retrieval 
@@ -111,7 +124,7 @@ int main(int argc, char **argv)
 {
 	char *loc_code = "";
 	char err_buf[ERR_BUF_SIZE];
-	int lflag = 0, rc, c;
+	int rc, c;
 	unsigned int seq = 1, next_seq;
 	struct buf_element *list, *current;
 
@@ -133,7 +146,6 @@ int main(int argc, char **argv)
 		switch (c) {
 		case 'l':
 			loc_code = optarg;
-			lflag = 1;
 			break;
 		case 'h':
 			print_help(argv[0]);

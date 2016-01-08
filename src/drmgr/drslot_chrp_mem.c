@@ -1,8 +1,21 @@
 /**
  * @file drslot_chrp_mem
  *
- *
  * Copyright (C) IBM Corporation 2006
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 #include <stdio.h>
@@ -72,6 +85,8 @@ free_lmbs(struct lmb_list_head *lmb_list)
 
 	if (lmb_list->drconf_buf)
 		free(lmb_list->drconf_buf);
+
+	free(lmb_list);
 }
 
 /**
@@ -159,6 +174,41 @@ get_lmb_size(struct dr_node *lmb)
 	return 0;
 }
 
+/**
+ * lmb_list_add
+ * @ brief add a dr_node to the specified lmb_list for the indicated drc_index
+ *
+ * @param drc_index drc index of the LMB to add
+ * @param lmb_list lmb list head to add the lmb to
+ * @return pointer to allocated lmb node on success, NULL on failure
+ */
+static struct dr_node *lmb_list_add(uint32_t drc_index,
+				    struct lmb_list_head *lmb_list)
+{
+	struct dr_node *lmb;
+
+	lmb = zalloc(sizeof(*lmb));
+	if (lmb == NULL)
+		return NULL;
+
+	lmb->drc_index = drc_index;
+	lmb->dev_type = MEM_DEV;
+
+	if (lmb_list->sort == LMB_REVERSE_SORT) {
+		if (lmb_list->last)
+			lmb->next = lmb_list->last;
+		lmb_list->lmbs = lmb;
+	} else {
+		if (lmb_list->last)
+			lmb_list->last->next = lmb;
+		else
+			lmb_list->lmbs = lmb;
+	}
+
+	lmb_list->last = lmb;
+	return lmb;
+}
+ 
 /**
  * get_mem_node_lmbs
  * @brief Retrieve lmbs from the OF device tree represented as memory@XXX nodes
@@ -256,7 +306,6 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
 	uint64_t lmb_sz;
 	int i, num_entries;
 	int rc = 0;
-	int found = 0;
 
 	rc = get_property(DYNAMIC_RECONFIG_MEM, "ibm,lmb-size",
 			  &lmb_sz, sizeof(lmb_sz));
@@ -298,11 +347,7 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
 	for (i = 0; i < num_entries; i++) {
 		struct dr_node *lmb;
 
-		for (lmb = lmb_list->lmbs; lmb; lmb = lmb->next) {
-			if (lmb->drc_index == be32toh(drmem->drc_index))
-				break;
-		}
-
+		lmb = lmb_list_add(be32toh(drmem->drc_index), lmb_list);
 		if (lmb == NULL) {
 			say(DEBUG, "Could not find LMB with drc-index of %x\n",
 			    drmem->drc_index);
@@ -316,7 +361,6 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
 		lmb->lmb_aa_index = be32toh(drmem->assoc_index);
 
 		if (be32toh(drmem->flags) & DRMEM_ASSIGNED) {
-			found++;
 			lmb->is_owned = 1;
 
 			/* find the associated sysfs memory blocks */
@@ -325,10 +369,11 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
 				break;
 		}
 
+		lmb_list->lmbs_found++;
 		drmem++; /* trust your compiler */
 	}
 
-	say(INFO, "Found %d LMBs currently allocated\n", found);
+	say(INFO, "Found %d LMBs currently allocated\n", lmb_list->lmbs_found);
 	return rc;
 }
 
@@ -338,20 +383,18 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
  *
  * @param list pointer to lmb list to be randomly shuffled
  * @param length number of lmbs in the list
- *
- * @return list of shuffled lmbs
  */
-struct dr_node *
-shuffle_lmbs(struct dr_node *lmb_list, int length)
+static void shuffle_lmbs(struct lmb_list_head *lmb_list)
 {
 	struct dr_node **shuffled_lmbs, *lmb;
+	int total_lmbs = lmb_list->lmbs_found;
 	int i, j;
 	
 	srand(time(NULL));
 
-	shuffled_lmbs = zalloc(sizeof(*shuffled_lmbs) * length);
+	shuffled_lmbs = zalloc(sizeof(*shuffled_lmbs) * total_lmbs);
 
-	for (i = 0, lmb = lmb_list; lmb; i++, lmb = lmb->next) {
+	for (i = 0, lmb = lmb_list->lmbs; lmb; i++, lmb = lmb->next) {
 		j = rand() % (i + 1);
 
 		if (j == i) {
@@ -362,15 +405,13 @@ shuffle_lmbs(struct dr_node *lmb_list, int length)
 		}
 	}
 
-	for (i = 0; i < (length - 1); i++)
+	for (i = 0; i < (total_lmbs - 1); i++)
 		shuffled_lmbs[i]->next = shuffled_lmbs[i + 1];
 
-	shuffled_lmbs[length - 1]->next = NULL;
+	shuffled_lmbs[total_lmbs - 1]->next = NULL;
 
-	lmb = shuffled_lmbs[0];
+	lmb_list->lmbs = shuffled_lmbs[0];
 	free(shuffled_lmbs);
-
-	return lmb;
 }
 
 /**
@@ -384,19 +425,11 @@ shuffle_lmbs(struct dr_node *lmb_list, int length)
 struct lmb_list_head *
 get_lmbs(unsigned int sort)
 {
-	struct dr_connector *drc_list, *drc;
 	struct lmb_list_head *lmb_list = NULL;
-	struct dr_node *lmb, *last = NULL;
+	struct dr_node *lmb = NULL;
 	struct stat sbuf;
 	char buf[DR_STR_MAX];
 	int rc = 0;
-	int found = 0;
-
-	drc_list = get_drc_info(OFDT_BASE);
-	if (drc_list == NULL) {
-		report_unknown_error(__FILE__, __LINE__);
-		return NULL;
-	}
 
 	lmb_list = zalloc(sizeof(*lmb_list));
 	if (lmb_list == NULL) {
@@ -404,38 +437,7 @@ get_lmbs(unsigned int sort)
 		return NULL;
 	}
 
-	/* For memory dlpar, we need a list of all posiible memory nodes
-	 * for the system, initalize those here.
-	 */
-	for (drc = drc_list; drc; drc = drc->next) {
-		if (strncmp(drc->name, "LMB", 3))
-			continue;
-
-		lmb = alloc_dr_node(drc, MEM_DEV, NULL);
-		if (lmb == NULL) {
-			free_lmbs(lmb_list);
-			return NULL;
-		}
-
-		if (sort == LMB_REVERSE_SORT) {
-			if (last)
-				lmb->next = last;
-			lmb_list->lmbs = lmb;
-			last = lmb;
-		} else {
-			if (last)
-				last->next = lmb;
-			else
-				lmb_list->lmbs = lmb;
-			last = lmb;
-		}
-		found++;
-	}
-
-	if (sort == LMB_RANDOM_SORT)
-		lmb_list->lmbs = shuffle_lmbs(lmb_list->lmbs, found);
-
-	say(INFO, "Maximum of %d LMBs\n", found);
+	lmb_list->sort = sort;
 
 	rc = get_str_attribute("/sys/devices/system/memory",
 			       "/block_size_bytes", &buf, DR_STR_MAX);
@@ -454,9 +456,37 @@ get_lmbs(unsigned int sort)
 	 * lmb entries (and their memory sections) as we find their device
 	 * tree entries.
 	 */
-	if (stat(DYNAMIC_RECONFIG_MEM, &sbuf))
+	if (stat(DYNAMIC_RECONFIG_MEM, &sbuf)) {
+		struct dr_connector *drc_list, *drc;
+
+		drc_list = get_drc_info(OFDT_BASE);
+		if (drc_list == NULL) {
+			report_unknown_error(__FILE__, __LINE__);
+			rc = -1;
+		} else {
+			/* For memory dlpar, we need a list of all
+			 * posiible memory nodes for the system, initalize
+			 * those here.
+			 */
+			for (drc = drc_list; drc; drc = drc->next) {
+				if (strncmp(drc->name, "LMB", 3))
+					continue;
+
+				lmb = lmb_list_add(drc->index, lmb_list);
+				if (!lmb) {
+					say(ERROR, "Failed to add LMB (%x)\n",
+					    drc->index);
+					rc = -1;
+					break;
+				}
+
+				lmb_list->lmbs_found++;
+			}
+		}
+
+		say(INFO, "Maximum of %d LMBs\n", lmb_list->lmbs_found);
 		rc = get_mem_node_lmbs(lmb_list);
-	else {
+	} else {
 		/* A small hack to here to allow memory add to work in
 		 * certain kernels.  Due to a bug in the kernel (see comment
 		 * in acquire_lmb()) we need to get lmb info from both places.
@@ -471,6 +501,8 @@ get_lmbs(unsigned int sort)
 	if (rc) {
 		free_lmbs(lmb_list);
 		lmb_list = NULL;
+	} else if (sort == LMB_RANDOM_SORT) {
+		shuffle_lmbs(lmb_list);
 	}
 
 	return lmb_list;
@@ -671,7 +703,8 @@ update_drconf_node(struct dr_node *lmb, struct lmb_list_head *lmb_list,
 	memcpy(tmp, lmb_list->drconf_buf, lmb_list->drconf_buf_sz);
 	tmp += lmb_list->drconf_buf_sz;
 
-	tmp += sprintf(tmp, " %s %d ", (action == ADD ? "add" : "remove"),
+	tmp += sprintf(tmp, " %s %" PRId64 " ",
+		       (action == ADD ? "add" : "remove"),
 		       sizeof(lmb->lmb_address));
 	memcpy(tmp, &lmb->lmb_address, sizeof(lmb->lmb_address));
 	tmp += sizeof(lmb->lmb_address);
@@ -829,7 +862,6 @@ set_mem_scn_state(struct mem_scn *mem_scn, int state)
 	int file;
 	char path[DR_PATH_MAX];
 	int rc = 0;
-	int unused;
 	time_t t;
 	char tbuf[128];
 
@@ -848,8 +880,14 @@ set_mem_scn_state(struct mem_scn *mem_scn, int state)
 		return -1;
 	}
 
-	unused = write(file, state_strs[state], strlen(state_strs[state]));
+	rc = write(file, state_strs[state], strlen(state_strs[state]));
 	close(file);
+
+	if (rc < 0) {
+		say(ERROR, "Could not write to %s to %s memory\n\t%s\n",
+		    path, state_strs[state], strerror(errno));
+		return rc;
+	}
 
 	if (get_mem_scn_state(mem_scn) != state) {
 		time(&t);
@@ -862,6 +900,7 @@ set_mem_scn_state(struct mem_scn *mem_scn, int state)
 		strftime(tbuf, 128, "%T", localtime(&t));
 		say(DEBUG, "%s Completed marking %s %s.\n", tbuf,
 				mem_scn->sysfs_path, state_strs[state]);
+		rc = 0;
 	}
 
 	return rc;

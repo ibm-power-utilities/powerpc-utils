@@ -1,9 +1,21 @@
 /**
  * @file drslot_chrp_cpu.c
  *
- *
  * Copyright (C) IBM Corporation 2006
  *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 #include <stdio.h>
 #include <string.h>
@@ -90,51 +102,88 @@ static int cpu_count(struct dr_info *dr_info)
 	return cpu_count;
 }
 
-/**
- * get_available_cpu
- *
- * Find an available cpu to that we can add or remove, depending
- * on the request.
- *
- * @param opts options passed in to drmgr
- * @param dr_info cpu drc information
- * @returns pointer to cpu on success, NULL on failure
- */
-struct dr_node *
-get_available_cpu(struct options *opts, struct dr_info *dr_info)
+static struct dr_node *get_available_cpu_by_name(struct options *opts,
+						 struct dr_info *dr_info)
+{
+	struct dr_node *cpu;
+
+	cpu = get_cpu_by_name(dr_info, opts->usr_drc_name);
+	if (!cpu) {
+		say(ERROR, "Could not locate CPU \"%s\"\n", opts->usr_drc_name);
+		return NULL;
+	} 
+
+	if (cpu->unusable) {
+		say(ERROR, "Requested CPU \"%s\" is unusable\n",
+		    opts->usr_drc_name);
+		return NULL;
+	}
+
+	switch (opts->action) {
+	case ADD:
+		if (cpu->is_owned) {
+			say(ERROR, "Requested CPU \"%s\" is already present.\n",
+			    opts->usr_drc_name); 
+			return NULL;
+		}
+		break;
+	case REMOVE:
+		if (!cpu->is_owned) {
+			say(ERROR, "Requested CPU \"%s\" is not present.\n",
+			    opts->usr_drc_name); 
+			return NULL;
+		}
+		break;
+	}
+
+	return cpu;
+}
+	
+static struct dr_node *get_available_cpu_by_index(struct options *opts,
+						  struct dr_info *dr_info)
+{
+	struct dr_node *cpu;
+
+	cpu = get_cpu_by_index(dr_info, opts->usr_drc_index);
+	if (!cpu) {
+		say(ERROR, "Could not locate CPU with drc index %x\n",
+		    opts->usr_drc_index);
+		return NULL;
+	} 
+
+	if (cpu->unusable) {
+		say(ERROR, "Requested CPU with drc index %x is unusable\n",
+		    opts->usr_drc_index);
+		return NULL;
+	}
+
+	switch (opts->action) {
+	case ADD:
+		if (cpu->is_owned) {
+			say(ERROR, "Requested CPU with drc index %x is "
+			    "already present.\n", opts->usr_drc_index); 
+			return NULL;
+		}
+		break;
+	case REMOVE:
+		if (!cpu->is_owned) {
+			say(ERROR, "Requested CPU with drc index %x is "
+			    "not present.\n", opts->usr_drc_index); 
+			return NULL;
+		}
+		break;
+	}
+
+	return cpu;
+}
+
+static struct dr_node *get_next_available_cpu(struct options *opts,
+					      struct dr_info *dr_info)
 {
 	struct dr_node *cpu = NULL;
 	struct dr_node *survivor = NULL;
 	struct thread *t;
-
-	if (opts->usr_drc_name) {
-		cpu = get_cpu_by_name(dr_info, opts->usr_drc_name);
-		if (!cpu) {
-			say(ERROR, "Could not locate cpu %s\n",
-			    opts->usr_drc_name);
-			return cpu;
-		} else if (cpu->unusable) {
-			say(ERROR, "Requested cpu %s is unusable\n",
-			    opts->usr_drc_name);
-			return NULL;
-		} else {
-			return cpu;
-		}
-	} else if (opts->usr_drc_index) {
-		cpu = get_cpu_by_index(dr_info, opts->usr_drc_index);
-		if (!cpu) {
-			say(ERROR, "Could not locate cpu %x\n",
-			    opts->usr_drc_index);
-			return cpu;
-		} else if (cpu->unusable) {
-			say(ERROR, "Requested cpu %x is unusable\n",
-			    opts->usr_drc_index);
-			return NULL;
-		} else {
-			return cpu;
-		}
-	}
-
+	
 	switch (opts->action) {
 	    case ADD:
 		for (cpu = dr_info->all_cpus; cpu; cpu = cpu->next) {
@@ -163,6 +212,31 @@ get_available_cpu(struct options *opts, struct dr_info *dr_info)
 
 	if (!cpu)
 		say(ERROR, "Could not find available cpu.\n");
+
+	return cpu;
+}
+
+/**
+ * get_available_cpu
+ *
+ * Find an available cpu to that we can add or remove, depending
+ * on the request.
+ *
+ * @param opts options passed in to drmgr
+ * @param dr_info cpu drc information
+ * @returns pointer to cpu on success, NULL on failure
+ */
+struct dr_node *
+get_available_cpu(struct options *opts, struct dr_info *dr_info)
+{
+	struct dr_node *cpu = NULL;
+
+	if (opts->usr_drc_name)
+		cpu = get_available_cpu_by_name(opts, dr_info);
+	else if (opts->usr_drc_index)
+		cpu = get_available_cpu_by_index(opts, dr_info);
+	else
+		cpu = get_next_available_cpu(opts, dr_info);
 
 	return cpu;
 }
@@ -364,7 +438,7 @@ int
 drslot_chrp_cpu(struct options *opts)
 {
 	struct dr_info dr_info;
-	int rc = -1;
+	int rc;
 
 	if (! cpu_dlpar_capable()) {
 		say(ERROR, "CPU DLPAR capability is not enabled on this "
@@ -398,15 +472,20 @@ drslot_chrp_cpu(struct options *opts)
 
 	if (opts->p_option && (strcmp(opts->p_option, "smt_threads") == 0)) {
 		rc = smt_threads_func(opts, &dr_info);
-	} else {
-		switch (opts->action) {
-		    case ADD:
-			rc = add_cpus(opts, &dr_info);
-			break;
-		    case REMOVE:
-			rc = remove_cpus(opts, &dr_info);
-			break;
-		}
+		free_cpu_drc_info(&dr_info);
+		return rc;
+	}
+
+	switch (opts->action) {
+	case ADD:
+		rc = add_cpus(opts, &dr_info);
+		break;
+	case REMOVE:
+		rc = remove_cpus(opts, &dr_info);
+		break;
+	default:
+		rc = -1;
+		break;
 	}
 
 	free_cpu_drc_info(&dr_info);
