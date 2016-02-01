@@ -594,6 +594,7 @@ int read_ei_tokens(void)
 		return 1;
 	}
 
+	buf[len] = '\0';
 	tmp_ptr = buf;
 	while (tmp_ptr < buf + len) {
 		found = 0;
