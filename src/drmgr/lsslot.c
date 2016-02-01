@@ -809,9 +809,10 @@ lsslot_chrp_mem(struct cmd_opts *opts)
 	int lmb_offset = strlen(OFDT_BASE);
 
 	lmb_list = get_lmbs(LMB_NORMAL_SORT);
-	if (lmb_list == NULL || lmb_list->lmbs == NULL)
+	if (lmb_list == NULL || lmb_list->lmbs == NULL) {
+		free_lmbs(lmb_list);
 		return -1;
-
+	}
 	
 	if (lmb_list->drconf_buf) {
 		print_drconf_mem(opts, lmb_list);
