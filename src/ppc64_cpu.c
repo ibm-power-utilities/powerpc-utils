@@ -1264,6 +1264,7 @@ static int do_cores_on(char *state)
 		/* No digits found or trailing characters */
 		if (state == end_state || '\0' != *end_state) {
 			printf("Invalid number of cores to online: %s\n", state);
+			free(core_state);
 			return -1;
 		}
 	}
