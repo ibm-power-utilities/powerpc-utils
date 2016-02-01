@@ -171,7 +171,6 @@ static int get_uak_expiry_date(void)
 {
 	int rc;
 	char date[UAK_EXPIRY_DATE_DATA_LENGTH] = {0};
-	char msg[120];
 	char error_buf[ERR_BUF_SIZE];
 
 	rc = rtas_get_sysparm(SYS_PARAM_UAK_EXPIRY_DATE, ARRAY_SIZE(date),
@@ -202,11 +201,10 @@ static int get_uak_expiry_date(void)
 			warnx("Parameter Error");
 			break;
 		case 9900 ... 9905:
-			strcat(msg, "Delay of %ld milliseconds is expected ");
-			strcat(msg, "before calling ibm,get-system-parameter ");
-			strcat(msg, "with the same parameter index");
-
-			warnx(msg, (long) pow(10, rc-9900));
+			warnx("Delay of %ld milliseconds is expected "
+			      "before calling ibm,get-system-parameter with "
+			      "the same parameter index",
+			      (long) pow(10, rc-9900));
 			break;
 		default:
 			if (is_librtas_error(rc)) {
@@ -262,7 +260,6 @@ static int apply_uak_key(const char *keyfile)
 {
 	int rc = 0;
 	char keyvalue[UAK_KEY_DATA_LENGTH + 1] = {0}; /* +1 for validation */
-	char msg[120];
 	char error_buf[ERR_BUF_SIZE];
 
 	if (!is_keyfile_valid(keyfile, keyvalue))
@@ -290,11 +287,10 @@ static int apply_uak_key(const char *keyfile)
 			warnx("Parameter Error");
 			break;
 		case 9900 ... 9905:
-			strcat(msg, "Delay of %ld milliseconds is expected ");
-			strcat(msg, "before calling ibm,set-system-parameter ");
-			strcat(msg, "with the same parameter index");
-
-			warnx(msg, (long) pow(10, rc-9900));
+			warnx("Delay of %ld milliseconds is expected "
+			      "before calling ibm,set-system-parameter "
+			      "with the same parameter index",
+			       (long) pow(10, rc-9900));
 			break;
 		default:
 			if (is_librtas_error(rc)) {
