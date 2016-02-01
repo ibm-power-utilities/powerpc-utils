@@ -110,24 +110,25 @@ int platform_specific(ei_function *ei_func)
 
 	if (fstat(fd, &sbuf) != 0) {
 		perr(errno, "Could not get status of file %s", fname);
+		close(fd);
 		return 1;
 	}
 
 	if (sbuf.st_size > EI_BUFSZ) {
 		perr(0, "platform error files cannot exceed 1k, %s = %d\n",
 		     fname, sbuf.st_size);
+		close(fd);
 		return 1;
 	}
 
 	rc = read(fd, err_buf, sbuf.st_size);
+	close(fd);
 	if (rc != sbuf.st_size) {
 		perr(errno, "Could not read platform data from file %s,\n"
 		     "expected to read %d but got %d\n", fname,
 		     sbuf.st_size, rc);
 		return 1;
 	}
-
-	close(fd);
 
 	if (!be_quiet)
 		printf("Injecting a %s error with data from %s\n",

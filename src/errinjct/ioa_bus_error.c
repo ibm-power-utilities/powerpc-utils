@@ -212,12 +212,11 @@ static uint32_t get_config_addr_from_reg(char *devpath)
 		return 1;
 	}
 	nr = read(fd, (void *) &caddr, 4);
+	close(fd);
 	if (0 >= nr) {
 		perr(errno, "Couldn't read %s\n", path);
 		return 1;
 	}
-
-	close(fd);
 
 	return be32toh(caddr);
 }
@@ -256,12 +255,12 @@ static int parse_sysfsname(void)
 	}
 
 	nr = read(fd, devspec, BUFSZ);
+	close(fd);
 	if (0 >= nr) {
 		perr(errno, "Couldn't read %s\n", path);
 		return 1;
 	}
 
-	close(fd);
 	devspec[nr] = 0;
 
 	/* Now we parse something like /pci@400000000112/pci@2/ethernet@1 for

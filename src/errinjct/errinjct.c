@@ -588,9 +588,9 @@ int read_ei_tokens(void)
 	}
 
 	len = read(fd, buf, EI_BUFSZ);
+	close(fd);
 	if (len == -1) {
 		perr(errno, "Could not read from %s", EI_TOKEN_PROCFILE);
-		close(fd);
 		return 1;
 	}
 
