@@ -472,6 +472,10 @@ logical_to_ofpathname()
         hd*)        l2of_ide ;;
 	vd*)	    l2of_vd ;;
         fd*)        echo "no fd support yet" ;;
+        mpath*)
+                    DEVNAME=$(printf "dm-%d" `stat -c "%T" /dev/mapper/$DEVICE`)
+                    logical_to_ofpathname
+                    ;;
         dm-*)
                     DEVNAME=`get_slave $DEVICE`
                     logical_to_ofpathname
