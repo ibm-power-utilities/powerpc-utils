@@ -691,12 +691,6 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	if (get_platform() != PLATFORM_PSERIES_LPAR) {
-		fprintf(stderr, "%s: is not supported on the %s platform\n",
-							argv[0], platform_name);
-		exit(1);
-	}
-
 	/* Make sure the error injection facility is available */
 	fd = open(EI_IBM_ERRINJCT, O_RDONLY);
 	if (fd == -1) {
