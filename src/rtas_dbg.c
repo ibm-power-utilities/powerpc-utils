@@ -67,7 +67,7 @@ struct rtas_args {
 struct rtas_token {
 	struct rtas_token	*next;
 	uint32_t		token;
-	char			name[MAX_RTAS_NAME_LEN];
+	char			*name;
 };
 
 void usage(void)
@@ -83,6 +83,7 @@ void free_rtas_tokens(struct rtas_token *tok_list)
 	while (tok_list != NULL) {
 		tok = tok_list;
 		tok_list = tok->next;
+		free(tok->name);
 		free(tok);
 	}
 }
@@ -141,7 +142,7 @@ struct rtas_token *get_rtas_tokens(void)
 			break;
 		}
 
-		strncpy(tok->name, dp->d_name, MAX_RTAS_NAME_LEN);
+		tok->name = strdup(dp->d_name);
 		insert_token(tok, &tok_list);
 
 		snprintf(dir, 128, "%s/%s", OFDT_RTAS_PATH, dp->d_name);
