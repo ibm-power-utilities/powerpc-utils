@@ -575,26 +575,15 @@ int do_rtas_errinjct(ei_function *ei_func)
  */
 int read_ei_tokens(void)
 {
-	char	buf[EI_BUFSZ];
+	char 	*buf;
 	int	len;
 	int	i, found;
 	char	*tmp_ptr;
-	int	fd;
 
-	fd = open(EI_TOKEN_PROCFILE, O_RDONLY);
-	if (fd == -1) {
-		perr(errno, "Could not open %s", EI_TOKEN_PROCFILE);
+	buf = read_file(EI_TOKEN_PROCFILE, &len);
+	if (!buf)
 		return 1;
-	}
 
-	len = read(fd, buf, EI_BUFSZ);
-	close(fd);
-	if (len == -1) {
-		perr(errno, "Could not read from %s", EI_TOKEN_PROCFILE);
-		return 1;
-	}
-
-	buf[len] = '\0';
 	tmp_ptr = buf;
 	while (tmp_ptr < buf + len) {
 		found = 0;
@@ -616,6 +605,7 @@ int read_ei_tokens(void)
 		}
 	}
 
+	free(buf);
 	return 0;
 }
 
@@ -647,6 +637,62 @@ int sysfs_check(void)
 	return rc;
 }
 
+/**
+ * read_file
+ * @brief Open and read the contents of a file into an allocated buffer
+ *
+ * NOTE: Callers of this routine need to free the buffer allocated
+ *       by read_file.
+ *
+ * @param fname name of the file to read
+ * @paran flen pointer to variable to return amount read
+ * @returns pointer to allocated buffer on success, NULL on faiulure
+ */
+char *read_file(const char *fname, int *flen)
+{
+	struct stat sbuf;
+	char *buf;
+	int fd, len;
+
+        if (fname == NULL)
+		return NULL;
+
+        fd = open(fname, O_RDONLY);
+        if (fd == -1) {
+                perr(errno, "Could not open file %s", fname);
+                return NULL;
+        }
+
+        if (fstat(fd, &sbuf) != 0) {
+                perr(errno, "Could not get status of file %s", fname);
+                close(fd);
+                return NULL;
+        }
+
+	buf = malloc(sbuf.st_size);
+	if (!buf) {
+		perr(0, "Could not allocate buffer to read file %s\n", fname);
+		close(fd);
+		return NULL;
+	}
+
+	memset(buf, 0, sbuf.st_size);
+
+        len = read(fd, buf, sbuf.st_size);
+        close(fd);
+        if (len != sbuf.st_size) {
+                perr(errno, "Error reading data from file %s\n"
+                     "expected to read %d but got %d\n", fname,
+                     sbuf.st_size, len);
+                free(buf);
+		return NULL;
+        }
+
+	if (flen)
+		*flen = len;
+
+	return buf;
+}
 
 static struct option longopts[] = {
 {

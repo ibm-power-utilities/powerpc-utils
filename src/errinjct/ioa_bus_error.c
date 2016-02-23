@@ -199,25 +199,20 @@ int ioa_bus_error_arg(char arg, char *optarg)
  */
 static uint32_t get_config_addr_from_reg(char *devpath)
 {
-	int fd, nr;
 	char path[BUFSZ];
+	char *buf;
 	uint32_t caddr = 0;
 
 	strncpy(path, devpath, BUFSZ-5);
 	strcat(path, "/reg");
 
-	fd = open(path, O_RDONLY);
-	if (0 > fd) {
-		perr(errno, "Couldn't open %s\n", path);
+	buf = read_file(path, NULL);
+	if (!buf)
 		return 1;
-	}
-	nr = read(fd, (void *) &caddr, 4);
-	close(fd);
-	if (0 >= nr) {
-		perr(errno, "Couldn't read %s\n", path);
-		return 1;
-	}
 
+	caddr = be32toh((uint32_t)buf[0]);
+
+	free(buf);
 	return be32toh(caddr);
 }
 
@@ -235,9 +230,8 @@ static uint32_t get_config_addr_from_reg(char *devpath)
 static int parse_sysfsname(void)
 {
 	char path[BUFSZ];
-	char devspec[BUFSZ];
+	char *devspec;
 	char *at;
-	int fd, nr;
 	uint32_t addr;
 	uint64_t phb_id;
 
@@ -248,26 +242,16 @@ static int parse_sysfsname(void)
 		strcat(path, "/..");
 	strcat(path, "/devspec");
 
-	fd = open(path, O_RDONLY);
-	if (0 > fd) {
-		perr(errno, "Couldn't open %s\n", path);
+	devspec = read_file(path, NULL);
+	if (!devspec)
 		return 1;
-	}
-
-	nr = read(fd, devspec, BUFSZ);
-	close(fd);
-	if (0 >= nr) {
-		perr(errno, "Couldn't read %s\n", path);
-		return 1;
-	}
-
-	devspec[nr] = 0;
 
 	/* Now we parse something like /pci@400000000112/pci@2/ethernet@1 for
 	 * BUID HI =4000 and LOW 00000112 */
 	at = strchr(devspec, '@');
 	if (!at || 0 == *at || 0 == *(++at)) {
 		perr(errno, "Unable to parse devspec = %s\n", devspec);
+		free(devspec);
 		return 1;
 	}
 
@@ -281,8 +265,11 @@ static int parse_sysfsname(void)
 	addr = get_config_addr_from_reg(path);
 	if (addr) {
 		config_addr = addr;
+		free(devspec);
 		return 0;
 	}
+
+	free(devspec);
 	return 1;
 }
 
@@ -311,26 +298,23 @@ static char *recurse_hunt_file_contents(char *base_path, const char *filename,
 					int chase_link_cnt)
 {
 	char path[BUFSZ];
+	char *loco;
 
 	strcpy(path, base_path);
 	strcat(path, filename);
 
-	int fd = open(path, O_RDONLY);
-
-	if (0 < fd) {
-		char loco[BUFSZ];
-		int nr = read(fd, loco, BUFSZ);
-
-		close(fd);
+	loco = read_file(path, NULL);
+	if (loco) {
 		int ndesire = strlen(desired_file_contents);
 
-		if (0 < nr) {
-			loco[nr] = 0;
-			/* Found device with given location code */
-			if (0 == strncmp(loco, desired_file_contents, ndesire))
-				return base_path;
+		if (0 == strncmp(loco, desired_file_contents, ndesire)) {
+			free(loco);
+			return base_path;
 		}
 	}
+
+	if (loco)
+		free(loco);
 
 	/* Either this dir did not contain a "filename" file,
 	 * or it did but the contents didn't match.  Now, search the subdirs.

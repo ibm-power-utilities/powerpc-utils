@@ -109,6 +109,7 @@ void perr(int, const char *, ...);
 int open_rtas_errinjct(ei_function *);
 int close_rtas_errinjct(ei_function *);
 int sysfs_check(void);
+char *read_file(const char *, int *);
 
 #define HELP_FMT    "  %-15s%s\n"  /**< common help format */
 

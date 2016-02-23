@@ -88,8 +88,8 @@ int platform_specific_arg(char arg, char *optarg)
  */
 int platform_specific(ei_function *ei_func)
 {
-	int	rc, fd;
-	struct stat sbuf;
+	char *buf;
+	int rc;
 
 	if (ext_help) {
 		platform_specific_usage(ei_func);
@@ -102,42 +102,21 @@ int platform_specific(ei_function *ei_func)
 		return 1;
 	}
 
-	fd = open(fname, O_RDONLY);
-	if (fd == -1) {
-		perr(errno, "Could not open file %s", fname);
+	buf = read_file(fname, NULL);
+	if (!buf)
 		return 1;
-	}
-
-	if (fstat(fd, &sbuf) != 0) {
-		perr(errno, "Could not get status of file %s", fname);
-		close(fd);
-		return 1;
-	}
-
-	if (sbuf.st_size > EI_BUFSZ) {
-		perr(0, "platform error files cannot exceed 1k, %s = %d\n",
-		     fname, sbuf.st_size);
-		close(fd);
-		return 1;
-	}
-
-	rc = read(fd, err_buf, sbuf.st_size);
-	close(fd);
-	if (rc != sbuf.st_size) {
-		perr(errno, "Could not read platform data from file %s,\n"
-		     "expected to read %d but got %d\n", fname,
-		     sbuf.st_size, rc);
-		return 1;
-	}
 
 	if (!be_quiet)
 		printf("Injecting a %s error with data from %s\n",
 			ei_func->name, fname);
 
-	if (dryrun)
+	if (dryrun) {
+		free(buf);
 		return 0;
+	}
 
 	rc = do_rtas_errinjct(ei_func);
 
+	free(buf);
 	return rc;
 }
