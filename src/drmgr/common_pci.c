@@ -1036,9 +1036,10 @@ get_bus_id(char *loc_code)
 			char *bus_id;
 
 			bus_id = strdup(ent->d_name);
-			if (bus_id)
+			if (bus_id) {
+				closedir(d);
 				return bus_id;
-			else {
+			} else {
 				say(ERROR, "Failed to allocate bus id\n");
 				break;
 			}
