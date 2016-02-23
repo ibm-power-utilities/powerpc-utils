@@ -168,6 +168,9 @@ static int get_os_hp_devices(struct hpdev **hpdev_list)
 			break;
 		}
 
+		hpdev->next = hp_list;
+		hp_list = hpdev;
+
 		rc = sprintf(hpdev->path, "%s/%s", SYSFS_PCI_DEV_PATH,
 			     de->d_name);
 		if (rc < 0)
@@ -180,8 +183,6 @@ static int get_os_hp_devices(struct hpdev **hpdev_list)
 
 		say(EXTRA_DEBUG, "HPDEV: %s\n       %s\n", hpdev->path,
 		    hpdev->devspec);
-		hpdev->next = hp_list;
-		hp_list = hpdev;
 	}
 
 	closedir(d);
