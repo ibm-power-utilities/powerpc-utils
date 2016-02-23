@@ -134,6 +134,23 @@ struct rtas_token *get_rtas_tokens(void)
 		if (dp->d_name[0] == '.')
 			continue;
 
+		snprintf(dir, 128, "%s/%s", OFDT_RTAS_PATH, dp->d_name);
+
+		fp = fopen(dir, "r");
+		if (fp == NULL) {
+			fprintf(stderr, "Could not get rtas token for %s\n",
+				dp->d_name);
+			continue;
+		}
+
+		rc = fread(&betoken, sizeof(betoken), 1, fp);
+		fclose(fp);
+		if (rc <= 0) {
+			fprintf(stderr, "Could not get rtas token for %s\n",
+				dp->d_name);
+			continue;
+		}
+
 		tok = malloc(sizeof(*tok));
 		if (tok == NULL) {
 			fprintf(stderr, "Could not allocate token list\n");
@@ -142,33 +159,9 @@ struct rtas_token *get_rtas_tokens(void)
 			break;
 		}
 
+		tok->token = be32toh(betoken);
 		tok->name = strdup(dp->d_name);
 		insert_token(tok, &tok_list);
-
-		snprintf(dir, 128, "%s/%s", OFDT_RTAS_PATH, dp->d_name);
-
-		fp = fopen(dir, "r");
-		if (fp == NULL) {
-			fprintf(stderr, "Could not get rtas token for %s\n",
-				dp->d_name);
-			free_rtas_tokens(tok_list);
-			tok_list = NULL;
-			break;
-		}
-
-		rc = fread(&betoken, sizeof(betoken), 1, fp);
-		if (rc <= 0) {
-			fprintf(stderr, "Could not get rtas token for %s\n",
-				dp->d_name);
-			free_rtas_tokens(tok_list);
-			tok_list = NULL;
-			fclose(fp);
-			break;
-		}
-
-		tok->token = be32toh(betoken);
-
-		fclose(fp);
 	}
 
 	closedir(dir);
