@@ -998,6 +998,10 @@ ofpathname_to_logical()
         fi
     fi
 
+    if [[ $DEVTYPE = "namespace" ]]; then
+        DEVTYPE="nvme"
+    fi
+
     # Remove any possible cdrom data from DEVICE
     if [[ ${DEVICE##*,} = "\ppc\bootinfo.txt" ||
           ${DEVICE##*,} = \ppc\bootinfo.txt ]]; then
@@ -1022,6 +1026,7 @@ ofpathname_to_logical()
         hfi-ethernet* )  of2l_hfi ;;
         disk*         )  of2l_ide ;;
         usb           )  of2l_usb ;;
+        nvme          )  of2l_nvme ;;
     esac
 
     if [[ -z $LOGICAL_DEVNAME ]]; then
@@ -1551,6 +1556,64 @@ of2l_fc()
                 fi
         fi
     done
+}
+
+#
+# of2l_nvme
+# Conversion routine for OF path => logical name for nvme devices
+#
+of2l_nvme()
+{
+    # get namespace id and partition number
+    local nsid_part=${DEVICE##*@} # <namespace-id>[:partition-number]
+    local nsid=${nsid_part%:*} # namespace id
+    local part # partition number
+
+    # set partition number only if ':' is present
+    case "${nsid_part}" in
+    *:*)
+        part=${nsid_part#*:}
+        ;;
+    esac
+
+    local dir
+    local link
+
+    for dir in `$FIND /sys/block -name "nvme*n$nsid"`; do
+        cd $dir
+
+        link=`get_link "device"` # points to nvme[0-9]+ (non-namespace)
+        if [[ -n $link ]]; then
+            cd $link
+        else
+            continue
+        fi
+
+        link=`get_link "device"` # points to pci address dir
+        if [[ -n $link ]]; then
+            cd $link
+        else
+            continue
+        fi
+
+        goto_dir $PWD "devspec"
+        local devspec=`$CAT ./devspec 2>/dev/null`
+
+        if [[ $devspec = $DEVPATH ]]; then
+            LOGICAL_DEVNAME="${dir##*/}"
+            break
+        fi
+    done
+
+    if [[ -n $LOGICAL_DEVNAME ]] \
+    && [[ -n $part ]]; then
+
+        if [[ -d "/sys/block/${LOGICAL_DEVNAME}/${LOGICAL_DEVNAME}p${part}" ]]; then
+            LOGICAL_DEVNAME="${LOGICAL_DEVNAME}p${part}"
+        else
+            LOGICAL_DEVNAME=''
+        fi
+    fi
 }
 
 #
