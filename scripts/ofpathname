@@ -481,6 +481,7 @@ logical_to_ofpathname()
                     logical_to_ofpathname
                     exit
                     ;;
+	nvme*)	    l2of_nvme ;;
 	*)         # check if the device is a network interface
                    is_net=$(is_net_interface $DEVICE)
                    if [[ $is_net = "yes" ]]; then
@@ -617,6 +618,78 @@ l2of_hfi()
     fi
 
     OF_PATH=${hfpath##/proc/device-tree}
+}
+
+#
+# l2of_nvme
+# Conversion routine for logical => OF path of nvme devices
+#
+l2of_nvme()
+{
+    # OF path: <devspec>/namespace@<namespace-id>:<partition-number>
+
+    # disk: nvmeX, nvmeXnY; not nvmeXnYpZ
+    local devdisk="${DEVICE%p[0-9]*}"
+
+    # namespace id: Y in nvmeXnY, nvmeXnYpZ
+    local devnsid="${devdisk#nvme[0-9]*n}"
+    if [[ $devnsid = $devdisk ]]; then
+        devnsid='' # no namespace id
+    fi
+
+    # partition number: Z in nvmeXnYpZ
+    local devpart="${DEVICE##*p}"
+    if [[ $devpart = $DEVICE ]]; then
+        devpart='' # no partition number
+    fi
+
+    # Get the device-tree device specification (devspec).
+    local dir
+    local found=0
+
+    for dir in `$FIND /sys/devices -name "$DEVICE"`; do
+        cd $dir
+
+        goto_dir $PWD "device/devspec"
+
+        devspec=`$CAT $PWD/device/devspec`
+        if [[ -n $devspec ]]; then
+            found=1
+            break
+        fi
+    done
+
+    if [[ $found -eq 0 ]]; then
+        err $ERR_NO_SYSFS_DEVINFO
+    fi
+
+    if [[ -z $devspec ]]; then
+        err $ERR_NO_OFPATH
+    fi
+
+    # OF path: <devspec>/namespace@<namespace-id>:<partition-number>
+    OF_PATH="$devspec"
+
+    # No namespace id (nY) specified.
+    if [[ -z $devnsid ]]; then
+        return
+    fi
+
+    # Device type is usually 'namespace'.
+    # Get it from device-tree just in case.
+    devtype=`$CAT /proc/device-tree${devspec}/namespace/name`
+    if [[ -z $devtype ]]; then
+        err $ERR_NO_OFPATH
+    fi
+
+    OF_PATH="$OF_PATH/$devtype@$devnsid"
+
+    # No partition (pZ) specified.
+    if [[ -z $devpart ]]; then
+        return
+    fi
+
+    OF_PATH="${OF_PATH}:${devpart}"
 }
 
 #
