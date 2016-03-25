@@ -491,7 +491,7 @@ nvram_find_fd_partition(struct nvram *nvram, char *name)
     int				len;
     int				found = 0;
 
-    if (part_name_valid(name))
+    if (!part_name_valid(name))
 	    return -1;
 
     if (lseek(nvram->fd, SEEK_SET, 0) == -1) {
