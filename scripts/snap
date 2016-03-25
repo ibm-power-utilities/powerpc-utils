@@ -384,7 +384,7 @@ eval '%ENV=('.$1.')' if `bash -c "
         $perldumpenv"`
     =~ /^\s*\{(.*)\}\s*$/mxs;
 
-if ($ENV{'platform'} == $ENV{'PLATFORM_UNKNOWN'} || $ENV{'platform'} == $ENV{'PLATFORM_POWERNV_HOST'}) {
+if ($ENV{'platform'} == $ENV{'PLATFORM_UNKNOWN'} || $ENV{'platform'} == $ENV{'PLATFORM_POWERNV'}) {
         print "snap: is not supported on the $ENV{'platform_name'} platform\n";
         exit 1;
 }
