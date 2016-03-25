@@ -89,7 +89,8 @@ usage(void)
 	fprintf(stderr, "                heading is not displayed and the "
 		"columns are delimited by the\n");
 	fprintf(stderr, "                specified character.\n");
-	fprintf(stderr, "        -d      Enable debugging output. When "
+	fprintf(stderr, "        -d <detail level>\n");
+	fprintf(stderr, "                Enable debugging output. When "
 		"displaying LMB information\n");
 	fprintf(stderr, "                this will enable printing of LMBs "
 		"not owned by the system.\n");
