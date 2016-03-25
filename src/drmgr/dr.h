@@ -85,7 +85,7 @@ enum say_level { ERROR = 1, WARN, INFO, DEBUG, EXTRA_DEBUG};
 /* The follwing are defined in common.c */
 int say(enum say_level, char *, ...);
 void report_unknown_error(char *, int);
-int dr_init(void);
+int dr_init(struct options *opts);
 void dr_fini(void);
 void set_timeout(int);
 int drmgr_timed_out(void);

@@ -105,13 +105,52 @@ void * __zalloc(size_t size, const char *func, int line)
 	return data;
 }
 
+static int check_kmods(struct options *opts)
+{
+	struct stat sbuf;
+	int rc;
+
+	/* We only need to do this for PHB/SLOT/PCI operations */
+	if (opts->ctype && strcmp(opts->ctype, "pci")
+	    && strcmp(opts->ctype, "phb") && strcmp(opts->ctype, "slot"))
+		return 0;
+
+	/* Before checking for dlpar capability, we need to ensure that
+	 * rpadlpar_io module is loaded or built into the kernel. This
+	 * does make the checking a bit redundant though.
+	 */
+	if ((stat(add_slot_fname, &sbuf)) && (stat(ADD_SLOT_FNAME2, &sbuf))) {
+		rc = system("/sbin/modprobe rpadlpar_io");
+		if (WIFEXITED(rc) && WEXITSTATUS(rc)) {
+			say(ERROR, "rpadlpar_io module was not loaded\n");
+			return WEXITSTATUS(rc);
+		}
+	}
+
+	/* For unknown reasons the add_slot and remove_slot sysfs files
+	 * used for dlpar operations started appearing with quotes around
+	 * the filename.  So, this little hack exists to ensure nothing
+	 * breaks on the kernels where this exists.
+	 *
+	 * The default value is without the quotes.  This is what was and
+	 * what shall be again.
+	 */
+	rc = stat(add_slot_fname, &sbuf);
+	if (rc) {
+		add_slot_fname = ADD_SLOT_FNAME2;
+		remove_slot_fname = REMOVE_SLOT_FNAME2;
+		rc = stat(add_slot_fname, &sbuf);
+	}
+	
+	return rc;
+}
+
 /**
  * dr_init
  * @brief Initialization routine for drmgr and lsslot
  *
  */
-inline int
-dr_init(void)
+inline int dr_init(struct options *opts)
 {
 	int rc;
 
@@ -142,10 +181,20 @@ dr_init(void)
 	/* Mask signals so we do not get interrupted */
 	if (sig_setup()) {
 		say(ERROR, "Could not mask signals to avoid interrupts\n");
+		if (log_fd)
+			close(log_fd);
+		dr_unlock();
 		return -1;
 	}
 
-	return 0;
+	rc = check_kmods(opts);
+	if (rc) {
+		if (log_fd)
+			close(log_fd);
+		dr_unlock();
+	}
+
+	return rc;
 }
 
 /**
@@ -1243,51 +1292,16 @@ mem_dlpar_capable(void)
 			     "/sys/devices/system/memory/block_size_bytes");
 }
 
-static int
-check_slot_phb_dlpar(const char *type)
-{
-	struct stat sbuf;
-	int rc;
-
-	/* Before checking for dlpar capability, we need to ensure that
-	 * rpadlpar_io module is loaded or built into the kernel. This
-	 * does make the checking a bit redundant though.
-	 */
-	if ((stat(add_slot_fname, &sbuf)) || (stat(ADD_SLOT_FNAME2, &sbuf))) {
-		rc = system("/sbin/modprobe rpadlpar_io");
-		if (WIFEXITED(rc) && WEXITSTATUS(rc))
-			say(ERROR, "rpadlpar_io module was not loaded\n");
-	}
-
-	/* For unknown reasons the add_slot and remove_slot sysfs files
-	 * used for dlpar operations started appearing with quotes around
-	 * the filename.  So, this little hack exists to ensure nothing
-	 * breaks on the kernels where this exists.
-	 *
-	 * The default value is without the quotes.  This is what was and
-	 * what shall be again.
-	 */
-	rc = dlpar_capable(type, add_slot_fname);
-	if (! rc) {
-		add_slot_fname = ADD_SLOT_FNAME2;
-		remove_slot_fname = REMOVE_SLOT_FNAME2;
-		
-		rc = dlpar_capable(type, add_slot_fname);
-	}
-	
-	return rc;
-}
-
 int
 slot_dlpar_capable(void)
 {
-	return check_slot_phb_dlpar("I/O DLPAR");
+	return dlpar_capable("I/O DLPAR", add_slot_fname);
 }
 
 int
 phb_dlpar_capable(void)
 {
-	return check_slot_phb_dlpar("PHB DLPAR");
+	return dlpar_capable("PHB DLPAR", add_slot_fname);
 }
 
 int

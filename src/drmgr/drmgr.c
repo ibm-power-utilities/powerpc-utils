@@ -331,11 +331,11 @@ int main(int argc, char *argv[])
 	   exit(1);
 	}
 
-	rc = dr_init();
+	parse_options(argc, argv, &opts);
+
+	rc = dr_init(&opts);
 	if (rc)
 		return rc;
-
-	parse_options(argc, argv, &opts);
 
 	if (display_capabilities) {
 		print_dlpar_capabilities();
