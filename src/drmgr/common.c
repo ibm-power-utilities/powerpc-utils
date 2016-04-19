@@ -115,6 +115,12 @@ static int check_kmods(struct options *opts)
 	    && strcmp(opts->ctype, "phb") && strcmp(opts->ctype, "slot"))
 		return 0;
 
+	/* We don't use rpadlar_io/rpaphp for PCI operations run with the
+	 * -v / virtio flag, which relies on generic PCI rescan instead
+	 */
+	if (opts->ctype && !strcmp(opts->ctype, "pci") && opts->pci_virtio == 1)
+		return 0;
+
 	/* Before checking for dlpar capability, we need to ensure that
 	 * rpadlpar_io module is loaded or built into the kernel. This
 	 * does make the checking a bit redundant though.
