@@ -101,6 +101,11 @@ int get_time_base()
 	struct sysentry *se;
 
 	f = fopen("/proc/cpuinfo", "r");
+	if (!f) {
+		fprintf(stderr, "Could not open /proc/cpuinfo\n");
+		return -1;
+	}
+
 	while ((fgets(buf, 80, f)) != NULL) {
 		if (!strncmp(buf, "timebase", 8)) {
 			tb = strchr(buf, ':') + 2;
@@ -203,6 +208,11 @@ int parse_proc_ints()
 	long long int phint = 0;
 
 	f = fopen("/proc/interrupts", "r");
+	if (!f) {
+		fprintf(stderr, "Could not open /proc/interrupts\n");
+		return -1;
+	}
+
 	while (fgets(line, 512, f) != NULL) {
 		/* we just need the SPU line */
 		if (line[0] != 'S' || line[1] != 'P' || line[2] != 'U')
@@ -237,6 +247,11 @@ int parse_proc_stat()
 
 	/* we just need the first line */
 	f = fopen("/proc/stat", "r");
+	if (!f) {
+		fprintf(stderr, "Could not open /proc/stat\n");
+		return -1;
+	}
+
 	first_line = fgets(line, 128, f);
 	fclose(f);
 
@@ -381,6 +396,11 @@ void get_mem_total(struct sysentry *se, char *buf)
 	char *mem, *nl, *first_line;
 
 	f = fopen("/proc/meminfo", "r");
+	if (!f) {
+		fprintf(stderr, "Could not open /proc/meminfo\n");
+		return;
+	}
+
 	first_line = fgets(line, 128, f);
 	fclose(f);
 
@@ -408,6 +428,11 @@ void get_smt_mode(struct sysentry *se, char *buf)
 	char *first_line;
 
 	f = popen(cmd, "r");
+	if (!f) {
+		fprintf(stderr, "Failed to execute %s\n", cmd);
+		return;
+	}
+
 	first_line = fgets(line, 128, f);
 	pclose(f);
 
