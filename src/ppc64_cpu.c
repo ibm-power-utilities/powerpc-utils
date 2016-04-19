@@ -482,8 +482,10 @@ static int set_smt_state(int smt_state)
 	if (update_ssd)
 		set_smt_snooze_delay(ssd);
 
-	if (error)
+	if (error) {
+		fprintf(stderr, "One or more cpus could not be on/offlined\n");
 		return -1;
+	}
 	return rc;
 }
 
