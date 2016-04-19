@@ -134,7 +134,7 @@ void get_cpu_physc(struct sysentry *unused_se, char *buf)
 	old_purr = strtoll(se->old_value, NULL, 0);
 
 	physc = (new_purr - old_purr)/timebase/elapsed;
-	sprintf(buf, "%.2f", physc);
+	sprintf(buf, "%.6f", physc);
 }
 
 void get_per_entc(struct sysentry *unused_se, char *buf)
@@ -146,7 +146,7 @@ void get_per_entc(struct sysentry *unused_se, char *buf)
 	get_sysdata("DesEntCap", &descr, entc);
 	get_sysdata("physc", &descr, physc);
 
-	sprintf(buf, "%.2f", atof(physc) / atof(entc));
+	sprintf(buf, "%.6f", atof(physc) / atof(entc));
 }
 
 int parse_lparcfg()
@@ -318,16 +318,21 @@ void get_active_cpus_in_pool(struct sysentry *se, char *buf)
 {
 	struct sysentry *tmp;
 
-	tmp = get_sysentry("pool_capacity");
-	sprintf(buf, "%d", atoi(tmp->value)/100);
+	tmp = get_sysentry("physical_procs_allocated_to_virtualization");
+	if (tmp) {
+		sprintf(buf, "%d", atoi(tmp->value));
+	} else {
+		tmp = get_sysentry("pool_capacity");
+		sprintf(buf, "%d", atoi(tmp->value)/100);
+	}
 }
 
 void get_memory_mode(struct sysentry *se, char *buf)
 {
 	struct sysentry *tmp;
 
-	tmp = get_sysentry("entitled_memory");
-	if (tmp->value[0] == '\0')
+	tmp = get_sysentry("entitled_memory_pool_number");
+	if (atoi(tmp->value) == 65535)
 		sprintf(buf, "Dedicated");
 	else
 		sprintf(buf, "Shared");
@@ -485,7 +490,7 @@ int print_iflag_data()
 
 void print_default_output(int interval, int count)
 {
-	char *fmt = "%5s %5s %5s %5s %5s %5s %5s %5s %5s\n";
+	char *fmt = "%5s %5s %5s %8s %8s %5s %5s %5s %5s\n";
 	char *descr;
 	char buf[128];
 	int offset;
