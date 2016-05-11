@@ -50,6 +50,21 @@ mem_usage(char **pusage)
 }
 
 /**
+ * report_resource_count
+ * @brief Report the number of LMBs that were added or removed.
+ *
+ * Note that the format of this message is what is expected by the HMC,
+ * or other agent communicating through the RMC framework, and should not
+ * be changed.
+ *
+ * @param count number of LMBs
+ */
+static void report_resource_count(int count)
+{
+	printf("DR_TOTAL_RESOURCES=%d\n", count);
+}
+
+/**
  * get_phandle
  *
  * @param char * device tree node path
@@ -1090,7 +1105,7 @@ mem_add(struct options *opts)
 
 	say(DEBUG, "Added %d of %d requested LMB(s)\n", lmb_list->lmbs_modified,
 	    opts->quantity);
-	printf("DR_TOTAL_RESOURCES=%d\n", lmb_list->lmbs_modified);
+	report_resource_count(lmb_list->lmbs_modified);
 
 	free_lmbs(lmb_list);
 	return rc;
@@ -1215,7 +1230,7 @@ mem_remove(struct options *opts)
 	if (lmb_list->lmbs_modified < requested)
 		say(ERROR, "Unable to hotplug remove the remaining %d LMB(s)\n",
 		    requested - lmb_list->lmbs_modified);
-	printf("DR_TOTAL_RESOURCES=%d\n", lmb_list->lmbs_modified);
+	report_resource_count(lmb_list->lmbs_modified);
 
 	free_lmbs(lmb_list);
 	return rc;
@@ -1311,6 +1326,45 @@ valid_mem_options(struct options *opts)
 	return 0;
 }
 
+int do_mem_kernel_dlpar(struct options *opts)
+{
+	char cmdbuf[128];
+	int rc, offset;
+
+	offset = sprintf(cmdbuf, "%s ", "memory");
+
+	switch (opts->action) {
+	case ADD:
+		offset += sprintf(cmdbuf + offset, "add ");
+		break;
+	case REMOVE:
+		offset += sprintf(cmdbuf + offset, "remove ");
+		break;
+	default:
+		say(ERROR, "Invalid DRC type specified\n");
+		return -EINVAL;
+	}
+
+	if (opts->usr_drc_index)
+		offset += sprintf(cmdbuf + offset, "index 0x%x",
+				  opts->usr_drc_index);
+	else
+		offset += sprintf(cmdbuf + offset, "count %d", opts->quantity);
+
+	rc = do_kernel_dlpar(cmdbuf, offset);
+
+	/* Memory DLPAR in the kernel is handled as an all-or-nothing
+	 * request, we either add all the requested LMBs or add none
+	 * of them.
+	 */
+	if (rc)
+		report_resource_count(0);
+	else
+		report_resource_count(opts->quantity);
+
+	return rc;
+}
+
 int
 drslot_chrp_mem(struct options *opts)
 {
@@ -1333,14 +1387,18 @@ drslot_chrp_mem(struct options *opts)
 	if (opts->usr_drc_name)
 		opts->quantity = 1;
 
-	switch (opts->action) {
-	    case ADD:
-		rc = mem_add(opts);
-		break;
+	if (kernel_dlpar_exists()) {
+		rc = do_mem_kernel_dlpar(opts);
+	} else {
+		switch (opts->action) {
+		case ADD:
+			rc = mem_add(opts);
+			break;
 
-	    case REMOVE:
-		rc = mem_remove(opts);
-		break;
+		case REMOVE:
+			rc = mem_remove(opts);
+			break;
+		}
 	}
 
 	return rc;

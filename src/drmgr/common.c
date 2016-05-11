@@ -43,6 +43,8 @@ char *remove_slot_fname = REMOVE_SLOT_FNAME;
 
 #define LPARCFG_PATH	"/proc/ppc64/lparcfg"
 
+#define SYSFS_DLPAR_FILE	"/sys/kernel/dlpar"
+
 static int dr_lock_fd = 0;
 static long dr_timeout;
 
@@ -1429,4 +1431,53 @@ int ams_balloon_active(void)
 int is_display_adapter(struct dr_node *node)
 {
 	return !strncmp(node->drc_type, "display", 7);
+}
+
+/**
+ * kernel_dlpar_exists
+ * @brief determine if the sysfs file to do in-kernel dlpar exists
+ *
+ * @returns 1 if in-kernel dlpar exists, 0 otherwise.
+ */
+int kernel_dlpar_exists(void)
+{
+	struct stat sbuf;
+
+	if (!stat(SYSFS_DLPAR_FILE, &sbuf))
+		return 1;
+
+	return 0;
+}
+
+/**
+ * do_kernel_dlpar
+ * @brief Use the in-kernel dlpar capabilities to perform the requested
+ *        dlpar operation.
+ *
+ * @param cmd command string to write to sysfs
+ * @returns 0 on success, !0 otherwise
+ */
+int do_kernel_dlpar(const char *cmd, int cmdlen)
+{
+	int fd, rc;
+
+	say(DEBUG, "Initiating kernel DLPAR \"%s\"\n", cmd);
+
+	/* write to file */
+	fd = open(SYSFS_DLPAR_FILE, O_WRONLY);
+	if (fd <= 0) {
+		say(ERROR, "Could not open %s to initiate DLPAR request\n",
+		    SYSFS_DLPAR_FILE);
+		return -1;
+	}
+
+	rc = write(fd, cmd, cmdlen);
+	close(fd);
+	if (rc <= 0) {
+		say(ERROR, "Failed: %s\n", strerror(errno));
+		return rc;
+	}
+
+	say(INFO, "Success\n");
+	return 0;
 }
