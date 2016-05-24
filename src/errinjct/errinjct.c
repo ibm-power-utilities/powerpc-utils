@@ -684,10 +684,8 @@ char *read_file(const char *fname, int *flen)
 
         len = read(fd, buf, sbuf.st_size);
         close(fd);
-        if (len != sbuf.st_size) {
-                perr(errno, "Error reading data from file %s\n"
-                     "expected to read %d but got %d\n", fname,
-                     sbuf.st_size, len);
+	if (len <= 0) {
+		perr(errno, "Error reading data from file %s\n", fname);
                 free(buf);
 		return NULL;
         }
