@@ -147,6 +147,7 @@ src_drmgr_drmgr_SOURCES = \
 	src/drmgr/drslot_chrp_phb.c \
 	src/drmgr/drslot_chrp_slot.c \
 	src/drmgr/rtas_calls.c \
+	src/drmgr/prrn.c \
 	$(pseries_platform_SOURCES)
 
 noinst_HEADERS += \
