@@ -398,6 +398,10 @@ void check_librtas_returns(int rc, ei_function *ei_func)
 		perr(0, "RTAS: %s: The error injection facility is not open\n"
 			"or you are not the one that opened it", ei_func->name);
 		break;
+	case -5: /* PCI injection not enabled */
+		perr(0, "RTAS: %s: PCI Error Injection is not enabled (not "
+		     "available)\n", ei_func->name);
+		break;
 	case -1001: /* RTAS_KERNEL_INT */
 		perr(0, "librtas: No Kernel Interface to Firmware");
 		break;
