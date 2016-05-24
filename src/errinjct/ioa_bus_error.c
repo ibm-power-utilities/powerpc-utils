@@ -201,6 +201,7 @@ static uint32_t get_config_addr_from_reg(char *devpath)
 {
 	char path[BUFSZ];
 	char *buf;
+	uint32_t *be_caddr;
 	uint32_t caddr = 0;
 
 	strncpy(path, devpath, BUFSZ-5);
@@ -210,10 +211,11 @@ static uint32_t get_config_addr_from_reg(char *devpath)
 	if (!buf)
 		return 1;
 
-	caddr = be32toh((uint32_t)buf[0]);
+	be_caddr = (uint32_t *)buf;
+	caddr = be32toh(*be_caddr);
 
 	free(buf);
-	return be32toh(caddr);
+	return caddr;
 }
 
 /**
