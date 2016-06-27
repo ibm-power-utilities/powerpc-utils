@@ -101,6 +101,11 @@ int get_time_base()
 	struct sysentry *se;
 
 	f = fopen("/proc/cpuinfo", "r");
+	if (!f) {
+		fprintf(stderr, "Could not open /proc/cpuinfo\n");
+		return -1;
+	}
+
 	while ((fgets(buf, 80, f)) != NULL) {
 		if (!strncmp(buf, "timebase", 8)) {
 			tb = strchr(buf, ':') + 2;
@@ -134,7 +139,7 @@ void get_cpu_physc(struct sysentry *unused_se, char *buf)
 	old_purr = strtoll(se->old_value, NULL, 0);
 
 	physc = (new_purr - old_purr)/timebase/elapsed;
-	sprintf(buf, "%.2f", physc);
+	sprintf(buf, "%.6f", physc);
 }
 
 void get_per_entc(struct sysentry *unused_se, char *buf)
@@ -146,7 +151,7 @@ void get_per_entc(struct sysentry *unused_se, char *buf)
 	get_sysdata("DesEntCap", &descr, entc);
 	get_sysdata("physc", &descr, physc);
 
-	sprintf(buf, "%.2f", atof(physc) / atof(entc));
+	sprintf(buf, "%.6f", atof(physc) / atof(entc));
 }
 
 int parse_lparcfg()
@@ -203,6 +208,11 @@ int parse_proc_ints()
 	long long int phint = 0;
 
 	f = fopen("/proc/interrupts", "r");
+	if (!f) {
+		fprintf(stderr, "Could not open /proc/interrupts\n");
+		return -1;
+	}
+
 	while (fgets(line, 512, f) != NULL) {
 		/* we just need the SPU line */
 		if (line[0] != 'S' || line[1] != 'P' || line[2] != 'U')
@@ -237,6 +247,11 @@ int parse_proc_stat()
 
 	/* we just need the first line */
 	f = fopen("/proc/stat", "r");
+	if (!f) {
+		fprintf(stderr, "Could not open /proc/stat\n");
+		return -1;
+	}
+
 	first_line = fgets(line, 128, f);
 	fclose(f);
 
@@ -318,16 +333,21 @@ void get_active_cpus_in_pool(struct sysentry *se, char *buf)
 {
 	struct sysentry *tmp;
 
-	tmp = get_sysentry("pool_capacity");
-	sprintf(buf, "%d", atoi(tmp->value)/100);
+	tmp = get_sysentry("physical_procs_allocated_to_virtualization");
+	if (tmp) {
+		sprintf(buf, "%d", atoi(tmp->value));
+	} else {
+		tmp = get_sysentry("pool_capacity");
+		sprintf(buf, "%d", atoi(tmp->value)/100);
+	}
 }
 
 void get_memory_mode(struct sysentry *se, char *buf)
 {
 	struct sysentry *tmp;
 
-	tmp = get_sysentry("entitled_memory");
-	if (tmp->value[0] == '\0')
+	tmp = get_sysentry("entitled_memory_pool_number");
+	if (atoi(tmp->value) == 65535)
 		sprintf(buf, "Dedicated");
 	else
 		sprintf(buf, "Shared");
@@ -376,6 +396,11 @@ void get_mem_total(struct sysentry *se, char *buf)
 	char *mem, *nl, *first_line;
 
 	f = fopen("/proc/meminfo", "r");
+	if (!f) {
+		fprintf(stderr, "Could not open /proc/meminfo\n");
+		return;
+	}
+
 	first_line = fgets(line, 128, f);
 	fclose(f);
 
@@ -403,6 +428,11 @@ void get_smt_mode(struct sysentry *se, char *buf)
 	char *first_line;
 
 	f = popen(cmd, "r");
+	if (!f) {
+		fprintf(stderr, "Failed to execute %s\n", cmd);
+		return;
+	}
+
 	first_line = fgets(line, 128, f);
 	pclose(f);
 
@@ -485,7 +515,7 @@ int print_iflag_data()
 
 void print_default_output(int interval, int count)
 {
-	char *fmt = "%5s %5s %5s %5s %5s %5s %5s %5s %5s\n";
+	char *fmt = "%5s %5s %5s %8s %8s %5s %5s %5s %5s\n";
 	char *descr;
 	char buf[128];
 	int offset;

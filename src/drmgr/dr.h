@@ -78,6 +78,7 @@ struct options {
 	char	*ctype;
 	char	*p_option;
 	int     pci_virtio;     /* qemu virtio device (legacy guest workaround) */
+	char    *prrn_filename;
 };
 
 enum say_level { ERROR = 1, WARN, INFO, DEBUG, EXTRA_DEBUG};
@@ -157,4 +158,10 @@ void phib_usage(char **);
 int ams_balloon_active(void);
 
 int is_display_adapter(struct dr_node *);
+
+#define PRRN_TIMEOUT 30
+int handle_prrn(char *filename);
+
+int kernel_dlpar_exists(void);
+int do_kernel_dlpar(const char *, int);
 #endif

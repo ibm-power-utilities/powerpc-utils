@@ -657,6 +657,30 @@ acquire_cpu(struct dr_node *cpu, struct dr_info *dr_info)
 	return 0;
 }
 
+int do_cpu_kernel_dlpar(struct dr_node *cpu, int action)
+{
+	char cmdbuf[256];
+	int offset;
+
+	offset = sprintf(cmdbuf, "%s ", "cpu");
+
+	switch (action) {
+	case ADD:
+		offset += sprintf(cmdbuf + offset, "add ");
+		break;
+	case REMOVE:
+		offset += sprintf(cmdbuf + offset, "remove ");
+		break;
+	default:
+		say(ERROR, "Invalid DRC type specified\n");
+		return -EINVAL;
+	}
+
+	offset += sprintf(cmdbuf + offset, "index 0x%x", cpu->drc_index);
+
+	return do_kernel_dlpar(cmdbuf, offset);
+}
+
 int
 probe_cpu(struct dr_node *cpu, struct dr_info *dr_info)
 {
@@ -665,39 +689,44 @@ probe_cpu(struct dr_node *cpu, struct dr_info *dr_info)
 	int write_len;
 	int rc = 0;
 
-	probe_file = open(CPU_PROBE_FILE, O_WRONLY);
-	if (probe_file <= 0) {
-		/* Attempt to add cpu from user-space, this may be an older
-		 * kernel without the infrastructure to handle dlpar.
-		 */
-		rc = acquire_cpu(cpu, dr_info);
-		if (rc)
-			return rc;
-
-		rc = online_cpu(cpu, dr_info);
-		if (rc) {
-			/* Roll back the operation.  Is this the correct
-			 * behavior?
-			 */
-			say(ERROR, "Unable to online %s\n", cpu->drc_name);
-			offline_cpu(cpu);
-			release_cpu(cpu, dr_info);
-			cpu->unusable = 1;
-		}
-
+	if (kernel_dlpar_exists()) {
+		rc = do_cpu_kernel_dlpar(cpu, ADD);
 	} else {
-		memset(drc_index, 0, DR_STR_MAX);
-		write_len = sprintf(drc_index, "0x%x", cpu->drc_index);
+		probe_file = open(CPU_PROBE_FILE, O_WRONLY);
+		if (probe_file <= 0) {
+			/* Attempt to add cpu from user-space, this may be
+			 * an older kernel without the infrastructure to
+			 * handle dlpar.
+			 */
+			rc = acquire_cpu(cpu, dr_info);
+			if (rc)
+				return rc;
 
-		say(DEBUG, "Probing cpu 0x%x\n", cpu->drc_index);
-		rc = write(probe_file, drc_index, write_len);
-		if (rc != write_len)
-			say(ERROR, "Probe failed! rc = %x\n", rc);
-		else
-			/* reset rc to success */
-			rc = 0;
+			rc = online_cpu(cpu, dr_info);
+			if (rc) {
+				/* Roll back the operation.  Is this the
+				 * correct behavior?
+				 */
+				say(ERROR, "Unable to online %s\n",
+				    cpu->drc_name);
+				offline_cpu(cpu);
+				release_cpu(cpu, dr_info);
+				cpu->unusable = 1;
+			}
+		} else {
+			memset(drc_index, 0, DR_STR_MAX);
+			write_len = sprintf(drc_index, "0x%x", cpu->drc_index);
 
-		close(probe_file);
+			say(DEBUG, "Probing cpu 0x%x\n", cpu->drc_index);
+			rc = write(probe_file, drc_index, write_len);
+			if (rc != write_len)
+				say(ERROR, "Probe failed! rc = %x\n", rc);
+			else
+				/* reset rc to success */
+				rc = 0;
+
+			close(probe_file);
+		}
 	}
 
 	if (!rc) {
@@ -761,6 +790,9 @@ release_cpu(struct dr_node *cpu, struct dr_info *dr_info)
 {
 	int release_file;
 	int rc;
+
+	if (kernel_dlpar_exists())
+		return do_cpu_kernel_dlpar(cpu, REMOVE);
 
 	release_file = open(CPU_RELEASE_FILE, O_WRONLY);
 	if (release_file > 0) {

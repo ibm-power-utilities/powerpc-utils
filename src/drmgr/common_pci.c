@@ -32,6 +32,9 @@
 #include "drpci.h"
 #include "ofdt.h"
 
+/* maximum seconds to wait for pci device removal */
+#define PCI_REMOVE_TIMEOUT_MAX 60
+
 /**
  * alloc_node
  *
@@ -1163,6 +1166,7 @@ pci_remove_device(struct dr_node *node)
 	int rc = 0;
 	FILE *file;
 	char path[DR_PATH_MAX];
+	int wait_time = 0;
 
 	sprintf(path, "%s/%s", node->sysfs_dev_path, "remove");
 	file = fopen(path, "w");
@@ -1176,6 +1180,34 @@ pci_remove_device(struct dr_node *node)
 		rc = -EACCES;
 
 	fclose(file);
+
+	if (rc == -EACCES)
+		return rc;
+
+	do {
+		struct stat sb;
+
+		rc = stat(node->sysfs_dev_path, &sb);
+		if (rc) {
+			rc = -errno;
+		} else {
+			say(DEBUG,
+				"waiting for PCI device driver to quiesce device at %s\n",
+				node->sysfs_dev_path);
+			sleep(1);
+		}
+	} while (rc == 0 &&
+		 (++wait_time < PCI_REMOVE_TIMEOUT_MAX && !drmgr_timed_out()));
+
+	if (rc == 0) {
+		say(ERROR, "timeout while quiescing device at %s\n",
+			node->sysfs_dev_path);
+		rc = -EBUSY;
+	} else if (rc == -ENOENT) {
+		/* sysfs entries cleaned up as part of device removal */
+		rc = 0;
+	}
+
 	return rc;
 }
 

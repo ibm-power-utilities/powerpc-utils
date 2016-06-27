@@ -398,6 +398,10 @@ void check_librtas_returns(int rc, ei_function *ei_func)
 		perr(0, "RTAS: %s: The error injection facility is not open\n"
 			"or you are not the one that opened it", ei_func->name);
 		break;
+	case -5: /* PCI injection not enabled */
+		perr(0, "RTAS: %s: PCI Error Injection is not enabled (not "
+		     "available)\n", ei_func->name);
+		break;
 	case -1001: /* RTAS_KERNEL_INT */
 		perr(0, "librtas: No Kernel Interface to Firmware");
 		break;
@@ -680,10 +684,8 @@ char *read_file(const char *fname, int *flen)
 
         len = read(fd, buf, sbuf.st_size);
         close(fd);
-        if (len != sbuf.st_size) {
-                perr(errno, "Error reading data from file %s\n"
-                     "expected to read %d but got %d\n", fname,
-                     sbuf.st_size, len);
+	if (len <= 0) {
+		perr(errno, "Error reading data from file %s\n", fname);
                 free(buf);
 		return NULL;
         }

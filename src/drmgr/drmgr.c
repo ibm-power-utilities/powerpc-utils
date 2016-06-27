@@ -29,7 +29,7 @@
 #include "dr.h"
 #include "pseries_platform.h"
 
-#define DRMGR_ARGS	"ac:d:Iimnp:Qq:Rrs:w:t:hCV"
+#define DRMGR_ARGS	"ac:d:Iimnp:P:Qq:Rrs:w:t:hCV"
 
 int output_level = 1; /* default to lowest output level */
 
@@ -37,6 +37,7 @@ int log_fd = 0;
 int action_cnt = 0;
 
 static int display_capabilities = 0;
+static int handle_prrn_event = 0;
 static int display_usage = 0;
 
 typedef int (cmd_func_t)(struct options *);
@@ -217,6 +218,10 @@ parse_options(int argc, char *argv[], struct options *opts)
 		    case 'p':
 			opts->p_option = optarg;
 			break;
+		    case 'P':
+			opts->prrn_filename = optarg;
+			handle_prrn_event = 1;
+			break;
 		    case 'q':
 			opts->quantity = strtoul(optarg, NULL, 0);
 			break;
@@ -334,13 +339,27 @@ int main(int argc, char *argv[])
 	parse_options(argc, argv, &opts);
 
 	rc = dr_init(&opts);
-	if (rc)
+	if (rc) {
+		if (handle_prrn_event) {
+			say(ERROR, "Failed to handle PRRN event\n");
+			unlink(opts.prrn_filename);
+		}
 		return rc;
+	}
 
 	if (display_capabilities) {
 		print_dlpar_capabilities();
 		dr_fini();
 		return 0;
+	}
+
+	if (handle_prrn_event) {
+		rc = handle_prrn(opts.prrn_filename);
+		if (rc)
+			say(ERROR, "Failed to handle PRRN event\n");
+		unlink(opts.prrn_filename);
+		dr_fini();
+		return rc;
 	}
 
 	command = get_command(&opts);
