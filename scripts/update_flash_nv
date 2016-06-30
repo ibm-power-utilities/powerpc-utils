@@ -592,7 +592,7 @@ opp_display_current_fw_version() {
 
 	echo
 	id=`ipmitool -I usb fru 2>/dev/null |grep "System Firmware" | cut -d " " -f8 | cut -d ")" -f1`
-	if [ "x$id" == "x" ]; then
+	if [ "x$id" = "x" ]; then
 		error $E_IPMI "Failed to get firmware version."
 	fi
 
