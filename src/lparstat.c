@@ -78,7 +78,8 @@ void get_time()
 	gettimeofday(&t, 0);
 
 	se = get_sysentry("time");
-	sprintf(se->value, "%ld", t.tv_sec + t.tv_usec);
+	sprintf(se->value, "%lld",
+		(long long)t.tv_sec * 1000000LL + (long long)t.tv_usec);
 }
 
 long long elapsed_time()
@@ -129,7 +130,7 @@ void get_cpu_physc(struct sysentry *unused_se, char *buf)
 	float new_purr, old_purr;
 	float timebase, physc;
 
-	elapsed = elapsed_time();
+	elapsed = elapsed_time() / 1000000.0;
 
 	se = get_sysentry("timebase");
 	timebase = atoi(se->value);
@@ -151,7 +152,7 @@ void get_per_entc(struct sysentry *unused_se, char *buf)
 	get_sysdata("DesEntCap", &descr, entc);
 	get_sysdata("physc", &descr, physc);
 
-	sprintf(buf, "%.6f", atof(physc) / atof(entc));
+	sprintf(buf, "%.6f", atof(physc) / atof(entc) * 100.0);
 }
 
 int parse_lparcfg()
