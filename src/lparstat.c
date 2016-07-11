@@ -564,6 +564,7 @@ void print_default_output(int interval, int count)
 
 		fprintf(stdout, fmt, user, sys, wait, idle, physc, entc,
 			lbusy, vcsw, phint);
+		fflush(stdout);
 	} while (--count > 0);
 }
 
