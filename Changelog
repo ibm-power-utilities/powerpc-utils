@@ -1,3 +1,281 @@
+powerpc-utils-1.3.2
+=====================================================================
+commit 4e5b9dacf7bbddfb58269fc50de6586a9ac6fdfd
+Author: Ulrich Weigand <ulrich.weigand@de.ibm.com>
+Date:   Mon Jul 11 17:13:17 2016 -0400
+
+    lparstat: Fix computation of time used in statistics
+    
+    The routine get_time computes bogus timestap values due to confusing
+    seconds and microseconds.  This leads to incorrect return values from
+    elapsed_time and therefore incorrect values for the physc field.
+    
+    Fixed by converting the "time" sysentry field to microseconds (and
+    computing it correctly), and updating the user of elapsed_time.
+    
+    In addition, %entc is supposed to show the ratio of physc to the
+    number of entitled CPUs as *percentage*, so the ratio needs to be
+    multiplied by 100.
+    
+    Signed-off-by: Ulrich Weigand <ulrich.weigand@de.ibm.com>
+    Signed-off-by: Michael Bringmann <mbringm@us.ibm.com>
+
+commit a97c5664f53f9a18dd0b941a842d7884253cf8ed
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Mon Jul 11 17:06:26 2016 -0400
+
+    drmgr: Disable use of in-kernel cpu hotplug
+    
+    After submitting the patch to update drmgr to use the in-kernel hotplug
+    capabilities for memory and cpu, commit <bbc5fc07c54d> (drmgr: Start using
+    in-kernel DLPAR functionality for cpu/memory), I realized there
+    are still distro kernels that do not have the in-kernel cpu hotplug
+    capabilities. Using the latest drmgr with this update breaks cpu dlpar
+    because the cpu dlpar code assumes that if the dlpar sysfs file exists
+    then in-kernel cpu dlpar is possible. this is wrong, the sysfs dlpar file
+    was added with in-kernel memory hotplug, its existence can only guarantee
+    memory hotplug capability.
+    
+    For now, disable using the in-kernel cpu capabilities by drmgr until
+    this can be resolved.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 2bb7599d702d4e1de1ff0f9cbe53329e59c4e120
+Author: Ian Neal <ian.neal@gmail.com>
+Date:   Mon Jul 11 10:02:45 2016 -0400
+
+    lparstat: flush data to stdout
+    
+    The stdout stream is not being flushed after being written to.  This
+    means that it doesn't behave properly in shell pipelines as the data
+    isn't visible until the program exits.  The fix is to simply flush
+    after writes so the data is immediately available to other processes
+    in the pipeline.
+    
+    Signed-off-by: Ian Neal <ian.neal@gmail.com>
+
+commit c3269d4e3d4882fd931d1df6aece0bec86fb6734
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Thu Jun 30 10:26:58 2016 -0400
+
+    update_flash: Fix bashism issue in opp_display_current_fw_version()
+    
+    Ubuntu uses dash, not bash. We hit below warning on Ubuntu system.
+    
+    root@abc:/sys/firmware/devicetree/base/ibm,opal/sensors# update_flash -d
+    /usr/sbin/update_flash_nv: 595: [: x43: unexpected operator
+    Firmware version:
+    ....
+    ....
+    
+    == is a bashism. Replace it with =.
+    
+    Fixes: 767e3dd7 (update_flash: Add support for OpenPower system)
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit 386a07c4dc6c09d35116dc6064f7a83d76f4415b
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Tue May 24 16:32:39 2016 -0400
+
+    errinjct: Correct read_file() error checking
+    
+    When reading files from syfs the file length returned from a stat()
+    call does not always match the actual length of the file. The read_file()
+    routine should be checking for an error return from the read() call
+    instead of checking that the amount read matches the file length returned
+    from a stat() call.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 42b83884bfb51c0c8b23bf2949157430f8468caa
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Tue May 24 16:31:37 2016 -0400
+
+    errinjct: Recognize -5 return from rtas
+    
+    Update the errinjct command to recognize the rturn code of -5 from
+    rtas indicating that PCI error injection is not enabled.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit ab848a8d5cc4c4b9f5faef1b31be3982fb7d4bf2
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Tue May 24 16:30:33 2016 -0400
+
+    errinjct: Correct config_addr parsing
+    
+    A recent patch (commit id: ccc9c72cec2a4) to move the errinjct function to
+    using a common read_file() routine did not correctly update the
+    get_config_addr_from_reg() function. This patch corrects this to return the
+    proper config address.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 9fc079cf39d999040483a00d3b41000ca3e43013
+Author: John Allen <jallen@linux.vnet.ibm.com>
+Date:   Tue May 24 16:28:27 2016 -0400
+
+    drmgr: Workaround for concurrent PRRN collisions
+    
+    Proposed workaround for issues with current PRRN event handling mechanism.
+    
+    Currently, the mechanism works by kicking off a script that calls a drmgr
+    remove followed by a drmgr add for each effected device. With this method,
+    problems can occur when multiple prrn events arrive in a short time span or
+    when other dlpar operations are happening while the script is running. What
+    can happen is that these other dlpar operations can jump in inbetween when
+    the script calls the remove and the add and take the drmgr lock. Then when
+    we try to add the memory back from the script, we are unable to take the
+    drmgr lock and the add fails.
+    
+    This patch fixes this issue by creating a new -P flag for drmgr which will
+    perform the necessary removes/adds from within the drmgr lock. The new
+    option will be invoked as follows:
+    
+    drmgr -P <path to prrn log file>
+    
+    On the rtas_errd side, we will begin by creating a log file for the
+    PRRN event which will contain a list of the type and the drc index for
+    each effected device. Then instead of invoking the script, we will call
+    the above drmgr command with the path to the prrn log file. Then, on the
+    drmgr side, we parse the list and perform the necessary removes/adds and
+    then delete the prrn log file.
+    
+    Signed-off-by: John Allen <jallen@linux.vnet.ibm.com>
+
+commit bbc5fc07c54dd53f4ceac3552ea12717cc86cba2
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Wed May 11 13:16:19 2016 -0400
+
+    drmgr: Start using in-kernel DLPAR functionality for cpu/memory
+    
+    Now that the capability to do DLPAR of cpus and memory can be
+    done completely in the kernel, update the drmgr command to use
+    this functionality.
+    
+    The kernel updates provided a sysfs file (/sys/kernel/dlpar)
+    that will allow the drmgr command invoke DLPAR of cpus and memory
+    by writing to this file.
+    
+    There are some exisitng behaviors of drmgr on the PowerVM platforms
+    that require cpu and memory to be done slightly differently. For
+    memory drmgr only needs to report the number of LMBs that were
+    added or removed so drmgr can just pass all requests straight to
+    the kernel. This patch also makes a common routine for reporting
+    memory resources to ensure the format is kept constant.
+    
+    For cpu DLPAR the drmgr command has to report the drc name of each
+    cpu that is added/removed. To do this the command uses much of the
+    same device tree parsing that is currently used and make a request
+    to the kernel to remove a specific cpu (by drc index) where a
+    write to the sysfs probe file was previously done.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+commit 4dafa57ec7c1498f94b324e671625b0794b92f2f
+Author: Thomas Falcon <tlfalcon@linux.vnet.ibm.com>
+Date:   Tue Apr 19 15:01:13 2016 -0400
+
+    ppc64_cpu: display error message after set_smt_state_one failure
+    
+    This avoids a silent error if threads are unable to be onlined or offlined.
+    
+    Signed-off-by: Thomas Falcon <tlfalcon@linux.vnet.ibm.com>
+
+commit 96745e9e1cb560af6f900b1dac920e36db750ee5
+Author: John Allen <jallen@linux.vnet.ibm.com>
+Date:   Tue Apr 19 14:52:35 2016 -0400
+
+    lparstat: Check return value of fopen/popen before dereferencing
+    
+    Checks the return value of fopen and popen in several locations to make sure
+    it's not null. If we pass a null file descriptor to fgets, we will hit a
+    segfault.
+    
+    Signed-off-by: John Allen <jallen@linux.vnet.ibm.com>
+    Reviewed-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+
+commit 6855b92b3f9f3ed9c02065344cc98b965c3f03ef
+Author: Michael Roth <mdroth@linux.vnet.ibm.com>
+Date:   Tue Apr 19 14:49:43 2016 -0400
+
+    drmgr: avoid loading rpadlpar_io/rpaphp when -v flags is used
+    
+    The -v / opts->pci_virtio flag was added to provide an alternative way
+    to scan/remove PCI devices which doesn't rely on rpaphp. That was a
+    workaround for a bug induced by QEMU emulating PHBs with multiple
+    hotpluggable slots, which fails to register slots beyond the first due
+    to rpaphp no longer accounting for the possibility of there being more
+    than 1 slot per PHB. This leads to warnings of the form:
+    
+      kernel: rpaphp: pci_hp_register failed with error -16
+      kernel: rpaphp: pci_hp_register failed with error -16
+      ...
+    
+    For most guest distros this has resulted in the module not being
+    loaded by default to avoid the errors showing up.
+    
+    However, as of a9b4e4e, we now load automatically load the module as
+    needed, but we don't take opts->pci_virtio into account when
+    determining if it's needed, leading to PCI hotplug operations to
+    KVM guests now resulting into rpaphp being loaded and
+    generating the errors above when drmgr is invoked.
+    
+    Fix this by avoiding modprobe of rpadlpar_io/rpaphp when
+    opts->pci_virtio is set.
+    
+    Signed-off-by: Michael Roth <mdroth@linux.vnet.ibm.com>
+
+commit efa87d93231eb0fe4f406bf58e7d5aa783ee4f13
+Author: Michael Bringmann <mwb@linux.vnet.ibm.com>
+Date:   Tue Apr 19 14:47:32 2016 -0400
+
+    lparstat: Correct presentation of some stats
+    
+    lparstat.c: Currently there are several problems with the presentation
+    of statistics by lparstat's default output mode.  These issues include:
+     * Showing negative values for certain fields e.g. %user, %sys, %wait,
+       %lbusy.
+     * Showing zero values for certain fields e.g. physc, %entc
+     * Identifying systems with 'Shared' or 'Dedicated' Memory Mode
+     * Calculating the number if logical CPUs used by a system
+    This patch looks to correct these issues.  It also changes the widths
+    of the physc, %entc fields which had too little precision available
+    to show the value change on some systems.
+    
+    Signed-off-by: Michael Bringmann <mwb@linux.vnet.ibm.com>
+
+commit a27c639aca69271aabe7cac287f998b29b82f333
+Author: Michael Roth <mdroth@linux.vnet.ibm.com>
+Date:   Tue Apr 19 14:37:36 2016 -0400
+
+    drmgr: ensure PCI cleanup is done before offlining dev
+    
+    As part of 4f542616, functionality was added to support add/remove
+    PCI devices without relying on rpaphp hotplug module. The sysfs
+    write used in the remove path initiates an asynchronous removal of
+    PCI device from kernel PCI subsystem, and eventually from the sysfs
+    tree. Afterward, we set the corresponding DRC for the device to
+    ISOLATED state so host can complete device removal.
+    
+    To avoid the situation where the asychronous removal has not yet
+    completed by the time drmgr sets the state to ISOLATED, and simple
+    sleep of 3 seconds was added. This seems to have worked out okay
+    for virtio devices, but in the case of other devices, like PCI
+    passthrough of a Mellanox CX4 virtual function, the removal can take
+    up to 20 seconds.
+    
+    When this happens, we hit a situation where the host reclaims the
+    devices while the guest is still attempting to access it in it's
+    cleanup path, which leads to guest crashes.
+    
+    Fix this by polling the PCI devices sysfs path and not completing
+    the removal until the sysfs path is removed as part of device cleanup.
+    
+    Signed-off-by: Michael Roth <mdroth@linux.vnet.ibm.com>
+
+
 powerpc-utils-1.3.1
 =====================================================================
 commit dccad2d1dc5c84571f31af3117095bd9ec6e34c4
