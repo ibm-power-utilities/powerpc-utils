@@ -657,6 +657,7 @@ acquire_cpu(struct dr_node *cpu, struct dr_info *dr_info)
 	return 0;
 }
 
+#ifdef NOT_YET
 int do_cpu_kernel_dlpar(struct dr_node *cpu, int action)
 {
 	char cmdbuf[256];
@@ -680,6 +681,7 @@ int do_cpu_kernel_dlpar(struct dr_node *cpu, int action)
 
 	return do_kernel_dlpar(cmdbuf, offset);
 }
+#endif
 
 int
 probe_cpu(struct dr_node *cpu, struct dr_info *dr_info)
@@ -689,9 +691,11 @@ probe_cpu(struct dr_node *cpu, struct dr_info *dr_info)
 	int write_len;
 	int rc = 0;
 
+#ifdef NOT_YET
 	if (kernel_dlpar_exists()) {
 		rc = do_cpu_kernel_dlpar(cpu, ADD);
 	} else {
+#endif
 		probe_file = open(CPU_PROBE_FILE, O_WRONLY);
 		if (probe_file <= 0) {
 			/* Attempt to add cpu from user-space, this may be
@@ -727,7 +731,9 @@ probe_cpu(struct dr_node *cpu, struct dr_info *dr_info)
 
 			close(probe_file);
 		}
+#ifdef NOT_YET
 	}
+#endif
 
 	if (!rc) {
 		update_cpu_node(cpu, NULL, dr_info);
@@ -791,8 +797,10 @@ release_cpu(struct dr_node *cpu, struct dr_info *dr_info)
 	int release_file;
 	int rc;
 
+#ifdef NOT_YET
 	if (kernel_dlpar_exists())
 		return do_cpu_kernel_dlpar(cpu, REMOVE);
+#endif
 
 	release_file = open(CPU_RELEASE_FILE, O_WRONLY);
 	if (release_file > 0) {
