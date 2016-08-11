@@ -264,11 +264,11 @@ int parse_proc_stat()
 	statvals[0] = 0;
 	value = line;
 	for (i = 1; i <= (entries - 1); i++) {
-		int v;
+		long long v;
 		value = strchr(value, ' ') + 1;
 		if (i == 1)
 			value++;
-		v = atoi(value);
+		v = atoll(value);
 		statvals[i] = v;
 		statvals[0] += v;
 	}
@@ -465,13 +465,13 @@ long long get_cpu_time_diff()
 
 void get_cpu_stat(struct sysentry *se, char *buf)
 {
-	float total, percent;
-	float old_val, new_val;
+	float percent;
+	long long total, old_val, new_val;
 
 	total = get_cpu_time_diff();
-	new_val = atoi(se->value);
-	old_val = atoi(se->old_value);
-	percent = (float)((new_val - old_val)/total) * 100;
+	new_val = atoll(se->value);
+	old_val = atoll(se->old_value);
+	percent = ((new_val - old_val)/(long double)total) * 100;
 	sprintf(buf, "%.2f", percent);
 }
 
