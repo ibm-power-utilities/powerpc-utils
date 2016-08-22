@@ -51,3 +51,6 @@ char *usr_p_option = NULL;
 
 /* user specified workaround for qemu pci dlpar */
 int pci_virtio = 0;
+
+/* user specified file for handling prrn events */
+char *prrn_filename = NULL;

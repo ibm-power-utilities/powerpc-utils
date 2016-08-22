@@ -5,7 +5,7 @@
 #include "drmem.h"
 #include "drcpu.h"
 
-int handle_prrn(char *filename)
+int handle_prrn(void)
 {
 	struct options opts;
 	char fmt_drc[11];
@@ -14,9 +14,9 @@ int handle_prrn(char *filename)
 	int rc = 0;
 	FILE *fd;
 
-	fd = fopen(filename, "r");
+	fd = fopen(prrn_filename, "r");
 	if (!fd) {
-		say(ERROR, "Failed to open the file %s\n", filename);
+		say(ERROR, "Failed to open the file %s\n", prrn_filename);
 		return -1;
 	}
 

@@ -58,7 +58,6 @@ void * __zalloc(size_t, const char *, int);
 #define DRMIG_COMMAND		"drmig_chrp_%s"
 
 struct options {
-	char    *prrn_filename;
 
 	/* lsslot options */
 	int slot_type;
@@ -97,6 +96,7 @@ extern int usr_drc_count;
 extern enum drc_type usr_drc_type;
 extern char *usr_p_option;
 extern int pci_virtio;     /* qemu virtio device (legacy guest workaround) */
+extern char *prrn_filename;
 
 enum say_level { ERROR = 1, WARN, INFO, DEBUG, EXTRA_DEBUG};
 
@@ -179,7 +179,7 @@ int is_display_adapter(struct dr_node *);
 enum drc_type to_drc_type(const char *);
 
 #define PRRN_TIMEOUT 30
-int handle_prrn(char *filename);
+int handle_prrn(void);
 
 int kernel_dlpar_exists(void);
 int do_kernel_dlpar(const char *, int);

@@ -221,7 +221,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 			usr_p_option = optarg;
 			break;
 		    case 'P':
-			opts->prrn_filename = optarg;
+			prrn_filename = optarg;
 			handle_prrn_event = 1;
 			break;
 		    case 'q':
@@ -349,7 +349,7 @@ int main(int argc, char *argv[])
 	if (rc) {
 		if (handle_prrn_event) {
 			say(ERROR, "Failed to handle PRRN event\n");
-			unlink(opts.prrn_filename);
+			unlink(prrn_filename);
 		}
 		return rc;
 	}
@@ -361,10 +361,10 @@ int main(int argc, char *argv[])
 	}
 
 	if (handle_prrn_event) {
-		rc = handle_prrn(opts.prrn_filename);
+		rc = handle_prrn();
 		if (rc)
 			say(ERROR, "Failed to handle PRRN event\n");
-		unlink(opts.prrn_filename);
+		unlink(prrn_filename);
 		dr_fini();
 		return rc;
 	}
