@@ -544,10 +544,10 @@ get_available_lmb(struct options *opts, struct dr_node *start_lmb)
 	for (lmb = start_lmb; lmb; lmb = lmb->next) {
 		int rc;
 
-		if (opts->usr_drc_name) {
-			drc_index = strtoul(opts->usr_drc_name, NULL, 0);
+		if (usr_drc_name) {
+			drc_index = strtoul(usr_drc_name, NULL, 0);
 
-			if ((strcmp(lmb->drc_name, opts->usr_drc_name))
+			if ((strcmp(lmb->drc_name, usr_drc_name))
 			    && (lmb->drc_index != drc_index))
 				continue;
 		} else if (opts->usr_drc_index) {
@@ -1313,9 +1313,9 @@ valid_mem_options(struct options *opts)
 	}
 
 	/* The -s option can specify a drc name or drc index */
-	if (opts->usr_drc_name && !strncmp(opts->usr_drc_name, "0x", 2)) {
-		opts->usr_drc_index = strtoul(opts->usr_drc_name, NULL, 16);
-		opts->usr_drc_name = NULL;
+	if (usr_drc_name && !strncmp(usr_drc_name, "0x", 2)) {
+		opts->usr_drc_index = strtoul(usr_drc_name, NULL, 16);
+		usr_drc_name = NULL;
 	}
 
 	return 0;
@@ -1379,7 +1379,7 @@ drslot_chrp_mem(struct options *opts)
 	/* The recursive nature of the routines that add/remove lmbs
 	 * require that the quantity be non-zero.
 	 */
-	if (opts->usr_drc_name)
+	if (usr_drc_name)
 		opts->quantity = 1;
 
 	if (kernel_dlpar_exists()) {

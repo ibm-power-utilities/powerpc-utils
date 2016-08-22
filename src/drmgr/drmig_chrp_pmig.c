@@ -710,13 +710,13 @@ drmig_chrp_pmig(struct options *opts)
 		return 1;
 	}
 
-	if (opts->usr_drc_name == NULL) {
+	if (!usr_drc_name) {
 		say(ERROR, "No streamid specified\n");
 		return -1;
 	}
 
 	errno = 0;
-	stream_val = strtoull(opts->usr_drc_name, NULL, 16);
+	stream_val = strtoull(usr_drc_name, NULL, 16);
 	if (errno != 0) {
 		say(ERROR, "Invalid streamid specified: %s\n", strerror(errno));
 		return -1;

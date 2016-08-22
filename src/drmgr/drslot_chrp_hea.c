@@ -157,18 +157,18 @@ remove_port(struct options *opts)
 	int no_ports = 0;
 	int hea_hp_removed = 0;
 
-	hea = get_node_by_name(opts->usr_drc_name, HEA_NODES);
+	hea = get_node_by_name(usr_drc_name, HEA_NODES);
 	if (hea == NULL)
 		return RC_NONEXISTENT;
 
 	for (port = hea->children; port; port = port->next) {
-		if (! strcmp(port->drc_name, opts->usr_drc_name))
+		if (! strcmp(port->drc_name, usr_drc_name))
 			break;
 	}
 
 	if (!port) {
 		say(ERROR, "Could not find HEA Port \"%s\" to remove\n",
-		    opts->usr_drc_name);
+		    usr_drc_name);
 		free_node(hea);
 		return -1;
 	}
@@ -234,7 +234,7 @@ remove_hea(struct options *opts)
 	struct dr_node *hea;
 	int rc;
 
-	hea = get_node_by_name(opts->usr_drc_name, HEA_NODES);
+	hea = get_node_by_name(usr_drc_name, HEA_NODES);
 	if (hea == NULL)
 		return RC_NONEXISTENT;
 
@@ -267,10 +267,10 @@ add_slot(struct options *opts)
 	struct dr_node *hea;
 	struct dr_node *port;
 	char ofdt_path[DR_PATH_MAX];
-	char *slot_type = (opts->usr_drc_name[0] == 'H') ? "HEA" : "Port";
+	char *slot_type = (usr_drc_name[0] == 'H') ? "HEA" : "Port";
 	int rc = 0;
 
-	rc = get_drc_by_name(opts->usr_drc_name, &drc, ofdt_path, OFDT_BASE);
+	rc = get_drc_by_name(usr_drc_name, &drc, ofdt_path, OFDT_BASE);
 	if (rc)
 		return rc;
 
@@ -292,10 +292,10 @@ add_slot(struct options *opts)
 		return rc;
 	}
 
-	hea = get_node_by_name(opts->usr_drc_name, HEA_NODES);
+	hea = get_node_by_name(usr_drc_name, HEA_NODES);
 	if (hea == NULL) {
 		say(ERROR, "Could not get find \"%s\" in the updated device "
-		    "tree,\nAddition of %s failed.\n", opts->usr_drc_name,
+		    "tree,\nAddition of %s failed.\n", usr_drc_name,
 		    slot_type);
 
 		remove_device_tree_nodes(ofdt_path);
@@ -303,13 +303,13 @@ add_slot(struct options *opts)
 		return -1;
 	}
 
-	switch (opts->usr_drc_name[0]) {
+	switch (usr_drc_name[0]) {
 	    case 'H':
 		rc = hotplug_hea(ADD, strstr(hea->ofdt_path, "/lhea"));
 		break;
 	    case 'P':
 		for (port = hea->children; port; port = port->next) {
-			if (! strcmp(opts->usr_drc_name, port->drc_name))
+			if (! strcmp(usr_drc_name, port->drc_name))
 				break;
 		}
 
@@ -328,7 +328,7 @@ add_slot(struct options *opts)
 int
 valid_hea_options(struct options *opts)
 {
-	if (opts->usr_drc_name == NULL) {
+	if (!usr_drc_name) {
 		say(ERROR, "A drc name  must be specified\n");
 		return -1;
 	}
@@ -374,10 +374,10 @@ drslot_chrp_hea(struct options *opts)
 	    case QUERY:
 		{
 			struct dr_node *node;
-			node = get_node_by_name(opts->usr_drc_name, HEA_NODES);
+			node = get_node_by_name(usr_drc_name, HEA_NODES);
 			if (node == NULL) {
 				say(ERROR, "%s not owned by partition\n",
-				    opts->usr_drc_name);
+				    usr_drc_name);
 				rc = RC_DONT_OWN;
 			} else {
 				/* Special case for HMC */

@@ -160,7 +160,7 @@ valid_drmgr_options(struct options *opts)
 		return -1;
 	}
 
-	if ((opts->quantity > 1) && (opts->usr_drc_name)) {
+	if ((opts->quantity > 1) && usr_drc_name) {
 		say(ERROR, "The -q and -s flags are mutually exclusive\n");
 		return -1;
 	}
@@ -236,7 +236,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 			action_cnt++;
 			break;
 		    case 's':
-			opts->usr_drc_name = optarg;
+			usr_drc_name = optarg;
 			break;
 		    case 'Q':
 			usr_action = QUERY;
@@ -286,7 +286,7 @@ get_command(struct options *opts)
 		return &commands[DRMGR];
 
 	if ((! strncmp(opts->ctype, "port", 4)) ||
-	    ((opts->usr_drc_name) && (! strncmp(opts->usr_drc_name, "HEA", 3))))
+	    (usr_drc_name && !strncmp(usr_drc_name, "HEA", 3)))
 		return &commands[DRSLOT_CHRP_HEA];
 	
 	if (! strcmp(opts->ctype, "slot"))

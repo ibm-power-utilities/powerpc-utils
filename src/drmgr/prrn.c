@@ -28,7 +28,7 @@ int handle_prrn(char *filename)
 		/* Set up options struct */
 		opts.ctype = type;
 		sprintf(fmt_drc, "0x%s", drc);
-		opts.usr_drc_name = fmt_drc;
+		usr_drc_name = fmt_drc;
 
 		set_timeout(PRRN_TIMEOUT);
 

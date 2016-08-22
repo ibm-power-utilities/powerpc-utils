@@ -58,8 +58,6 @@ void * __zalloc(size_t, const char *, int);
 #define DRMIG_COMMAND		"drmig_chrp_%s"
 
 struct options {
-	char   *usr_drc_name; /* pointer to user-specified drc-name
-	                       * of resource                                  */
 	uint32_t	usr_drc_index;
 	int     noprompt;     /* 1 = do not prompt user for input, assume yes */
 	unsigned int quantity;  /* number of resources                        */
@@ -93,6 +91,7 @@ enum drmgr_action {NONE, ADD, REMOVE, QUERY, REPLACE, IDENTIFY,
 extern enum drmgr_action usr_action;
 extern int usr_slot_identification;
 extern int usr_timeout;
+extern char *usr_drc_name;
 
 enum say_level { ERROR = 1, WARN, INFO, DEBUG, EXTRA_DEBUG};
 

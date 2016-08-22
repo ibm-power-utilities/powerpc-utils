@@ -84,7 +84,7 @@ query_phb(struct options *opts)
 	struct dr_node *phb;
 	int rc;
 
-	phb = get_node_by_name(opts->usr_drc_name, PHB_NODES);
+	phb = get_node_by_name(usr_drc_name, PHB_NODES);
 
 	if (phb == NULL)
 		rc = RC_NONEXISTENT;
@@ -292,9 +292,9 @@ remove_phb(struct options *opts)
 	struct dr_node *hp_list = NULL;
 	int rc = 0;
 
-	phb = get_node_by_name(opts->usr_drc_name, PHB_NODES);
+	phb = get_node_by_name(usr_drc_name, PHB_NODES);
 	if (phb == NULL) {
-		say(ERROR, "Could not find PHB %s\n", opts->usr_drc_name);
+		say(ERROR, "Could not find PHB %s\n", usr_drc_name);
 		return RC_NONEXISTENT;
 	}
 
@@ -431,14 +431,14 @@ add_phb(struct options *opts)
 	struct dr_node *phb = NULL;
 	int rc, n_children = 0;
 
-	phb = get_node_by_name(opts->usr_drc_name, PHB_NODES);
+	phb = get_node_by_name(usr_drc_name, PHB_NODES);
 	if (phb) {
 		say(ERROR, "PHB is already owned by this partition\n");
 		rc = RC_ALREADY_OWN;
 		goto phb_add_error;
 	}
 
-	rc = acquire_phb(opts->usr_drc_name, &phb);
+	rc = acquire_phb(usr_drc_name, &phb);
 	if (rc)
 		return rc;
 
@@ -505,12 +505,12 @@ int
 valid_phb_options(struct options *opts)
 {
 	/* The -s option can specify a drc name or drc index */
-	if (opts->usr_drc_name && !strncmp(opts->usr_drc_name, "0x", 2)) {
-		opts->usr_drc_index = strtoul(opts->usr_drc_name, NULL, 16);
-		opts->usr_drc_name = NULL;
+	if (usr_drc_name && !strncmp(usr_drc_name, "0x", 2)) {
+		opts->usr_drc_index = strtoul(usr_drc_name, NULL, 16);
+		usr_drc_name = NULL;
 	}
 
-	if (opts->usr_drc_name == NULL && !opts->usr_drc_index) {
+	if (!usr_drc_name && !opts->usr_drc_index) {
 		say(ERROR, "A drc name or index must be specified\n");
 		return -1;
 	}
@@ -536,11 +536,11 @@ drslot_chrp_phb(struct options *opts)
 		return rc;
 	}
 
-	if (!opts->usr_drc_name) {
+	if (!usr_drc_name) {
 		struct dr_connector *drc_list = get_drc_info(OFDT_BASE);
-		opts->usr_drc_name = drc_index_to_name(opts->usr_drc_index,
+		usr_drc_name = drc_index_to_name(opts->usr_drc_index,
 						       drc_list);
-		if (!opts->usr_drc_name) {
+		if (!usr_drc_name) {
 			say(ERROR,
 			    "Could not locate DRC name for DRC index: 0x%x",
 			    opts->usr_drc_index);

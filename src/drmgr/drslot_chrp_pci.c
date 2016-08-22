@@ -319,7 +319,7 @@ do_identify(struct options *opts, struct dr_node *all_nodes)
 	int usr_key;
 	int led_state;
 
-	node = find_slot(opts->usr_drc_name, all_nodes);
+	node = find_slot(usr_drc_name, all_nodes);
 	if (node == NULL)
 		return -1;
 
@@ -473,7 +473,7 @@ do_add(struct options *opts, struct dr_node *all_nodes)
 	int usr_key = USER_CONT;
 	int rc;
 
-	node = find_slot(opts->usr_drc_name, all_nodes);
+	node = find_slot(usr_drc_name, all_nodes);
 	if (node == NULL)
 		return -1;
 
@@ -601,7 +601,7 @@ remove_work(struct options *opts, struct dr_node *all_nodes)
 	int rc;
 	int usr_key = USER_CONT;
 
-	node = find_slot(opts->usr_drc_name, all_nodes);
+	node = find_slot(usr_drc_name, all_nodes);
 	if (node == NULL)
 		return NULL;
 
@@ -872,12 +872,12 @@ valid_pci_options(struct options *opts)
 	}
 
 	/* The -s option can specify a drc name or drc index */
-	if (opts->usr_drc_name && !strncmp(opts->usr_drc_name, "0x", 2)) {
-		opts->usr_drc_index = strtoul(opts->usr_drc_name, NULL, 16);
-		opts->usr_drc_name = NULL;
+	if (usr_drc_name && !strncmp(usr_drc_name, "0x", 2)) {
+		opts->usr_drc_index = strtoul(usr_drc_name, NULL, 16);
+		usr_drc_name = NULL;
 	}
 
-	if (opts->usr_drc_name == NULL && !opts->usr_drc_index) {
+	if (!usr_drc_name  && !opts->usr_drc_index) {
 		say(ERROR, "A drc name or index must be specified\n");
 		return -1;
 	}
@@ -908,8 +908,8 @@ drslot_chrp_pci(struct options *opts)
 	print_slots_list(all_nodes);
 #endif
 
-	if (!opts->usr_drc_name)
-		opts->usr_drc_name = find_drc_name(opts->usr_drc_index, all_nodes);
+	if (!usr_drc_name)
+		usr_drc_name = find_drc_name(opts->usr_drc_index, all_nodes);
 
 	switch (usr_action) {
 	    case ADD:
