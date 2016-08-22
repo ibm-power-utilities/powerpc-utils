@@ -59,7 +59,6 @@ void * __zalloc(size_t, const char *, int);
 
 struct options {
 	int	o_flag;
-	int	b_flag;
 	int	p_flag;
 	char	*delim;
 	char	*s_name;
@@ -87,6 +86,7 @@ extern char *usr_p_option;
 extern int pci_virtio;     /* qemu virtio device (legacy guest workaround) */
 extern char *prrn_filename;
 extern int show_available_slots;
+extern int show_cpus_and_caches;
 
 enum say_level { ERROR = 1, WARN, INFO, DEBUG, EXTRA_DEBUG};
 
