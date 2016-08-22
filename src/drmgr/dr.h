@@ -79,7 +79,25 @@ struct options {
 	char	*p_option;
 	int     pci_virtio;     /* qemu virtio device (legacy guest workaround) */
 	char    *prrn_filename;
+
+	/* lsslot options */
+	int slot_type;
+#define PCI     0
+#define SLOT    1
+#define PHB     2
+#define CPU     3
+#define MEM     4
+#define PORT    5
+
+	int	a_flag;
+	int	o_flag;
+	int	b_flag;
+	int	p_flag;
+	char	*delim;
+	char	*s_name;
 };
+ 
+#define MAX(x,y)	(((x) > (y)) ? (x) : (y))
 
 enum say_level { ERROR = 1, WARN, INFO, DEBUG, EXTRA_DEBUG};
 

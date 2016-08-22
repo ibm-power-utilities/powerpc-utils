@@ -157,7 +157,6 @@ noinst_HEADERS += \
 	src/drmgr/drpci.h \
 	src/drmgr/rtas_calls.h \
 	src/drmgr/ofdt.h \
-	src/drmgr/lsslot.h \
 	src/drmgr/rtas_calls.h
 
 src_drmgr_drmgr_LDADD = -lrtas

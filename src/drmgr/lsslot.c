@@ -27,12 +27,13 @@
 #include "rtas_calls.h"
 #include "drpci.h"
 #include "dr.h"
-#include "lsslot.h"
 #include "drmem.h"
 #include "pseries_platform.h"
 
 int output_level = 0;
 int log_fd = 0;
+
+extern int lsslot_chrp_cpu(struct options *);
 
 /**
  * struct print_node
@@ -400,14 +401,14 @@ print_phpslot_line(struct print_node *pnode, char *fmt)
 
 /**
  * parse_options
- * @brief parse the command line options and fillin the cmd_opts struct
+ * @brief parse the command line options and fillin the options struct
  *
  * @param argc
  * @param argv
  * @param opts
  */
 static void
-parse_options(int argc, char *argv[], struct cmd_opts *opts)
+parse_options(int argc, char *argv[], struct options *opts)
 {
 	int c;
 
@@ -551,7 +552,7 @@ parse_options(int argc, char *argv[], struct cmd_opts *opts)
  * @returns 0 on success, !0 otherwise
  */
 int
-lsslot_chrp_pci(struct cmd_opts *opts)
+lsslot_chrp_pci(struct options *opts)
 {
 	struct dr_node *all_nodes;	/* Pointer to list of all node info */
 	struct dr_node *node;	/* Used to traverse list of node info */
@@ -670,11 +671,11 @@ lsslot_pci_exit:
  * lsslot_chrp_phb
  * @brief Main entry point for handling lsslot_chrp_phb command
  *
- * @param opts pointer to cmd_opts struct
+ * @param opts pointer to options struct
  * @returns 0 on success, !0 otherwise
  */
 int
-lsslot_chrp_phb(struct cmd_opts *opts)
+lsslot_chrp_phb(struct options *opts)
 {
 	struct dr_node *phb_list;
 	struct dr_node *phb;
@@ -720,7 +721,7 @@ lsslot_chrp_phb(struct cmd_opts *opts)
 	return 0;
 }
 
-int print_drconf_mem(struct cmd_opts *opts, struct lmb_list_head *lmb_list)
+int print_drconf_mem(struct options *opts, struct lmb_list_head *lmb_list)
 {
 	struct dr_node *lmb;
 	struct mem_scn *scn;
@@ -801,7 +802,7 @@ int print_drconf_mem(struct cmd_opts *opts, struct lmb_list_head *lmb_list)
 }
 
 int
-lsslot_chrp_mem(struct cmd_opts *opts)
+lsslot_chrp_mem(struct options *opts)
 {
 	struct lmb_list_head *lmb_list;
 	struct dr_node *lmb;
@@ -863,7 +864,7 @@ lsslot_chrp_mem(struct cmd_opts *opts)
  * @returns 0 on success, !0 otherwise
  */
 int
-lsslot_chrp_port(struct cmd_opts *opts)
+lsslot_chrp_port(struct options *opts)
 {
 	struct dr_node *all_nodes;	/* Pointer to list of all node info */
 	struct dr_node *node;		/* Used to traverse list of node info */
@@ -947,7 +948,7 @@ lsslot_port_exit:
 int
 main(int argc, char *argv[])
 {
-	struct cmd_opts opts;
+	struct options opts;
 	int rc;
 
 	switch (get_platform()) {

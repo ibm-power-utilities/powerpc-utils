@@ -27,7 +27,6 @@
 #include <sys/types.h>
 #include "dr.h"
 #include "drcpu.h"
-#include "lsslot.h"
 
 /**
  * list_cpus
@@ -127,7 +126,7 @@ list_cpus_and_caches(struct dr_info *dr_info)
  * @returns 0 on success, !0 otherwise
  */
 int
-lsslot_chrp_cpu(struct cmd_opts *opts)
+lsslot_chrp_cpu(struct options *opts)
 {
 	struct stat	sb;
 	struct dr_info dr_info;
