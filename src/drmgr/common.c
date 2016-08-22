@@ -113,14 +113,14 @@ static int check_kmods(struct options *opts)
 	int rc;
 
 	/* We only need to do this for PHB/SLOT/PCI operations */
-	if (opts->ctype && strcmp(opts->ctype, "pci")
-	    && strcmp(opts->ctype, "phb") && strcmp(opts->ctype, "slot"))
+	if (usr_drc_type == DRC_TYPE_PCI || usr_drc_type == DRC_TYPE_PHB ||
+	    usr_drc_type == DRC_TYPE_SLOT)
 		return 0;
 
 	/* We don't use rpadlar_io/rpaphp for PCI operations run with the
 	 * -v / virtio flag, which relies on generic PCI rescan instead
 	 */
-	if (opts->ctype && !strcmp(opts->ctype, "pci") && opts->pci_virtio == 1)
+	if (usr_drc_type == DRC_TYPE_PCI && opts->pci_virtio == 1)
 		return 0;
 
 	/* Before checking for dlpar capability, we need to ensure that
@@ -1166,7 +1166,7 @@ update_sysparm(struct options *opts)
 	char *linux_parm = NULL;
 	
 	/* Validate capability */
-	if (! strcmp(opts->ctype, "cpu")) {
+	if (usr_drc_type == DRC_TYPE_CPU) {
 		if (! cpu_entitlement_capable()) {
 			say(ERROR, "CPU entitlement capability is not enabled "
 			    "on this platform.\n");
@@ -1174,7 +1174,7 @@ update_sysparm(struct options *opts)
 		}
 
 		sysparm_table = cpu_sysparm_table;
-	} else if (! strcmp(opts->ctype, "mem")) {
+	} else if (usr_drc_type == DRC_TYPE_MEM) {
 		if (! mem_entitlement_capable()) {
 			say(ERROR, "Memory entitlement capability is not "
 			    "enabled on this platform.\n");
@@ -1183,8 +1183,8 @@ update_sysparm(struct options *opts)
 
 		sysparm_table = mem_sysparm_table;
 	} else {
-		say(ERROR, "Invalid entitlement update type \"%s\" "
-		    "specified.\n", opts->ctype);
+		say(ERROR, "Invalid entitlement update type \"%d\" "
+		    "specified.\n", usr_drc_type);
 		return -1;
 	}
 	
@@ -1480,3 +1480,33 @@ int do_kernel_dlpar(const char *cmd, int cmdlen)
 	say(INFO, "Success\n");
 	return 0;
 }
+
+enum drc_type to_drc_type(const char *arg)
+{
+	if (!strncmp(arg, "pci", 3))
+		return DRC_TYPE_PCI;
+
+	if (!strncmp(arg, "slot", 4))
+		return DRC_TYPE_SLOT;
+
+	if (!strncmp(arg, "phb", 3))
+		return DRC_TYPE_PHB;
+
+	if (!strncmp(arg, "cpu", 3))
+		return DRC_TYPE_CPU;
+
+	if (!strncmp(arg, "mem", 3))
+		return DRC_TYPE_MEM;
+
+	if (!strncmp(arg, "port", 4))
+		return DRC_TYPE_PORT;
+
+	if (!strncmp(arg, "phib", 4))
+		return DRC_TYPE_HIBERNATE;
+
+	if (!strncmp(arg, "pmig", 4))
+		return DRC_TYPE_MIGRATION;
+
+	return DRC_TYPE_NONE;
+}
+

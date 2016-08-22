@@ -145,7 +145,7 @@ int
 valid_drmgr_options(struct options *opts)
 {
 
-	if (opts->ctype == NULL) {
+	if (usr_drc_type == DRC_TYPE_NONE) {
 		say(ERROR, "A connector type (-c) must be specified\n");
 		return -1;
 	}
@@ -195,7 +195,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 			action_cnt++;
 			break;
 		    case 'c':
-			opts->ctype = optarg;
+			usr_drc_type = to_drc_type(optarg);
 			break;
 		    case 'C':
 			display_capabilities = 1;
@@ -282,38 +282,43 @@ get_command(struct options *opts)
 	if (usr_action == MIGRATE)
 		return &commands[DRMIG_CHRP_PMIG];
 
-	if (!opts->ctype)
-		return &commands[DRMGR];
-
-	if ((! strncmp(opts->ctype, "port", 4)) ||
-	    (usr_drc_name && !strncmp(usr_drc_name, "HEA", 3)))
+	if (usr_drc_name && !strncmp(usr_drc_name, "HEA", 3))
 		return &commands[DRSLOT_CHRP_HEA];
 	
-	if (! strcmp(opts->ctype, "slot"))
-		return &commands[DRSLOT_CHRP_SLOT];
-			
-	if (! strcmp(opts->ctype, "phb"))
+	switch (usr_drc_type) {
+	case DRC_TYPE_NONE:
+		return &commands[DRMGR];
+		break;
+	case DRC_TYPE_PORT:
+ 		return &commands[DRSLOT_CHRP_HEA];
+		break;
+	case DRC_TYPE_SLOT:
+ 		return &commands[DRSLOT_CHRP_SLOT];
+		break;
+	case DRC_TYPE_PHB:
 		return &commands[DRSLOT_CHRP_PHB];
-			
-	if (! strcmp(opts->ctype, "pci"))
-		return &commands[DRSLOT_CHRP_PCI];
-			
-	if (! strcmp(opts->ctype, "mem"))
-		return &commands[DRSLOT_CHRP_MEM];
-			
-	if (! strcmp(opts->ctype, "cpu"))
-		return &commands[DRSLOT_CHRP_CPU];
-
-	if (! strcmp(opts->ctype, "phib")) {
-		usr_action = HIBERNATE;
-		return &commands[DRSLOT_CHRP_PHIB];
+		break;
+	case DRC_TYPE_PCI:
+ 		return &commands[DRSLOT_CHRP_PCI];
+		break;
+	case DRC_TYPE_MEM:
+ 		return &commands[DRSLOT_CHRP_MEM];
+		break;
+	case DRC_TYPE_CPU:
+ 		return &commands[DRSLOT_CHRP_CPU];
+		break;
+	case DRC_TYPE_HIBERNATE:
+ 		usr_action = HIBERNATE;
+ 		return &commands[DRSLOT_CHRP_PHIB];
+		break;
+	default:
+		/* If we make it this far, the user specified an invalid
+		 * connector type.
+		 */
+		say(ERROR, "Dynamic reconfiguration is not supported for "
+		    "connector\ntype \"%s\" on this system\n", usr_drc_type);
+		break;
 	}
-			
-	/* If we make it this far, the user specified an invalid
-	 * connector type.
-	 */
-	say(ERROR, "Dynamic reconfiguration is not supported for connector\n"
-	    "type \"%s\" on this system\n", opts->ctype);
 
 	return &commands[DRMGR];
 }

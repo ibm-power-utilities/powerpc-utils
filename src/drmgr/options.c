@@ -42,3 +42,6 @@ int usr_prompt = 1;
 
 /* user specified number of devices to add/remove */
 int usr_drc_count = 0;
+
+/* user specified drc type to use */
+enum drc_type usr_drc_type = DRC_TYPE_NONE;

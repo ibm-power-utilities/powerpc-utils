@@ -58,7 +58,6 @@ void * __zalloc(size_t, const char *, int);
 #define DRMIG_COMMAND		"drmig_chrp_%s"
 
 struct options {
-	char	*ctype;
 	char	*p_option;
 	int     pci_virtio;     /* qemu virtio device (legacy guest workaround) */
 	char    *prrn_filename;
@@ -85,6 +84,11 @@ struct options {
 /* Global User Specifications */
 enum drmgr_action {NONE, ADD, REMOVE, QUERY, REPLACE, IDENTIFY,
 		   MIGRATE, HIBERNATE};
+
+enum drc_type {DRC_TYPE_NONE, DRC_TYPE_PCI, DRC_TYPE_SLOT, DRC_TYPE_PHB,
+	       DRC_TYPE_CPU, DRC_TYPE_MEM, DRC_TYPE_PORT,
+	       DRC_TYPE_HIBERNATE, DRC_TYPE_MIGRATION};
+
 extern enum drmgr_action usr_action;
 extern int usr_slot_identification;
 extern int usr_timeout;
@@ -92,6 +96,7 @@ extern char *usr_drc_name;
 extern uint32_t usr_drc_index;
 extern int usr_prompt;
 extern int usr_drc_count;
+extern enum drc_type usr_drc_type;
 
 enum say_level { ERROR = 1, WARN, INFO, DEBUG, EXTRA_DEBUG};
 
@@ -170,6 +175,8 @@ void phib_usage(char **);
 int ams_balloon_active(void);
 
 int is_display_adapter(struct dr_node *);
+
+enum drc_type to_drc_type(const char *);
 
 #define PRRN_TIMEOUT 30
 int handle_prrn(char *filename);

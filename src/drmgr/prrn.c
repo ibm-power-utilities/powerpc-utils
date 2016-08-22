@@ -26,7 +26,7 @@ int handle_prrn(char *filename)
 
 	while (fscanf(fd, "%3s %8s\n", type, drc) == 2) {
 		/* Set up options struct */
-		opts.ctype = type;
+		usr_drc_type = to_drc_type(type);
 		sprintf(fmt_drc, "0x%s", drc);
 		usr_drc_name = fmt_drc;
 

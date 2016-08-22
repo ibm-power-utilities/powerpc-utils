@@ -550,7 +550,7 @@ valid_pmig_options(struct options *opts)
 	}
 
 	/* Determine if this is a migration or a hibernation request */
-	if (!strcmp(opts->ctype, "pmig")) {
+	if (usr_drc_type == DRC_TYPE_MIGRATION) {
 		if (usr_action != MIGRATE) {
 			/* The -m option must be specified with migrations */
 			say(ERROR, "The -m must be specified for migrations\n");
@@ -561,7 +561,7 @@ valid_pmig_options(struct options *opts)
 			say(ERROR, "Partition Mobility is not supported.\n");
 			return -1;
 		}
-	} else if (!strcmp(opts->ctype, "phib")) {
+	} else if (usr_drc_type == DRC_TYPE_HIBERNATE) {
 		if (!phib_capable()) {
 			say(ERROR, "Partition Hibernation is not supported.\n");
 			return -1;
@@ -569,8 +569,8 @@ valid_pmig_options(struct options *opts)
 
 		usr_action = HIBERNATE;
 	} else {
-		say(ERROR, "The value \"%s\" for the -c option is not valid\n",
-		    opts->ctype);
+		say(ERROR, "The value \"%d\" for the -c option is not valid\n",
+		    usr_drc_type);
 		return -1;
 	}
 

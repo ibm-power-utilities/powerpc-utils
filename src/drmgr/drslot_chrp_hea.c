@@ -360,13 +360,13 @@ drslot_chrp_hea(struct options *opts)
 		break;
 
 	    case REMOVE:
-		if (! strcmp(opts->ctype, "port"))
+		if (usr_drc_type == DRC_TYPE_PORT)
 			rc = remove_port(opts);
-		else if (! strcmp(opts->ctype, "slot"))
+		else if (usr_drc_type == DRC_TYPE_SLOT)
 			rc = remove_hea(opts);
 		else {
-			say(ERROR, "The connector type %s is not supported.\n",
-			    opts->ctype);
+			say(ERROR, "The connector type %d is not supported.\n",
+			    usr_drc_type);
 			rc = -1;
 		}
 		break;
