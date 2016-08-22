@@ -218,7 +218,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 			usr_prompt = 0;
 			break;
 		    case 'p':
-			opts->p_option = optarg;
+			usr_p_option = optarg;
 			break;
 		    case 'P':
 			opts->prrn_filename = optarg;

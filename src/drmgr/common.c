@@ -1193,7 +1193,7 @@ update_sysparm(struct options *opts)
 	 */
 	i = 0;
 	while (sysparm_table[i].drmgr_name) {
-		if (! strcmp(sysparm_table[i].drmgr_name, opts->p_option)) {
+		if (!strcmp(sysparm_table[i].drmgr_name, usr_p_option)) {
 			linux_parm = sysparm_table[i].linux_name;
 			break;
 		}
@@ -1203,13 +1203,13 @@ update_sysparm(struct options *opts)
 
 	if (linux_parm == NULL) {
 		say(ERROR, "The entitlement parameter \"%s\" is not "
-		    "recognized\n", opts->p_option);
+		    "recognized\n", usr_p_option);
 		return -1;
 	}
 
 	if ((get_sysparm(linux_parm, &curval)) < 0) {
 		say(ERROR, "Could not get current system parameter value of "
-		    "%s (%s)\n", linux_parm, opts->p_option);
+		    "%s (%s)\n", linux_parm, usr_p_option);
 		return -1;
 	}
 
@@ -1218,7 +1218,7 @@ update_sysparm(struct options *opts)
 			say(ERROR, "Cannot reduce system parameter value %s by "
 			    "more than is currently available.\nCurrent "
 			    "value: %lx, asking to remove: %x\n",
-			    opts->p_option, curval, usr_drc_count);
+			    usr_p_option, curval, usr_drc_count);
 			return 1;
 		}
 

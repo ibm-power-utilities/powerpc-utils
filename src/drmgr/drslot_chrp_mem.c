@@ -1364,7 +1364,7 @@ drslot_chrp_mem(struct options *opts)
 {
 	int rc = -1;
 
-	if (opts->p_option) {
+	if (usr_p_option) {
 		/* This is a entitlement or weight change */
 		return update_sysparm(opts);
 	}

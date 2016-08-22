@@ -58,7 +58,6 @@ void * __zalloc(size_t, const char *, int);
 #define DRMIG_COMMAND		"drmig_chrp_%s"
 
 struct options {
-	char	*p_option;
 	int     pci_virtio;     /* qemu virtio device (legacy guest workaround) */
 	char    *prrn_filename;
 
@@ -97,6 +96,7 @@ extern uint32_t usr_drc_index;
 extern int usr_prompt;
 extern int usr_drc_count;
 extern enum drc_type usr_drc_type;
+extern char *usr_p_option;
 
 enum say_level { ERROR = 1, WARN, INFO, DEBUG, EXTRA_DEBUG};
 

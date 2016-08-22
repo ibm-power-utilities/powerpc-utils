@@ -544,7 +544,7 @@ devtree_update(void)
 int
 valid_pmig_options(struct options *opts)
 {
-	if (opts->p_option  == NULL) {
+	if (!usr_p_option) {
 		say(ERROR, "A command must be specified\n");
 		return -1;
 	}
@@ -683,7 +683,6 @@ int
 drmig_chrp_pmig(struct options *opts)
 {
 	int rc;
-	char *cmd = opts->p_option;
 	char sys_src[20];
 	uint64_t stream_val;
 
@@ -699,14 +698,14 @@ drmig_chrp_pmig(struct options *opts)
 	 * But if it doesn't, the firmware level doesn't support migration,
 	 * in which case why the heck are we being invoked anyways.
 	 */
-	if (strcmp(cmd, "check") == 0) {
+	if (strcmp(usr_p_option, "check") == 0) {
 		say(DEBUG, "check: Nothing to do...\n");
 		return 0;
 	}
 
 	/* The only other command is pre, any other command is invalid */
-	if (strcmp(cmd, "pre")) {
-		say(DEBUG, "Invalid command \"%s\" specified\n", cmd);
+	if (strcmp(usr_p_option, "pre")) {
+		say(DEBUG, "Invalid command \"%s\" specified\n", usr_p_option);
 		return 1;
 	}
 

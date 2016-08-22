@@ -425,15 +425,13 @@ drslot_chrp_cpu(struct options *opts)
 		return -1;
 	}
 
-	if (opts->p_option) {
-		if ((strcmp(opts->p_option, "ent_capacity") == 0) ||
-		    (strcmp(opts->p_option, "variable_weight") == 0)) {
-			rc = update_sysparm(opts);
-			if (rc)
-				say(ERROR, "Could not update system parameter "
-				    "%s\n", opts->p_option);
-			return rc;
-		}
+	if (usr_p_option && (!strcmp(usr_p_option, "ent_capacity") ||
+	    !strcmp(usr_p_option, "variable_weight"))) {
+		rc = update_sysparm(opts);
+		if (rc)
+			say(ERROR, "Could not update system parameter "
+			    "%s\n", usr_p_option);
+		return rc;
 	}
 
 	if (init_cpu_drc_info(&dr_info)) {
@@ -449,7 +447,7 @@ drslot_chrp_cpu(struct options *opts)
 	if (usr_drc_name)
 		usr_drc_count = 1;
 
-	if (opts->p_option && (strcmp(opts->p_option, "smt_threads") == 0)) {
+	if (usr_p_option && !strcmp(usr_p_option, "smt_threads")) {
 		rc = smt_threads_func(opts, &dr_info);
 		free_cpu_drc_info(&dr_info);
 		return rc;

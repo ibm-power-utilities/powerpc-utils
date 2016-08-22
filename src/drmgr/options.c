@@ -45,3 +45,6 @@ int usr_drc_count = 0;
 
 /* user specified drc type to use */
 enum drc_type usr_drc_type = DRC_TYPE_NONE;
+
+/* user specified -p option, meaning varies depending on usr_drc_type */
+char *usr_p_option = NULL;
