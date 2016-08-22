@@ -1253,11 +1253,9 @@ mem_remove(struct options *opts)
  * of the ehea module.  If it is present we check its capabilities file
  * to determine if it can handle memory dlpar.
  *
- * @param action memory add/remove action that is to be checked for
  * @return 1 if we are ehea compatable, 0 otherwise
  */
-static int
-ehea_compatable(int action)
+static int ehea_compatable(void)
 {
 	FILE *fp;
 	uint64_t flags = 0;
@@ -1288,16 +1286,16 @@ ehea_compatable(int action)
 	/* Assume memory dlpar is not supported */
 	rc = 0;
 
-	if ((action == ADD) && (flags & MEM_ADD_ATTR))
+	if ((usr_action == ADD) && (flags & MEM_ADD_ATTR))
 		rc = 1;
 
-	if ((action == REMOVE) && (flags & MEM_RM_ATTR))
+	if ((usr_action == REMOVE) && (flags & MEM_RM_ATTR))
 		rc = 1;
 
 	if (!rc)
 		say(INFO, "The eHEA modules loaded on this system does not "
 		    "support memory DLPAR %s operations.\n",
-		    (action == ADD) ? "add" : "remove");
+		    (usr_action == ADD) ? "add" : "remove");
 	return rc;
 }
 
@@ -1372,7 +1370,7 @@ drslot_chrp_mem(struct options *opts)
 		return update_sysparm(opts);
 	}
 
-	if (! mem_dlpar_capable() || ! ehea_compatable(usr_action)) {
+	if (! mem_dlpar_capable() || ! ehea_compatable()) {
 		say(ERROR, "DLPAR memory operations are not supported on"
 		    "this kernel.");
 		return -1;

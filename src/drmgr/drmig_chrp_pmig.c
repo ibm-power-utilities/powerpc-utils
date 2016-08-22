@@ -51,7 +51,6 @@ struct pmap_struct {
 #define MIGRATION_API_V1	1
 
 static struct pmap_struct *plist;
-static enum drmgr_action action = 0;
 static char *pmig_usagestr = "-m -p {check | pre} -s <stream_id>";
 static char *phib_usagestr = "-m -p {check | pre} -s <stream_id> -n <self-arp secs>";
 
@@ -562,15 +561,13 @@ valid_pmig_options(struct options *opts)
 			say(ERROR, "Partition Mobility is not supported.\n");
 			return -1;
 		}
-
-		action = MIGRATE;
 	} else if (!strcmp(opts->ctype, "phib")) {
 		if (!phib_capable()) {
 			say(ERROR, "Partition Hibernation is not supported.\n");
 			return -1;
 		}
 
-		action = HIBERNATE;
+		usr_action = HIBERNATE;
 	} else {
 		say(ERROR, "The value \"%s\" for the -c option is not valid\n",
 		    opts->ctype);
@@ -657,13 +654,13 @@ int do_hibernation(uint64_t stream_val)
 	return rc;
 }
 
-void post_mobility_update(int action)
+void post_mobility_update(void)
 {
 	int rc;
 	int do_update = 0;
 	char *path;
 
-	if (action == HIBERNATE)
+	if (usr_action == HIBERNATE)
 		path = SYSFS_HIBERNATION_FILE;
 	else
 		path = SYSFS_MIGRATION_API_FILE;
@@ -731,9 +728,9 @@ drmig_chrp_pmig(struct options *opts)
 
 	/* Now do the actual migration */
 	do {
-		if (action == MIGRATE)
+		if (usr_action == MIGRATE)
 			rc = do_migration(stream_val);
-		else if (action == HIBERNATE)
+		else if (usr_action == HIBERNATE)
 			rc = do_hibernation(stream_val);
 		else
 			rc = -EINVAL;
@@ -744,11 +741,11 @@ drmig_chrp_pmig(struct options *opts)
 	} while (rc == NOT_SUSPENDABLE);
 
 	syslog(LOG_LOCAL0 | LOG_INFO, "drmgr: %s rc %d\n",
-	       (action == MIGRATE ? "migration" : "hibernation"), rc);
+	       (usr_action == MIGRATE ? "migration" : "hibernation"), rc);
 	if (rc)
 		return rc;
 
-	post_mobility_update(action);
+	post_mobility_update();
 
 	say(DEBUG, "Refreshing RMC via refrsrc\n");
 	rc = system("/usr/sbin/rsct/bin/refrsrc IBM.ManagementServer");
