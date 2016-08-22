@@ -215,7 +215,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 			   * seconds to attempt a self-arp.  Linux ignores this
 			   * for hibernation.
 			   */
-			opts->noprompt = 1;
+			usr_prompt = 0;
 			break;
 		    case 'p':
 			opts->p_option = optarg;

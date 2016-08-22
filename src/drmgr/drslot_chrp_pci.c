@@ -185,7 +185,7 @@ static int check_card_presence(struct options *opts, struct dr_node *node)
 			sleep(1);
 		}
 
-		if (0 == opts->noprompt) {
+		if (usr_prompt) {
 			printf("The card still does not appear to be present"
 			       "\npress Enter to continue to wait or enter "
 			       "'x' to exit.\n");
@@ -483,7 +483,7 @@ do_add(struct options *opts, struct dr_node *all_nodes)
 	}
 
 	/* Prompt user only if in interactive mode. */
-	if (0 == opts->noprompt) {
+	if (usr_prompt) {
 		if (usr_slot_identification)
 			usr_key = identify_slot(node);
 
@@ -538,7 +538,7 @@ do_add(struct options *opts, struct dr_node *all_nodes)
 		return -1;
 	}
 
-	if (0 == opts->noprompt) {
+	if (usr_prompt) {
 		/* Prompt user to put in card and to press
 		 * Enter to continue or other key to exit.
 		 */
@@ -613,8 +613,7 @@ remove_work(struct options *opts, struct dr_node *all_nodes)
 		return NULL;
 	}
 
-	/* Prompt user only if not in noprompt mode */
-	if (0 == opts->noprompt) {
+	if (usr_prompt) {
 		if (usr_slot_identification)
 			usr_key = identify_slot(node);
 
@@ -758,7 +757,7 @@ do_remove(struct options *opts, struct dr_node *all_nodes)
 	/* Prompt user to remove card and to press
 	 * Enter to continue. Can't exit out of here.
 	 */
-	if (0 == opts->noprompt) {
+	if (usr_prompt) {
 		if (process_led(node, LED_ACTION))
 			return -1;
 
@@ -819,7 +818,7 @@ do_replace(struct options *opts, struct dr_node *all_nodes)
 	 * Enter to continue or x to exit. Exiting here
 	 * means the original card has been removed.
 	 */
-	if (0 == opts->noprompt) {
+	if (usr_prompt) {
 		if (process_led(repl_node, LED_ACTION))
 			return -1;
 
@@ -845,11 +844,11 @@ do_replace(struct options *opts, struct dr_node *all_nodes)
 	set_hp_adapter_status(PHP_CONFIG_ADAPTER, repl_node->drc_name);
 
 	if (repl_node->post_replace_processing) {
-		int prompt_save = opts->noprompt;
+		int prompt_save = usr_prompt;
 
 		say(DEBUG, "Doing post replacement processing...\n");
 		/* disable prompting for post-processing */
-		opts->noprompt = 1;
+		usr_prompt = 0;;
 
 		repl_node = remove_work(opts, repl_node);
 		rc = add_work(opts, repl_node);
@@ -857,7 +856,7 @@ do_replace(struct options *opts, struct dr_node *all_nodes)
 			set_hp_adapter_status(PHP_CONFIG_ADAPTER,
 					      repl_node->drc_name);
 
-		opts->noprompt = prompt_save;
+		usr_prompt = prompt_save;
 	}
 
 	return rc;

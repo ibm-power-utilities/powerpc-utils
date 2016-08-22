@@ -34,3 +34,8 @@ char *usr_drc_name = NULL;
 
 /* user specified drc index */
 uint32_t usr_drc_index = 0;
+
+/* default to prompting the user for pci hotplug operations
+ * unless the drmgr -n option is specified.
+ */
+int usr_prompt = 1;
