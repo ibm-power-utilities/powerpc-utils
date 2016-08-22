@@ -165,8 +165,8 @@ valid_drmgr_options(struct options *opts)
 		return -1;
 	}
 
-	if (opts->timeout < 0) {
-		say(ERROR, "Invalid timeout specified: %s\n", optarg);
+	if (usr_timeout < 0) {
+		say(ERROR, "Invalid timeout specified: %s\n", usr_timeout);
 		return -1;
 	}
 
@@ -247,7 +247,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 			action_cnt++;
 			break;
 		    case 'w':
-			opts->timeout = strtol(optarg, NULL, 10) * 60;
+			usr_timeout = strtol(optarg, NULL, 10) * 60;
 			break;
 		    case 'h':
 		    	display_usage = 1;
@@ -385,7 +385,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	set_timeout(opts.timeout);
+	set_timeout(usr_timeout);
 
 	/* Log this invocation to /var/log/messages and /var/log/drmgr */
 	offset = sprintf(log_msg, "drmgr: ");

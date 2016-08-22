@@ -476,8 +476,8 @@ parse_options(int argc, char *argv[], struct options *opts)
 			break;
 
 		    case 'w':
-			opts->timeout = strtoul(optarg, NULL, 10) * 60;
-			if (opts->timeout < 0)
+			usr_timeout = strtoul(optarg, NULL, 10) * 60;
+			if (usr_timeout < 0)
 				usage();
 			break;
 

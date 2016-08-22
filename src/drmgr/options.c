@@ -25,3 +25,6 @@ enum drmgr_action usr_action = NONE;
  * option is specified.
  */
 int usr_slot_identification = 1;
+
+/* timeout specified with the -w <timeout> option */
+int usr_timeout = 0;
