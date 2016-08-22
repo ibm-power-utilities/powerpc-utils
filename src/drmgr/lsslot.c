@@ -453,7 +453,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 			break;
 
 		    case 'o':
-			opts->o_flag = 1;
+			show_occupied_slots = 1;
 			break;
 
 		    case 'p':
@@ -482,7 +482,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 	case DRC_TYPE_PORT:
 		/* The a,b,o,p flags are not valid for slot */
 		if (show_available_slots || show_cpus_and_caches ||
-		    opts->o_flag || opts->p_flag)
+		    show_occupied_slots || opts->p_flag)
 			usage();
 
 		/* Now, to make the code work right (which is wrong) we
@@ -491,7 +491,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 		 */
 		if (opts->s_name == NULL) {
 			show_available_slots = 1;
-			opts->o_flag = 1;
+			show_occupied_slots = 1;
 		}
 
 		break;
@@ -499,7 +499,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 	case DRC_TYPE_PHB:
 		/* The a,b,F,o,p options are not valid for phb */
 		if (show_available_slots || show_cpus_and_caches ||
-		    opts->delim || opts->o_flag || opts->p_flag)
+		    opts->delim || show_occupied_slots || opts->p_flag)
 			usage();
 		break;
 
@@ -509,20 +509,21 @@ parse_options(int argc, char *argv[], struct options *opts)
 			usage();
 
 		/* If no flags specified, then set show_available_slots and
-		 * o_flag so that all slots will be formatted in the output
+		 * show_occupied_slots so that all slots will be formatted
+		 * in the output
 		 */
-		if ((!show_available_slots) && (! opts->o_flag)
+		if ((!show_available_slots) && (!show_occupied_slots)
 		    && (opts->s_name == NULL)) {
 			show_available_slots = 1;
-			opts->o_flag = 1;
+			show_occupied_slots = 1;
 		}
 
 		break;
 
 	case DRC_TYPE_CPU:
 		/* The a,F,o,s options are not valid for cpu */
-		if (show_available_slots || opts->delim || opts->o_flag ||
-		    opts->s_name)
+		if (show_available_slots || opts->delim ||
+		    show_occupied_slots || opts->s_name)
 			usage();
 
 		if (show_cpus_and_caches && opts->p_flag) {
@@ -597,7 +598,7 @@ lsslot_chrp_pci(struct options *opts)
 			insert_print_node(node);
 
 		/* If oflag and slot occupied, then format the slot */
-		else if (opts->o_flag && (node->children != NULL))
+		else if (show_occupied_slots && (node->children != NULL))
 			insert_print_node(node);
 	}
 

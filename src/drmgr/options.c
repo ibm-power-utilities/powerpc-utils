@@ -58,3 +58,4 @@ char *prrn_filename = NULL;
 /* lsslot specific options */
 int show_available_slots = 0;
 int show_cpus_and_caches = 0;
+int show_occupied_slots = 0;
