@@ -457,7 +457,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 			break;
 
 		    case 'p':
-			opts->p_flag = 1;
+			show_caches = 1;
 			break;
 
 		    case 's':
@@ -482,7 +482,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 	case DRC_TYPE_PORT:
 		/* The a,b,o,p flags are not valid for slot */
 		if (show_available_slots || show_cpus_and_caches ||
-		    show_occupied_slots || opts->p_flag)
+		    show_occupied_slots || show_caches)
 			usage();
 
 		/* Now, to make the code work right (which is wrong) we
@@ -499,13 +499,13 @@ parse_options(int argc, char *argv[], struct options *opts)
 	case DRC_TYPE_PHB:
 		/* The a,b,F,o,p options are not valid for phb */
 		if (show_available_slots || show_cpus_and_caches ||
-		    opts->delim || show_occupied_slots || opts->p_flag)
+		    opts->delim || show_occupied_slots || show_caches)
 			usage();
 		break;
 
 	case DRC_TYPE_PCI:
 		/* The b,p flags are valid for pci */
-		if (show_cpus_and_caches || opts->p_flag)
+		if (show_cpus_and_caches || show_caches)
 			usage();
 
 		/* If no flags specified, then set show_available_slots and
@@ -526,7 +526,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 		    show_occupied_slots || opts->s_name)
 			usage();
 
-		if (show_cpus_and_caches && opts->p_flag) {
+		if (show_cpus_and_caches && show_caches) {
 			say(ERROR, "You cannot specify both the -b and -p "
 			    "options.\n");
 			usage();

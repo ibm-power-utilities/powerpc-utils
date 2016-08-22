@@ -58,7 +58,6 @@ void * __zalloc(size_t, const char *, int);
 #define DRMIG_COMMAND		"drmig_chrp_%s"
 
 struct options {
-	int	p_flag;
 	char	*delim;
 	char	*s_name;
 };
@@ -87,6 +86,7 @@ extern char *prrn_filename;
 extern int show_available_slots;
 extern int show_cpus_and_caches;
 extern int show_occupied_slots;
+extern int show_caches;
 
 enum say_level { ERROR = 1, WARN, INFO, DEBUG, EXTRA_DEBUG};
 

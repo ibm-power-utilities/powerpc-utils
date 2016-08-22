@@ -151,7 +151,7 @@ lsslot_chrp_cpu(struct options *opts)
 
 	if (show_cpus_and_caches)
 		list_cpus_and_caches(&dr_info);
-	else if (opts->p_flag)
+	else if (show_caches)
 		list_caches(&dr_info);
 	else
 		list_cpus(&dr_info);
