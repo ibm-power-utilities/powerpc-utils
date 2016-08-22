@@ -515,8 +515,8 @@ valid_phb_options(struct options *opts)
 		return -1;
 	}
 
-        if ((opts->action != ADD) && (opts->action != REMOVE)
-            && (opts->action != QUERY)) {
+        if ((usr_action != ADD) && (usr_action != REMOVE)
+            && (usr_action != QUERY)) {
                 say(ERROR, "The '-r', '-a', or '-Q' option must be specified "
                     "for PHB operations.\n");
                 return -1;
@@ -548,16 +548,18 @@ drslot_chrp_phb(struct options *opts)
 		}
 	}
 
-	switch(opts->action) {
-	    case ADD:
+	switch(usr_action) {
+	case ADD:
 		rc = add_phb(opts);
 		break;
-	    case REMOVE:
+	case REMOVE:
 		rc = remove_phb(opts);
 		break;
-	    case QUERY:
+	case QUERY:
 		rc = query_phb(opts);
 		break;
+	default:
+		rc = -1;
 	}
 
 	return rc;

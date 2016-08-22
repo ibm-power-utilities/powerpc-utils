@@ -30,6 +30,8 @@
 #include "drmem.h"
 #include "pseries_platform.h"
 
+#include "options.c"
+
 int output_level = 0;
 int log_fd = 0;
 

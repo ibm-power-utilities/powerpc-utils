@@ -558,8 +558,7 @@ get_available_lmb(struct options *opts, struct dr_node *start_lmb)
 		if (lmb->unusable)
 			continue;
 
-		switch (opts->action) {
-		    case ADD:
+		if (usr_action == ADD) {
 			if (lmb->is_owned)
 				continue;
 
@@ -568,9 +567,7 @@ get_available_lmb(struct options *opts, struct dr_node *start_lmb)
 				continue;
 
 			usable_lmb = lmb;
-			break;
-
-		    case REMOVE:
+		} else if (usr_action == REMOVE) {
 			/* removable is ignored if AMS ballooning is active. */
 			if ((!balloon_active && !lmb->is_removable) ||
 			    (!lmb->is_owned))
@@ -1311,7 +1308,7 @@ valid_mem_options(struct options *opts)
 	if (opts->quantity == 0)
 		opts->quantity = 1;
 
-	if ((opts->action != ADD) && (opts->action != REMOVE)) {
+	if ((usr_action != ADD) && (usr_action != REMOVE)) {
 		say(ERROR, "The '-r' or '-a' option must be specified for "
 		    "memory operations\n");
 		return -1;
@@ -1333,7 +1330,7 @@ int do_mem_kernel_dlpar(struct options *opts)
 
 	offset = sprintf(cmdbuf, "%s ", "memory");
 
-	switch (opts->action) {
+	switch (usr_action) {
 	case ADD:
 		offset += sprintf(cmdbuf + offset, "add ");
 		break;
@@ -1375,7 +1372,7 @@ drslot_chrp_mem(struct options *opts)
 		return update_sysparm(opts);
 	}
 
-	if (! mem_dlpar_capable() || ! ehea_compatable(opts->action)) {
+	if (! mem_dlpar_capable() || ! ehea_compatable(usr_action)) {
 		say(ERROR, "DLPAR memory operations are not supported on"
 		    "this kernel.");
 		return -1;
@@ -1390,15 +1387,10 @@ drslot_chrp_mem(struct options *opts)
 	if (kernel_dlpar_exists()) {
 		rc = do_mem_kernel_dlpar(opts);
 	} else {
-		switch (opts->action) {
-		case ADD:
+		if (usr_action == ADD)
 			rc = mem_add(opts);
-			break;
-
-		case REMOVE:
+		else if (usr_action == REMOVE)
 			rc = mem_remove(opts);
-			break;
-		}
 	}
 
 	return rc;

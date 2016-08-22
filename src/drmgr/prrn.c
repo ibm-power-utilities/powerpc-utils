@@ -33,20 +33,20 @@ int handle_prrn(char *filename)
 		set_timeout(PRRN_TIMEOUT);
 
 		if (!strcmp(type, "mem")) {
-			opts.action = REMOVE;
+			usr_action = REMOVE;
 			rc = drslot_chrp_mem(&opts);
 			if (rc)
 				continue;
 
-			opts.action = ADD;
+			usr_action = ADD;
 			drslot_chrp_mem(&opts);
 		} else if (!strcmp(type, "cpu")) {
-			opts.action = REMOVE;
+			usr_action = REMOVE;
 			rc = drslot_chrp_cpu(&opts);
 			if (rc)
 				continue;
 
-			opts.action = ADD;
+			usr_action = ADD;
 			drslot_chrp_cpu(&opts);
 		} else {
 			say(ERROR, "Device type \"%s\" not recognized.\n",

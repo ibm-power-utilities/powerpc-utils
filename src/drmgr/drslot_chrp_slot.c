@@ -298,8 +298,8 @@ valid_slot_options(struct options *opts)
 		return -1;
 	}
 
-        if ((opts->action != ADD) && (opts->action != REMOVE)
-            && (opts->action != QUERY)) {
+        if ((usr_action != ADD) && (usr_action != REMOVE)
+            && (usr_action != QUERY)) {
                 say(ERROR, "The '-r', '-a', or '-Q' option must be specified "
                     "for slot operations.\n");
                 return -1;
@@ -322,7 +322,7 @@ drslot_chrp_slot(struct options *opts)
 
 	node = get_node_by_name(opts->usr_drc_name, PCI_NODES | VIO_NODES);
 
-	switch (opts->action) {
+	switch (usr_action) {
 	    case ADD:
 		if (node && node->is_owned) {
 			say(ERROR, "partition already owns %s\n",

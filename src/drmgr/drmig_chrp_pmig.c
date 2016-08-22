@@ -51,7 +51,7 @@ struct pmap_struct {
 #define MIGRATION_API_V1	1
 
 static struct pmap_struct *plist;
-static int action = 0;
+static enum drmgr_action action = 0;
 static char *pmig_usagestr = "-m -p {check | pre} -s <stream_id>";
 static char *phib_usagestr = "-m -p {check | pre} -s <stream_id> -n <self-arp secs>";
 
@@ -552,7 +552,7 @@ valid_pmig_options(struct options *opts)
 
 	/* Determine if this is a migration or a hibernation request */
 	if (!strcmp(opts->ctype, "pmig")) {
-		if (opts->action != MIGRATE) {
+		if (usr_action != MIGRATE) {
 			/* The -m option must be specified with migrations */
 			say(ERROR, "The -m must be specified for migrations\n");
 			return -1;

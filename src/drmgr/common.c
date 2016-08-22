@@ -1214,7 +1214,7 @@ update_sysparm(struct options *opts)
 		return -1;
 	}
 
-	if (opts->action == REMOVE) {
+	if (usr_action == REMOVE) {
 		if (opts->quantity > curval) {
 			say(ERROR, "Cannot reduce system parameter value %s by "
 			    "more than is currently available.\nCurrent "

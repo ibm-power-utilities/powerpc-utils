@@ -866,7 +866,7 @@ do_replace(struct options *opts, struct dr_node *all_nodes)
 int
 valid_pci_options(struct options *opts)
 {
-	if ((opts->action == IDENTIFY) && (opts->no_ident)) {
+	if ((usr_action == IDENTIFY) && (opts->no_ident)) {
 		say(ERROR, "Cannot specify the -i and -I option together\n");
 		return -1;
 	}
@@ -882,8 +882,8 @@ valid_pci_options(struct options *opts)
 		return -1;
 	}
 
-	if ((opts->action != ADD) && (opts->action != REMOVE)
-	    && (opts->action != IDENTIFY) && (opts->action != REPLACE)) {
+	if ((usr_action != ADD) && (usr_action != REMOVE)
+	    && (usr_action != IDENTIFY) && (usr_action != REPLACE)) {
 		say(ERROR, "The '-r', '-a', '-R' or '-i' option must be spcified "
 	 	    "for PCI operations\n");
 		return -1;
@@ -911,7 +911,7 @@ drslot_chrp_pci(struct options *opts)
 	if (!opts->usr_drc_name)
 		opts->usr_drc_name = find_drc_name(opts->usr_drc_index, all_nodes);
 
-	switch (opts->action) {
+	switch (usr_action) {
 	    case ADD:
 		rc = do_add(opts, all_nodes);
 		break;

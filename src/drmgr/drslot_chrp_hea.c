@@ -333,8 +333,8 @@ valid_hea_options(struct options *opts)
 		return -1;
 	}
 
-	if ((opts->action != ADD) && (opts->action != REMOVE)
-	    && (opts->action != QUERY)) {
+	if ((usr_action != ADD) && (usr_action != REMOVE)
+	    && (usr_action != QUERY)) {
 		say(ERROR, "The '-r', '-a', or '-Q' option must be specified "
 		    "for HEA operations.\n");
 		return -1;
@@ -354,7 +354,7 @@ drslot_chrp_hea(struct options *opts)
 		return -1;
 	}
 
-	switch (opts->action) {
+	switch (usr_action) {
 	    case ADD:
 		rc = add_slot(opts);
 		break;

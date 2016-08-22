@@ -58,16 +58,6 @@ void * __zalloc(size_t, const char *, int);
 #define DRMIG_COMMAND		"drmig_chrp_%s"
 
 struct options {
-	int     action;	      /* remove, add, REPLACE, IDENTIFY ...           */
-#define NONE		0
-#define ADD 	     	1
-#define REMOVE       	2
-#define QUERY		3
-#define REPLACE		4
-#define IDENTIFY	5
-#define MIGRATE		6
-#define HIBERNATE	7
-
 	int     no_ident;     /* used in drslot_chrp_pci                      */
 	int 	timeout;      /* time (in seconds) to try operation           */
 	char   *usr_drc_name; /* pointer to user-specified drc-name
@@ -98,6 +88,11 @@ struct options {
 };
  
 #define MAX(x,y)	(((x) > (y)) ? (x) : (y))
+
+/* Global User Specifications */
+enum drmgr_action {NONE, ADD, REMOVE, QUERY, REPLACE, IDENTIFY,
+		   MIGRATE, HIBERNATE};
+extern enum drmgr_action usr_action;
 
 enum say_level { ERROR = 1, WARN, INFO, DEBUG, EXTRA_DEBUG};
 

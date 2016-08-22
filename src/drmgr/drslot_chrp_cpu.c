@@ -119,21 +119,14 @@ static struct dr_node *get_available_cpu_by_name(struct options *opts,
 		return NULL;
 	}
 
-	switch (opts->action) {
-	case ADD:
-		if (cpu->is_owned) {
-			say(ERROR, "Requested CPU \"%s\" is already present.\n",
-			    opts->usr_drc_name); 
-			return NULL;
-		}
-		break;
-	case REMOVE:
-		if (!cpu->is_owned) {
-			say(ERROR, "Requested CPU \"%s\" is not present.\n",
-			    opts->usr_drc_name); 
-			return NULL;
-		}
-		break;
+	if (usr_action == ADD && cpu->is_owned) {
+		say(ERROR, "Requested CPU \"%s\" is already present.\n",
+		    opts->usr_drc_name); 
+		return NULL;
+	} else if (usr_action == REMOVE && !cpu->is_owned) {
+		say(ERROR, "Requested CPU \"%s\" is not present.\n",
+		    opts->usr_drc_name); 
+		return NULL;
 	}
 
 	return cpu;
@@ -157,21 +150,14 @@ static struct dr_node *get_available_cpu_by_index(struct options *opts,
 		return NULL;
 	}
 
-	switch (opts->action) {
-	case ADD:
-		if (cpu->is_owned) {
-			say(ERROR, "Requested CPU with drc index %x is "
-			    "already present.\n", opts->usr_drc_index); 
-			return NULL;
-		}
-		break;
-	case REMOVE:
-		if (!cpu->is_owned) {
-			say(ERROR, "Requested CPU with drc index %x is "
-			    "not present.\n", opts->usr_drc_index); 
-			return NULL;
-		}
-		break;
+	if (usr_action == ADD && cpu->is_owned) {
+		say(ERROR, "Requested CPU with drc index %x is "
+		    "already present.\n", opts->usr_drc_index); 
+		return NULL;
+	} else if (usr_action == REMOVE && !cpu->is_owned) {
+		say(ERROR, "Requested CPU with drc index %x is "
+		    "not present.\n", opts->usr_drc_index); 
+		return NULL;
 	}
 
 	return cpu;
@@ -184,8 +170,7 @@ static struct dr_node *get_next_available_cpu(struct options *opts,
 	struct dr_node *survivor = NULL;
 	struct thread *t;
 	
-	switch (opts->action) {
-	    case ADD:
+	if (usr_action == ADD) {
 		for (cpu = dr_info->all_cpus; cpu; cpu = cpu->next) {
 			if (cpu->unusable)
 				continue;
@@ -194,9 +179,7 @@ static struct dr_node *get_next_available_cpu(struct options *opts,
 		}
 
 		cpu = survivor;
-		break;
-
-	    case REMOVE:
+	} else if (usr_action == REMOVE) {
 		/* Find the first cpu with an online thread */
 		for (cpu = dr_info->all_cpus; cpu; cpu = cpu->next) {
 			if (cpu->unusable)
@@ -207,7 +190,6 @@ static struct dr_node *get_next_available_cpu(struct options *opts,
 					return cpu;
 			}
 		}
-		break;
 	}
 
 	if (!cpu)
@@ -384,9 +366,9 @@ smt_threads_func(struct options *opts, struct dr_info *dr_info)
 			return -1;
 		}
 
-		if (opts->action == ADD)
+		if (usr_action == ADD)
 			rc = cpu_enable_smt(cpu, dr_info);
-		else if (opts->action == REMOVE)
+		else if (usr_action == REMOVE)
 			rc = cpu_disable_smt(cpu);
 
 	} else if (opts->usr_drc_index) {
@@ -397,15 +379,15 @@ smt_threads_func(struct options *opts, struct dr_info *dr_info)
 			return -1;
 		}
 
-		if (opts->action == ADD)
+		if (usr_action == ADD)
 			rc = cpu_enable_smt(cpu, dr_info);
-		else if (opts->action == REMOVE)
+		else if (usr_action == REMOVE)
 			rc = cpu_disable_smt(cpu);
 
 	} else { /* no drc name given, action is system-wide */
-		if (opts->action == ADD)
+		if (usr_action == ADD)
 			rc = system_enable_smt(dr_info);
-		if (opts->action == REMOVE)
+		if (usr_action == REMOVE)
 			rc = system_disable_smt(dr_info);
 	}
 
@@ -419,7 +401,7 @@ valid_cpu_options(struct options *opts)
 	if ((opts->quantity == 0))
 		opts->quantity = 1;
 
-	if ((opts->action != ADD) && (opts->action != REMOVE)) {
+	if ((usr_action != ADD) && (usr_action != REMOVE)) {
 		say(ERROR, "The '-r' or '-a' option must be specified for "
 		    "CPU operations.\n");
 		return -1;
@@ -476,7 +458,7 @@ drslot_chrp_cpu(struct options *opts)
 		return rc;
 	}
 
-	switch (opts->action) {
+	switch (usr_action) {
 	case ADD:
 		rc = add_cpus(opts, &dr_info);
 		break;

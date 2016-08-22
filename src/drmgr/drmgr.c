@@ -29,6 +29,8 @@
 #include "dr.h"
 #include "pseries_platform.h"
 
+#include "options.c"
+
 #define DRMGR_ARGS	"ac:d:Iimnp:P:Qq:Rrs:w:t:hCV"
 
 int output_level = 1; /* default to lowest output level */
@@ -189,7 +191,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 
 		switch (c) {
 		    case 'a':
-			opts->action = ADD;
+			usr_action = ADD;
 			action_cnt++;
 			break;
 		    case 'c':
@@ -205,7 +207,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 			opts->no_ident = 1;
 			break;
 		    case 'i':
-			opts->action = IDENTIFY;
+			usr_action = IDENTIFY;
 			action_cnt++;
 			break;
 		    case 'n':
@@ -226,22 +228,22 @@ parse_options(int argc, char *argv[], struct options *opts)
 			opts->quantity = strtoul(optarg, NULL, 0);
 			break;
 		    case 'R':
-			opts->action = REPLACE;
+			usr_action = REPLACE;
 			action_cnt++;
 			break;
 		    case 'r':
-			opts->action = REMOVE;
+			usr_action = REMOVE;
 			action_cnt++;
 			break;
 		    case 's':
 			opts->usr_drc_name = optarg;
 			break;
 		    case 'Q':
-			opts->action = QUERY;
+			usr_action = QUERY;
 			action_cnt++;
 			break;
 		    case 'm':
-			opts->action = MIGRATE;
+			usr_action = MIGRATE;
 			action_cnt++;
 			break;
 		    case 'w':
@@ -277,7 +279,7 @@ get_command(struct options *opts)
 	 * in a 1-to-1 relationship with the resulting command to run so we
 	 * have to do some extra checking to build the correct command.
 	 */
-	if (opts->action == MIGRATE)
+	if (usr_action == MIGRATE)
 		return &commands[DRMIG_CHRP_PMIG];
 
 	if (!opts->ctype)
@@ -303,7 +305,7 @@ get_command(struct options *opts)
 		return &commands[DRSLOT_CHRP_CPU];
 
 	if (! strcmp(opts->ctype, "phib")) {
-		opts->action = HIBERNATE;
+		usr_action = HIBERNATE;
 		return &commands[DRSLOT_CHRP_PHIB];
 	}
 			
@@ -317,7 +319,7 @@ get_command(struct options *opts)
 }
 
 int drmgr(struct options *opts) {
-	say(ERROR, "Invalid command: %d\n", opts->action);
+	say(ERROR, "Invalid command: %d\n", usr_action);
 	return -1;
 }
 
