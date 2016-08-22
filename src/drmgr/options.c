@@ -39,3 +39,6 @@ uint32_t usr_drc_index = 0;
  * unless the drmgr -n option is specified.
  */
 int usr_prompt = 1;
+
+/* user specified number of devices to add/remove */
+int usr_drc_count = 0;

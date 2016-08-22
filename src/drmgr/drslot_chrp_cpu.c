@@ -244,7 +244,7 @@ add_cpus(struct options *opts, struct dr_info *dr_info)
 	struct dr_node *cpu = NULL;
 
 	count = 0;
-	while (count < opts->quantity) {
+	while (count < usr_drc_count) {
 		if (drmgr_timed_out())
 			break;
 
@@ -265,7 +265,7 @@ add_cpus(struct options *opts, struct dr_info *dr_info)
 	}
 
 	say(DEBUG, "Acquired %d of %d requested cpu(s).\n", count,
-	    opts->quantity);
+	    usr_drc_count);
 	return rc ? 1 : 0;
 }
 
@@ -299,7 +299,7 @@ remove_cpus(struct options *opts, struct dr_info *dr_info)
 	uint count = 0;
 	struct dr_node *cpu;
 
-	while (count < opts->quantity) {
+	while (count < usr_drc_count) {
 		if (drmgr_timed_out())
 			break;
 
@@ -329,7 +329,7 @@ remove_cpus(struct options *opts, struct dr_info *dr_info)
 	}
 
 	say(DEBUG, "Removed %d of %d requested cpu(s)\n", count,
-	    opts->quantity);
+	    usr_drc_count);
 	return rc;
 }
 
@@ -346,7 +346,7 @@ smt_threads_func(struct options *opts, struct dr_info *dr_info)
 	int rc;
 	struct dr_node *cpu;
 
-	if (opts->quantity != 1) {
+	if (usr_drc_count != 1) {
 		say(ERROR, "Quantity option '-q' may not be specified with "
 		    "the '-p smt_threads' option\n");
 		return -1;
@@ -395,8 +395,8 @@ int
 valid_cpu_options(struct options *opts)
 {
 	/* default to a quantity of 1 */
-	if ((opts->quantity == 0))
-		opts->quantity = 1;
+	if (usr_drc_count == 0)
+		usr_drc_count = 1;
 
 	if ((usr_action != ADD) && (usr_action != REMOVE)) {
 		say(ERROR, "The '-r' or '-a' option must be specified for "
@@ -447,7 +447,7 @@ drslot_chrp_cpu(struct options *opts)
 	 * accordingly.
 	 */
 	if (usr_drc_name)
-		opts->quantity = 1;
+		usr_drc_count = 1;
 
 	if (opts->p_option && (strcmp(opts->p_option, "smt_threads") == 0)) {
 		rc = smt_threads_func(opts, &dr_info);

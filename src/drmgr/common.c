@@ -1155,7 +1155,6 @@ static struct sysparm_mapping mem_sysparm_table[] = {
  * since the kernel interface accepts only absolute values.
  *
  * @param parm
- * @param quantity
  * @returns 0 on success, !0 otherwise
  */
 int
@@ -1215,18 +1214,18 @@ update_sysparm(struct options *opts)
 	}
 
 	if (usr_action == REMOVE) {
-		if (opts->quantity > curval) {
+		if (usr_drc_count > curval) {
 			say(ERROR, "Cannot reduce system parameter value %s by "
 			    "more than is currently available.\nCurrent "
 			    "value: %lx, asking to remove: %x\n",
-			    opts->p_option, curval, opts->quantity);
+			    opts->p_option, curval, usr_drc_count);
 			return 1;
 		}
 
-		opts->quantity = -opts->quantity;
+		usr_drc_count = -usr_drc_count;
 	}
 	
-	return set_sysparm(linux_parm, curval + opts->quantity);
+	return set_sysparm(linux_parm, curval + usr_drc_count);
 }
 
 int

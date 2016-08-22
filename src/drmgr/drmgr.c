@@ -160,7 +160,7 @@ valid_drmgr_options(struct options *opts)
 		return -1;
 	}
 
-	if ((opts->quantity > 1) && usr_drc_name) {
+	if ((usr_drc_count > 1) && usr_drc_name) {
 		say(ERROR, "The -q and -s flags are mutually exclusive\n");
 		return -1;
 	}
@@ -225,7 +225,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 			handle_prrn_event = 1;
 			break;
 		    case 'q':
-			opts->quantity = strtoul(optarg, NULL, 0);
+			usr_drc_count = strtoul(optarg, NULL, 0);
 			break;
 		    case 'R':
 			usr_action = REPLACE;

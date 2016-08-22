@@ -1036,7 +1036,7 @@ add_lmbs(struct options *opts, struct lmb_list_head *lmb_list)
 	struct dr_node *lmb;
 
 	lmb_list->lmbs_modified = 0;
-	while (lmb_list->lmbs_modified < (int)opts->quantity) {
+	while (lmb_list->lmbs_modified < usr_drc_count) {
 		if (drmgr_timed_out())
 			break;
 
@@ -1097,11 +1097,11 @@ mem_add(struct options *opts)
 		return -1;
 	}
 
-	say(DEBUG, "Attempting to add %d LMBs\n", opts->quantity);
+	say(DEBUG, "Attempting to add %d LMBs\n", usr_drc_count);
 	rc = add_lmbs(opts, lmb_list);
 
 	say(DEBUG, "Added %d of %d requested LMB(s)\n", lmb_list->lmbs_modified,
-	    opts->quantity);
+	    usr_drc_count);
 	report_resource_count(lmb_list->lmbs_modified);
 
 	free_lmbs(lmb_list);
@@ -1123,7 +1123,7 @@ remove_lmbs(struct options *opts, struct lmb_list_head *lmb_list)
 	struct dr_node *lmb;
 	int rc;
 
-	while (lmb_list->lmbs_modified < (int)opts->quantity) {
+	while (lmb_list->lmbs_modified < usr_drc_count) {
 		if (drmgr_timed_out())
 			break;
 
@@ -1182,7 +1182,6 @@ mem_remove(struct options *opts)
 	struct lmb_list_head *lmb_list;
 	struct dr_node *lmb;
 	unsigned int removable = 0;
-	unsigned int requested = opts->quantity;
 	int rc = 0;
 
 	lmb_list = get_lmbs(LMB_RANDOM_SORT);
@@ -1210,23 +1209,23 @@ mem_remove(struct options *opts)
 			rc = -1;
 		}
 
-		if (removable < opts->quantity) {
+		if (removable < usr_drc_count) {
 			say(INFO, "Only %u LMBs are currently candidates "
 					"for removal.\n", removable);
-			opts->quantity = removable;
+			usr_drc_count = removable;
 		}
 	}
 
 	if (!rc) {
-		say(DEBUG, "Attempting removal of %d LMBs\n", opts->quantity);
+		say(DEBUG, "Attempting removal of %d LMBs\n", usr_drc_count);
 		rc = remove_lmbs(opts, lmb_list);
 	}
 
 	say(ERROR, "Removed %d of %d requested LMB(s)\n",
-	    lmb_list->lmbs_modified, requested);
-	if (lmb_list->lmbs_modified < requested)
+	    lmb_list->lmbs_modified, usr_drc_count);
+	if (lmb_list->lmbs_modified < usr_drc_count)
 		say(ERROR, "Unable to hotplug remove the remaining %d LMB(s)\n",
-		    requested - lmb_list->lmbs_modified);
+		    usr_drc_count - lmb_list->lmbs_modified);
 	report_resource_count(lmb_list->lmbs_modified);
 
 	free_lmbs(lmb_list);
@@ -1303,8 +1302,8 @@ int
 valid_mem_options(struct options *opts)
 {
 	/* default to a quantity of 1 */
-	if (opts->quantity == 0)
-		opts->quantity = 1;
+	if (usr_drc_count == 0)
+		usr_drc_count = 1;
 
 	if ((usr_action != ADD) && (usr_action != REMOVE)) {
 		say(ERROR, "The '-r' or '-a' option must be specified for "
@@ -1344,7 +1343,7 @@ int do_mem_kernel_dlpar(struct options *opts)
 		offset += sprintf(cmdbuf + offset, "index 0x%x",
 				  usr_drc_index);
 	else
-		offset += sprintf(cmdbuf + offset, "count %d", opts->quantity);
+		offset += sprintf(cmdbuf + offset, "count %d", usr_drc_count);
 
 	rc = do_kernel_dlpar(cmdbuf, offset);
 
@@ -1355,7 +1354,7 @@ int do_mem_kernel_dlpar(struct options *opts)
 	if (rc)
 		report_resource_count(0);
 	else
-		report_resource_count(opts->quantity);
+		report_resource_count(usr_drc_count);
 
 	return rc;
 }
@@ -1380,7 +1379,7 @@ drslot_chrp_mem(struct options *opts)
 	 * require that the quantity be non-zero.
 	 */
 	if (usr_drc_name)
-		opts->quantity = 1;
+		usr_drc_count = 1;
 
 	if (kernel_dlpar_exists()) {
 		rc = do_mem_kernel_dlpar(opts);
