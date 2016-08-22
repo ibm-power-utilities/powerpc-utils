@@ -31,3 +31,6 @@ int usr_timeout = 0;
 
 /* user specified drc name */
 char *usr_drc_name = NULL;
+
+/* user specified drc index */
+uint32_t usr_drc_index = 0;

@@ -873,11 +873,11 @@ valid_pci_options(struct options *opts)
 
 	/* The -s option can specify a drc name or drc index */
 	if (usr_drc_name && !strncmp(usr_drc_name, "0x", 2)) {
-		opts->usr_drc_index = strtoul(usr_drc_name, NULL, 16);
+		usr_drc_index = strtoul(usr_drc_name, NULL, 16);
 		usr_drc_name = NULL;
 	}
 
-	if (!usr_drc_name  && !opts->usr_drc_index) {
+	if (!usr_drc_name  && !usr_drc_index) {
 		say(ERROR, "A drc name or index must be specified\n");
 		return -1;
 	}
@@ -909,7 +909,7 @@ drslot_chrp_pci(struct options *opts)
 #endif
 
 	if (!usr_drc_name)
-		usr_drc_name = find_drc_name(opts->usr_drc_index, all_nodes);
+		usr_drc_name = find_drc_name(usr_drc_index, all_nodes);
 
 	switch (usr_action) {
 	    case ADD:

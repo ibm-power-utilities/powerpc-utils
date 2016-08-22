@@ -506,11 +506,11 @@ valid_phb_options(struct options *opts)
 {
 	/* The -s option can specify a drc name or drc index */
 	if (usr_drc_name && !strncmp(usr_drc_name, "0x", 2)) {
-		opts->usr_drc_index = strtoul(usr_drc_name, NULL, 16);
+		usr_drc_index = strtoul(usr_drc_name, NULL, 16);
 		usr_drc_name = NULL;
 	}
 
-	if (!usr_drc_name && !opts->usr_drc_index) {
+	if (!usr_drc_name && !usr_drc_index) {
 		say(ERROR, "A drc name or index must be specified\n");
 		return -1;
 	}
@@ -538,12 +538,11 @@ drslot_chrp_phb(struct options *opts)
 
 	if (!usr_drc_name) {
 		struct dr_connector *drc_list = get_drc_info(OFDT_BASE);
-		usr_drc_name = drc_index_to_name(opts->usr_drc_index,
-						       drc_list);
+		usr_drc_name = drc_index_to_name(usr_drc_index, drc_list);
 		if (!usr_drc_name) {
 			say(ERROR,
 			    "Could not locate DRC name for DRC index: 0x%x",
-			    opts->usr_drc_index);
+			    usr_drc_index);
 			return -1;
 		}
 	}

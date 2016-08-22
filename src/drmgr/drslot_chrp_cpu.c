@@ -136,26 +136,26 @@ static struct dr_node *get_available_cpu_by_index(struct options *opts,
 {
 	struct dr_node *cpu;
 
-	cpu = get_cpu_by_index(dr_info, opts->usr_drc_index);
+	cpu = get_cpu_by_index(dr_info, usr_drc_index);
 	if (!cpu) {
 		say(ERROR, "Could not locate CPU with drc index %x\n",
-		    opts->usr_drc_index);
+		    usr_drc_index);
 		return NULL;
 	} 
 
 	if (cpu->unusable) {
 		say(ERROR, "Requested CPU with drc index %x is unusable\n",
-		    opts->usr_drc_index);
+		    usr_drc_index);
 		return NULL;
 	}
 
 	if (usr_action == ADD && cpu->is_owned) {
 		say(ERROR, "Requested CPU with drc index %x is "
-		    "already present.\n", opts->usr_drc_index); 
+		    "already present.\n", usr_drc_index); 
 		return NULL;
 	} else if (usr_action == REMOVE && !cpu->is_owned) {
 		say(ERROR, "Requested CPU with drc index %x is "
-		    "not present.\n", opts->usr_drc_index); 
+		    "not present.\n", usr_drc_index); 
 		return NULL;
 	}
 
@@ -214,7 +214,7 @@ get_available_cpu(struct options *opts, struct dr_info *dr_info)
 
 	if (usr_drc_name)
 		cpu = get_available_cpu_by_name(opts, dr_info);
-	else if (opts->usr_drc_index)
+	else if (usr_drc_index)
 		cpu = get_available_cpu_by_index(opts, dr_info);
 	else
 		cpu = get_next_available_cpu(opts, dr_info);
@@ -369,11 +369,10 @@ smt_threads_func(struct options *opts, struct dr_info *dr_info)
 		else if (usr_action == REMOVE)
 			rc = cpu_disable_smt(cpu);
 
-	} else if (opts->usr_drc_index) {
-		cpu = get_cpu_by_index(dr_info, opts->usr_drc_index);
+	} else if (usr_drc_index) {
+		cpu = get_cpu_by_index(dr_info, usr_drc_index);
 		if (cpu == NULL) {
-			say(ERROR, "Could not find cpu %x\n",
-			    opts->usr_drc_index);
+			say(ERROR, "Could not find cpu %x\n", usr_drc_index);
 			return -1;
 		}
 
@@ -407,7 +406,7 @@ valid_cpu_options(struct options *opts)
 
 	/* The -s option can specify a drc name or drc index */
 	if (usr_drc_name && !strncmp(usr_drc_name, "0x", 2)) {
-		opts->usr_drc_index = strtoul(usr_drc_name, NULL, 16);
+		usr_drc_index = strtoul(usr_drc_name, NULL, 16);
 		usr_drc_name = NULL;
 	}
 

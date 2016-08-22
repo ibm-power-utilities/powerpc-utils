@@ -550,8 +550,8 @@ get_available_lmb(struct options *opts, struct dr_node *start_lmb)
 			if ((strcmp(lmb->drc_name, usr_drc_name))
 			    && (lmb->drc_index != drc_index))
 				continue;
-		} else if (opts->usr_drc_index) {
-			if (lmb->drc_index != opts->usr_drc_index)
+		} else if (usr_drc_index) {
+			if (lmb->drc_index != usr_drc_index)
 				continue;
 		}
 
@@ -1314,7 +1314,7 @@ valid_mem_options(struct options *opts)
 
 	/* The -s option can specify a drc name or drc index */
 	if (usr_drc_name && !strncmp(usr_drc_name, "0x", 2)) {
-		opts->usr_drc_index = strtoul(usr_drc_name, NULL, 16);
+		usr_drc_index = strtoul(usr_drc_name, NULL, 16);
 		usr_drc_name = NULL;
 	}
 
@@ -1340,9 +1340,9 @@ int do_mem_kernel_dlpar(struct options *opts)
 		return -EINVAL;
 	}
 
-	if (opts->usr_drc_index)
+	if (usr_drc_index)
 		offset += sprintf(cmdbuf + offset, "index 0x%x",
-				  opts->usr_drc_index);
+				  usr_drc_index);
 	else
 		offset += sprintf(cmdbuf + offset, "count %d", opts->quantity);
 
