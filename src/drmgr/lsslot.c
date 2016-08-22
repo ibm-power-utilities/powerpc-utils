@@ -438,13 +438,13 @@ parse_options(int argc, char *argv[], struct options *opts)
 			break;
 
 		    case 'F':
-			opts->delim = optarg;
+			usr_delimiter = optarg;
 			/* make sure the arg specified is only one character
 			 * long and is not the '%' character which would
 			 * confuse the formatting.
 			 */
-			if ((opts->delim[1] != '\0')
-			    || (opts->delim[0] == '%')) {
+			if ((usr_delimiter[1] != '\0')
+			    || (usr_delimiter[0] == '%')) {
 				say(ERROR, "You may specify only one character "
 				    "for the -F option,\nand it must not "
 				    "be the %% character.\n");
@@ -499,7 +499,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 	case DRC_TYPE_PHB:
 		/* The a,b,F,o,p options are not valid for phb */
 		if (show_available_slots || show_cpus_and_caches ||
-		    opts->delim || show_occupied_slots || show_caches)
+		    usr_delimiter || show_occupied_slots || show_caches)
 			usage();
 		break;
 
@@ -522,7 +522,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 
 	case DRC_TYPE_CPU:
 		/* The a,F,o,s options are not valid for cpu */
-		if (show_available_slots || opts->delim ||
+		if (show_available_slots || usr_delimiter ||
 		    show_occupied_slots || usr_drc_name)
 			usage();
 
@@ -620,9 +620,9 @@ lsslot_chrp_pci(struct options *opts)
 	 * which the user specified at the command line.
 	 */
 	if (usr_drc_type == DRC_TYPE_SLOT) {
-		if (opts->delim != NULL)
-			sprintf(fmt, "%s%s%s%s%s%s", "%s", opts->delim,
-				"%s", opts->delim, "%s", opts->delim);
+		if (usr_delimiter)
+			sprintf(fmt, "%s%s%s%s%s%s", "%s", usr_delimiter,
+				"%s", usr_delimiter, "%s", usr_delimiter);
 		else {
 			sprintf(fmt, "%%-%ds%%-%ds%%-%ds", max_sname + 2,
 				max_desc + 2, LNAME_SIZE + 2);
@@ -631,9 +631,9 @@ lsslot_chrp_pci(struct options *opts)
 			printf("%s\n", lheading);
 		}
 	} else {
-		if (opts->delim != NULL)
-			sprintf(fmt, "%s%s%s%s", "%s", opts->delim,
-				"%s", opts->delim);
+		if (usr_delimiter)
+			sprintf(fmt, "%s%s%s%s", "%s", usr_delimiter,
+				"%s", usr_delimiter);
 		else {
 			sprintf(fmt, "%%-%ds%%-%ds", max_sname + 2,
 				max_desc + 2);
@@ -920,8 +920,8 @@ lsslot_chrp_port(struct options *opts)
 	 * specified, the format string contains the delimiting character
 	 * which the user specified at the command line.
 	 */
-	if (opts->delim != NULL)
-		sprintf(fmt, "%s%s%s\n", "%s", opts->delim, "%s");
+	if (usr_delimiter)
+		sprintf(fmt, "%s%s%s\n", "%s", usr_delimiter, "%s");
 	else {
 		sprintf(fmt, "%%-%ds%%-%ds\n", max_sname + 2, max_desc + 2);
 		/* Print out the header. */

@@ -60,3 +60,4 @@ int show_available_slots = 0;
 int show_cpus_and_caches = 0;
 int show_occupied_slots = 0;
 int show_caches = 0;
+char *usr_delimiter = NULL;
