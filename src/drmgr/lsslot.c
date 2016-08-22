@@ -425,19 +425,8 @@ parse_options(int argc, char *argv[], struct options *opts)
 			break;
 
 		    case 'c':
-			if (! strcmp(optarg, "phb"))
-				opts->slot_type = PHB;
-			else if (! strcmp(optarg, "slot"))
-				opts->slot_type = SLOT;
-			else if (! strcmp(optarg, "pci"))
-				opts->slot_type = PCI;
-			else if (! strcmp(optarg, "cpu"))
-				opts->slot_type = CPU;
-			else if (! strcmp(optarg, "mem"))
-				opts->slot_type = MEM;
-			else if (! strcmp(optarg, "port"))
-				opts->slot_type = PORT;
-			else {
+			usr_drc_type = to_drc_type(optarg);
+			if (usr_drc_type == DRC_TYPE_NONE) {
 				printf("\nThe specified connector type "
 				       "is invalid.\n\n");
 				usage();
@@ -488,9 +477,9 @@ parse_options(int argc, char *argv[], struct options *opts)
 	}
 
 	/* Validate the options */
-	switch (opts->slot_type) {
-	    case SLOT:
-	    case PORT:
+	switch (usr_drc_type) {
+	case DRC_TYPE_SLOT:
+	case DRC_TYPE_PORT:
 		/* The a,b,o,p flags are not valid for slot */
 		if (opts->a_flag || opts->b_flag || opts->o_flag ||
 		    opts->p_flag)
@@ -507,14 +496,14 @@ parse_options(int argc, char *argv[], struct options *opts)
 
 		break;
 
-	    case PHB:
+	case DRC_TYPE_PHB:
 		/* The a,b,F,o,p options are not valid for phb */
 		if (opts->a_flag || opts->b_flag || opts->delim ||
 		    opts->o_flag || opts->p_flag)
 			usage();
 		break;
 
-	    case PCI:
+	case DRC_TYPE_PCI:
 		/* The b,p flags are valid for pci */
 		if (opts->b_flag || opts->p_flag)
 			usage();
@@ -530,7 +519,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 
 		break;
 
-	    case CPU:
+	case DRC_TYPE_CPU:
 		/* The a,F,o,s options are not valid for cpu */
 		if (opts->a_flag || opts->delim || opts->o_flag ||
 		    opts->s_name)
@@ -542,6 +531,9 @@ parse_options(int argc, char *argv[], struct options *opts)
 			usage();
 		}
 
+		break;
+
+	default:
 		break;
 	}
 }
@@ -571,14 +563,14 @@ lsslot_chrp_pci(struct options *opts)
 	max_desc = MAX(max_desc, strlen(dheading));
 
 	/* Get all of node(logical DR or PCI) node information */
-	if (opts->slot_type == PCI)
+	if (usr_drc_type == DRC_TYPE_PCI)
 		all_nodes = get_hp_nodes();
 	else
 		all_nodes = get_dlpar_nodes(PCI_NODES | VIO_NODES | HEA_NODES);
 
 	/* If nothing returned, then no hot plug node */
 	if (all_nodes == NULL) {
-		if (opts->slot_type == PCI)
+		if (usr_drc_type == DRC_TYPE_PCI)
 			say(ERROR, "There are no PCI hot plug slots on "
 			    "this system.\n");
 		else
@@ -626,7 +618,7 @@ lsslot_chrp_pci(struct options *opts)
 	 * specified, the format string contains the delimiting character
 	 * which the user specified at the command line.
 	 */
-	if (opts->slot_type == SLOT) {
+	if (usr_drc_type == DRC_TYPE_SLOT) {
 		if (opts->delim != NULL)
 			sprintf(fmt, "%s%s%s%s%s%s", "%s", opts->delim,
 				"%s", opts->delim, "%s", opts->delim);
@@ -657,7 +649,7 @@ lsslot_chrp_pci(struct options *opts)
 			continue;
 		}
 
-		if (opts->slot_type == SLOT)
+		if (usr_drc_type == DRC_TYPE_SLOT)
 			print_drslot_line(p, fmt);
 		else
 			print_phpslot_line(p, fmt);
@@ -968,7 +960,7 @@ main(int argc, char *argv[])
 	memset(&opts, 0, sizeof(opts));
 
 	/* default to DRSLOT type */
-	opts.slot_type = SLOT;
+	usr_drc_type = DRC_TYPE_SLOT;
 	parse_options(argc, argv, &opts);
 
 	rc = dr_lock();
@@ -978,26 +970,24 @@ main(int argc, char *argv[])
 		exit(1);
 	}
 
-	switch (opts.slot_type) {
-	    case SLOT:
-	    case PCI:
+	switch (usr_drc_type) {
+	case DRC_TYPE_SLOT:
+	case DRC_TYPE_PCI:
 		rc = lsslot_chrp_pci(&opts);
 		break;
-
-	    case PHB:
+	case DRC_TYPE_PHB:
 		rc = lsslot_chrp_phb(&opts);
 		break;
-
-	    case CPU:
+	case DRC_TYPE_CPU:
 		rc = lsslot_chrp_cpu(&opts);
 		break;
-
-	    case MEM:
+	case DRC_TYPE_MEM:
 		rc = lsslot_chrp_mem(&opts);
 		break;
-
-	    case PORT:
+	case DRC_TYPE_PORT:
 		rc = lsslot_chrp_port(&opts);
+		break;
+	default:
 		break;
 	}
 

@@ -58,16 +58,6 @@ void * __zalloc(size_t, const char *, int);
 #define DRMIG_COMMAND		"drmig_chrp_%s"
 
 struct options {
-
-	/* lsslot options */
-	int slot_type;
-#define PCI     0
-#define SLOT    1
-#define PHB     2
-#define CPU     3
-#define MEM     4
-#define PORT    5
-
 	int	a_flag;
 	int	o_flag;
 	int	b_flag;
