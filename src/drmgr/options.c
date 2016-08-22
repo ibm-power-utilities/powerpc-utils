@@ -48,3 +48,6 @@ enum drc_type usr_drc_type = DRC_TYPE_NONE;
 
 /* user specified -p option, meaning varies depending on usr_drc_type */
 char *usr_p_option = NULL;
+
+/* user specified workaround for qemu pci dlpar */
+int pci_virtio = 0;

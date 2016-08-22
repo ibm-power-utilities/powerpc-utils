@@ -570,7 +570,7 @@ do_add(struct options *opts, struct dr_node *all_nodes)
 	 * qemu pci slots so we let the generic kernel pci code probe the device
 	 * by rescanning the bus in the qemu virtio case.
 	 */
-	if (!opts->pci_virtio)
+	if (!pci_virtio)
 		set_hp_adapter_status(PHP_CONFIG_ADAPTER, node->drc_name);
 	else
 		pci_rescan_bus();
@@ -638,7 +638,7 @@ remove_work(struct options *opts, struct dr_node *all_nodes)
 		return NULL;
 	}
 
-	if (!opts->pci_virtio) {
+	if (!pci_virtio) {
 		/* Make sure all the devices are
 		 * not configured before proceeding
 		 */

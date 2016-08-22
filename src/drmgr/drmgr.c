@@ -256,7 +256,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 		    case 't': /* target lpid (pmig, not used) */
 			break;
 		    case 'V': /* qemu virtio pci device (workaround) */
-                        opts->pci_virtio = 1;
+                        pci_virtio = 1;
                         break;
 
 		    default:

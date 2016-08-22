@@ -120,7 +120,7 @@ static int check_kmods(struct options *opts)
 	/* We don't use rpadlar_io/rpaphp for PCI operations run with the
 	 * -v / virtio flag, which relies on generic PCI rescan instead
 	 */
-	if (usr_drc_type == DRC_TYPE_PCI && opts->pci_virtio == 1)
+	if (usr_drc_type == DRC_TYPE_PCI && pci_virtio)
 		return 0;
 
 	/* Before checking for dlpar capability, we need to ensure that
