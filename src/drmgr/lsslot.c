@@ -461,7 +461,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 			break;
 
 		    case 's':
-			opts->s_name = optarg;
+			usr_drc_name = optarg;
 			break;
 
 		    case 'w':
@@ -489,7 +489,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 		 * need to set the a and o flags if the s flag wasn't
 		 * specified.
 		 */
-		if (opts->s_name == NULL) {
+		if (!usr_drc_name) {
 			show_available_slots = 1;
 			show_occupied_slots = 1;
 		}
@@ -513,7 +513,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 		 * in the output
 		 */
 		if ((!show_available_slots) && (!show_occupied_slots)
-		    && (opts->s_name == NULL)) {
+		    && !usr_drc_name) {
 			show_available_slots = 1;
 			show_occupied_slots = 1;
 		}
@@ -523,7 +523,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 	case DRC_TYPE_CPU:
 		/* The a,F,o,s options are not valid for cpu */
 		if (show_available_slots || opts->delim ||
-		    show_occupied_slots || opts->s_name)
+		    show_occupied_slots || usr_drc_name)
 			usage();
 
 		if (show_cpus_and_caches && show_caches) {
@@ -588,8 +588,8 @@ lsslot_chrp_pci(struct options *opts)
 		if (! node->is_owned || node->skip)
 			continue;
 		
-		if (opts->s_name != NULL) {
-			if (cmp_drcname(node->drc_name, opts->s_name))
+		if (!usr_drc_name) {
+			if (cmp_drcname(node->drc_name, usr_drc_name))
 				insert_print_node(node);
 		}
 
@@ -606,7 +606,7 @@ lsslot_chrp_pci(struct options *opts)
 		/* If nothing to print, display message based on if
 		 * user specified a slot or a device name.
 		 */
-		if (opts->s_name != NULL) {
+		if (!usr_drc_name) {
 			say(ERROR, "The specified PCI slot is either invalid\n"
 			    "or does not support hot plug operations.\n");
 			rc = 1;
@@ -687,8 +687,7 @@ lsslot_chrp_phb(struct options *opts)
 		char *name;
 		int printed_count = 0;
 		
-		if ((opts->s_name != NULL) && 
-		    (strcmp(opts->s_name, phb->drc_name)))
+		if (usr_drc_name && strcmp(usr_drc_name, phb->drc_name))
 			continue;
 
 		name = strstr(phb->ofdt_path, "/pci");
@@ -742,8 +741,8 @@ int print_drconf_mem(struct options *opts, struct lmb_list_head *lmb_list)
 	aa++;
 	aa_list_sz = be32toh(*aa++);
 
-	if (opts->s_name)
-		drc_index = strtol(opts->s_name, NULL, 0);
+	if (usr_drc_name)
+		drc_index = strtol(usr_drc_name, NULL, 0);
 
 	printf("Dynamic Reconfiguration Memory (LMB size 0x%x)\n",
 	       lmb_list->lmbs->lmb_size);
@@ -897,8 +896,8 @@ lsslot_chrp_port(struct options *opts)
 			/* If there is a search parameter, add matching ports.
 			 * If there is no search, add all the ports.
 			 */
-			if (opts->s_name != NULL) {
-				if (cmp_drcname(child->drc_name, opts->s_name))
+			if (usr_drc_name) {
+				if (cmp_drcname(child->drc_name, usr_drc_name))
 					insert_print_node(child);
 			} else
 				insert_print_node(child);
@@ -909,7 +908,7 @@ lsslot_chrp_port(struct options *opts)
 		/* If nothing to print, display message based on if
 		 * user specified a slot or a device name.
 		 */
-		if (opts->s_name != NULL) {
+		if (usr_drc_name) {
 			say(ERROR, "The specified port was not found.\n");
 			rc = 1;
 		}

@@ -59,7 +59,6 @@ void * __zalloc(size_t, const char *, int);
 
 struct options {
 	char	*delim;
-	char	*s_name;
 };
  
 #define MAX(x,y)	(((x) > (y)) ? (x) : (y))
