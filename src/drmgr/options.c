@@ -20,3 +20,8 @@
 
 /* Global User Specifications */
 enum drmgr_action usr_action = NONE;
+
+/* default is to do slot identification, unless the drmgr -I
+ * option is specified.
+ */
+int usr_slot_identification = 1;

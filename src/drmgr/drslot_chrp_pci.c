@@ -484,7 +484,7 @@ do_add(struct options *opts, struct dr_node *all_nodes)
 
 	/* Prompt user only if in interactive mode. */
 	if (0 == opts->noprompt) {
-		if (!opts->no_ident)
+		if (usr_slot_identification)
 			usr_key = identify_slot(node);
 
 		if (usr_key == USER_QUIT) {
@@ -615,7 +615,7 @@ remove_work(struct options *opts, struct dr_node *all_nodes)
 
 	/* Prompt user only if not in noprompt mode */
 	if (0 == opts->noprompt) {
-		if (!opts->no_ident)
+		if (usr_slot_identification)
 			usr_key = identify_slot(node);
 
 		if (usr_key == USER_QUIT) {
@@ -866,7 +866,7 @@ do_replace(struct options *opts, struct dr_node *all_nodes)
 int
 valid_pci_options(struct options *opts)
 {
-	if ((usr_action == IDENTIFY) && (opts->no_ident)) {
+	if ((usr_action == IDENTIFY) && (!usr_slot_identification)) {
 		say(ERROR, "Cannot specify the -i and -I option together\n");
 		return -1;
 	}

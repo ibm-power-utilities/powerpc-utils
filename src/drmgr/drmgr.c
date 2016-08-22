@@ -204,7 +204,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 			set_output_level(atoi(optarg));
 			break;
 		    case 'I':
-			opts->no_ident = 1;
+			usr_slot_identification = 0;
 			break;
 		    case 'i':
 			usr_action = IDENTIFY;
