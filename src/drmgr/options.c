@@ -54,3 +54,6 @@ int pci_virtio = 0;
 
 /* user specified file for handling prrn events */
 char *prrn_filename = NULL;
+
+/* lsslot specific options */
+int show_available_slots = 0;

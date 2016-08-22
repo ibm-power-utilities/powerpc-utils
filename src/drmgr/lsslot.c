@@ -417,7 +417,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 	while ((c = getopt(argc, argv, "abc:d:F:ops:w:")) != EOF) {
 		switch (c) {
 		    case 'a':
-			opts->a_flag = 1;
+			show_available_slots = 1;
 			break;
 
 		    case 'b':
@@ -481,7 +481,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 	case DRC_TYPE_SLOT:
 	case DRC_TYPE_PORT:
 		/* The a,b,o,p flags are not valid for slot */
-		if (opts->a_flag || opts->b_flag || opts->o_flag ||
+		if (show_available_slots || opts->b_flag || opts->o_flag ||
 		    opts->p_flag)
 			usage();
 
@@ -490,7 +490,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 		 * specified.
 		 */
 		if (opts->s_name == NULL) {
-			opts->a_flag = 1;
+			show_available_slots = 1;
 			opts->o_flag = 1;
 		}
 
@@ -498,7 +498,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 
 	case DRC_TYPE_PHB:
 		/* The a,b,F,o,p options are not valid for phb */
-		if (opts->a_flag || opts->b_flag || opts->delim ||
+		if (show_available_slots || opts->b_flag || opts->delim ||
 		    opts->o_flag || opts->p_flag)
 			usage();
 		break;
@@ -508,12 +508,12 @@ parse_options(int argc, char *argv[], struct options *opts)
 		if (opts->b_flag || opts->p_flag)
 			usage();
 
-		/* If no flags specified, then set a_flag and o_flag
-		 * so that all slots will be formatted in the output
+		/* If no flags specified, then set show_available_slots and
+		 * o_flag so that all slots will be formatted in the output
 		 */
-		if ((! opts->a_flag) && (! opts->o_flag)
+		if ((!show_available_slots) && (! opts->o_flag)
 		    && (opts->s_name == NULL)) {
-			opts->a_flag = 1;
+			show_available_slots = 1;
 			opts->o_flag = 1;
 		}
 
@@ -521,7 +521,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 
 	case DRC_TYPE_CPU:
 		/* The a,F,o,s options are not valid for cpu */
-		if (opts->a_flag || opts->delim || opts->o_flag ||
+		if (show_available_slots || opts->delim || opts->o_flag ||
 		    opts->s_name)
 			usage();
 
@@ -593,7 +593,7 @@ lsslot_chrp_pci(struct options *opts)
 		}
 
 		/* If aflag and slot is empty, then format the slot */
-		else if (opts->a_flag && (node->children == NULL))
+		else if (show_available_slots && (node->children == NULL))
 			insert_print_node(node);
 
 		/* If oflag and slot occupied, then format the slot */
