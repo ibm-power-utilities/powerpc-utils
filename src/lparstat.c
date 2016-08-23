@@ -203,7 +203,8 @@ int parse_lparcfg()
 int parse_proc_ints()
 {
 	FILE *f;
-	char line[512];
+	char *line;
+	size_t n = 0;
 	char *value;
 	struct sysentry *se;
 	long long int phint = 0;
@@ -214,7 +215,7 @@ int parse_proc_ints()
 		return -1;
 	}
 
-	while (fgets(line, 512, f) != NULL) {
+	while (getline(&line, &n, f) != -1) {
 		/* we just need the SPU line */
 		if (line[0] != 'S' || line[1] != 'P' || line[2] != 'U')
 			continue;
@@ -224,8 +225,11 @@ int parse_proc_ints()
 			v = atoi(value);
 			phint += v;
 		}
+
+		break;
 	}
 
+	free(line);
 	fclose(f);
 
 	se = get_sysentry("phint");
