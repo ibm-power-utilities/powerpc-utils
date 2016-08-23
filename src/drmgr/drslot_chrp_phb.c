@@ -74,12 +74,10 @@ static int phb_has_display_adapter(struct dr_node *phb)
 /**
  * query_phb
  *
- * @param op
  * @returns 0 if a remove would succeed, or if it's alreday been removed
  * @returns 1 if a remove would not succeed
  */
-static int
-query_phb(struct options *opts)
+static int query_phb(void)
 {
 	struct dr_node *phb;
 	int rc;
@@ -281,11 +279,9 @@ static int disable_os_hp_children(struct dr_node *phb)
 /**
  * remove_phb
  *
- * @param op
  * @returns 0 on success, !0 otherwise
  */
-static int
-remove_phb(struct options *opts)
+static int remove_phb(void)
 {
 	struct dr_node *phb;
 	struct dr_node *child;
@@ -422,11 +418,9 @@ static int acquire_phb(char *drc_name, struct dr_node **phb)
 /**
  * add_phb
  *
- * @param op
  * @returns 0 on success, !0 otherwise
  */
-static int
-add_phb(struct options *opts)
+static int add_phb(void)
 {
 	struct dr_node *phb = NULL;
 	int rc, n_children = 0;
@@ -501,8 +495,7 @@ phb_add_error:
 	return rc;
 }
 
-int
-valid_phb_options(struct options *opts)
+int valid_phb_options(void)
 {
 	/* The -s option can specify a drc name or drc index */
 	if (usr_drc_name && !strncmp(usr_drc_name, "0x", 2)) {
@@ -525,8 +518,7 @@ valid_phb_options(struct options *opts)
 	return 0;
 }
 
-int
-drslot_chrp_phb(struct options *opts)
+int drslot_chrp_phb(void)
 {
 	int rc = -1;
 
@@ -549,13 +541,13 @@ drslot_chrp_phb(struct options *opts)
 
 	switch(usr_action) {
 	case ADD:
-		rc = add_phb(opts);
+		rc = add_phb();
 		break;
 	case REMOVE:
-		rc = remove_phb(opts);
+		rc = remove_phb();
 		break;
 	case QUERY:
-		rc = query_phb(opts);
+		rc = query_phb();
 		break;
 	default:
 		rc = -1;

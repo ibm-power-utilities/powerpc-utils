@@ -168,7 +168,7 @@ find_slot(char *drc_name, struct dr_node *all_nodes)
 	return node;
 }
 
-static int check_card_presence(struct options *opts, struct dr_node *node)
+static int check_card_presence(struct dr_node *node)
 {
 	int state = EMPTY;
 	int i, keep_working;
@@ -210,22 +210,20 @@ static int check_card_presence(struct options *opts, struct dr_node *node)
  * maybe isolate and try sensing again. If we hit fatal errors, call
  * error_exit to clean up and exit the command.
  *
- * @param opts
  * @param slot pointer to slot we're checking
  * @param power_state state of power when we leave this routine
  * @param isolate_state state of isolation when we leave this routine
  * @returns EMPTY or PRESENT
  */
-static int
-card_present(struct options *opts, struct dr_node *node, int *power_state,
-	     int *isolate_state)
+static int card_present(struct dr_node *node, int *power_state,
+			int *isolate_state)
 {
 	int state, rc;
 
 	*power_state = POWER_OFF;	/* initialize */
 	*isolate_state = ISOLATE;
 
-	state = check_card_presence(opts, node);
+	state = check_card_presence(node);
 	if ((state == EMPTY) || (state == PRESENT))
 		return state;
 
@@ -278,7 +276,7 @@ card_present(struct options *opts, struct dr_node *node, int *power_state,
 		/* Now we have power on, and the unisolate is done
 		 * if it was needed. check for card again.
 		 */
-		state = check_card_presence(opts, node);
+		state = check_card_presence(node);
 		if ((state == EMPTY) || (state == PRESENT))
 			return state;
 
@@ -312,8 +310,7 @@ card_present(struct options *opts, struct dr_node *node, int *power_state,
  * connected to the slot.  If an adapter node exists, turn the LED on,
  * else turn if off.
  */
-static int
-do_identify(struct options *opts, struct dr_node *all_nodes)
+static int do_identify(struct dr_node *all_nodes)
 {
 	struct dr_node *node;
 	int usr_key;
@@ -361,12 +358,10 @@ do_identify(struct options *opts, struct dr_node *all_nodes)
  * If the OF tree cannot be updated, the slot is powered
  * off, isolated, and the LED is turned off.
  *
- * @param opts
  * @param slot
  * @returns 0 on success, !0 on failure
  */
-static int
-add_work(struct options *opts, struct dr_node *node)
+static int add_work(struct dr_node *node)
 {
 	int pow_state;	/* Tells us if power was turned on when	 */
 	int iso_state;	/* Tells us isolation state after 	 */
@@ -378,7 +373,7 @@ add_work(struct options *opts, struct dr_node *node)
 		return -1;
 
 	say(DEBUG, "is calling card_present\n");
-	rc = card_present(opts, node, &pow_state, &iso_state);
+	rc = card_present(node, &pow_state, &iso_state);
 	if (!rc) {
 		say(ERROR, "No PCI card was detected in the specified "
 		    "PCI slot.\n");
@@ -466,8 +461,7 @@ add_work(struct options *opts, struct dr_node *node)
  * attached devices then the Open Firmware device tree is
  * updated to reflect the new devices.
  */
-static int
-do_add(struct options *opts, struct dr_node *all_nodes)
+static int do_add(struct dr_node *all_nodes)
 {
 	struct dr_node *node;
 	int usr_key = USER_CONT;
@@ -560,7 +554,7 @@ do_add(struct options *opts, struct dr_node *all_nodes)
 	/* Call the routine which determines
 	 * what the user wants and does it.
 	 */
-	rc = add_work(opts, node);
+	rc = add_work(node);
 	if (rc)
 		return rc;
 
@@ -593,8 +587,7 @@ do_add(struct options *opts, struct dr_node *all_nodes)
  *
  * @returns pointer slot on success, NULL on failure
  */
-static struct dr_node *
-remove_work(struct options *opts, struct dr_node *all_nodes)
+static struct dr_node *remove_work(struct dr_node *all_nodes)
 {
 	struct dr_node *node;
 	struct dr_node *child;
@@ -744,13 +737,12 @@ remove_work(struct options *opts, struct dr_node *all_nodes)
  * If  the OF tree cannot be updated, the slot is powered
  * off, isolated, and the LED is turned off.
  */
-static int
-do_remove(struct options *opts, struct dr_node *all_nodes)
+static int do_remove(struct dr_node *all_nodes)
 {
 	struct dr_node *node;
 
 	/* Remove the specified slot and update the device-tree */
-	node = remove_work(opts, all_nodes);
+	node = remove_work(all_nodes);
 	if (node == NULL)
 		return -1;
 
@@ -793,8 +785,7 @@ do_remove(struct options *opts, struct dr_node *all_nodes)
  * If the OF tree cannot be updated, the slot is powered
  * off, isolated, and the LED is turned off.
  */
-static int
-do_replace(struct options *opts, struct dr_node *all_nodes)
+static int do_replace(struct dr_node *all_nodes)
 {
 	struct dr_node *repl_node;
 	int rc;
@@ -802,7 +793,7 @@ do_replace(struct options *opts, struct dr_node *all_nodes)
 	/* Call the routine which does the work of getting the node info,
 	 * then removing it from the OF device tree.
 	 */
-	repl_node = remove_work(opts, all_nodes);
+	repl_node = remove_work(all_nodes);
 	if (repl_node == NULL)
 		return -1;
 
@@ -834,7 +825,7 @@ do_replace(struct options *opts, struct dr_node *all_nodes)
 		}
 	}
 
-	rc = add_work(opts, repl_node);
+	rc = add_work(repl_node);
 	if (rc)
 		return rc;
 
@@ -850,8 +841,8 @@ do_replace(struct options *opts, struct dr_node *all_nodes)
 		/* disable prompting for post-processing */
 		usr_prompt = 0;;
 
-		repl_node = remove_work(opts, repl_node);
-		rc = add_work(opts, repl_node);
+		repl_node = remove_work(repl_node);
+		rc = add_work(repl_node);
 		if (!rc)
 			set_hp_adapter_status(PHP_CONFIG_ADAPTER,
 					      repl_node->drc_name);
@@ -862,8 +853,7 @@ do_replace(struct options *opts, struct dr_node *all_nodes)
 	return rc;
 }
 
-int
-valid_pci_options(struct options *opts)
+int valid_pci_options(void)
 {
 	if ((usr_action == IDENTIFY) && (!usr_slot_identification)) {
 		say(ERROR, "Cannot specify the -i and -I option together\n");
@@ -891,8 +881,7 @@ valid_pci_options(struct options *opts)
 	return 0;
 }
 
-int
-drslot_chrp_pci(struct options *opts)
+int drslot_chrp_pci(void)
 {
 	int rc;
 	struct dr_node *all_nodes;
@@ -912,16 +901,16 @@ drslot_chrp_pci(struct options *opts)
 
 	switch (usr_action) {
 	    case ADD:
-		rc = do_add(opts, all_nodes);
+		rc = do_add(all_nodes);
 		break;
 	    case REMOVE:
-		rc = do_remove(opts, all_nodes);
+		rc = do_remove(all_nodes);
 		break;
 	    case REPLACE:
-		rc = do_replace(opts, all_nodes);
+		rc = do_replace(all_nodes);
 		break;
 	    case IDENTIFY:
-		rc = do_identify(opts, all_nodes);
+		rc = do_identify(all_nodes);
 		break;
 	    default:
 		say(ERROR, "Invalid operation specified!\n");

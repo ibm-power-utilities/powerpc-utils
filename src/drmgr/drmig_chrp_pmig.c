@@ -541,8 +541,7 @@ devtree_update(void)
 	say(DEBUG, "leaving\n");
 }
 
-int
-valid_pmig_options(struct options *opts)
+int valid_pmig_options(void)
 {
 	if (!usr_p_option) {
 		say(ERROR, "A command must be specified\n");
@@ -679,8 +678,7 @@ void post_mobility_update(void)
 	}
 }
 	
-int
-drmig_chrp_pmig(struct options *opts)
+int drmig_chrp_pmig(void)
 {
 	int rc;
 	char sys_src[20];

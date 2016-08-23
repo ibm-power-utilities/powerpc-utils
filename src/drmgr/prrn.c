@@ -7,7 +7,6 @@
 
 int handle_prrn(void)
 {
-	struct options opts;
 	char fmt_drc[11];
 	char type[4];
 	char drc[9];
@@ -22,10 +21,7 @@ int handle_prrn(void)
 
 	set_output_level(4);
 
-	memset(&opts, 0, sizeof(opts));
-
 	while (fscanf(fd, "%3s %8s\n", type, drc) == 2) {
-		/* Set up options struct */
 		usr_drc_type = to_drc_type(type);
 		sprintf(fmt_drc, "0x%s", drc);
 		usr_drc_name = fmt_drc;
@@ -34,20 +30,20 @@ int handle_prrn(void)
 
 		if (!strcmp(type, "mem")) {
 			usr_action = REMOVE;
-			rc = drslot_chrp_mem(&opts);
+			rc = drslot_chrp_mem();
 			if (rc)
 				continue;
 
 			usr_action = ADD;
-			drslot_chrp_mem(&opts);
+			drslot_chrp_mem();
 		} else if (!strcmp(type, "cpu")) {
 			usr_action = REMOVE;
-			rc = drslot_chrp_cpu(&opts);
+			rc = drslot_chrp_cpu();
 			if (rc)
 				continue;
 
 			usr_action = ADD;
-			drslot_chrp_cpu(&opts);
+			drslot_chrp_cpu();
 		} else {
 			say(ERROR, "Device type \"%s\" not recognized.\n",
 			    type);

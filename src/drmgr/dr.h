@@ -57,9 +57,6 @@ void * __zalloc(size_t, const char *, int);
 #define DR_COMMAND		"drslot_chrp_%s"
 #define DRMIG_COMMAND		"drmig_chrp_%s"
 
-struct options {
-};
- 
 #define MAX(x,y)	(((x) > (y)) ? (x) : (y))
 
 /* Global User Specifications */
@@ -92,7 +89,7 @@ enum say_level { ERROR = 1, WARN, INFO, DEBUG, EXTRA_DEBUG};
 /* The follwing are defined in common.c */
 int say(enum say_level, char *, ...);
 void report_unknown_error(char *, int);
-int dr_init(struct options *opts);
+int dr_init(void);
 void dr_fini(void);
 void set_timeout(int);
 int drmgr_timed_out(void);
@@ -115,7 +112,7 @@ int sig_setup(void);
 char *node_type(struct dr_node *);
 
 struct dr_node *alloc_dr_node(struct dr_connector *, int, const char *);
-int update_sysparm(struct options *);
+int update_sysparm(void);
 
 int cpu_dlpar_capable(void);
 int mem_dlpar_capable(void);
@@ -132,32 +129,32 @@ void set_output_level(int);
 
 #define DR_BUF_SZ	256
 
-int drslot_chrp_slot(struct options *);
-int valid_slot_options(struct options *);
+int drslot_chrp_slot(void);
+int valid_slot_options(void);
 void slot_usage(char **);
 
-int drslot_chrp_cpu(struct options *);
-int valid_cpu_options(struct options *);
+int drslot_chrp_cpu(void);
+int valid_cpu_options(void);
 void cpu_usage(char **);
 
-int drslot_chrp_pci(struct options *);
-int valid_pci_options(struct options *);
+int drslot_chrp_pci(void);
+int valid_pci_options(void);
 void pci_usage(char **);
 
-int drslot_chrp_phb(struct options *);
-int valid_phb_options(struct options *);
+int drslot_chrp_phb(void);
+int valid_phb_options(void);
 void phb_usage(char **);
 
-int drslot_chrp_mem(struct options *);
-int valid_mem_options(struct options *);
+int drslot_chrp_mem(void);
+int valid_mem_options(void);
 void mem_usage(char **);
 
-int drslot_chrp_hea(struct options *);
-int valid_hea_options(struct options *);
+int drslot_chrp_hea(void);
+int valid_hea_options(void);
 void hea_usage(char **);
 
-int drmig_chrp_pmig(struct options *);
-int valid_pmig_options(struct options *);
+int drmig_chrp_pmig(void);
+int valid_pmig_options(void);
 void pmig_usage(char **);
 void phib_usage(char **);
 

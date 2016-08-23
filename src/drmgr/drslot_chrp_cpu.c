@@ -32,7 +32,7 @@
 #include "ofdt.h"
 
 struct cpu_operation;
-typedef int (cpu_op_func_t) (struct options *);
+typedef int (cpu_op_func_t) (void);
 
 struct parm_to_func {
 	char	*parmname;
@@ -102,8 +102,7 @@ static int cpu_count(struct dr_info *dr_info)
 	return cpu_count;
 }
 
-static struct dr_node *get_available_cpu_by_name(struct options *opts,
-						 struct dr_info *dr_info)
+static struct dr_node *get_available_cpu_by_name(struct dr_info *dr_info)
 {
 	struct dr_node *cpu;
 
@@ -131,8 +130,7 @@ static struct dr_node *get_available_cpu_by_name(struct options *opts,
 	return cpu;
 }
 	
-static struct dr_node *get_available_cpu_by_index(struct options *opts,
-						  struct dr_info *dr_info)
+static struct dr_node *get_available_cpu_by_index(struct dr_info *dr_info)
 {
 	struct dr_node *cpu;
 
@@ -162,8 +160,7 @@ static struct dr_node *get_available_cpu_by_index(struct options *opts,
 	return cpu;
 }
 
-static struct dr_node *get_next_available_cpu(struct options *opts,
-					      struct dr_info *dr_info)
+static struct dr_node *get_next_available_cpu(struct dr_info *dr_info)
 {
 	struct dr_node *cpu = NULL;
 	struct dr_node *survivor = NULL;
@@ -203,21 +200,19 @@ static struct dr_node *get_next_available_cpu(struct options *opts,
  * Find an available cpu to that we can add or remove, depending
  * on the request.
  *
- * @param opts options passed in to drmgr
  * @param dr_info cpu drc information
  * @returns pointer to cpu on success, NULL on failure
  */
-struct dr_node *
-get_available_cpu(struct options *opts, struct dr_info *dr_info)
+struct dr_node *get_available_cpu(struct dr_info *dr_info)
 {
 	struct dr_node *cpu = NULL;
 
 	if (usr_drc_name)
-		cpu = get_available_cpu_by_name(opts, dr_info);
+		cpu = get_available_cpu_by_name(dr_info);
 	else if (usr_drc_index)
-		cpu = get_available_cpu_by_index(opts, dr_info);
+		cpu = get_available_cpu_by_index(dr_info);
 	else
-		cpu = get_next_available_cpu(opts, dr_info);
+		cpu = get_next_available_cpu(dr_info);
 
 	return cpu;
 }
@@ -236,8 +231,7 @@ get_available_cpu(struct options *opts, struct dr_info *dr_info)
  * @param nr_cpus
  * @returns 0 on success, !0 otherwise
  */
-static int
-add_cpus(struct options *opts, struct dr_info *dr_info)
+static int add_cpus(struct dr_info *dr_info)
 {
 	int rc = -1;
 	uint count;
@@ -248,7 +242,7 @@ add_cpus(struct options *opts, struct dr_info *dr_info)
 		if (drmgr_timed_out())
 			break;
 
-		cpu = get_available_cpu(opts, dr_info);
+		cpu = get_available_cpu(dr_info);
 		if (!cpu)
 			break;
 
@@ -292,8 +286,7 @@ add_cpus(struct options *opts, struct dr_info *dr_info)
  * @param nr_cpus
  * @returns 0 on success, !0 otherwise
  */
-static int
-remove_cpus(struct options *opts, struct dr_info *dr_info)
+static int remove_cpus(struct dr_info *dr_info)
 {
 	int rc = 0;
 	uint count = 0;
@@ -309,7 +302,7 @@ remove_cpus(struct options *opts, struct dr_info *dr_info)
 			break;
 		}
 
-		cpu = get_available_cpu(opts, dr_info);
+		cpu = get_available_cpu(dr_info);
 		if (!cpu)
 			break;
 
@@ -337,11 +330,9 @@ remove_cpus(struct options *opts, struct dr_info *dr_info)
  * smt_thread_func
  * @brief Act upon logical cpus/threads
  *
- * @param opts
  * @returns 0 on success, !0 otherwise
  */
-static int
-smt_threads_func(struct options *opts, struct dr_info *dr_info)
+static int smt_threads_func(struct dr_info *dr_info)
 {
 	int rc;
 	struct dr_node *cpu;
@@ -391,8 +382,7 @@ smt_threads_func(struct options *opts, struct dr_info *dr_info)
 	return rc;
 }
 
-int
-valid_cpu_options(struct options *opts)
+int valid_cpu_options(void)
 {
 	/* default to a quantity of 1 */
 	if (usr_drc_count == 0)
@@ -413,8 +403,7 @@ valid_cpu_options(struct options *opts)
 	return 0;
 }
 
-int
-drslot_chrp_cpu(struct options *opts)
+int drslot_chrp_cpu(void)
 {
 	struct dr_info dr_info;
 	int rc;
@@ -427,7 +416,7 @@ drslot_chrp_cpu(struct options *opts)
 
 	if (usr_p_option && (!strcmp(usr_p_option, "ent_capacity") ||
 	    !strcmp(usr_p_option, "variable_weight"))) {
-		rc = update_sysparm(opts);
+		rc = update_sysparm();
 		if (rc)
 			say(ERROR, "Could not update system parameter "
 			    "%s\n", usr_p_option);
@@ -448,17 +437,17 @@ drslot_chrp_cpu(struct options *opts)
 		usr_drc_count = 1;
 
 	if (usr_p_option && !strcmp(usr_p_option, "smt_threads")) {
-		rc = smt_threads_func(opts, &dr_info);
+		rc = smt_threads_func(&dr_info);
 		free_cpu_drc_info(&dr_info);
 		return rc;
 	}
 
 	switch (usr_action) {
 	case ADD:
-		rc = add_cpus(opts, &dr_info);
+		rc = add_cpus(&dr_info);
 		break;
 	case REMOVE:
-		rc = remove_cpus(opts, &dr_info);
+		rc = remove_cpus(&dr_info);
 		break;
 	default:
 		rc = -1;

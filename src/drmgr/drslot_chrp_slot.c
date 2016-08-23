@@ -39,8 +39,7 @@ slot_usage(char **pusage)
 	*pusage = usagestr;
 }
 
-static int
-query_slot(struct dr_node *node, struct options *opts)
+static int query_slot(struct dr_node *node)
 {
 	if (node == NULL)
 		return RC_NONEXISTENT;
@@ -211,8 +210,7 @@ acquire_slot(char *drc_name, struct dr_node **slot)
  * add_slot
  *
  */
-static int
-add_slot(struct options *opts)
+static int add_slot()
 {
 	struct dr_node *node = NULL;
 	int rc, n_children = 0;
@@ -290,8 +288,7 @@ slot_add_exit:
 	return rc;
 }
 
-int
-valid_slot_options(struct options *opts)
+int valid_slot_options(void)
 {
 	if (!usr_drc_name) {
 		say(ERROR, "A drc name must be specified\n");
@@ -308,8 +305,7 @@ valid_slot_options(struct options *opts)
 	return 0;
 }
 
-int
-drslot_chrp_slot(struct options *opts)
+int drslot_chrp_slot(void)
 {
 	struct dr_node *node;
 	int rc;
@@ -331,7 +327,7 @@ drslot_chrp_slot(struct options *opts)
 			free_node(node);
 			node = NULL;
 
-			rc = add_slot(opts);
+			rc = add_slot();
 		}
 		break;
 
@@ -350,7 +346,7 @@ drslot_chrp_slot(struct options *opts)
 		break;
 
 	    case QUERY:
-		rc = query_slot(node, opts);
+		rc = query_slot(node);
 		break;
 
 	    default:

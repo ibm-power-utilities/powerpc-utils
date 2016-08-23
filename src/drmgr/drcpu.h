@@ -63,6 +63,6 @@ struct cache_info * cache_get_dependent_cache(struct cache_info *,
 					      struct dr_info *);
 int release_cpu(struct dr_node *, struct dr_info *);
 int probe_cpu(struct dr_node *, struct dr_info *);
-struct dr_node *get_available_cpu(struct options *, struct dr_info *);
+struct dr_node *get_available_cpu(struct dr_info *);
 
 #endif /* _H_DRCPU */

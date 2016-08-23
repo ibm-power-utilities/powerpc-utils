@@ -35,7 +35,7 @@
 int output_level = 0;
 int log_fd = 0;
 
-extern int lsslot_chrp_cpu(struct options *);
+extern int lsslot_chrp_cpu(void);
 
 /**
  * struct print_node
@@ -407,10 +407,8 @@ print_phpslot_line(struct print_node *pnode, char *fmt)
  *
  * @param argc
  * @param argv
- * @param opts
  */
-static void
-parse_options(int argc, char *argv[], struct options *opts)
+static void parse_options(int argc, char *argv[])
 {
 	int c;
 
@@ -543,11 +541,9 @@ parse_options(int argc, char *argv[], struct options *opts)
  * lsslot_chrp_pci
  * @brief main entry point for lsslot command
  *
- * @param opts
  * @returns 0 on success, !0 otherwise
  */
-int
-lsslot_chrp_pci(struct options *opts)
+int lsslot_chrp_pci(void)
 {
 	struct dr_node *all_nodes;	/* Pointer to list of all node info */
 	struct dr_node *node;	/* Used to traverse list of node info */
@@ -666,11 +662,9 @@ lsslot_pci_exit:
  * lsslot_chrp_phb
  * @brief Main entry point for handling lsslot_chrp_phb command
  *
- * @param opts pointer to options struct
  * @returns 0 on success, !0 otherwise
  */
-int
-lsslot_chrp_phb(struct options *opts)
+int lsslot_chrp_phb(void)
 {
 	struct dr_node *phb_list;
 	struct dr_node *phb;
@@ -715,7 +709,7 @@ lsslot_chrp_phb(struct options *opts)
 	return 0;
 }
 
-int print_drconf_mem(struct options *opts, struct lmb_list_head *lmb_list)
+int print_drconf_mem(struct lmb_list_head *lmb_list)
 {
 	struct dr_node *lmb;
 	struct mem_scn *scn;
@@ -795,8 +789,7 @@ int print_drconf_mem(struct options *opts, struct lmb_list_head *lmb_list)
 	return 0;
 }
 
-int
-lsslot_chrp_mem(struct options *opts)
+int lsslot_chrp_mem(void)
 {
 	struct lmb_list_head *lmb_list;
 	struct dr_node *lmb;
@@ -811,7 +804,7 @@ lsslot_chrp_mem(struct options *opts)
 	}
 	
 	if (lmb_list->drconf_buf) {
-		print_drconf_mem(opts, lmb_list);
+		print_drconf_mem(lmb_list);
 	} else {
 		printf("lmb size: 0x%x\n", lmb_list->lmbs->lmb_size);
 		printf("%-20s  %-5s  %c  %s\n", "Memory Node", "Name", 'R',
@@ -854,11 +847,9 @@ lsslot_chrp_mem(struct options *opts)
  * lsslot_chrp_port
  * @brief Print LHEA ports based on command line options
  *
- * @param opts
  * @returns 0 on success, !0 otherwise
  */
-int
-lsslot_chrp_port(struct options *opts)
+int lsslot_chrp_port(void)
 {
 	struct dr_node *all_nodes;	/* Pointer to list of all node info */
 	struct dr_node *node;		/* Used to traverse list of node info */
@@ -942,7 +933,6 @@ lsslot_port_exit:
 int
 main(int argc, char *argv[])
 {
-	struct options opts;
 	int rc;
 
 	switch (get_platform()) {
@@ -957,11 +947,9 @@ main(int argc, char *argv[])
 	if (! valid_platform("chrp"))
 		exit(1);
 
-	memset(&opts, 0, sizeof(opts));
-
 	/* default to DRSLOT type */
 	usr_drc_type = DRC_TYPE_SLOT;
-	parse_options(argc, argv, &opts);
+	parse_options(argc, argv);
 
 	rc = dr_lock();
 	if (rc) {
@@ -973,19 +961,19 @@ main(int argc, char *argv[])
 	switch (usr_drc_type) {
 	case DRC_TYPE_SLOT:
 	case DRC_TYPE_PCI:
-		rc = lsslot_chrp_pci(&opts);
+		rc = lsslot_chrp_pci();
 		break;
 	case DRC_TYPE_PHB:
-		rc = lsslot_chrp_phb(&opts);
+		rc = lsslot_chrp_phb();
 		break;
 	case DRC_TYPE_CPU:
-		rc = lsslot_chrp_cpu(&opts);
+		rc = lsslot_chrp_cpu();
 		break;
 	case DRC_TYPE_MEM:
-		rc = lsslot_chrp_mem(&opts);
+		rc = lsslot_chrp_mem();
 		break;
 	case DRC_TYPE_PORT:
-		rc = lsslot_chrp_port(&opts);
+		rc = lsslot_chrp_port();
 		break;
 	default:
 		break;

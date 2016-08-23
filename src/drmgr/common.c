@@ -107,7 +107,7 @@ void * __zalloc(size_t size, const char *func, int line)
 	return data;
 }
 
-static int check_kmods(struct options *opts)
+static int check_kmods(void)
 {
 	struct stat sbuf;
 	int rc;
@@ -158,7 +158,7 @@ static int check_kmods(struct options *opts)
  * @brief Initialization routine for drmgr and lsslot
  *
  */
-inline int dr_init(struct options *opts)
+inline int dr_init(void)
 {
 	int rc;
 
@@ -195,7 +195,7 @@ inline int dr_init(struct options *opts)
 		return -1;
 	}
 
-	rc = check_kmods(opts);
+	rc = check_kmods();
 	if (rc) {
 		if (log_fd)
 			close(log_fd);
@@ -1157,8 +1157,7 @@ static struct sysparm_mapping mem_sysparm_table[] = {
  * @param parm
  * @returns 0 on success, !0 otherwise
  */
-int
-update_sysparm(struct options *opts)
+int update_sysparm(void)
 {
 	struct sysparm_mapping *sysparm_table;
 	unsigned long curval;

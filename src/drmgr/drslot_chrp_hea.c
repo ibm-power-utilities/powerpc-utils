@@ -145,11 +145,9 @@ hotplug_port(int action, struct dr_node *hea, struct dr_node *port)
  * remove_port
  * @brief Remove the HEA adapater or port specified by the options
  *
- * @param opts command options
  * @returns 0 on success, !0 otherwise
  */
-static int
-remove_port(struct options *opts)
+static int remove_port(void)
 {
 	struct dr_node *hea;
 	struct dr_node *port, *tmp;
@@ -225,11 +223,9 @@ remove_port(struct options *opts)
  * remove_hea
  * @brief Remove the HEA adapater or port specified by the options
  *
- * @param opts command options
  * @returns 0 on success, !0 otherwise
  */
-static int
-remove_hea(struct options *opts)
+static int remove_hea(void)
 {
 	struct dr_node *hea;
 	int rc;
@@ -256,11 +252,9 @@ remove_hea(struct options *opts)
  * add_slot
  * @bried Add the HEA adapter or port specified by the options
  *
- * @param opts command options
  * @returns 0 on success, !0 otherwise
  */
-static int
-add_slot(struct options *opts)
+static int add_slot(void)
 {
 	struct dr_connector drc;
 	struct of_node *of_nodes;
@@ -325,8 +319,7 @@ add_slot(struct options *opts)
 	return rc;
 }
 
-int
-valid_hea_options(struct options *opts)
+int valid_hea_options(void)
 {
 	if (!usr_drc_name) {
 		say(ERROR, "A drc name  must be specified\n");
@@ -343,8 +336,7 @@ valid_hea_options(struct options *opts)
 	return 0;
 }
 
-int
-drslot_chrp_hea(struct options *opts)
+int drslot_chrp_hea(void)
 {
 	int rc;
 
@@ -356,14 +348,14 @@ drslot_chrp_hea(struct options *opts)
 
 	switch (usr_action) {
 	    case ADD:
-		rc = add_slot(opts);
+		rc = add_slot();
 		break;
 
 	    case REMOVE:
 		if (usr_drc_type == DRC_TYPE_PORT)
-			rc = remove_port(opts);
+			rc = remove_port();
 		else if (usr_drc_type == DRC_TYPE_SLOT)
-			rc = remove_hea(opts);
+			rc = remove_hea();
 		else {
 			say(ERROR, "The connector type %d is not supported.\n",
 			    usr_drc_type);

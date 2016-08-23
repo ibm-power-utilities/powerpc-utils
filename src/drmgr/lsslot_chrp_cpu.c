@@ -122,11 +122,9 @@ list_cpus_and_caches(struct dr_info *dr_info)
  * lsslot_chrp_cpu
  * @brief main entry point for lsslot_chrp_cpu command
  *
- * @param opts
  * @returns 0 on success, !0 otherwise
  */
-int
-lsslot_chrp_cpu(struct options *opts)
+int lsslot_chrp_cpu(void)
 {
 	struct stat	sb;
 	struct dr_info dr_info;

@@ -533,8 +533,7 @@ get_lmbs(unsigned int sort)
  * @param start_lmb first lmbs to be searched for an available lmb
  * @returns pointer to avaiable lmb on success, NULL otherwise
  */
-static struct dr_node *
-get_available_lmb(struct options *opts, struct dr_node *start_lmb)
+static struct dr_node *get_available_lmb(struct dr_node *start_lmb)
 {
 	uint32_t drc_index;
 	struct dr_node *lmb;
@@ -1028,8 +1027,7 @@ set_lmb_state(struct dr_node *lmb, int state)
  * @param lmb_list list of lmbs on the partition
  * @returns 0 on success, !0 otherwise
  */
-static int
-add_lmbs(struct options *opts, struct lmb_list_head *lmb_list)
+static int add_lmbs(struct lmb_list_head *lmb_list)
 {
 	int rc = 0;
 	struct dr_node *lmb_head = lmb_list->lmbs;
@@ -1040,7 +1038,7 @@ add_lmbs(struct options *opts, struct lmb_list_head *lmb_list)
 		if (drmgr_timed_out())
 			break;
 
-		lmb = get_available_lmb(opts, lmb_head);
+		lmb = get_available_lmb(lmb_head);
 		if (lmb == NULL)
 			return -1;
 
@@ -1081,11 +1079,9 @@ add_lmbs(struct options *opts, struct lmb_list_head *lmb_list)
  * mem_add
  * @brief Add memory to the partition
  *
- * @param opts user options
  * @returns 0 on success, !0 otherwise
  */
-static int
-mem_add(struct options *opts)
+static int mem_add(void)
 {
 	struct lmb_list_head *lmb_list;
 	int rc;
@@ -1098,7 +1094,7 @@ mem_add(struct options *opts)
 	}
 
 	say(DEBUG, "Attempting to add %d LMBs\n", usr_drc_count);
-	rc = add_lmbs(opts, lmb_list);
+	rc = add_lmbs(lmb_list);
 
 	say(DEBUG, "Added %d of %d requested LMB(s)\n", lmb_list->lmbs_modified,
 	    usr_drc_count);
@@ -1112,12 +1108,10 @@ mem_add(struct options *opts)
  * remove_lmbs
  *
  * @param nr_lmbs
- * @param opts
  * @param lmb_list
  * @return 0 on success, !0 otherwise
  */
-static int
-remove_lmbs(struct options *opts, struct lmb_list_head *lmb_list)
+static int remove_lmbs(struct lmb_list_head *lmb_list)
 {
 	struct dr_node *lmb_head = lmb_list->lmbs;
 	struct dr_node *lmb;
@@ -1127,7 +1121,7 @@ remove_lmbs(struct options *opts, struct lmb_list_head *lmb_list)
 		if (drmgr_timed_out())
 			break;
 
-		lmb = get_available_lmb(opts, lmb_head);
+		lmb = get_available_lmb(lmb_head);
 		if (!lmb)
 			return -1;
 
@@ -1173,11 +1167,9 @@ remove_lmbs(struct options *opts, struct lmb_list_head *lmb_list)
 /**
  * mem_remove
  *
- * @param opts
  * @return 0 on success, !0 otherwise
  */
-static int
-mem_remove(struct options *opts)
+static int mem_remove(void)
 {
 	struct lmb_list_head *lmb_list;
 	struct dr_node *lmb;
@@ -1218,7 +1210,7 @@ mem_remove(struct options *opts)
 
 	if (!rc) {
 		say(DEBUG, "Attempting removal of %d LMBs\n", usr_drc_count);
-		rc = remove_lmbs(opts, lmb_list);
+		rc = remove_lmbs(lmb_list);
 	}
 
 	say(ERROR, "Removed %d of %d requested LMB(s)\n",
@@ -1298,8 +1290,7 @@ static int ehea_compatable(void)
 	return rc;
 }
 
-int
-valid_mem_options(struct options *opts)
+int valid_mem_options(void)
 {
 	/* default to a quantity of 1 */
 	if (usr_drc_count == 0)
@@ -1320,7 +1311,7 @@ valid_mem_options(struct options *opts)
 	return 0;
 }
 
-int do_mem_kernel_dlpar(struct options *opts)
+int do_mem_kernel_dlpar(void)
 {
 	char cmdbuf[128];
 	int rc, offset;
@@ -1359,14 +1350,13 @@ int do_mem_kernel_dlpar(struct options *opts)
 	return rc;
 }
 
-int
-drslot_chrp_mem(struct options *opts)
+int drslot_chrp_mem(void)
 {
 	int rc = -1;
 
 	if (usr_p_option) {
 		/* This is a entitlement or weight change */
-		return update_sysparm(opts);
+		return update_sysparm();
 	}
 
 	if (! mem_dlpar_capable() || ! ehea_compatable()) {
@@ -1382,12 +1372,12 @@ drslot_chrp_mem(struct options *opts)
 		usr_drc_count = 1;
 
 	if (kernel_dlpar_exists()) {
-		rc = do_mem_kernel_dlpar(opts);
+		rc = do_mem_kernel_dlpar();
 	} else {
 		if (usr_action == ADD)
-			rc = mem_add(opts);
+			rc = mem_add();
 		else if (usr_action == REMOVE)
-			rc = mem_remove(opts);
+			rc = mem_remove();
 	}
 
 	return rc;

@@ -42,13 +42,13 @@ static int display_capabilities = 0;
 static int handle_prrn_event = 0;
 static int display_usage = 0;
 
-typedef int (cmd_func_t)(struct options *);
-typedef int (cmd_args_t)(struct options *);
+typedef int (cmd_func_t)(void);
+typedef int (cmd_args_t)(void);
 typedef void (cmd_usage_t)(char **);
 
-int drmgr(struct options *);
+int drmgr(void);
 void drmgr_usage(char **);
-int valid_drmgr_options(struct options *);
+int valid_drmgr_options(void);
 
 struct command {
 	cmd_func_t	*func;
@@ -141,8 +141,7 @@ drmgr_usage(char **pusage)
 	*pusage = usagestr;
 }
 
-int
-valid_drmgr_options(struct options *opts)
+int valid_drmgr_options(void)
 {
 
 	if (usr_drc_type == DRC_TYPE_NONE) {
@@ -173,14 +172,11 @@ valid_drmgr_options(struct options *opts)
 	return 0;
 }
 
-int
-parse_options(int argc, char *argv[], struct options *opts)
+int parse_options(int argc, char *argv[])
 {
 	int c;
 	int option_indx;
 	int option_found = 0;
-
-	memset(opts, 0, sizeof(*opts));
 
 	/* disable getopt error messages */
 	opterr = 0;
@@ -272,8 +268,7 @@ parse_options(int argc, char *argv[], struct options *opts)
 	return 0;
 }
 
-struct command *
-get_command(struct options *opts)
+struct command *get_command(void)
 {
 	/* Unfortunately, the connector type specified doesn't always result
 	 * in a 1-to-1 relationship with the resulting command to run so we
@@ -323,14 +318,13 @@ get_command(struct options *opts)
 	return &commands[DRMGR];
 }
 
-int drmgr(struct options *opts) {
+int drmgr(void) {
 	say(ERROR, "Invalid command: %d\n", usr_action);
 	return -1;
 }
 
 int main(int argc, char *argv[])
 {
-	struct options opts;
 	char log_msg[DR_PATH_MAX];
 	struct command *command;
 	int i, rc, offset;
@@ -343,9 +337,9 @@ int main(int argc, char *argv[])
 	   exit(1);
 	}
 
-	parse_options(argc, argv, &opts);
+	parse_options(argc, argv);
 
-	rc = dr_init(&opts);
+	rc = dr_init();
 	if (rc) {
 		if (handle_prrn_event) {
 			say(ERROR, "Failed to handle PRRN event\n");
@@ -369,7 +363,7 @@ int main(int argc, char *argv[])
 		return rc;
 	}
 
-	command = get_command(&opts);
+	command = get_command();
 
 	if (display_usage) {
 		command_usage(command);
@@ -378,7 +372,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Validate the options for the action we want to perform */
-	rc = command->validate_options(&opts);
+	rc = command->validate_options();
 	if (rc) {
 		dr_fini();
 		return -1;
@@ -402,7 +396,7 @@ int main(int argc, char *argv[])
 	say(DEBUG, "%s\n", log_msg);
 
 	/* Now, using the actual command, call out to the proper handler */
-	rc = command->func(&opts);
+	rc = command->func();
 
 	dr_fini();
 	return rc;
