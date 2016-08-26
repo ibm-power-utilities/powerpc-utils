@@ -203,7 +203,7 @@ int parse_lparcfg()
 int parse_proc_ints()
 {
 	FILE *f;
-	char *line;
+	char *line, *p;
 	size_t n = 0;
 	char *value;
 	struct sysentry *se;
@@ -216,11 +216,15 @@ int parse_proc_ints()
 	}
 
 	while (getline(&line, &n, f) != -1) {
+		p = line;
+		while (*p == ' ')
+			p++;
+
 		/* we just need the SPU line */
-		if (line[0] != 'S' || line[1] != 'P' || line[2] != 'U')
+		if (p[0] != 'S' || p[1] != 'P' || p[2] != 'U')
 			continue;
 
-		for (value = &line[5]; value[2] != 'S'; value += 11) {
+		for (value = &p[5]; value[2] != 'S'; value += 11) {
 			int v;
 			v = atoi(value);
 			phint += v;
