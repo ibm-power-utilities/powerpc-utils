@@ -55,6 +55,7 @@ Utilities for maintaining and servicing PowerPC systems.
 /usr/sbin/lsslot
 /usr/sbin/lsprop
 /usr/sbin/nvram
+/usr/sbin/nvsetenv
 /usr/sbin/snap
 /usr/sbin/bootlist
 /usr/sbin/ofpathname
