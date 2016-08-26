@@ -157,7 +157,8 @@ noinst_HEADERS += \
 	src/drmgr/drpci.h \
 	src/drmgr/rtas_calls.h \
 	src/drmgr/ofdt.h \
-	src/drmgr/rtas_calls.h
+	src/drmgr/rtas_calls.h \
+	src/drmgr/options.c
 
 src_drmgr_drmgr_LDADD = -lrtas
 
@@ -171,6 +172,9 @@ src_drmgr_lsslot_SOURCES = \
 	src/drmgr/rtas_calls.c \
 	src/drmgr/drslot_chrp_mem.c \
 	$(pseries_platform_SOURCES)
+
+noinst_HEADERS += \
+	src/drmgr/options.c
 
 src_drmgr_lsslot_LDADD = -lrtas
 
