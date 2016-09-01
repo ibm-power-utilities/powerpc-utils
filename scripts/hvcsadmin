@@ -481,7 +481,7 @@ sub displaybypath( $ ) {
     close INDEX;
 
     #/sys/devices/vio/30000005
-    my ($vty_server) = $path =~ /.+(3\d+)$/;
+    my ($vty_server) = $path =~ /.+(3[[:xdigit:]]+)$/;
 
     print "vty-server\@$vty_server partition:$partition slot:$slot /dev/$driver$device_index vterm-state:$vterm_state\n";
 }
