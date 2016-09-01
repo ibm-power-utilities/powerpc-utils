@@ -21,6 +21,7 @@ sbin_SCRIPTS = \
 	scripts/ls-veth \
 	scripts/ls-vscsi \
 	scripts/ls-vdev \
+	scripts/nvsetenv \
 	scripts/pseries_platform
 
 man_MANS = \
