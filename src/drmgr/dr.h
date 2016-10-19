@@ -83,6 +83,7 @@ extern int show_cpus_and_caches;
 extern int show_occupied_slots;
 extern int show_caches;
 extern char *usr_delimiter;
+extern int pci_hotplug_only;
 
 enum say_level { ERROR = 1, WARN, INFO, DEBUG, EXTRA_DEBUG};
 

@@ -1325,30 +1325,34 @@ acquire_hp_resource(struct dr_connector *drc, char *of_path)
 	int rc;
 
 	state = dr_entity_sense(drc->index);
-	if (state == PRESENT || state == NEED_POWER || state == PWR_ONLY) {
-		rc = set_power(drc->powerdomain, POWER_ON);
-		if (rc) {
-			say(ERROR, "set power failed for 0x%x\n",
-			    drc->powerdomain);
-			return progress;
+	if (!pci_hotplug_only) {
+		if (state == PRESENT || state == NEED_POWER ||
+		    state == PWR_ONLY) {
+			rc = set_power(drc->powerdomain, POWER_ON);
+			if (rc) {
+				say(ERROR, "set power failed for 0x%x\n",
+				    drc->powerdomain);
+				return progress;
+			}
+
+			progress = ACQUIRE_HP_SPL;
+			if (state == PWR_ONLY)
+				state = dr_entity_sense(drc->index);
 		}
 
-		progress = ACQUIRE_HP_SPL;
-		if (state == PWR_ONLY)
-			state = dr_entity_sense(drc->index);
-	}
+		if (state == PRESENT || state == NEED_POWER) {
+			rc = rtas_set_indicator(ISOLATION_STATE, drc->index,
+						UNISOLATE);
+			if (rc) {
+				say(ERROR, "set ind failed for 0x%x\n",
+				    drc->index);
+				return progress;
+			}
 
-	if (state == PRESENT || state == NEED_POWER) {
-		rc = rtas_set_indicator(ISOLATION_STATE, drc->index,
-				UNISOLATE);
-		if (rc) {
-			say(ERROR, "set ind failed for 0x%x\n", drc->index);
-			return progress;
+			progress = ACQUIRE_HP_UNISO;
+			if (state == NEED_POWER)
+				state = dr_entity_sense(drc->index);
 		}
-
-		progress = ACQUIRE_HP_UNISO;
-		if (state == NEED_POWER)
-			state = dr_entity_sense(drc->index);
 	}
 
 	if (state < 0) {
@@ -1425,6 +1429,9 @@ release_hp_resource(struct dr_node *node)
 		    node->drc_index);
 		return -EIO;
 	}
+
+	if (pci_hotplug_only)
+		return 0;
 
 	rc = rtas_set_indicator(DR_INDICATOR, node->drc_index, LED_OFF);
 	if (rc) {

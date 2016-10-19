@@ -447,6 +447,69 @@ static int add_work(struct dr_node *node)
 }
 
 /**
+ * do_insert_card_work
+ *
+ * Performs the steps required to set the isolation state and turn the
+ * power to a slot off. The prompts the user to insert the new card
+ * into the slot.
+ */
+static int do_insert_card_work(struct dr_node *node)
+{
+	int rc;
+
+	/* Now it's time to isolate, power off, set the action LED, and
+	 * prompt the user to put the card in.
+	 */
+	say(DEBUG, "is calling rtas_set_indicator(ISOLATE index 0x%x)\n",
+	    node->drc_index);
+
+	rc = rtas_set_indicator(ISOLATION_STATE, node->drc_index, ISOLATE);
+	if (rc) {
+		if (rc == HW_ERROR)
+			say(ERROR, "%s", hw_error);
+		else
+			say(ERROR, "%s", sw_error);
+
+		set_power(node->drc_power, POWER_OFF);
+		return -1;
+	}
+
+	say(DEBUG, "is calling set_power(POWER_OFF index 0x%x, "
+	    "power_domain 0x%x)\n", node->drc_index, node->drc_power);
+
+	rc = set_power(node->drc_power, POWER_OFF);
+	if (rc) {
+		if (rc == HW_ERROR)
+			say(ERROR, "%s", hw_error);
+		else
+			say(ERROR, "%s", sw_error);
+
+		return -1;
+	}
+
+	if (usr_prompt) {
+		/* Prompt user to put in card and to press
+		 * Enter to continue or other key to exit.
+		 */
+		if (process_led(node, LED_ACTION))
+			return -1;
+
+		printf("The visual indicator for the specified PCI slot has\n"
+			"been set to the action state. Insert the PCI card\n"
+			"into the identified slot, connect any devices to be\n"
+			"configured and press Enter to continue. Enter x to "
+			"exit.\n");
+
+		if (!(getchar() == '\n')) {
+			process_led(node, LED_OFF);
+			return 0;
+		}
+	}
+
+	return 0;
+}
+
+/**
  * do_add
  *
  * Prepares a PCI hot plug slot for adding an adapter, then
@@ -499,56 +562,10 @@ static int do_add(struct dr_node *all_nodes)
 		return -1;
 	}
 
-
-	/* Now it's time to isolate, power off, set the
-	 * action LED, and prompt the user to put the
-	 * card in.
-	 */
-
-	say(DEBUG, "is calling rtas_set_indicator(ISOLATE index 0x%x)\n",
-	    node->drc_index);
-
-	rc = rtas_set_indicator(ISOLATION_STATE, node->drc_index, ISOLATE);
-	if (rc) {
-		if (rc == HW_ERROR)
-			say(ERROR, "%s", hw_error);
-		else
-			say(ERROR, "%s", sw_error);
-
-		set_power(node->drc_power, POWER_OFF);
-		return -1;
-	}
-
-	say(DEBUG, "is calling set_power(POWER_OFF index 0x%x, "
-	    "power_domain 0x%x) \n", node->drc_index, node->drc_power);
-
-	rc = set_power(node->drc_power, POWER_OFF);
-	if (rc) {
-		if (rc == HW_ERROR)
-			say(ERROR, "%s", hw_error);
-		else
-			say(ERROR, "%s", sw_error);
-
-		return -1;
-	}
-
-	if (usr_prompt) {
-		/* Prompt user to put in card and to press
-		 * Enter to continue or other key to exit.
-		 */
-		if (process_led(node, LED_ACTION))
-			return -1;
-
-		printf("The visual indicator for the specified PCI slot has\n"
-			"been set to the action state. Insert the PCI card\n"
-			"into the identified slot, connect any devices to be\n"
-			"configured and press Enter to continue. Enter x to "
-			"exit.\n");
-
-		if (!(getchar() == '\n')) {
-			process_led(node, LED_OFF);
-			return 0;
-		}
+	if (!pci_hotplug_only) {
+		rc = do_insert_card_work(node);
+		if (rc)
+			return rc;
 	}
 
 	/* Call the routine which determines
@@ -683,6 +700,9 @@ static struct dr_node *remove_work(struct dr_node *all_nodes)
 			return NULL;
 		}
 	}
+
+	if (pci_hotplug_only)
+		return node;
 
 	/* We have to isolate and power off before
 	 * allowing the user to physically remove

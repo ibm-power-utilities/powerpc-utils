@@ -55,6 +55,9 @@ int pci_virtio = 0;
 /* user specified file for handling prrn events */
 char *prrn_filename = NULL;
 
+/* perform hotplug only operation */
+int pci_hotplug_only = 0;
+
 /* lsslot specific options */
 int show_available_slots = 0;
 int show_cpus_and_caches = 0;

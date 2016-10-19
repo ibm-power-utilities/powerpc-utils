@@ -31,7 +31,7 @@
 
 #include "options.c"
 
-#define DRMGR_ARGS	"ac:d:Iimnp:P:Qq:Rrs:w:t:hCV"
+#define DRMGR_ARGS	"ac:d:Iimnp:P:Qq:Rrs:w:t:hCVH"
 
 int output_level = 1; /* default to lowest output level */
 
@@ -249,6 +249,9 @@ int parse_options(int argc, char *argv[])
 		    	display_usage = 1;
 		    	return 0;
 		    	break;
+		    case 'H':
+			pci_hotplug_only = 1;
+			break;
 		    case 't': /* target lpid (pmig, not used) */
 			break;
 		    case 'V': /* qemu virtio pci device (workaround) */
