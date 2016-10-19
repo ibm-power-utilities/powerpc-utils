@@ -1303,12 +1303,6 @@ print_node_list(struct dr_node *first_node)
 	say(EXTRA_DEBUG, "\n");
 }
 
-#define ACQUIRE_HP_START	2
-#define ACQUIRE_HP_SPL		3
-#define ACQUIRE_HP_UNISO	4
-#define ACQUIRE_HP_CFGCONN  	5
-#define ACQUIRE_HP_ADDNODES 	6
-
 /**
  * acquire_hp_resource
  *
@@ -1320,7 +1314,6 @@ static int
 acquire_hp_resource(struct dr_connector *drc, char *of_path)
 {
 	struct of_node *new_nodes;
-	int progress = ACQUIRE_HP_START;
 	int state;
 	int rc;
 
@@ -1332,10 +1325,9 @@ acquire_hp_resource(struct dr_connector *drc, char *of_path)
 			if (rc) {
 				say(ERROR, "set power failed for 0x%x\n",
 				    drc->powerdomain);
-				return progress;
+				return rc;
 			}
 
-			progress = ACQUIRE_HP_SPL;
 			if (state == PWR_ONLY)
 				state = dr_entity_sense(drc->index);
 		}
@@ -1346,10 +1338,9 @@ acquire_hp_resource(struct dr_connector *drc, char *of_path)
 			if (rc) {
 				say(ERROR, "set ind failed for 0x%x\n",
 				    drc->index);
-				return progress;
+				return rc;
 			}
 
-			progress = ACQUIRE_HP_UNISO;
 			if (state == NEED_POWER)
 				state = dr_entity_sense(drc->index);
 		}
@@ -1357,20 +1348,18 @@ acquire_hp_resource(struct dr_connector *drc, char *of_path)
 
 	if (state < 0) {
 		say(ERROR, "invalid state %d\n", state);
-		return progress;
+		return -1;
 	}
 
 	if (state == PRESENT) {
 		new_nodes = configure_connector(drc->index);
 		if (new_nodes == NULL)
-			return progress;
-
-		progress = ACQUIRE_HP_CFGCONN;
+			return -1;
 
 		rc = add_device_tree_nodes(of_path, new_nodes);
 		if (rc) {
 			say(ERROR, "add nodes failed for 0x%x\n", drc->index);
-			return progress;
+			return rc;
 		}
 	}
 
