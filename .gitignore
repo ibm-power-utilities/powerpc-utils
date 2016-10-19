@@ -98,6 +98,8 @@ GTAGS
 /src/uesensor
 /src/usysattn
 /src/usysident
+/src/errinjct/errinjct
+/src/rtas_dbg
 
 *.orig
 *~
