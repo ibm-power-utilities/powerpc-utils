@@ -707,6 +707,14 @@ GetOptions (
 
     verboseprint("$app_name: executing in verbose mode.\n");
 
+    #--------------- Look for the systool application -----------------------
+    # The systool application is required for invoking most/many of these
+    # operations so we'll express it as a standard requirement.
+    if (findsystools()) {
+        exit;
+    }
+
+
     # DON'T rely on the module existence to determine whether $driver is
     # supported since it could have been built into the kernel.
 
@@ -715,12 +723,6 @@ GetOptions (
         exit;
     }
 
-    #--------------- Look for the systool application -----------------------
-    # The systool application is required for invoking most/many of these
-    # operations so we'll express it as a standard requirement.
-    if (findsystools()) {
-        exit;
-    }
 
     if ($status) {
         status();
