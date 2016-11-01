@@ -508,13 +508,16 @@ static int is_dscr_capable(void)
 	return 0;
 }
 
-static int do_smt(char *state)
+static int do_smt(char *state, bool numeric)
 {
 	int rc = 0;
 	int smt_state;
 
 	if (!is_smt_capable()) {
-		fprintf(stderr, "Machine is not SMT capable\n");
+		if (numeric)
+			printf("SMT=0\n");
+		else
+			fprintf(stderr, "Machine is not SMT capable\n");
 		return -1;
 	}
 
@@ -525,7 +528,10 @@ static int do_smt(char *state)
 			return -1;
 
 		if (smt_state == 1)
-			printf("SMT is off\n");
+			if (numeric)
+				printf("SMT=0\n");
+			else
+				printf("SMT is off\n");
 		else if (smt_state == -1)
 			printf("Inconsistent state: mix of ST and SMT cores\n");
 		else
@@ -1363,7 +1369,7 @@ static void usage(void)
 {
 	printf(
 "Usage: ppc64_cpu [command] [options]\n"
-"ppc64_cpu --smt                     # Get current SMT state\n"
+"ppc64_cpu --smt [-n]                # Get current SMT state. [-n] shows numberic output\n"
 "ppc64_cpu --smt={on|off}            # Turn SMT on/off\n"
 "ppc64_cpu --smt=X                   # Set SMT state to X\n\n"
 "ppc64_cpu --cores-present           # Get the number of cores present\n"
@@ -1412,6 +1418,7 @@ int main(int argc, char *argv[])
 	char *equal_char;
 	int opt;
 	int sleep_time = 1; /* default to one second */
+	bool numeric = false;
 	pid_t pid = -1;
 
 	if (argc == 1) {
@@ -1443,7 +1450,7 @@ int main(int argc, char *argv[])
 	/* Now parse out any additional options. */
 	optind = 2;
 	while (1) {
-		opt = getopt(argc, argv, "p:t:");
+		opt = getopt(argc, argv, "p:t:n");
 		if (opt == -1)
 			break;
 
@@ -1470,6 +1477,15 @@ int main(int argc, char *argv[])
 
 			sleep_time = atoi(optarg);
 			break;
+		case 'n':
+			if (strcmp(action, "smt")) {
+				fprintf(stderr, "The n option is only valid "
+					"with the --smt option\n");
+				usage();
+				exit(-1);
+			}
+			numeric = true;
+			break;
 		default:
 			fprintf(stderr, "%c is not a valid option\n", opt);
 			usage();
@@ -1478,7 +1494,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (!strcmp(action, "smt"))
-		rc = do_smt(action_arg);
+		rc = do_smt(action_arg, numeric);
 	else if (!strcmp(action, "dscr"))
 		rc = do_dscr(action_arg, pid);
 	else if (!strcmp(action, "smt-snooze-delay"))
