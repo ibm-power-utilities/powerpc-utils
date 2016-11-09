@@ -1060,7 +1060,7 @@ static int do_cpu_frequency(int sleep_time)
 
 #else
 
-static int do_cpu_frequency(void)
+static int do_cpu_frequency(int sleep_time)
 {
 	printf("CPU Frequency determination is not supported on this "
 	       "platfom.\n");
