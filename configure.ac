@@ -58,6 +58,22 @@ AS_IF([test "x$with_librtas" != "xno"],
 
 AM_CONDITIONAL([WITH_LIBRTAS], [test "x$with_librtas" = "xyes"])
 
+# Check what OS you are running
+AC_CANONICAL_HOST
+case $host_os in
+	linux*)
+		LIBDL="-ldl"
+	;;
+	*freebsd*)
+		LIBDL=""
+	;;
+	*)
+	#Default Case
+		AC_MSG_ERROR([Your platform is not currently supported])
+	;;
+esac
+AC_SUBST(LIBDL)
+
 # check for systemd
 systemd_unit_dir=/usr/lib/systemd/system
 AC_ARG_WITH([systemd],

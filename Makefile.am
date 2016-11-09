@@ -64,7 +64,7 @@ pseries_platform_SOURCES = src/common/pseries_platform.c src/common/pseries_plat
 librtas_error_SOURCES = src/common/librtas_error.c src/common/librtas_error.h
 
 src_nvram_SOURCES = src/nvram.c src/nvram.h $(pseries_platform_SOURCES)
-src_nvram_LDADD = -ldl -lz
+src_nvram_LDADD = -lz @LIBDL@
 
 src_lsprop_SOURCES = src/lsprop.c $(pseries_platform_SOURCES)
 
