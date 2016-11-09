@@ -57,7 +57,11 @@
 #include <getopt.h>
 #include <inttypes.h>
 #include <zlib.h>
+#if defined(__FreeBSD__)
+#include <sys/endian.h>
+#else
 #include <endian.h>
+#endif
 #include <stdbool.h>
 
 #include "nvram.h"

@@ -22,7 +22,11 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
+#if defined(__FreeBSD__)
+#include <sys/endian.h>
+#else
 #include <endian.h>
+#endif
 
 int recurse;
 int maxbytes = 128;
