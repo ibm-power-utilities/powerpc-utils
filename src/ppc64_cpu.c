@@ -381,23 +381,10 @@ static int is_smt_capable(void)
 	return 0;
 }
 
-static int get_one_smt_state(int primary_thread)
+static int get_one_smt_state(int core)
 {
-	int thread_state;
+	int primary_thread = core * threads_per_cpu;
 	int smt_state = 0;
-	int i;
-
-	for (i = 0; i < threads_per_cpu; i++) {
-		thread_state = cpu_online(primary_thread + i);
-		smt_state += thread_state;
-	}
-
-	return smt_state ? smt_state : -1;
-}
-
-static int get_smt_state(void)
-{
-	int system_state = -1;
 	int i;
 
 	if (!sysattr_is_readable("online")) {
@@ -405,20 +392,30 @@ static int get_smt_state(void)
 		return -2;
 	}
 
-	for (i = 0; i < threads_in_system; i += threads_per_cpu) {
-		int cpu_state;
-
-		cpu_state = get_one_smt_state(i);
-		if (cpu_state == -1)
-			continue;
-
-		if (system_state == -1)
-			system_state = cpu_state;
-		else if (system_state != cpu_state)
-			return -1;
+	for (i = 0; i < threads_per_cpu; i++) {
+		smt_state += cpu_online(primary_thread + i);
 	}
 
-	return system_state;
+	return smt_state;
+}
+
+static int get_smt_state(void)
+{
+	int smt_state = -1;
+	int i;
+	for (i = 0; i < cpus_in_system ; i++) {
+		int cpu_state = get_one_smt_state(i);
+		if (cpu_state == 0)
+			continue;
+
+		if (smt_state == -1)
+			smt_state = cpu_state;
+		if (smt_state != cpu_state) {
+			smt_state = -1;
+			break;
+		}
+	}
+	return smt_state;
 }
 
 static int set_one_smt_state(int thread, int online_threads)
@@ -508,10 +505,29 @@ static int is_dscr_capable(void)
 	return 0;
 }
 
+void print_cpu_list(const cpu_set_t *cpuset, int cpuset_size)
+{
+	int core;
+	const char *comma = "";
+
+	for (core = 0; core < cpus_in_system; core++) {
+		int begin = core;
+		if (CPU_ISSET_S(core, cpuset_size, cpuset)) {
+			while (CPU_ISSET_S(core+1, cpuset_size, cpuset))
+				core++;
+			if (core > begin)
+				printf("%s%d-%d", comma, begin, core);
+			else
+				printf("%s%d", comma, core);
+			comma = ",";
+		}
+	}
+}
+
 static int do_smt(char *state)
 {
 	int rc = 0;
-	int smt_state;
+	int smt_state = 0;
 
 	if (!is_smt_capable()) {
 		fprintf(stderr, "Machine is not SMT capable\n");
@@ -519,17 +535,49 @@ static int do_smt(char *state)
 	}
 
 	if (!state) {
-		smt_state = get_smt_state();
+		int thread, c;
+		cpu_set_t *cpu_states[threads_per_cpu];
+		int cpu_state_size = CPU_ALLOC_SIZE(cpus_in_system);
+		int start_cpu = 0, stop_cpu = cpus_in_system;
 
-		if (smt_state == -2)
-			return -1;
+		for (thread = 0; thread < threads_per_cpu; thread++) {
+			cpu_states[thread] = CPU_ALLOC(cpus_in_system);
+			CPU_ZERO_S(cpu_state_size, cpu_states[thread]);
+		}
+
+		for (c = start_cpu; c < stop_cpu; c++) {
+			int threads_online = get_one_smt_state(c);
+
+			if (threads_online < 0)
+				return threads_online;
+			if (threads_online)
+				CPU_SET_S(c, cpu_state_size, cpu_states[threads_online-1]);
+		}
+
+		for (thread = 0; thread < threads_per_cpu; thread++) {
+			if (CPU_COUNT_S(cpu_state_size, cpu_states[thread])) {
+				if (smt_state == 0)
+					smt_state = thread + 1;
+				else if (smt_state > 0)
+					smt_state = -1; // mix of SMT modes
+			}
+		}
 
 		if (smt_state == 1)
 			printf("SMT is off\n");
 		else if (smt_state == -1)
-			printf("Inconsistent state: mix of ST and SMT cores\n");
+			for (thread = 0; thread < threads_per_cpu; thread++) {
+				if (CPU_COUNT_S(cpu_state_size, cpu_states[thread])) {
+					printf("SMT=%d: ", thread + 1);
+					print_cpu_list(cpu_states[thread], cpu_state_size);
+					printf("\n");
+				}
+			}
 		else
 			printf("SMT=%d\n", smt_state);
+
+		for (thread = 0; thread < threads_per_cpu; thread++)
+			CPU_FREE(cpu_states[thread]);
 	} else {
 		if (!strcmp(state, "on"))
 			smt_state = threads_per_cpu;
@@ -1130,19 +1178,13 @@ static int do_online_cores(char *cores, int state)
 	}
 
 	smt_state = get_smt_state();
-	if (smt_state == -1) {
-		printf("Bad or inconsistent SMT state: use ppc64_cpu --smt=on|off to set all\n"
-                       "cores to have the same number of online threads to continue.\n");
-		do_info();
-		return -1;
-	}
 
 	core_state = calloc(cpus_in_system, sizeof(int));
 	if (!core_state)
 		return -ENOMEM;
 
 	for (i = 0; i < cpus_in_system ; i++)
-		core_state[i] = cpu_online(i * threads_per_cpu);
+		core_state[i] = (get_one_smt_state(i) > 0);
 
 	if (!cores) {
 		printf("Cores %s = ", state == 0 ? "offline" : "online");
@@ -1158,6 +1200,14 @@ static int do_online_cores(char *cores, int state)
 		printf("\n");
 		free(core_state);
 		return 0;
+	}
+
+	if (smt_state == -1) {
+		printf("Bad or inconsistent SMT state: use ppc64_cpu --smt=on|off to set all\n"
+                       "cores to have the same number of online threads to continue.\n");
+		do_info();
+		free(core_state);
+		return -1;
 	}
 
 	desired_core_state = calloc(cpus_in_system, sizeof(int));
@@ -1235,20 +1285,12 @@ static int do_cores_on(char *state)
 		}
 	}
 
-	smt_state = get_smt_state();
-	if (smt_state == -1) {
-		printf("Bad or inconsistent SMT state: use ppc64_cpu --smt=on|off to set all\n"
-                       "cores to have the same number of online threads to continue.\n");
-		do_info();
-		return -1;
-	}
-
 	core_state = calloc(cpus_in_system, sizeof(int));
 	if (!core_state)
 		return -ENOMEM;
 
 	for (i = 0; i < cpus_in_system ; i++) {
-		core_state[i] = cpu_online(i * threads_per_cpu);
+		core_state[i] = (get_one_smt_state(i) > 0);
 		if (core_state[i])
 			cores_now_online++;
 	}
@@ -1257,6 +1299,14 @@ static int do_cores_on(char *state)
 		printf("Number of cores online = %d\n", cores_now_online);
 		free(core_state);
 		return 0;
+	}
+
+	smt_state = get_smt_state();
+	if (smt_state == -1) {
+		printf("Bad or inconsistent SMT state: use ppc64_cpu --smt=on|off to set all\n"
+                       "cores to have the same number of online threads to continue.\n");
+		do_info();
+		return -1;
 	}
 
 	if (!strcmp(state, "all")) {
