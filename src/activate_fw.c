@@ -69,15 +69,7 @@
 #include "librtas_error.h"
 #include "pseries_platform.h"
 
-/**
- * @def say(_f, _a...)
- * @brief DEBUG definition of printf
- */
-#ifdef DEBUG
-#define say(_f, _a...)	printf(_f, ##_a)
-#else
-#define say(_f, _a...)
-#endif
+static int verbose;
 
 /* Size of array */
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
@@ -110,57 +102,79 @@ static int activate_firmware(void)
 	switch (rc) {
 	/* 0 - Success!! */
 	case 0:
-		say("activate_firmware: rtas call succeeded\n");
+		if (verbose)
+			printf("activate_firmware: rtas call succeeded\n");
 		break;
 
 	/* 1 - activate-firmware not supported */
 	case RTAS_KERNEL_INT:  /* No kernel interface to firmware */
 	case RTAS_KERNEL_IMP:  /* No kernel implementation of function */
 	case RTAS_UNKNOWN_OP:  /* No firmware implementation of function */
-		say("activate_fw: rtas call returned %d, converting to %d\n",
-		    rc, 1);
+		if (verbose) {
+			printf("activate_fw: rtas call returned %d, "
+			       "converting to %d\n", rc, 1);
+		}
+
 		rc = 1;
 		break;
 
 	/* 2 - no new firmware to activate */
 	case -9001:	   /* No valid firmware to activate */
-		say("activate_fw: rtas call returned %d, converting to %d\n",
-		    rc, 2);
+		if (verbose) {
+			printf("activate_fw: rtas call returned %d, "
+			       "converting to %d\n", rc, 2);
+		}
+
 		rc = 2;
 		break;
 
 	/* 3 - no root authority  */
 	case RTAS_PERM:	   /* No root authority */
-		say("activate_fw: rtas call returned %d, converting to %d\n",
-		    rc, 3);
+		if (verbose) {
+			printf("activate_fw: rtas call returned %d, "
+			       "converting to %d\n", rc, 3);
+		}
+
 		rc = 3;
-		 break;
+		break;
 
 	/* 4 - hardware error */
 	case -1:	   /* Hardware error */
-		say("activate_fw: rtas call returned %d, converting to %d\n",
-		    rc, 4);
+		if (verbose) {
+			printf("activate_fw: rtas call returned %d, "
+			       "converting to %d\n", rc, 4);
+		}
+
 		rc = 4;
 		break;
 
 	/* 5 - Memory/resource allocation error */
 	case RTAS_NO_MEM:
 	case RTAS_NO_LOWMEM:
-		say("activate_fw: rtas call returned %d, converting to %d\n",
-		    rc, 5);
+		if (verbose) {
+			printf("activate_fw: rtas call returned %d, "
+			       "converting to %d\n", rc, 5);
+		}
+
 		rc = 5;
 		break;
 
 	case -3:
-		say("activate_fw: rtas call returned %d, converting to %d\n",
-		    rc, 8);
+		if (verbose) {
+			printf("activate_fw: rtas call returned %d, "
+			       "converting to %d\n", rc, 8);
+		}
+
 		rc = 8;
 		break;
 
 	/* 6 - catch all other return codes here */
 	default:
-		say("activate_fw: rtas call returned %d, converting to %d\n",
-		    rc, 6);
+		if (verbose) {
+			printf("activate_fw: rtas call returned %d, "
+			       "converting to %d\n", rc, 6);
+		}
+
 		rc = 6;
 		break;
 	}
@@ -320,12 +334,14 @@ static void print_usage(const char *cmd)
 	printf("                 the service expiry date\n");
 	printf("  -h, --help     print this message.\n");
 	printf("  -V, --version  print version information.\n");
+	printf("  -v, --verbose  output extra debug information\n");
 	printf("\n");
 }
 
 static struct option long_opts[] = {
 	{"version",	no_argument,	NULL, 'V'},
 	{"help",	no_argument,	NULL, 'h'},
+	{"verbose",	no_argument,	NULL, 'v'},
 	{0, 0, 0, 0},
 };
 
@@ -340,7 +356,7 @@ int main(int argc, char *argv[])
 		errx(1,	"activate_firmware is not supported on the %s platform",
 		     platform_name);
 
-	while ((opt = getopt_long(argc, argv, "e::hV",
+	while ((opt = getopt_long(argc, argv, "e::hVv",
 				  long_opts, &opt_index)) != -1) {
 		switch (opt) {
 		case 'e':
@@ -359,6 +375,9 @@ int main(int argc, char *argv[])
 		case 'V':
 			printf("activate_firmware - %s\n", VERSION);
 			return 0;
+		case 'v':
+			verbose = 1;
+			break;
 		case 'h':
 		case '?':
 			print_usage(argv[0]);
