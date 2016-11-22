@@ -15,12 +15,14 @@ platforms.
 
 .SH OPTIONS
 .TP
-\fB\-\-smt\fR
+\fB\-\-smt\fR [-n]
 Display the current smt setting for the system. The output will state
 whether smt is off indicating there is only one thread per core online, smt
 is on indicating that all threads of every core is online, the smt is in
 a mixed state indicating that the number of threads online varies per core, or
 \fISMT=X\fR indicating a specific smt state.
+
+Option -n dumps a numeric output instead of a verbose output.
 
 .TP
 \fB\-\-smt\fR={\fIon\fR|\fIoff\fR}
