@@ -119,7 +119,7 @@ static int activate_firmware(void)
 		break;
 
 	/* 2 - no new firmware to activate */
-	case -9001:	   /* No valid firmware to activate */
+	case -9001:
 		if (verbose) {
 			printf("activate_fw: rtas call returned %d, "
 			       "converting to %d\n", rc, 2);
@@ -129,7 +129,7 @@ static int activate_firmware(void)
 		break;
 
 	/* 3 - no root authority  */
-	case RTAS_PERM:	   /* No root authority */
+	case RTAS_PERM:
 		if (verbose) {
 			printf("activate_fw: rtas call returned %d, "
 			       "converting to %d\n", rc, 3);
@@ -139,7 +139,7 @@ static int activate_firmware(void)
 		break;
 
 	/* 4 - hardware error */
-	case -1:	   /* Hardware error */
+	case -1:
 		if (verbose) {
 			printf("activate_fw: rtas call returned %d, "
 			       "converting to %d\n", rc, 4);
