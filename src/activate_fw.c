@@ -310,17 +310,22 @@ static void print_usage(const char *cmd)
 {
 	printf("Usage: %s [-e [keyfile]]\n", cmd);
 	printf("Without any option, the activate_firmware utility will cause");
-	printf(" a firmware image that has already been flashed to be");
+	printf(" a firmware image\nthat has already been flashed to be");
 	printf(" activated concurrently.\n");
-	printf("\n\tOption summary:\n");
-	printf("\t-e:           prints the current Update Access Key expiry");
+	printf("\nOption summary:\n");
+	printf("  -e             prints the current Update Access Key expiry");
 	printf(" date\n");
-	printf("\t-e <keyfile>: applies the provided Update Access key-file");
-	printf(" to extend the service expiry date\n\n");
+	printf("  -e <keyfile>   applies the provided Update Access key-file");
+	printf(" to extend\n");
+	printf("                 the service expiry date\n");
+	printf("  -h, --help     print this message.\n");
+	printf("  -V, --version  print version information.\n");
+	printf("\n");
 }
 
 static struct option long_opts[] = {
 	{"version",	no_argument,	NULL, 'V'},
+	{"help",	no_argument,	NULL, 'h'},
 	{0, 0, 0, 0},
 };
 
