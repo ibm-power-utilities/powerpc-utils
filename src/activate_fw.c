@@ -65,6 +65,7 @@
 #include <math.h>
 #include <err.h>
 #include <librtas.h>
+#include <getopt.h>
 #include "librtas_error.h"
 #include "pseries_platform.h"
 
@@ -318,9 +319,14 @@ static void print_usage(const char *cmd)
 	printf(" to extend the service expiry date\n\n");
 }
 
+static struct option long_opts[] = {
+	{"version",	no_argument,	NULL, 'V'},
+	{0, 0, 0, 0},
+};
+
 int main(int argc, char *argv[])
 {
-	int opt;
+	int opt, opt_index = 0;
 	char *key = NULL;
 	bool e_flag = false;
 	int rc;
@@ -329,7 +335,8 @@ int main(int argc, char *argv[])
 		errx(1,	"activate_firmware is not supported on the %s platform",
 		     platform_name);
 
-	while ((opt = getopt(argc, argv, "e::h")) != -1) {
+	while ((opt = getopt_long(argc, argv, "e::hV",
+				  long_opts, &opt_index)) != -1) {
 		switch (opt) {
 		case 'e':
 			e_flag = true;
@@ -344,6 +351,9 @@ int main(int argc, char *argv[])
 				optind++;
 			}
 			break;
+		case 'V':
+			printf("activate_firmware - %s\n", VERSION);
+			return 0;
 		case 'h':
 		case '?':
 			print_usage(argv[0]);
