@@ -577,10 +577,15 @@ void print_default_output(int interval, int count)
 	} while (--count > 0);
 }
 
+static struct option long_opts[] = {
+	{"version",	no_argument,	NULL,	'V'},
+	{0, 0, 0, 0},
+};
+
 int main(int argc, char *argv[])
 {
 	int interval = 0, count = 0;
-	int c;
+	int c, opt_index = 0;
 	int i_option = 0;
 
 	if (get_platform() != PLATFORM_PSERIES_LPAR) {
@@ -589,11 +594,15 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	while ((c = getopt(argc, argv, "i")) != -1) {
+	while ((c = getopt_long(argc, argv, "iV",
+				long_opts, &opt_index)) != -1) {
 		switch(c) {
 			case 'i':
 				i_option = 1;
 				break;
+			case 'V':
+				printf("lparstat - %s\n", VERSION);
+				return 0;
 			case '?':
 			default:
 				break;
