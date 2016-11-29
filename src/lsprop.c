@@ -22,6 +22,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <getopt.h>
 #if defined(__FreeBSD__)
 #include <sys/endian.h>
 #else
@@ -36,14 +37,20 @@ unsigned char *buf;
 void lsprop(FILE *f, char *name);
 void lsdir(char *name);
 
+static struct option long_opts[] = {
+	{"version",     no_argument,    NULL, 'V'},
+	{0, 0, 0, 0},
+};
+
 int main(int ac, char **av)
 {
     FILE *f;
-    int i;
+    int i, opt_index = 0;
     struct stat sb;
     char *endp;
 
-    while ((i = getopt(ac, av, "Rm:w:")) != EOF) {
+    while ((i = getopt_long(ac, av, "Rm:w:V",
+			    long_opts, &opt_index)) != EOF) {
 	switch (i) {
 	case 'R':
 	    recurse = 1;
@@ -65,6 +72,9 @@ int main(int ac, char **av)
 		exit(1);
 	    }
 	    break;
+	case 'V':
+	    printf("lsprop - %s\n", VERSION);
+	    return 0;
 	}
     }
 
