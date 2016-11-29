@@ -39,6 +39,7 @@ void lsdir(char *name);
 
 static struct option long_opts[] = {
 	{"version",     no_argument,    NULL, 'V'},
+	{"recurse",	no_argument,	NULL, 'R'},
 	{0, 0, 0, 0},
 };
 
@@ -156,21 +157,24 @@ void lsdir(char *name)
 	    }
 	}
     }
-    rewinddir(d);
-    while ((de = readdir(d)) != NULL) {
-	if (strcmp(de->d_name, ".") == 0 || strcmp(de->d_name, "..") == 0)
-	    continue;
-	strcpy(q, de->d_name);
-	if (lstat(p, &sb) < 0) {
-	    perror(p);
-	    continue;
-	}
-	if (S_ISDIR(sb.st_mode)) {
-	    if (np)
-		printf("\n");
-	    printf("%s:\n", p);
-	    lsdir(p);
-	    ++np;
+
+    if (recurse) {
+	rewinddir(d);
+	while ((de = readdir(d)) != NULL) {
+	    if (strcmp(de->d_name, ".") == 0 || strcmp(de->d_name, "..") == 0)
+		continue;
+	    strcpy(q, de->d_name);
+	    if (lstat(p, &sb) < 0) {
+		perror(p);
+		continue;
+	    }
+	    if (S_ISDIR(sb.st_mode)) {
+		if (np)
+		    printf("\n");
+		printf("%s:\n", p);
+		lsdir(p);
+		++np;
+	    }
 	}
     }
     free(p);
