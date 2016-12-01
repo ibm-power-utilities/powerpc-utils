@@ -1252,7 +1252,7 @@ static int do_online_cores(char *cores, int state)
 			rc = -1;
 			continue;
 		}
-		if (core > cpus_in_system || core < 0) {
+		if (core >= cpus_in_system || core < 0) {
 			printf("Invalid core to %s: %d\n", state == 0 ? "offline" : "online", core);
 			rc = -1;
 			continue;
