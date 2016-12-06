@@ -1200,20 +1200,6 @@ print_of_config_part(struct nvram *nvram, char *pname)
     return 0;
 }
 
-/* Print a single OF var...or all if "" is used */
-/**
- * @var name_value_parts
- * @brief List of partition names that contain name/value pairs
- */
-/**
- * @var num_name_value_parts
- * @brief number of names in the name_vlaue_parts array
- */
-static char	*name_value_parts[] = {
-    "common", "ibm,setupcfg", "of-config"
-};
-static int num_name_value_parts = 3;
-
 /**
  * print_of_config
  * @brief Print the contents of an Open Firmware config partition
@@ -1246,29 +1232,31 @@ print_of_config(struct nvram *nvram, char *config_var, char *pname,
      */
     if (config_var == NULL) {
 	if (pname == NULL) {
-            for (i = 0; i < num_name_value_parts; i++)
-	    	(void)print_of_config_part(nvram, name_value_parts[i]);
-	} 
+	    for (i = 0; i < nvram->nparts; i++) {
+		phead = nvram->parts[i];
+		(void)print_of_config_part(nvram, phead->name);
+	    }
+	}
         else {
-	    for (i = 0; i < num_name_value_parts; i++) {
-	    	if (strcmp(pname, name_value_parts[i]) == 0) {
-	            (void)print_of_config_part(nvram, name_value_parts[i]);
+	    for (i = 0; i < nvram->nparts; i++) {
+		phead = nvram->parts[i];
+		if (strcmp(pname, phead->name) == 0) {
+		    (void)print_of_config_part(nvram, phead->name);
 		    rc = 0;
 		}
 	    }
 	    if (rc)
-	    	err_msg("There is no Open Firmware \"%s\" partition!\n", pname);
+		err_msg("There is no \"%s\" partition!\n", pname);
 	}
 	return rc;
     } 
     
     /* the config_var is a variable name */
     varlen = strlen(config_var);
-
     if (pname == NULL) {
-    	for (i = 0; i < num_name_value_parts; i++) {
-	    phead = nvram_find_partition(nvram, 0, name_value_parts[i], NULL);
-   	    if (phead == NULL) 
+	for (i = 0; i < nvram->nparts; i++) {
+	    phead = nvram->parts[i];
+	    if (phead == NULL)
 		continue;
 
 	    data = (char *)phead + sizeof(*phead);
@@ -1286,7 +1274,7 @@ print_of_config(struct nvram *nvram, char *config_var, char *pname,
     else {
 	phead = nvram_find_partition(nvram, 0, pname, NULL);
 	if (phead == NULL) {
-	    err_msg("There is no Open Firmware \"%s\" partition.\n", pname);
+	    err_msg("There is no \"%s\" partition.\n", pname);
 	    return -1;
 	}
 
