@@ -45,7 +45,8 @@ list_cpus(struct dr_info *dr_info)
 
 	for (cpu = dr_info->all_cpus; cpu != NULL; cpu = cpu->next) {
 		if (cpu->is_owned || output_level >= DEBUG) {
-			printf(fmt, cpu->drc_name, cpu->name, cpu->drc_index);
+			printf(fmt, cpu->drc_name, cpu->name ? cpu->name : "--",
+			       cpu->drc_index);
 			for (t = cpu->cpu_threads; t; t = t->sibling)
 				printf(" %x", t->id);
 			printf("\n");
@@ -96,7 +97,8 @@ list_cpus_and_caches(struct dr_info *dr_info)
 		struct cache_info *l2_cache = NULL;
 		struct cache_info *l3_cache = NULL;
 
-		printf(fmt, cpu->drc_name, cpu->name, cpu->drc_index);
+		printf(fmt, cpu->drc_name, cpu->name ? cpu->name : "--",
+		       cpu->drc_index);
 
 		for (t = cpu->cpu_threads; t; t = t->sibling) {
 			printf(" %x", t->id);
