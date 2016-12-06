@@ -409,7 +409,11 @@ print_aliases()
 get_slave()
 {
 	cd /sys/class/*/$1
-	while [[ -n "`ls slaves 2> /dev/null`" ]]; do cd slaves/*; done
+
+	while [[ -n "`ls slaves 2> /dev/null`" ]]; do
+		cd `echo slaves/* | head -n1 | cut -d " " -f1`;
+	done
+
 	$FIND /dev -name "`basename $PWD`"
 }
 
