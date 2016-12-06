@@ -44,7 +44,7 @@ list_cpus(struct dr_info *dr_info)
 	printf(fmt_s, "drc-name", "OFDT-node", "drc_index", "thread id(s)");
 
 	for (cpu = dr_info->all_cpus; cpu != NULL; cpu = cpu->next) {
-		if (cpu->is_owned) {
+		if (cpu->is_owned || output_level >= DEBUG) {
 			printf(fmt, cpu->drc_name, cpu->name, cpu->drc_index);
 			for (t = cpu->cpu_threads; t; t = t->sibling)
 				printf(" %x", t->id);
