@@ -84,10 +84,10 @@ list_cpus_and_caches(struct dr_info *dr_info)
 {
 	struct dr_node *cpu = NULL;
 	struct thread *t;
-	int thread_id_field_sz = 14;
-	char *fmt_s = "%-11s%-20s%-13s%-13s%-11s%-11s\n";
-	char *fmt = "%-11s%-20s%-12x%";
-	char *fmt_caches = "%-11s%-11s\n";
+	int thread_id_field_sz = 17;
+	char *fmt_s = "%-10s%-18s%-11s%-17s%-15s%-15s\n";
+	char *fmt = "%-10s%-18s%-11x%";
+	char *fmt_caches = "%-15s%-15s\n";
 
 	printf(fmt_s, "drc-name", "OFDT-node", "drc_index", "thread id(s)",
 	       "l2-cache", "l3-cache");
@@ -101,7 +101,7 @@ list_cpus_and_caches(struct dr_info *dr_info)
 		       cpu->drc_index);
 
 		for (t = cpu->cpu_threads; t; t = t->sibling) {
-			printf(" %x", t->id);
+			printf("%x ", t->id);
 			count += 2;
 		}
 
