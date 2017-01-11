@@ -813,7 +813,7 @@ l2of_scsi()
     fc=${fc##/*/}
 
     if [[ -e /proc/device-tree$OF_PATH/device_type ]]; then
-        devtype=`$CAT /proc/device-tree$OF_PATH/device_type`;
+        devtype=`tr -d '\0' < /proc/device-tree$OF_PATH/device_type`;
         if [[ $devtype = "fcp" || $devtype = "scsi-fcp" ]]; then
                 fc="fibre-channel";
         fi
@@ -865,8 +865,7 @@ l2of_scsi()
                 OF_PATH=$(printf "%s/disk@%s,%s" $OF_PATH $wwpn $vfc_lun)
         else
                 local i vdiskno
-                cd host*
-                cd target*
+		goto_dir $device_path $device_dir
                 vdiskno=`get_vdisk_no $device_dir`
 
                 OF_PATH=$OF_PATH/disk\@$vdiskno

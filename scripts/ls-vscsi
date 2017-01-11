@@ -69,7 +69,7 @@ done
 # Look at every ibmvscsi (Virtual SCSI) device
 for dev in $($LS -d /proc/device-tree/vdevice/v-scsi* 2> /dev/null) ; do
     # pull the physical location
-    physloc=$($CAT $dev/ibm,loc-code)
+    physloc=$(tr -d '\0' < $dev/ibm,loc-code)
 
     # find the slot so it can be used in sysfs
     slot=$(echo $dev | $SED -e "s/\/proc\/device-tree\/vdevice\/v-scsi@//")

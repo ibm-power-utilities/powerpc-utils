@@ -71,7 +71,7 @@ for dev in $($LS -d /proc/device-tree/vdevice/l-lan* 2> /dev/null); do
     name=$($OFPATHNAME -l $(echo $dev | $SED -e "s/\/proc\/device-tree//"))
 
     # get the physical location
-    physloc=$($CAT $dev/ibm,loc-code)
+    physloc=$(tr -d '\0' < $dev/ibm,loc-code)
 
     echo "$name $physloc"
 done
