@@ -1494,8 +1494,10 @@ of2l_vfc()
 	local wwpn=`get_fc_wwpn "$link/../../fc_remote_ports*"`
 
         if [[ $vfc_lun = $OF_LUN && $wwpn = $OF_WWPN ]]; then
+            if [[ $OF_PATH = $DEVPATH ]]; then
             LOGICAL_DEVNAME="${dir##*/}"
             return
+            fi
         fi
     done
 }
