@@ -162,7 +162,8 @@ static int cpu_online(int thread)
 
 	sprintf(path, SYSFS_CPUDIR"/online", thread);
 	rc = get_attribute(path, "%d", &online);
-	if (rc || !online)
+	/* If the attribute is missing treat the cpu as online */
+	if (!online)
 		return 0;
 
 	return 1;
