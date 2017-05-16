@@ -381,6 +381,83 @@ init_node(struct dr_node *node)
 	return rc;
 }
 
+/**
+ * create_vio_nodes
+ * Creates a set of dr_nodes for any existing vio nodes in the supplied path.
+ * This walks the device tree once.
+ *
+ * @param ofdt_path
+ * @param drc_list
+ * @param node_list - user responsible for freeing
+ * @returns 0 on success, !0 otherwise
+ */
+static int
+create_vio_nodes(const char *ofdt_path,
+		 struct dr_connector *drc_list,
+		 struct dr_node **node_list)
+{
+	DIR *d;
+	struct dirent *de;
+	char child_path[DR_PATH_MAX];
+	uint32_t my_drc_index;
+	struct dr_node *node;
+	struct dr_connector *drc;
+	struct dr_connector *drc_search;
+	int rc;
+
+	d = opendir(ofdt_path);
+	if (!d)
+		return -1;
+
+	rc = 0;
+	while ((de = readdir(d)) != NULL) {
+		if ((de->d_type != DT_DIR) || is_dot_dir(de->d_name))
+			continue;
+
+		snprintf(child_path, DR_PATH_MAX, "%s/%s", ofdt_path,
+			 de->d_name);
+		if (get_my_drc_index(child_path, &my_drc_index))
+			continue;
+		drc = NULL;
+		for (drc_search = drc_list; drc_search; drc_search = drc_search->next) {
+			if (drc_search->index == my_drc_index) {
+				drc = drc_search;
+				break;
+			}
+		}
+		if (!drc) {
+			say(ERROR, "Unable to find DRC index %d\n",
+			    my_drc_index);
+			rc = -1;
+			break;
+		}
+
+		node = alloc_dr_node(drc, VIO_DEV, child_path);
+		if (!node) {
+			say(ERROR, "Could not allocate pci/vio node\n");
+			rc = -1;
+			break;
+		}
+
+		node->is_owned = 1;
+
+		/* Populate w/ children */
+		rc = init_node(node);
+		if (rc) {
+			free(node);
+			break;
+		}
+
+		node->next = *node_list;
+		*node_list = node;
+	}
+
+	closedir(d);
+	if (rc)
+		free_node(*node_list);
+	return rc;
+}
+
 static inline int is_hp_type(char *type)
 {
 	return (strtoul(type, NULL, 10) > 0);
@@ -606,6 +683,9 @@ add_pci_vio_node(const char *path, int dev_type, struct dr_node **node_list)
 	struct dr_connector *drc_list;
 	struct dr_connector *drc;
 	struct dr_node *node;
+	struct dr_node *vio_node_list = NULL;
+	struct dr_node *node_search;
+	struct dr_node *node_search_prev;
 	int child_dev_type = 0;
 	int rc = -1;
 
@@ -613,7 +693,16 @@ add_pci_vio_node(const char *path, int dev_type, struct dr_node **node_list)
 	if (drc_list == NULL)
 		return -1;
 
+	// Create a list of existing VIO nodes so we can
+	// walk the vio bus only once
+	if (dev_type == VIO_DEV) {
+		rc = create_vio_nodes(path, drc_list, &vio_node_list);
+		if (rc)
+			return rc;
+	}
+
 	for (drc = drc_list; drc != NULL; drc = drc->next) {
+		node = NULL;
 		switch (dev_type) {
 			case PCI_HP_DEV:
 				if (! is_hp_type(drc->type))
@@ -635,25 +724,53 @@ add_pci_vio_node(const char *path, int dev_type, struct dr_node **node_list)
 				break;
 		}
 
-		node = alloc_dr_node(drc, child_dev_type, path);
-		if (node == NULL) {
-			say(ERROR, "Could not allocate pci/vio node\n");
-			return -1;
+		// If this is VIO, look for the node in our existing list
+		if (dev_type == VIO_DEV) {
+			node_search = vio_node_list;
+			node_search_prev = NULL;
+			while (node_search) {
+				if (drc->index == node_search->drc_index) {
+					/*
+					 * Use this node - and remove it
+					 * from the list
+					 */
+					node = node_search;
+					if (node_search_prev)
+						node_search_prev->next =
+							node->next;
+					else
+						vio_node_list = node->next;
+					break;
+				}
+				node_search_prev = node_search;
+				node_search = node_search->next;
+			}
 		}
 
-		if (child_dev_type == PCI_HP_DEV)
-			node->is_owned = 1;
+		if (!node) {
+			node = alloc_dr_node(drc, child_dev_type, path);
+			if (!node) {
+				say(ERROR, "Could not allocate pci/vio node\n");
+				free_node(vio_node_list);
+				return -1;
+			}
 
-		rc = init_node(node);
-		if (rc) {
-			free(node);
-			return rc;
+			if (child_dev_type == PCI_HP_DEV)
+				node->is_owned = 1;
+
+			if (dev_type != VIO_DEV) {
+				rc = init_node(node);
+				if (rc) {
+					free(node);
+					return rc;
+				}
+			}
 		}
 
 		node->next = *node_list;
 		*node_list = node;
 	}
-
+	free_node(vio_node_list);
 	return rc;
 }
 
