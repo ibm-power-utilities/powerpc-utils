@@ -37,6 +37,11 @@ AC_FUNC_MALLOC
 AC_FUNC_MKTIME
 AC_CHECK_FUNCS([memset strchr strcspn strdup strerror strrchr strstr strtol strtoul strtoull gettimeofday])
 
+# check for zlib
+AC_CHECK_HEADER(zlib.h,
+		[AC_CHECK_LIB(z, inflate, [], [AC_MSG_FAILURE([zlib library is required for compilation])])],
+		[AC_MSG_FAILURE([zlib.h is required for compiliation])])
+
 # check for librtas
 AC_ARG_WITH([librtas],
     [AS_HELP_STRING([--without-librtas],
