@@ -1030,6 +1030,7 @@ ofpathname_to_logical()
                              of2l_ide
                           fi ;;
         eth* | l-lan  )  of2l_ethernet ;;
+	vnic          )  of2l_ethernet ;;
         hfi-ethernet* )  of2l_hfi ;;
         disk*         )  of2l_ide ;;
         usb           )  of2l_usb ;;
