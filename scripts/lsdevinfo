@@ -222,6 +222,27 @@ show_eth ()
     fi
 }
 
+# Look at every vNIC device
+for dev in $($LS -d /proc/device-tree/vdevice/vnic* 2> /dev/null); do
+    # use ofpathname to get the device name (i.e. eth0)
+    name=$($OFPATHNAME -l $(echo $dev | $SED -e "s/\/proc\/device-tree//"))
+    connection=$(echo $dev | $SED -e "s/\/proc\/device-tree\/vdevice\/l-lan@//")
+    parent="vio"
+
+    # get the physical location
+    physloc=$(tr -d '\0' < $dev/ibm,loc-code)
+    uniquetype="adapter/vdevice/IBM,vnic"
+    class="adapter"
+    subclass="vdevice"
+    type="IBM,vnic"
+    prefix="eth"
+    driver="ibmvnic"
+    status=1
+
+    show=1
+    show_eth
+done
+
 # Look at every ibmveth (Virtual Ethernet) device 
 for dev in $($LS -d /proc/device-tree/vdevice/l-lan* 2> /dev/null); do 
     # use ofpathname to get the device name (i.e. eth0)
