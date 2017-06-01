@@ -584,7 +584,7 @@ int lsslot_chrp_pci(void)
 		if (! node->is_owned || node->skip)
 			continue;
 		
-		if (!usr_drc_name) {
+		if (usr_drc_name) {
 			if (cmp_drcname(node->drc_name, usr_drc_name))
 				insert_print_node(node);
 		}
