@@ -47,7 +47,10 @@ struct pmap_struct {
 
 /* drmgr must call ibm,suspend-me and is responsible for postmobility fixups */
 #define MIGRATION_API_V0	0
-/* drmgr must write to sysfs migration store and allow kernel to do postmobility fixups */
+
+/* drmgr must write to sysfs migration store and allow kernel to do
+ * postmobility fixups
+ */
 #define MIGRATION_API_V1	1
 
 static struct pmap_struct *plist;
@@ -302,7 +305,8 @@ update_properties(unsigned int phandle)
 			say(DEBUG, "Null byte = %2.2x, ", *((char *)op));
 			op = (unsigned int *)(((char *)op) + 1);
 			vd = *op++;
-			say(DEBUG, "string length = %u, path = %s\n", vd, ((char *)op));
+			say(DEBUG, "string length = %u, path = %s\n", vd,
+			    ((char *)op));
 			op = (unsigned int *)(((char *)op) + vd);
 			initial = 0;
 
@@ -581,12 +585,16 @@ int do_migration(uint64_t stream_val)
 	int api_level = 0;
 	char buf[64];
 
-	/* If the kernel can also do the device tree update we should let the kernel do all the work.
-	   Check if sysfs migration api_version is readable and use api level to determine how to
-	   perform migration and post-mobility updates. */
-	rc = get_int_attribute(SYSFS_MIGRATION_API_FILE, NULL, &api_level, sizeof(&api_level));
+	/* If the kernel can also do the device tree update we should let
+	 * the kernel do all the work. Check if sysfs migration api_version
+	 * is readable and use api level to determine how to perform
+	 * migration and post-mobility updates.
+	 */
+	rc = get_int_attribute(SYSFS_MIGRATION_API_FILE, NULL, &api_level,
+			       sizeof(&api_level));
 	if (rc)
-		say(DEBUG,"get_int_attribute returned %d for path %s\n", rc, SYSFS_MIGRATION_API_FILE);
+		say(DEBUG, "get_int_attribute returned %d for path %s\n",
+		    rc, SYSFS_MIGRATION_API_FILE);
 
 	if (api_level == MIGRATION_API_V0) {
 		say(DEBUG, "about to issue ibm,suspend-me(%llx)\n", stream_val);
@@ -608,7 +616,9 @@ int do_migration(uint64_t stream_val)
 		rc = write(fd, buf, strlen(buf));
 		if (rc < 0) {
 			int my_errno = errno;
-			say(DEBUG, "Write to migration file failed with rc: %d\n", rc);
+			say(DEBUG,
+			    "Write to migration file failed with rc: %d\n",
+			    rc);
 			rc = my_errno;
 		} else if (rc > 0)
 			rc = 0;
@@ -616,7 +626,8 @@ int do_migration(uint64_t stream_val)
 		close(fd);
 		say(DEBUG, "Kernel migration returned %d\n", rc);
 	} else {
-		say(ERROR, "Unknown kernel migration api version %d\n", api_level);
+		say(ERROR, "Unknown kernel migration api version %d\n",
+		    api_level);
 		rc = -1;
 	}
 
@@ -669,12 +680,14 @@ void post_mobility_update(void)
 	   needs to perform a device tree update */
 	rc = get_int_attribute(path, NULL, &do_update, sizeof(do_update));
 	if (rc)
-		say(DEBUG, "get_int_attribute returned %d for path %s\n", rc, path);
+		say(DEBUG, "get_int_attribute returned %d for path %s\n",
+		    rc, path);
 
 	if (!do_update) {
 		rc = rtas_activate_firmware();
 		if (rc)
-			say(DEBUG, "rtas_activate_firmware() returned %d\n", rc);
+			say(DEBUG, "rtas_activate_firmware() returned %d\n",
+			    rc);
 		devtree_update();
 	}
 }
