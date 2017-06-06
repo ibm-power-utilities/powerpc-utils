@@ -113,8 +113,8 @@ static int check_kmods(void)
 	int rc;
 
 	/* We only need to do this for PHB/SLOT/PCI operations */
-	if (usr_drc_type == DRC_TYPE_PCI || usr_drc_type == DRC_TYPE_PHB ||
-	    usr_drc_type == DRC_TYPE_SLOT)
+	if (usr_drc_type != DRC_TYPE_PCI && usr_drc_type != DRC_TYPE_PHB &&
+	    usr_drc_type != DRC_TYPE_SLOT)
 		return 0;
 
 	/* We don't use rpadlar_io/rpaphp for PCI operations run with the
