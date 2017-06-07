@@ -1024,8 +1024,7 @@ valid_platform(const char *platform)
 
 	rc = get_property(OFDT_BASE, "device_type", buf, 128);
 	if (rc) {
-		say(ERROR, "Cannot open %s: %s\n", PLATFORMPATH,
-		    strerror(errno));
+		say(ERROR, "Cannot validate platform %s\n", platform);
 		return 0;
 	}
 
