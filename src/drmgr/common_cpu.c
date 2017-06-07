@@ -304,8 +304,7 @@ init_cpu_info(struct dr_info *dr_info)
 	for (drc = drc_list; drc; drc = drc->next) {
 		cpu = alloc_dr_node(drc, CPU_DEV, NULL);
 		if (cpu == NULL) {
-			say(ERROR, "Could not allocate CPU node structure: "
-			    "%s\n", strerror(errno));
+			say(ERROR, "Could not allocate CPU node structure\n");
 			free_node(cpu_list);
 			return -1;
 		}
