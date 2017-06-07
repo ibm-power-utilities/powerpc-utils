@@ -1340,6 +1340,7 @@ static int dlpar_io_kernel_op(const char *interface_file, const char *drc_name)
 {
 	int rc = 0, len;
 	FILE *file;
+	int my_errno;
 
 	len = strlen(drc_name);
 	say(DEBUG, "performing kernel op for %s, file is %s\n", drc_name,
@@ -1352,25 +1353,37 @@ static int dlpar_io_kernel_op(const char *interface_file, const char *drc_name)
     		if (file == NULL) {
 			say(ERROR, "failed to open %s: %s\n", interface_file,
 			    strerror(errno));
-			return -ENODEV;
+			return -1;
     		}
 
     		rc = fwrite(drc_name, 1, len, file);
+		my_errno = errno;
 		fclose(file);
 
+		/* Success, note we do fwrite with the values
+		 * size = 1 and nitems = len.
+		 */
+		if (rc == len)
+			return 0;
+
+		/* We should continue trying the kernel op if we get EBUSY,
+		 * this would indicate the add/remove operation has not
+		 * completed.
+		 */
+		if (my_errno != EBUSY) {
+			say(ERROR, "kernel I/O op failed, %s\n",
+			    my_errno ? strerror(my_errno)
+				     : "incomplete write");
+			break;
+		}
+
 		sleep(1);
+
 		if (drmgr_timed_out())
-			return -1;
-	} while (errno == EBUSY);
+			break;
+	} while (1);
 
- 	if (errno || (rc != len)) {
-		say(ERROR, "kernel I/O op failed, rc = %d len = %d.\n%s\n",
-		    rc, len, strerror(errno));
-
-		return errno ? errno : rc;
-	}
-
-	return 0;
+	return -1;
 }
 
 int dlpar_remove_slot(const char *drc_name)

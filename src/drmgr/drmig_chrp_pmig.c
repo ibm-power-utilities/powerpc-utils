@@ -198,11 +198,10 @@ do_update(char *cmd, int len)
 	int i, fd;
 
 	fd = open(OFDTPATH, O_WRONLY);
-	if (fd <= 0) {
+	if (fd == -1) {
 		say(ERROR, "Failed to open %s: %s\n", OFDTPATH,
 		    strerror(errno));
-		rc = errno;
-		return rc;
+		return -1;
 	}
 
 	say(DEBUG, "len %d\n", len);
@@ -608,8 +607,9 @@ int do_migration(uint64_t stream_val)
 
 		rc = write(fd, buf, strlen(buf));
 		if (rc < 0) {
+			int my_errno = errno;
 			say(DEBUG, "Write to migration file failed with rc: %d\n", rc);
-			rc = errno;
+			rc = my_errno;
 		} else if (rc > 0)
 			rc = 0;
 
@@ -642,9 +642,10 @@ int do_hibernation(uint64_t stream_val)
 
 	rc = write(fd, buf, strlen(buf));
 	if (rc < 0) {
+		int my_errno = errno;
 		say(DEBUG, "Write to hibernation file failed with rc: %d\n",
 		    rc);
-		rc = errno;
+		rc = my_errno;
 	} else if (rc > 0)
 		rc = 0;
 	close(fd);

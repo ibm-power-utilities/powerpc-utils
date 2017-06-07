@@ -308,7 +308,6 @@ int dr_lock(void)
 	struct flock    dr_lock_info;
 	int             rc;
 	mode_t          old_mode;
-	int             first_try = 1;
 
 	old_mode = umask(0);
 	dr_lock_fd = open(DR_LOCK_FILE, O_RDWR | O_CREAT,
@@ -323,21 +322,18 @@ int dr_lock(void)
 	dr_lock_info.l_len = 0;
 
 	do {
-		if (!first_try) {
-			sleep(1);
-			first_try = 0;
-		}
-
 		rc = fcntl(dr_lock_fd, F_SETLK, &dr_lock_info);
-		if (rc != -1)
+		if (rc == 0)
 			return 0;
+
+		/* lock may be held by another process */
+		if (errno != EACCES && errno != EAGAIN)
+			break;
 
 		if (drmgr_timed_out())
 			break;
 
-		if (rc == -1 && errno == EACCES)
-			continue;
-
+		sleep(1);
 	} while (1);
 
 	close(dr_lock_fd);
@@ -467,11 +463,11 @@ add_node(char *path, struct of_node *new_nodes)
 	say(DEBUG, "ofdt update: %s\n", buf);
 
 	fd = open(OFDTPATH, O_WRONLY);
-	if (fd <= 0) {
+	if (fd == -1) {
 		say(ERROR, "Failed to open %s: %s\n", OFDTPATH,
 		    strerror(errno));
 		free(buf);
-		return errno;
+		return -1;
 	}
 
 	rc = write(fd, buf, bufsize);
@@ -516,10 +512,10 @@ remove_node(char *path)
 	cmdlen = strlen(buf);
 
 	fd = open(OFDTPATH, O_WRONLY);
-	if (fd <= 0) {
+	if (fd == -1) {
 		say(ERROR, "Failed to open %s: %s\n", OFDTPATH,
 		    strerror(errno));
-		return errno;
+		return -1;
 	}
 
 	rc = write(fd, buf, cmdlen);
@@ -667,10 +663,10 @@ update_property(const char *buf, size_t len)
 	say(DEBUG, "Updating OF property\n");
 
 	fd = open(OFDTPATH, O_WRONLY);
-	if (fd <= 0) {
+	if (fd == -1) {
 		say(ERROR, "Failed to open %s: %s\n", OFDTPATH,
 		    strerror(errno));
-		return errno;
+		return -1;
 	}
 
 	rc = write(fd, buf, len);
@@ -1458,6 +1454,7 @@ int kernel_dlpar_exists(void)
 int do_kernel_dlpar(const char *cmd, int cmdlen)
 {
 	int fd, rc;
+	int my_errno;
 
 	say(DEBUG, "Initiating kernel DLPAR \"%s\"\n", cmd);
 
@@ -1470,10 +1467,13 @@ int do_kernel_dlpar(const char *cmd, int cmdlen)
 	}
 
 	rc = write(fd, cmd, cmdlen);
+	my_errno = errno;
 	close(fd);
 	if (rc <= 0) {
-		say(ERROR, "Failed: %s\n", strerror(errno));
-		return rc;
+		/* write does not set errno for rc == 0 */
+		say(ERROR, "Failed to write to %s: %s\n", SYSFS_DLPAR_FILE,
+		    (rc == 0) ? "wrote 0 bytes" : strerror(my_errno));
+		return -1;
 	}
 
 	say(INFO, "Success\n");

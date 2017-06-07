@@ -56,6 +56,7 @@ sysfs_write(char *fname, char *name)
 {
 	int rc, len;
 	FILE *file;
+	int my_errno;
 
     	file = fopen(fname, "w");
     	if (file == NULL) {
@@ -65,11 +66,13 @@ sysfs_write(char *fname, char *name)
 
 	len = strlen(name);
     	rc = fwrite(name, 1, len, file);
+	my_errno = errno;
 	fclose(file);
 
 	rc = (rc >= 0) ? 0 : rc;
 	if (rc)
-		say(ERROR, "Write to %s failed:\n%s\n", fname, strerror(errno));
+		say(ERROR, "Write to %s failed:\n%s\n", fname,
+		    strerror(my_errno));
 
 	return rc;
 }

@@ -875,6 +875,7 @@ set_mem_scn_state(struct mem_scn *mem_scn, int state)
 	int rc = 0;
 	time_t t;
 	char tbuf[128];
+	int my_errno;
 
 	time(&t);
 	strftime(tbuf, 128, "%T", localtime(&t));
@@ -892,11 +893,12 @@ set_mem_scn_state(struct mem_scn *mem_scn, int state)
 	}
 
 	rc = write(file, state_strs[state], strlen(state_strs[state]));
+	my_errno = errno;
 	close(file);
 
 	if (rc < 0) {
 		say(ERROR, "Could not write to %s to %s memory\n\t%s\n",
-		    path, state_strs[state], strerror(errno));
+		    path, state_strs[state], strerror(my_errno));
 		return rc;
 	}
 
@@ -932,10 +934,11 @@ probe_lmb(struct dr_node *lmb)
 	int rc = 0;
 
 	probe_file = open(MEM_PROBE_FILE, O_WRONLY);
-	if (probe_file <= 0) {
+	if (probe_file == -1) {
+		int my_errno = errno;
 		say(DEBUG, "Could not open %s to probe memory\n",
 		    MEM_PROBE_FILE);
-		return errno;
+		return my_errno;
 	}
 
 	for (scn = lmb->lmb_mem_scns; scn; scn = scn->next) {
