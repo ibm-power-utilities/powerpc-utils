@@ -70,8 +70,13 @@ get_of_list_prop(char *full_path, char *prop_name, struct of_list_prop *prop)
 	}
 
 	prop->n_entries = be32toh(*(uint *)prop->_data);
-	prop->val = prop->_data + sizeof(uint);
+	if (prop->n_entries == 0) {
+		say(ERROR, "No entries found in %s/%s\n",
+		    full_path, prop_name);
+		return -1;
+	}
 
+	prop->val = prop->_data + sizeof(uint);
 	return 0;
 }
 
