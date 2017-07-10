@@ -162,6 +162,11 @@ static int cpu_online(int thread)
 
 	sprintf(path, SYSFS_CPUDIR"/online", thread);
 	rc = get_attribute(path, "%d", &online);
+
+	/* This attribute does not exist in kernels without hotplug enabled */
+	if (rc && errno == ENOENT)
+		return 1;
+
 	if (rc || !online)
 		return 0;
 
