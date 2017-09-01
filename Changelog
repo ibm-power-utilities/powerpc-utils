@@ -1,3 +1,338 @@
+powerpc-utils-1.3.4
+=====================================================================
+
+commit c8083fbc1bfe1548057478ae46543bf58bffc7d4
+Author: Michael Bringmann <mwb@linux.vnet.ibm.com>
+Date:   Wed Aug 23 09:06:45 2017 -0500
+
+    powerpc-utils.spec: Add "Vendor: IBM Corp."
+    
+    Ensure that "Vendor: IBM Corp." appears in archive for all checkouts
+    and derived builds.
+    
+    Signed-off-by: Michael Bringmann <mwb@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 50f11c6c6618e7d59232d67e7446d07714af453b
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Thu Jul 6 12:31:36 2017 -0400
+
+    lsslot: Validate DRC property groups
+    
+    Recently seen on a kvm guest running on a PowerNV system, the
+    lsslot command segfaulted when trying to free the drc information.
+    
+    # gdb -q ./lsslot
+    Reading symbols from ./lsslot...done.
+    (gdb) run -c memory
+    Starting program: ./lsslot -c memory
+    
+    Program received signal SIGSEGV, Segmentation fault.
+    free_drc_info () at src/drmgr/common_ofdt.c:287
+    287			all_drc_lists = list->all_next;
+    
+    The root cause of this is that the DRC properties in the guest were empty.
+    This caused the lsslot (and likely possible in drmgr since this code
+    is common to both commands) to improperly parse the device tree
+    information.
+    
+    To fix this we need to add a check after gathering information for
+    each of the DRC properties when reading DRC property group data. If
+    there are no entries in any of the DRC properties we cannot continue.
+    
+    Reported-by: Seeteena Thoufeek <s1seetee@linux.vnet.ibm.com>
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit c25ae395db914f1137bb8a718277ea4b6f69136b
+Author: Samuel Mendoza-Jonas <sam@mendozajonas.com>
+Date:   Mon Jul 10 11:23:27 2017 +1000
+
+    ppc64_cpu: Treat CPUs as online if cpu hotplug not enabled
+    
+    cpu_online() looks for the "online" attribute to decide if a cpu is
+    online, however if the kernel does not have CONFIG_HOTPLUG_CPU enabled
+    the attribute will not exist.
+    get_attribute() calls access() first to check if the attribute exists,
+    which will set errno with ENOENT if it is missing. If get_attribute()
+    fails with this specific error, treat the cpu as online.
+    
+    Signed-off-by: Samuel Mendoza-Jonas <sam@mendozajonas.com>
+    [tyreld: removed unnecessary braces from if block]
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 817900edd96c66d6f43f75aaefbe38bba6bab035
+Author: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+Date:   Fri Aug 4 16:24:01 2017 -0700
+
+    Revert "ppc64_cpu: Treat CPUs as online if cpu hotplug not enabled"
+    
+    This reverts commit 5f70f6c1af2dd61122acfdbaa6e38be062bb220a.
+    
+    Reverting the commit as further inspection came to show it actually
+    marked a cpu as offline when hotplug was not enabled.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 136fab970076018bd56aa1aa0c09b8954b89b0b5
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Tue Jun 6 12:12:36 2017 -0400
+
+    drmgr: Correct some bad formatting in drmig_chrp_pmig.c
+    
+    No functional changes, justy making the code more readable.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 1c5319c76ae8b378bfd59e8c0a08e89f83867dbf
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Wed Jun 7 16:35:33 2017 -0400
+
+    drmgr: Correct errno usage in init_cpu_info()
+    
+    The error message reported if allocaing a dr node fails
+    should not report the errno value. The call to allocate the
+    dr node makes multiple syscalls and there is no way to
+    determine which one last updated errno.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+    Reviewed-by: Paul Clarke <pc@us.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 998933a5185f9c56d1d6bce77301f3e7be6a54cf
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Wed Jun 7 16:35:28 2017 -0400
+
+    drmgr: Correct errno usage use in validate_paltform()
+    
+    For validate_platform(), the call to get_property makes many
+    system calls and there is no way to know what last updated the
+    errno value. This patch drops the output of strerror() due to
+    this reason.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+    Reviewed-by: Paul Clarke <pc@us.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit d1c6662d38adeb98a1fd8906cd54031c6fdd653d
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Wed Jun 7 16:35:22 2017 -0400
+
+    drmgr: Stale errno usage corrections
+    
+    Several places in the drmgr code use a stale value of errno either
+    as a return code or when printing an error message. A common example
+    of this is calling the say() routine and then returning the value of
+    errno. The say() routine makes several system calls and the value of
+    errno after a call to say() no longer reflects the original errno
+    value.
+    
+    Several places in the drmgr code were updated to properly handle
+    the return codes from functions such as write() or open() where we
+    should be checking for rc == -1 instead of rc <= 0. This does make
+    a difference as errno won't be set for rc == 0.
+    
+    Note that partial write return codes are not really handled in the
+    drmgr code. The drmgr command is writing to sysfs and /proc
+    files where we know that they will either return success or
+    failure and set errno, no partial writes.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+    Reviewed-by: Paul Clarke <pc@us.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 479f1a1122f7d9025d3a21e60a0431d2eba6ee2f
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Tue Jun 6 12:12:22 2017 -0400
+
+    drmgr: Correct drc type checking in check_kmods()
+    
+    Fixes: f9986ac43011 ("drmgr: Move options.ctype to global usr_drc_type")
+    
+    When the conversion to using the global usr_drc_type was
+    made the logic checking for whic drc types we need to check
+    the rpadlpar_io kernbel module for was broken. This corrects
+    the check.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 27e8d5b8218bc8c8c772080b0d99691bd31d4f0f
+Author: Chandni Verma <chandni@linux.vnet.ibm.com>
+Date:   Thu Jun 1 19:07:13 2017 +0530
+
+    lsslot: Rectify usr_drc_name check
+    
+    This incorrect check refrains lsslot from displaying the slot information.
+    
+    Fixes: e82fb588f573 (lsslot: replace struct options member s_name with usr_drc_name)
+    Signed-off-by: Chandni Verma <chandni@linux.vnet.ibm.com>
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+    [tyreld: added fixes tag]
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 74715cc0e4db0e2738be7a19c852816c285d8284
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Mon May 22 16:40:58 2017 -0400
+
+    lsdevinfo: Add support for vNIC devices
+    
+    Add support to dump information about vNIC devices so that device info
+    requests from the HMC can retrieve data about vNIC devices.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+    [tyreld: fixed up trailing whitespace]
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 25615a80f3fb5ebcc26d7b00316afce8c46ab2f9
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Mon May 22 16:40:50 2017 -0400
+
+    ofpathname: Add support for vNIC devices
+    
+    Add 'vnic' to the list of device types for of2l_ethernet so vNIC
+    devices are supported.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 6464f8e96228f7db355f08f270ada1104c3562c3
+Author: Amartey Pearson <apearson@us.ibm.com>
+Date:   Tue May 16 14:01:30 2017 -0500
+
+    Improve perf of drmgr/lsslot with large num of virt. dev.
+    
+    The current algorithm for add_pci_vio_node walks the vdevice bus
+    for every theoretical DRC (1000's of times).  The more vdevices
+    you have populated, the worse this algorithm becomes.  On a system
+    with 450 devices, this can take over 30 seconds for example.
+    
+    This modifies the algorithm to populate a node list of existing
+    devices (so walks the tree just once), and then uses these nodes
+    when populating the full list instead of walking the device tree
+    for each one.
+    
+    NOTE:  This only is changed for virtual devices - a system with
+    large numbers of PCI devices will not be optimized, but that is
+    less of a concern.
+    
+    Signed-off-by: Amartey Pearson <apearson@us.ibm.com>
+    Signed-off-by: Bryant G. Ly <bryantly@linux.vnet.ibm.com>
+    [tyreld: changed my_drc_index type from u32 to uint32_t]
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 7539330a301ff9ac7d6fd5e1cf974bb9999100b2
+Author: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+Date:   Fri May 19 16:02:51 2017 -0400
+
+    Test for zlib presence at configuration time
+    
+    The nvram utility links with zlib and compilation will fail if zlib.h or
+    libz.so are not present. Check and warn at configuration time.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 3a7b15104fb956aa2e5debababe8536dbd4e8cef
+Author: Russell Currey <ruscur@russell.cc>
+Date:   Fri May 19 17:36:45 2017 -0400
+
+    errinjct: Remove platform check to enable KVM guests
+    
+    qemu/KVM guests can have RTAS as well.  There's already a check to see if
+    RTAS is present, there's no need to hardcode the supported platform.
+    Removing this check allows errinjct to work on KVM guests.
+    
+    Signed-off-by: Russell Currey <ruscur@russell.cc>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 5f70f6c1af2dd61122acfdbaa6e38be062bb220a
+Author: Samuel Mendoza-Jonas <sam@mendozajonas.com>
+Date:   Fri Apr 21 16:47:57 2017 +1000
+
+    ppc64_cpu: Treat CPUs as online if cpu hotplug not enabled
+    
+    cpu_online() looks for the "online" attribute to decide if a cpu is
+    online, however if the kernel does not have CONFIG_HOTPLUG_CPU enabled
+    the attribute will not exist.
+    If hotplug is not enabled then the cpu can be assumed to be online - in
+    this case, update cpu_online() to treat the cpu as online.
+    
+    Signed-off-by: Samuel Mendoza-Jonas <sam@mendozajonas.com>
+    Acked-by: Stewart Smith <stewart@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 4fcc611a09caea70e6bca6a1275211c72ac4bb45
+Author: Seeteena Thoufeek <s1seetee@linux.vnet.ibm.com>
+Date:   Wed Jan 11 15:36:33 2017 +0530
+
+    warning: command substitution: ignored null byte in input device
+    
+    Ubuntu 17.04: "command substitution: ignored null byte in input" warning message is displayed while running few RAS commands.
+    
+    The command execution of ls-veth, ls-vscsi, lsdevinfo, and ofpathname returns following output.
+    
+    lsdevinfo
+    /usr/sbin/lsdevinfo: line 233: warning: command substitution: ignored null byte in input
+    device: name="ibmveth2"
+    ls-vscsi
+    /usr/sbin/ls-vscsi: line 72: warning: command substitution: ignored null byte in input
+    host0 U8286.42A.1069B3T-V8-C17-T1
+    ls-veth
+    /usr/sbin/ls-veth: line 74: warning: command substitution: ignored null byte in input
+    ibmveth2 U8286.42A.1069B3T-V8-C2-T1
+    ofpathname sda
+    /usr/sbin/ofpathname: line 812: warning: command substitution: ignored null byte in input
+    /usr/sbin/ofpathname: line 865: cd: too many arguments
+    /vdevice/v-scsi@30000011/disk@8100000000000000
+    
+    Newer versions of bash (Bash 4.4)  warn about null bytes in command substitutions. This is fixed.
+    
+    Also fixed /usr/sbin/ofpathname: line 865: cd: too many arguments.
+    
+    Signed-off-by: Seeteena Thoufeek <s1seetee@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 25b8f7d67fb3acee0970cd36f24dc17fac1f6dc3
+Author: Pawan K Singh5 <pawan123@linux.vnet.ibm.com>
+Date:   Mon Apr 10 15:00:28 2017 +0530
+
+    ofpathname : avoid duplicate entries of vFC devices
+    
+    Adding support to avoid the duplicate entries of a Open Firmware device path to
+    logical device path for vfc-client devices.
+    
+    The problem can be reproduced with the bootlist command
+    
+    # bootlist -m normal /dev/sdd /dev/sds /dev/sdf /dev/sdv
+    # bootlist -m normal -r
+    /vdevice/vfc-client@30000899/disk@500507680b2255fe
+    /vdevice/vfc-client@30000899/disk@500507680b2255ff
+    /vdevice/vfc-client@3000089a/disk@500507680b2255fe
+    /vdevice/vfc-client@3000089a/disk@500507680b2255ff
+    # bootlist -m normal -o
+    sda---------------->expected "sdd"
+    sdp---------------->expected "sds"
+    sda---------------->expected "sdf"
+    sdp---------------->expected "sdv"
+    
+    So, this patch check the duplicate entries of logical names of vFC devices at of2l_vfc()
+    and display specified bootlist :
+    
+    # bootlist -m normal -r
+    /vdevice/vfc-client@30000899/disk@500507680b2255fe
+    /vdevice/vfc-client@30000899/disk@500507680b2255ff
+    /vdevice/vfc-client@3000089a/disk@500507680b2255fe
+    /vdevice/vfc-client@3000089a/disk@500507680b2255ff
+    # bootlist -m normal -o
+    sdd
+    sds
+    sdf
+    sdv
+    
+    Signed-off-by: Pawan K Singh5 <pawan123@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
 powerpc-utils-1.3.3
 =====================================================================
 
