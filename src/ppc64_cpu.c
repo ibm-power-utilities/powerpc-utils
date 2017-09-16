@@ -64,7 +64,7 @@ struct cpu_freq {
 	int offline;
 	int counter;
 	pthread_t tid;
-	unsigned long long freq;
+	double freq;
 };
 
 #ifndef __NR_perf_event_open
@@ -860,6 +860,9 @@ static int setup_counters(struct cpu_freq *cpu_freqs)
 	attr.disabled = 1;
 	attr.size = sizeof(attr);
 
+	/* Record how long the event ran for */
+	attr.read_format |= PERF_FORMAT_TOTAL_TIME_RUNNING;
+
 	for (i = 0; i < threads_in_system; i++) {
 		if (!cpu_online(i)) {
 			cpu_freqs[i].offline = 1;
@@ -907,9 +910,15 @@ static void stop_counters(struct cpu_freq *cpu_freqs)
 	}
 }
 
+struct read_format {
+	uint64_t value;
+	uint64_t time_running;
+};
+
 static void read_counters(struct cpu_freq *cpu_freqs)
 {
 	int i;
+	struct read_format vals;
 
 	for (i = 0; i < threads_in_system; i++) {
 		size_t res;
@@ -917,9 +926,16 @@ static void read_counters(struct cpu_freq *cpu_freqs)
 		if (cpu_freqs[i].offline)
 			continue;
 
-		res = read(cpu_freqs[i].counter, &cpu_freqs[i].freq,
-			   sizeof(unsigned long long));
-		assert(res == sizeof(unsigned long long));
+		res = read(cpu_freqs[i].counter, &vals, sizeof(vals));
+		assert(res == sizeof(vals));
+
+		/* Warn if we don't get at least 0.1s of time on the CPU */
+		if (vals.time_running < 100000000) {
+			fprintf(stderr, "Measurement interval was too small, is someone running perf?\n");
+			exit(1);
+		}
+
+		cpu_freqs[i].freq = 1.0 * vals.value / vals.time_running;
 
 		close(cpu_freqs[i].counter);
 	}
@@ -1048,16 +1064,14 @@ static void setrlimit_open_files(void)
 	setrlimit(RLIMIT_NOFILE, &new_rlim);
 }
 
-#define freq_calc(cycles, time)	(1.0 * (cycles) / (time) / 1000000000ULL)
-
 static int do_cpu_frequency(int sleep_time)
 {
 	int i, rc;
-	unsigned long long min = -1ULL;
+	double min = -1ULL;
 	unsigned long min_cpu = -1UL;
-	unsigned long long max = 0;
+	double max = 0;
 	unsigned long max_cpu = -1UL;
-	unsigned long long sum = 0;
+	double sum = 0;
 	unsigned long count = 0;
 	struct cpu_freq *cpu_freqs;
 
@@ -1098,7 +1112,7 @@ static int do_cpu_frequency(int sleep_time)
 	read_counters(cpu_freqs);
 
 	for (i = 0; i < threads_in_system; i++) {
-		unsigned long long frequency;
+		double frequency;
 
 		if (cpu_freqs[i].offline)
 			continue;
@@ -1118,11 +1132,9 @@ static int do_cpu_frequency(int sleep_time)
 	}
 
 	report_system_power_mode();
-	printf("min:\t%.3f GHz (cpu %ld)\n", freq_calc(min, sleep_time),
-	       min_cpu);
-	printf("max:\t%.3f GHz (cpu %ld)\n", freq_calc(max, sleep_time),
-	       max_cpu);
-	printf("avg:\t%.3f GHz\n\n", freq_calc((sum / count), sleep_time));
+	printf("min:\t%.3f GHz (cpu %ld)\n", min, min_cpu);
+	printf("max:\t%.3f GHz (cpu %ld)\n", max, max_cpu);
+	printf("avg:\t%.3f GHz\n\n", sum / count);
 
 	free(cpu_freqs);
 	return 0;
