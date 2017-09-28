@@ -422,6 +422,10 @@ while [[ -n $1 ]]; do
 	    add_logical $i
 	done
 	shift
+    elif [[ $1 = "--help" ]]; then
+       # display bootlist command help message
+       usage
+       exit 0
     elif [[ $1 = -* ]]; then
     	# catch any illegal flags here
 	usage
