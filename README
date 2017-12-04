@@ -1,6 +1,8 @@
 powerpc-utils package
 ==========================
 
+Mailing List: powerpc-utils-devel@googlegroups.com
+
 This package contains utilities which are intended for maintenance of IBM 
 powerpc platforms that follow the POWER Architecture Platform Reference (PAPR),
 This package requires the librtas package in order to function properly.
