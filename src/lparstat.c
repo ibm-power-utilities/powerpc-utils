@@ -203,11 +203,12 @@ int parse_lparcfg()
 int parse_proc_ints()
 {
 	FILE *f;
-	char *line, *p;
+	char *line;
 	size_t n = 0;
 	char *value;
 	struct sysentry *se;
 	long long int phint = 0;
+	const char *delim = " ";
 
 	f = fopen("/proc/interrupts", "r");
 	if (!f) {
@@ -216,20 +217,22 @@ int parse_proc_ints()
 	}
 
 	while (getline(&line, &n, f) != -1) {
-		p = line;
-		while (*p == ' ')
-			p++;
-
 		/* we just need the SPU line */
-		if (p[0] != 'S' || p[1] != 'P' || p[2] != 'U')
+		if (!strstr(line, "SPU:"))
 			continue;
 
-		for (value = &p[5]; value[2] != 'S'; value += 11) {
+		/* target line. omit the 'SPU:' */
+		value = strtok(line, delim);
+		if (!value)
+			break;
+
+		while ((value = strtok(NULL, delim)) && value[0] != 'S') {
 			int v;
 			v = atoi(value);
 			phint += v;
 		}
 
+		/* skim the rest of the lines */
 		break;
 	}
 
