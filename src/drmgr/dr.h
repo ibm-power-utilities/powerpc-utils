@@ -68,6 +68,7 @@ enum drc_type {DRC_TYPE_NONE, DRC_TYPE_PCI, DRC_TYPE_SLOT, DRC_TYPE_PHB,
 	       DRC_TYPE_HIBERNATE, DRC_TYPE_MIGRATION};
 
 extern enum drmgr_action usr_action;
+extern int display_capabilities;
 extern int usr_slot_identification;
 extern int usr_timeout;
 extern char *usr_drc_name;

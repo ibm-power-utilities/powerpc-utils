@@ -38,7 +38,6 @@ int output_level = 1; /* default to lowest output level */
 int log_fd = 0;
 int action_cnt = 0;
 
-static int display_capabilities = 0;
 static int handle_prrn_event = 0;
 static int display_usage = 0;
 
