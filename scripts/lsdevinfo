@@ -273,7 +273,7 @@ for pci_dev in $($LS -d /proc/device-tree/pci* 2> /dev/null); do
 	parent="pci"
 
 	# get the physical location 
-	physloc=$($CAT $dev/ibm,loc-code)
+	physloc=$(tr -d '\0' < $dev/ibm,loc-code)
 	type="$($OD -t x2 $dev/vendor-id $dev/device-id |
 		$CUT -f3,5 -d ' ' -s --output-delimiter='')"
 	uniquetype="adapter/pci/$type"
@@ -438,7 +438,7 @@ done
 # Look at every ibmvfc (Virtual FibreChannel) device
 for dev in $($LS -d /proc/device-tree/vdevice/vfc-client* 2> /dev/null) ; do
     # pull the physical location
-    physloc=$(cat $dev/ibm,loc-code)
+    physloc=$(tr -d '\0' < $dev/ibm,loc-code)
     connection=$(echo $dev | $SED -e "s/\/proc\/device-tree\/vdevice\/vfc-client@//")
     hostphysloc=$physloc
 
