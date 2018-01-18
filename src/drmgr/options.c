@@ -21,6 +21,9 @@
 /* Global User Specifications */
 enum drmgr_action usr_action = NONE;
 
+/* the init routines may need to know this to enable all features */
+int display_capabilities = 0;
+
 /* default is to do slot identification, unless the drmgr -I
  * option is specified.
  */
