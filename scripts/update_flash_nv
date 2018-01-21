@@ -58,6 +58,9 @@ DT_PATH=/proc/device-tree
 DT_FW_MI_FILE=${DT_PATH}/ibm,opal/firmware/mi-version
 DT_FW_ML_FILE=${DT_PATH}/ibm,opal/firmware/ml-version
 
+# Firmware versions device tree node
+DT_PATH_FW_NODE=${DT_PATH}/ibm,firmware-versions
+
 # Code update status values
 FLASH_SUCCESS=0			# Success
 FLASH_PARAM_ERR=-1		# Parameter error
@@ -587,7 +590,49 @@ opp_manage_flash() {
 	exit $E_SUCCESS
 }
 
-opp_display_current_fw_version() {
+# Use device tree to get firmware version
+opp_display_dt_firmware_version() {
+	local prop_prod=""
+
+	echo
+	echo "Firmware version:"
+
+	# Different BMCs uses different device tree property to display
+	# product name. On P9 system OPAL firmware takes care of parsing
+	# and it will add version property under device tree. But on older
+	# systems will have IBM or open-power or buildroot depending on
+	# who builds firmware image.
+	if [ -f $DT_PATH_FW_NODE/version ]; then
+		prop_prod=version
+	elif [ -f $DT_PATH_FW_NODE/IBM ]; then
+		prop_prod=IBM
+	elif [ -f $DT_PATH_FW_NODE/open-power ]; then
+		prop_prod=open-power
+	elif [ -f $DT_PATH_FW_NODE/buildroot ]; then
+		prop_prod=buildroot
+	fi
+
+	if [ "$prop_prod" != "" ]; then
+		echo " Product Version       : $(tr -d '\0' < $DT_PATH_FW_NODE/$prop_prod)"
+	fi
+
+	for i in `ls $DT_PATH_FW_NODE`
+	do
+		if [ "$i" = "$prop_prod" ]; then
+			continue
+		fi
+		if [ "$i" = "name" ]; then
+			continue
+		fi
+		if [ "$i" = "phandle" ] || [ "$i" = "linux,phandle" ]; then
+			continue
+		fi
+		echo " Product Extra         : $i-$(tr -d '\0' < $DT_PATH_FW_NODE/$i)"
+	done
+}
+
+# Use inband ipmi interface to get firmware version
+opp_display_ipmi_fw_version() {
 	which ipmitool >/dev/null 2>&1
 	if [ $? -ne 0 ]; then
 		echo "update_flash: ipmitool command not found."
@@ -609,6 +654,14 @@ opp_display_current_fw_version() {
 
 	echo "Firmware version:"
 	ipmitool fru print $id
+}
+
+opp_display_current_fw_version() {
+	if [ -d $DT_PATH_FW_NODE ]; then
+		opp_display_dt_firmware_version
+	else
+		opp_display_ipmi_fw_version
+	fi
 
 	exit $E_SUCCESS
 }
