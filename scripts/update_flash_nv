@@ -588,16 +588,27 @@ opp_manage_flash() {
 }
 
 opp_display_current_fw_version() {
-	check_ipmitool
+	which ipmitool >/dev/null 2>&1
+	if [ $? -ne 0 ]; then
+		echo "update_flash: ipmitool command not found."
+		error $E_IPMI "Please install ipmitool and retry."
+	fi
+
+	# Use inband interface to get firmware version
+	ipmitool mc info >/dev/null 2>&1 && break;
+	if [ $? -ne 0 ]; then
+		echo "update_flash: ipmi inband interface is not working."
+		error $E_IPMI "Check 'ipmi_devintf' kernel module loaded or not."
+	fi
 
 	echo
-	id=`ipmitool -I usb fru 2>/dev/null |grep "System Firmware" | cut -d " " -f8 | cut -d ")" -f1`
+	id=`ipmitool fru 2>/dev/null |grep "System Firmware" | cut -d " " -f8 | cut -d ")" -f1`
 	if [ "x$id" = "x" ]; then
 		error $E_IPMI "Failed to get firmware version."
 	fi
 
 	echo "Firmware version:"
-	ipmitool -I usb fru print $id
+	ipmitool fru print $id
 
 	exit $E_SUCCESS
 }
