@@ -51,14 +51,12 @@ AC_ARG_WITH([librtas],
 )
 
 AS_IF([test "x$with_librtas" != "xno"],
-	[AC_CHECK_HEADER([librtas.h],
-        [
-	    with_libtras=yes
-            AC_DEFINE(WITH_LIBRTAS)
-	],
-        [AC_MSG_FAILURE(
-                [librtas test failed (--without-librtas to disable)])]
-    )]
+	[AC_CHECK_HEADER(librtas.h, [], [AC_MSG_FAILURE([librtas.h is required (--without-librtas to disable)])])]
+	[AC_CHECK_LIB(rtas, rtas_errinjct_open, [], [AC_MSG_FAILURE([librtas library is missing (--without-librtas to disable)])])]
+	[AC_CHECK_HEADER(librtasevent.h, [], [AC_MSG_FAILURE([librtasevent.h is required (--without-librtas to disable)])])]
+	[AC_CHECK_LIB(rtasevent, parse_rtas_event, [], [AC_MSG_FAILURE([librtasevent library is missing (--without-librtas to disable)])])]
+
+	AC_DEFINE(WITH_LIBRTAS)
 )
 
 AM_CONDITIONAL([WITH_LIBRTAS], [test "x$with_librtas" = "xyes"])
