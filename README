@@ -39,24 +39,6 @@ adapter targets using device mapping, querying console adapters, querying
 adapters based upon device node, gathering status, and closing all open
 adapters.  Documentation is provided in man page hvcsadmin (8).
 
-ibmvscsis.sh: IBMVSCSIS driver init script
--------
-When symlinked into start and stop run levels this script can provide vscsi
-server operation automation.  It supports the standard array of init script
-options {start|stop|status|restart}.  By design this script executes
-operations in silent mode.  For extended vscsi server operations the
-vscsisadmin script should be used instead.  Documentation is provided in
-man page ibmvscsis.sh (8).
-
-vscsisadmin: IBM Virtual SCSI Server (ibmvscsis) administration utilities
--------
-This is the virtual scsi server administration utility which simplifies
-configuration, starting, and stopping of an IBM virtual SCSI server.  This
-script can be run standalone or it can be invoked via the ibmvscsis.sh init
-script.  Documentation is provided in man page vscsisadmin (8).  Configuration
-script documentation is provided in ibmvscsis.conf (8) and outlines the proper
-method for writing a well formed ibmvscsis configuration file.
-
 drmgr:
 -----
 Dynamic reconfiguration manager.  This isn't neccessarily meant to be invoked
