@@ -1,3 +1,209 @@
+powerpc-utils-1.3.5
+=====================================================================
+
+commit 35d01313b5d03069bf8cabbcdfe39944da4ae65c
+Author: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+Date:   Thu Jun 14 16:08:50 2018 -0700
+
+    lsslot: add DRC Type description strings for new U.2 PCIe slots
+    
+    Two new PCI slot types can be reported from firmware in the DRC Type
+    property for a PCI device. The following are the slot descriptions for
+    DRC types 43 and 44.
+    
+    43	A U.2 PCI Express Rev 3 4x lane slot with 4x lanes connected
+    44	A U.2 PCI Express Rev 4 4x lane slot with 4x lanes connected
+    
+    Currently, the lsslot utility reports "Unknown" for the description of
+    these pci devices. Update the php_slot_type_msg[] with these new slot
+    descriptions so that lsslot correctly reports them.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 02249d0ce03ae6b06ca5dac47a53bdeb8986ac81
+Author: John Allen <jallen@linux.vnet.ibm.com>
+Date:   Thu Mar 15 11:12:05 2018 -0500
+
+    lsslot: Remove extra call to free_lmbs in failure cases
+    
+    This reverts commit e6f476d32c33f5b8e364f930c467785495eeb0ce.
+    
+     From my inspection, get_lmbs frees the lmb_list correctly in all failure
+    cases. The extra call to free_lmbs will cause the lmb_list to be freed
+    twice. I think it's likely that the original coverity issue that this was
+    meant to address was a false positive. Reverting the change has been seen
+    to resolve a seg fault.
+    
+    Signed-off-by: John Allen <jallen@linux.vnet.ibm.com>
+    Reviewed-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 05bb057b8953d536a952ff86eea3b0afeeefb377
+Author: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+Date:   Thu Feb 15 15:35:20 2018 -0800
+
+    ibmvscsis: remove deprecated ibmvscsis scripts and docs
+    
+    The original ibmvscsis module was removed from the kernel a long time
+    ago, and has since been replaced with a new LIO implementation. The
+    documentation and administration scripts supplied in this package as
+    such have been deprecated. Lets go ahead and remove them.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 9d86e33b7605e25473ea0a11d22a300274c8169b
+Author: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+Date:   Mon Jan 22 17:50:23 2018 -0600
+
+    Test for librtas/librtasevent headers and libraries
+    
+    The current configure script only tests for the presence of librtas.h. Certain
+    distros have chosen to split the librtas package into seperate librtas and
+    librtasevent library/development packages. As a result compilation will fail
+    for the rtas_event_decode utility if librtasevent.h is missing.
+    
+    Fix this by also checking for librtasevent.h, and for sanity purposes that
+    the libraries themselves are actually present and linkable.
+    
+    Reported-by: Anton Blanchard <anton.blanchard@gmail.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 7790c5ae7ff50785c26e7d3942e0b86c9edb9df2
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Sun Jan 21 21:10:08 2018 +0530
+
+    update_flash: Use device tree to get firmware version details
+    
+    On P9, OPAL exports firmware information via device tree
+    (/ibm,firmware-versions node). Even recent hostboot firmware on P8 BMC system
+    exports these information via mini device tree.
+    
+    Lets add support to parse device tree to get firmware information. If firmware
+    information is not present in device tree then fall back to existing ipmi
+    method.
+    
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 081e7ac9675b49346e937236f38822b33c8c751b
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Sun Jan 21 21:10:07 2018 +0530
+
+    update_flash: Use inband ipmi path to get firmware version
+    
+    update_flash_nv uses 'ipmitool -I usb' interface to get firmware version
+    details. This is AMI BMC OEM feature and not available on other BMC systems.
+    Hence lets use inband interface to get firmware version details.
+    
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 73d847367d1a136d8e83d48e7ca4ff4602c0f5c7
+Author: Michal Suchanek <msuchanek@suse.de>
+Date:   Thu Jan 18 15:38:00 2018 -0800
+
+    drmgr: load rpadlpar_io on -C as well
+    
+    Users do drmgr -C to verify their system.
+    
+    However, -C does not select any hotplug type, and the rpadlpar_io kernel
+    module is loaded only when hotplug type pci, phb or slot is selected.
+    
+    Make display_capabilities global and check it in check_kmods()
+    
+    Signed-off-by: Michal Suchanek <msuchanek@suse.de>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 7fb22cb5b8a0c95821024aa84750945134303f20
+Author: John Allen <jallen@linux.vnet.ibm.com>
+Date:   Wed Dec 6 10:33:59 2017 -0600
+
+    lparstat: Fix parsing of /proc/interrupts SPU line
+    
+    The current means of parsing the SPU line in /proc/interrupts is incorrect.
+    Adding 11 to the current pointer is only correct if the number of SPU
+    interrupts in each column is a single digit. Otherwise, for values with
+    more than a single digit, we will only see the last digit of the value.
+    This patch fixes the issue by using strstr to check for the SPU line and
+    strtok to split the line into tokens in order to omit the arbitrary
+    whitespace between values.
+    
+    Signed-off-by: John Allen <jallen@linux.vnet.ibm.com>
+    Reported-by: Flos Lonicerae <lonicerae@gmail.com>
+    Reviewed-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 3dcc222814ec1d661710eda320aced13566817f2
+Author: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+Date:   Fri Jan 5 13:00:31 2018 -0800
+
+    lsdevinfo: fixup more null byte command substitution warnings
+    
+    As was pointed out in commit 4fcc611a09ca ("warning: command
+    substitution: ignored null byte in input device") newer versions of Bash
+    (bash 4.4) warn about null byte in command substitutions. While that
+    commit fixed serveral instance by replacing the "cat" command with "tr"
+    it missed two other instances in the lsdevinfo script where cat was
+    being used to grab the "ibm,loc-code" property for a device.
+    
+    This patch fixes the other two instances for virtual fibre channel
+    devices and pci ethernet devices.
+    
+    fixes: 4fcc611a09ca ("warning: command substitution: ignored null byte in input device")
+    Cc: Seeteena Thoufeek <s1seetee@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 1f79078c979555a58a72326a318d956eb4efe4b5
+Author: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+Date:   Mon Dec 4 12:34:26 2017 -0800
+
+    Add mailing list address to README
+    
+    Its been pointed out that the development mailing list address is not
+    listed in the README file, and that a google search still points to our
+    old sourceforge list.
+    
+    Update the README with our current development mailing list.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 149c7022a56e0ffb5fe27681f574d46860323e3c
+Author: Anton Blanchard <anton.blanchard@gmail.com>
+Date:   Sun Oct 8 21:49:17 2017 -0700
+
+    ppc64_cpu: Scale CPU cycles counter by amount of time it ran
+    
+    At the moment we start a CPU cycles counter, sleep one second and
+    read the counter value, assuming we got one second of time on the
+    PMU.
+    
+    There are two issues with this. If someone else is consuming all
+    the available PMCs, we may end up context switching the PMC and
+    count for half (or less) of the time. In this case we report a CPU
+    frequency that is half (or less) of what it should be.
+    
+    On the other hand if the sleep goes for longer than one second which
+    might happen on a busy box, then we count for too long and report a
+    CPU frequency that is too high.
+    
+    Also check that we got a reasonable number of cycles and report
+    an error if we did not.
+    
+    Signed-off-by: Anton Blanchard <anton@samba.org>
+
+commit 8f9cd40fbcdda9d2447a1e51ed5dee2cb5c44542
+Author: Harish <harish@linux.vnet.ibm.com>
+Date:   Fri Sep 29 10:34:44 2017 +0530
+
+    bootlist: Handle --help option
+    
+    This patch handles --help option for bootlist command and returns
+    with 0
+    
+    Signed-off-by: Harish <harish@linux.vnet.ibm.com>
+    [tyreld: reword patch subject line]
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
 powerpc-utils-1.3.4
 =====================================================================
 
