@@ -453,6 +453,8 @@ if [[ ${#LOGICAL_NAMES[*]} -ne 0 ]]; then
         if [[ -z ${OF_DEVPATH[$ctr]} ]]; then
 	    # See if this is an OF pathname
 	    OF_DEVPATH[$ctr]=`get_of_device_name ${LOGICAL_NAMES[$ctr]}`
+	else
+	    OF_DEVPATH[$ctr]=${LOGICAL_NAMES[$ctr]}
         fi
 
         if [[ -z ${OF_DEVPATH[$ctr]} ]]; then
