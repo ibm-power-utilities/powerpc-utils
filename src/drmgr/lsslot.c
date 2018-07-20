@@ -35,6 +35,8 @@
 int output_level = 0;
 int log_fd = 0;
 
+int is_lsslot_cmd = 1;
+
 extern int lsslot_chrp_cpu(void);
 
 /**

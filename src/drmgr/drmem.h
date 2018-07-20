@@ -37,6 +37,14 @@ struct drconf_mem {
 	uint32_t	flags;
 };
 
+struct drconf_mem_v2 {
+	uint32_t	seq_lmbs;
+	uint64_t	base_addr;
+	uint32_t	drc_index;
+	uint32_t	aa_index;
+	uint32_t	flags;
+} __attribute__((packed));
+
 #define DRMEM_ASSIGNED		0x00000008
 #define DRMEM_DRC_INVALID	0x00000020
 
@@ -44,6 +52,7 @@ struct drconf_mem {
 #define MEM_BLOCK_SIZE_BYTES	"/sys/devices/system/memory/block_size_bytes"
 #define DYNAMIC_RECONFIG_MEM	"/proc/device-tree/ibm,dynamic-reconfiguration-memory"
 #define DYNAMIC_RECONFIG_MEM_V1	DYNAMIC_RECONFIG_MEM "/ibm,dynamic-memory"
+#define DYNAMIC_RECONFIG_MEM_V2	DYNAMIC_RECONFIG_MEM "/ibm,dynamic-memory-v2"
 
 #define LMB_NORMAL_SORT		0
 #define LMB_REVERSE_SORT	1

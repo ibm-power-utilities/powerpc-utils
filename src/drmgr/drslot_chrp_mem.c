@@ -306,6 +306,38 @@ get_mem_node_lmbs(struct lmb_list_head *lmb_list)
 	return rc;
 }
 
+int add_lmb(struct lmb_list_head *lmb_list, uint32_t drc_index,
+	    uint64_t address, uint64_t lmb_sz, uint32_t aa_index,
+	    uint32_t flags)
+{
+	struct dr_node *lmb;
+
+	lmb = lmb_list_add(drc_index, lmb_list);
+	if (lmb == NULL) {
+		say(DEBUG, "Could not find LMB with drc-index of %x\n",
+		    drc_index);
+		return -1;
+	}
+
+	sprintf(lmb->ofdt_path, DYNAMIC_RECONFIG_MEM);
+	lmb->lmb_size = lmb_sz;
+	lmb->lmb_address = address;
+	lmb->lmb_aa_index = aa_index;
+
+	if (flags & DRMEM_ASSIGNED) {
+		int rc;
+
+		lmb->is_owned = 1;
+
+		/* find the associated sysfs memory blocks */
+		rc = get_mem_scns(lmb);
+		if (rc)
+			return -1;
+	}
+
+	lmb_list->lmbs_found++;
+	return 0;
+}
 /**
  * get_dynamic_reconfig_lmbs_v1
  * @brief Retrieve lmbs from OF device tree located in the ibm,dynamic-memory
@@ -349,31 +381,81 @@ get_dynamic_reconfig_lmbs_v1(uint64_t lmb_sz, struct lmb_list_head *lmb_list)
 	drmem = (struct drconf_mem *)
 				(lmb_list->drconf_buf + sizeof(num_entries));
 	for (i = 0; i < num_entries; i++) {
-		struct dr_node *lmb;
-
-		lmb = lmb_list_add(be32toh(drmem->drc_index), lmb_list);
-		if (lmb == NULL) {
-			say(DEBUG, "Could not find LMB with drc-index of %x\n",
-			    drmem->drc_index);
-			rc = -1;
+		rc = add_lmb(lmb_list, be32toh(drmem->drc_index),
+			     be64toh(drmem->address), lmb_sz,
+			     be32toh(drmem->assoc_index),
+			     be32toh(drmem->flags));
+		if (rc)
 			break;
-		}
 
-		sprintf(lmb->ofdt_path, DYNAMIC_RECONFIG_MEM);
-		lmb->lmb_size = lmb_sz;
-		lmb->lmb_address = be64toh(drmem->address);
-		lmb->lmb_aa_index = be32toh(drmem->assoc_index);
+		drmem++; /* trust your compiler */
+	}
 
-		if (be32toh(drmem->flags) & DRMEM_ASSIGNED) {
-			lmb->is_owned = 1;
+	return rc;
+}
 
-			/* find the associated sysfs memory blocks */
-			rc = get_mem_scns(lmb);
+/**
+ * get_dynamic_reconfig_lmbs_v2
+ * @brief Retrieve the LMBs from the ibm,dynamic-memory-v2 property
+ *
+ * @param lmb_sz LMB size
+ * @param lmb_list pointer to lmb_list head to populate
+ * @returns 0 on success, !0 on failure.
+ */
+int get_dynamic_reconfig_lmbs_v2(uint64_t lmb_sz,
+				 struct lmb_list_head *lmb_list)
+{
+	struct drconf_mem_v2 *drmem;
+	uint32_t lmb_sets;
+	int i, rc = 0;
+
+	lmb_list->drconf_buf_sz = get_property_size(DYNAMIC_RECONFIG_MEM,
+						   "ibm,dynamic-memory-v2");
+	lmb_list->drconf_buf = zalloc(lmb_list->drconf_buf_sz);
+	if (lmb_list->drconf_buf == NULL) {
+		say(DEBUG, "Could not allocate buffer to get dynamic "
+		    "reconfigurable memory\n");
+		return -1;
+	}
+
+	rc = get_property(DYNAMIC_RECONFIG_MEM, "ibm,dynamic-memory-v2",
+			  lmb_list->drconf_buf, lmb_list->drconf_buf_sz);
+	if (rc) {
+		say(DEBUG, "Could not retrieve dynamic reconfigurable memory "
+		    "property\n");
+		return -1;
+	}
+
+	/* The first integer of the buffer is the number of lmb sets */
+	lmb_sets = *(int *)lmb_list->drconf_buf;
+	lmb_sets = be32toh(lmb_sets);
+
+	/* Followed by the actual entries */
+	drmem = (struct drconf_mem_v2 *)
+				(lmb_list->drconf_buf + sizeof(lmb_sets));
+
+	for (i = 0; i < lmb_sets; i++) {
+		uint32_t drc_index, seq_lmbs;
+		uint64_t address;
+		int j;
+
+		address = be64toh(drmem->base_addr);
+		drc_index = be32toh(drmem->drc_index);
+		seq_lmbs = be32toh(drmem->seq_lmbs);
+
+		for (j = 0; j < seq_lmbs; j++) {
+			uint32_t aa_index = be32toh(drmem->aa_index);
+			uint32_t flags = be32toh(drmem->flags);
+
+			rc = add_lmb(lmb_list, drc_index, address,
+				     lmb_sz, aa_index, flags);
 			if (rc)
 				break;
+
+			drc_index++;
+			address += lmb_sz;
 		}
 
-		lmb_list->lmbs_found++;
 		drmem++; /* trust your compiler */
 	}
 
@@ -408,6 +490,9 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
 
 	if (stat(DYNAMIC_RECONFIG_MEM_V1, &sbuf) == 0) {
 		rc = get_dynamic_reconfig_lmbs_v1(lmb_sz, lmb_list);
+	} else if (is_lsslot_cmd &&
+		   stat(DYNAMIC_RECONFIG_MEM_V2, &sbuf) == 0) {
+		rc = get_dynamic_reconfig_lmbs_v2(lmb_sz, lmb_list);
 	} else {
 		say(ERROR, "No dynamic reconfiguration LMBs found\n");
 		return -1;

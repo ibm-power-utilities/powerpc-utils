@@ -32,6 +32,8 @@
 extern int output_level;
 extern int log_fd;
 
+extern int is_lsslot_cmd;
+
 /* Error Exit Codes */
 #define RC_IN_USE		1
 #define RC_NONEXISTENT 		3
