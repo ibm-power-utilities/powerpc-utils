@@ -307,31 +307,20 @@ get_mem_node_lmbs(struct lmb_list_head *lmb_list)
 }
 
 /**
- * get_dynamic_reconfig_lmbs
+ * get_dynamic_reconfig_lmbs_v1
  * @brief Retrieve lmbs from OF device tree located in the ibm,dynamic-memory
  * property.
  *
+ * @param lmb_sz size of LMBs
  * @param lmb_list pointer to lmb list head to populate
  * @returns 0 on success, !0 on failure
  */
 int
-get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
+get_dynamic_reconfig_lmbs_v1(uint64_t lmb_sz, struct lmb_list_head *lmb_list)
 {
 	struct drconf_mem *drmem;
-	uint64_t lmb_sz;
 	int i, num_entries;
 	int rc = 0;
-
-	rc = get_property(DYNAMIC_RECONFIG_MEM, "ibm,lmb-size",
-			  &lmb_sz, sizeof(lmb_sz));
-
-	/* convert for LE systems */
-	lmb_sz = be64toh(lmb_sz);
-
-	if (rc) {
-		say(DEBUG, "Could not retrieve drconf LMB size\n");
-		return rc;
-	}
 
 	lmb_list->drconf_buf_sz = get_property_size(DYNAMIC_RECONFIG_MEM,
 						   "ibm,dynamic-memory");
@@ -386,6 +375,42 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
 
 		lmb_list->lmbs_found++;
 		drmem++; /* trust your compiler */
+	}
+
+	return rc;
+}
+
+/**
+ * get_dynamic_reconfig_lmbs
+ * @brief Retrieve lmbs from OF device tree located in the ibm,dynamic-memory
+ * property.
+ *
+ * @param lmb_list pointer to lmb list head to populate
+ * @returns 0 on success, !0 on failure
+ */
+int
+get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
+{
+	struct stat sbuf;
+	uint64_t lmb_sz;
+	int rc = 0;
+
+	rc = get_property(DYNAMIC_RECONFIG_MEM, "ibm,lmb-size",
+			  &lmb_sz, sizeof(lmb_sz));
+
+	/* convert for LE systems */
+	lmb_sz = be64toh(lmb_sz);
+
+	if (rc) {
+		say(DEBUG, "Could not retrieve drconf LMB size\n");
+		return rc;
+	}
+
+	if (stat(DYNAMIC_RECONFIG_MEM_V1, &sbuf) == 0) {
+		rc = get_dynamic_reconfig_lmbs_v1(lmb_sz, lmb_list);
+	} else {
+		say(ERROR, "No dynamic reconfiguration LMBs found\n");
+		return -1;
 	}
 
 	say(INFO, "Found %d LMBs currently allocated\n", lmb_list->lmbs_found);

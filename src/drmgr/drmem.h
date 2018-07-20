@@ -43,6 +43,7 @@ struct drconf_mem {
 #define MEM_PROBE_FILE		"/sys/devices/system/memory/probe"
 #define MEM_BLOCK_SIZE_BYTES	"/sys/devices/system/memory/block_size_bytes"
 #define DYNAMIC_RECONFIG_MEM	"/proc/device-tree/ibm,dynamic-reconfiguration-memory"
+#define DYNAMIC_RECONFIG_MEM_V1	DYNAMIC_RECONFIG_MEM "/ibm,dynamic-memory"
 
 #define LMB_NORMAL_SORT		0
 #define LMB_REVERSE_SORT	1
