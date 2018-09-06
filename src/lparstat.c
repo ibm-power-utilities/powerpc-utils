@@ -123,6 +123,32 @@ int get_time_base()
 	return 0;
 }
 
+void get_sys_uptime(struct sysentry *unused_se, char *uptime)
+{
+	FILE *f;
+	char buf[80];
+
+	f = fopen("/proc/uptime", "r");
+	if (!f) {
+		fprintf(stderr, "Could not open /proc/uptime\n");
+		sprintf(uptime, SE_NOT_VALID);
+		return;
+	}
+
+	if ((fgets(buf, 80, f)) != NULL) {
+		char *value;
+
+		value = strchr(buf, ' ');
+		*value = '\0';
+		sprintf(uptime, "%s", buf);
+	} else {
+		sprintf(uptime, SE_NOT_VALID);
+	}
+
+	fclose(f);
+}
+
+
 void get_cpu_physc(struct sysentry *unused_se, char *buf)
 {
 	struct sysentry *se;
@@ -153,6 +179,44 @@ void get_per_entc(struct sysentry *unused_se, char *buf)
 	get_sysdata("physc", &descr, physc);
 
 	sprintf(buf, "%.6f", atof(physc) / atof(entc) * 100.0);
+}
+
+void get_cpu_app(struct sysentry *unused_se, char *buf)
+{
+	struct sysentry *se;
+	float timebase, app, elapsed_time;
+	long long new_app, old_app, newtime, oldtime;
+	char *descr, uptime[32];
+
+	se = get_sysentry("time");
+	if (se->old_value[0] == '\0') {
+		/* Single report since boot */
+		get_sysdata("uptime", &descr, uptime);
+
+		if (!strcmp(uptime, SE_NOT_VALID)) {
+			sprintf(buf, "-");
+			return;
+		}
+		elapsed_time = atof(uptime);
+	} else {
+		newtime = strtoll(se->value, NULL, 0);
+		oldtime = strtoll(se->old_value, NULL, 0);
+		elapsed_time = (newtime - oldtime) / 1000000.0;
+	}
+
+	se = get_sysentry("timebase");
+	timebase = atof(se->value);
+
+	se = get_sysentry("pool_idle_time");
+	new_app = strtoll(se->value, NULL, 0);
+	if (se->old_value[0] == '\0') {
+		old_app = 0;
+	} else {
+		old_app = strtoll(se->old_value, NULL, 0);
+	}
+
+	app = (new_app - old_app)/timebase/elapsed_time;
+	sprintf(buf, "%.2f", app);
 }
 
 int parse_lparcfg()
@@ -527,13 +591,13 @@ int print_iflag_data()
 
 void print_default_output(int interval, int count)
 {
-	char *fmt = "%5s %5s %5s %8s %8s %5s %5s %5s %5s\n";
+	char *fmt = "%5s %5s %5s %8s %8s %5s %5s %5s %5s %5s\n";
 	char *descr;
 	char buf[128];
 	int offset;
 	char value[32];
 	char user[32], sys[32], wait[32], idle[32], physc[32], entc[32];
-	char lbusy[32], vcsw[32], phint[32];
+	char lbusy[32], app[32], vcsw[32], phint[32];
 
 	memset(buf, 0, 128);
 	get_sysdata("shared_processor_mode", &descr, value);
@@ -554,9 +618,9 @@ void print_default_output(int interval, int count)
 	fprintf(stdout, "\nSystem Configuration\n%s\n\n", buf);
 
 	fprintf(stdout, fmt, "\%user", "\%sys", "\%wait", "\%idle", "physc",
-		"\%entc", "lbusy", "vcsw", "phint");
+		"\%entc", "lbusy", "app", "vcsw", "phint");
 	fprintf(stdout, fmt, "-----", "-----", "-----", "-----", "-----",
-		"-----", "-----", "-----", "-----");
+		"-----", "-----", "-----", "-----", "-----");
 
 	do {
 		if (interval) {
@@ -573,9 +637,10 @@ void print_default_output(int interval, int count)
 		get_sysdata("physc", &descr, physc);
 		get_sysdata("per_entc", &descr, entc);
 		get_sysdata("phint", &descr, phint);
+		get_sysdata("app", &descr, app);
 
 		fprintf(stdout, fmt, user, sys, wait, idle, physc, entc,
-			lbusy, vcsw, phint);
+			lbusy, app, vcsw, phint);
 		fflush(stdout);
 	} while (--count > 0);
 }

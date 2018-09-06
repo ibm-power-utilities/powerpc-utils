@@ -46,6 +46,8 @@ extern void get_smt_mode(struct sysentry *, char *);
 extern void get_cpu_stat(struct sysentry *, char *);
 extern void get_cpu_physc(struct sysentry *, char *);
 extern void get_per_entc(struct sysentry *, char *);
+extern void get_cpu_app(struct sysentry *, char *);
+extern void get_sys_uptime(struct sysentry *, char *);
 
 struct sysentry system_data[] = {
 	/* System Names */
@@ -221,6 +223,9 @@ struct sysentry system_data[] = {
 	{.name = "per_entc",
 	 .descr = "Entitled CPU Consumed",
 	 .get = &get_per_entc},
+	{.name = "app",
+	 .descr = "Available physical CPUs in pool",
+	 .get = &get_cpu_app},
 
 	/* Time */
 	{.name = "time",
@@ -233,6 +238,11 @@ struct sysentry system_data[] = {
 	/* /proc/interrupts */
 	{.name = "phint",
 	 .descr = "Phantom Interrupts"},
+
+	/* /proc/uptime */
+	{.name = "uptime",
+	 .descr = "System Uptime",
+	 .get = &get_sys_uptime},
 
 	{.name[0] = '\0'},
 };
