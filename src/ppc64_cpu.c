@@ -35,6 +35,7 @@
 #include <sys/ptrace.h>
 #include <sys/wait.h>
 #include <sys/resource.h>
+#include <sys/param.h>
 
 #ifdef WITH_LIBRTAS
 #include <librtas.h>
@@ -849,7 +850,7 @@ static int do_run_mode(char *run_mode)
 
 #ifdef HAVE_LINUX_PERF_EVENT_H
 
-static int setup_counters(struct cpu_freq *cpu_freqs)
+static int setup_counters(struct cpu_freq *cpu_freqs, int max_thread)
 {
 	int i;
 	struct perf_event_attr attr;
@@ -863,7 +864,7 @@ static int setup_counters(struct cpu_freq *cpu_freqs)
 	/* Record how long the event ran for */
 	attr.read_format |= PERF_FORMAT_TOTAL_TIME_RUNNING;
 
-	for (i = 0; i < threads_in_system; i++) {
+	for (i = 0; i < max_thread; i++) {
 		if (!cpu_online(i)) {
 			cpu_freqs[i].offline = 1;
 			continue;
@@ -886,11 +887,11 @@ static int setup_counters(struct cpu_freq *cpu_freqs)
 	return 0;
 }
 
-static void start_counters(struct cpu_freq *cpu_freqs)
+static void start_counters(struct cpu_freq *cpu_freqs, int max_thread)
 {
 	int i;
 
-	for (i = 0; i < threads_in_system; i++) {
+	for (i = 0; i < max_thread; i++) {
 		if (cpu_freqs[i].offline)
 			continue;
 
@@ -898,11 +899,11 @@ static void start_counters(struct cpu_freq *cpu_freqs)
 	}
 }
 
-static void stop_counters(struct cpu_freq *cpu_freqs)
+static void stop_counters(struct cpu_freq *cpu_freqs, int max_thread)
 {
 	int i;
 
-	for (i = 0; i < threads_in_system; i++) {
+	for (i = 0; i < max_thread; i++) {
 		if (cpu_freqs[i].offline)
 			continue;
 
@@ -915,12 +916,12 @@ struct read_format {
 	uint64_t time_running;
 };
 
-static void read_counters(struct cpu_freq *cpu_freqs)
+static void read_counters(struct cpu_freq *cpu_freqs, int max_thread)
 {
 	int i;
 	struct read_format vals;
 
-	for (i = 0; i < threads_in_system; i++) {
+	for (i = 0; i < max_thread; i++) {
 		size_t res;
 
 		if (cpu_freqs[i].offline)
@@ -941,11 +942,11 @@ static void read_counters(struct cpu_freq *cpu_freqs)
 	}
 }
 
-static void check_threads(struct cpu_freq *cpu_freqs)
+static void check_threads(struct cpu_freq *cpu_freqs, int max_thread)
 {
 	int i;
 
-	for (i = 0; i < threads_in_system; i++) {
+	for (i = 0; i < max_thread; i++) {
 		if (cpu_freqs[i].offline)
 			continue;
 
@@ -1074,21 +1075,27 @@ static int do_cpu_frequency(int sleep_time)
 	double sum = 0;
 	unsigned long count = 0;
 	struct cpu_freq *cpu_freqs;
+	int max_thread;
 
 	setrlimit_open_files();
 
-	cpu_freqs = calloc(threads_in_system, sizeof(*cpu_freqs));
+	max_thread = MIN(threads_in_system, CPU_SETSIZE);
+	if (max_thread < threads_in_system)
+		printf("ppc64_cpu currently supports up to %d CPUs\n",
+			CPU_SETSIZE);
+
+	cpu_freqs = calloc(max_thread, sizeof(*cpu_freqs));
 	if (!cpu_freqs)
 		return -ENOMEM;
 
-	rc = setup_counters(cpu_freqs);
+	rc = setup_counters(cpu_freqs, max_thread);
 	if (rc) {
 		free(cpu_freqs);
 		return rc;
 	}
 
 	/* Start a soak thread on each CPU */
-	for (i = 0; i < threads_in_system; i++) {
+	for (i = 0; i < max_thread; i++) {
 		if (cpu_freqs[i].offline)
 			continue;
 
@@ -1103,15 +1110,15 @@ static int do_cpu_frequency(int sleep_time)
 	/* Wait for soak threads to start */
 	usleep(1000000);
 
-	start_counters(cpu_freqs);
+	start_counters(cpu_freqs, max_thread);
 	/* Count for specified timeout in seconds */
 	usleep(sleep_time * 1000000);
 
-	stop_counters(cpu_freqs);
-	check_threads(cpu_freqs);
-	read_counters(cpu_freqs);
+	stop_counters(cpu_freqs, max_thread);
+	check_threads(cpu_freqs, max_thread);
+	read_counters(cpu_freqs, max_thread);
 
-	for (i = 0; i < threads_in_system; i++) {
+	for (i = 0; i < max_thread; i++) {
 		double frequency;
 
 		if (cpu_freqs[i].offline)
