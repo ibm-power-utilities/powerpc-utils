@@ -349,7 +349,7 @@ is_pata_dev()
     local sysfs_dir
     local udev_path
     local udevinfo="/usr/bin/udevinfo"
-    local udevadm="/sbin/udevadm"
+    local udevadm="/bin/udevadm"
 
     if [[ -a $udevadm ]]; then
         udev_path=`$udevadm info --query=path --name=$DEVNAME`
