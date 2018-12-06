@@ -155,17 +155,27 @@ void get_cpu_physc(struct sysentry *unused_se, char *buf)
 	float elapsed;
 	float new_purr, old_purr;
 	float timebase, physc;
-
-	elapsed = elapsed_time() / 1000000.0;
-
-	se = get_sysentry("timebase");
-	timebase = atoi(se->value);
+	float new_tb, old_tb;
 
 	se = get_sysentry("purr");
 	new_purr = strtoll(se->value, NULL, 0);
 	old_purr = strtoll(se->old_value, NULL, 0);
 
-	physc = (new_purr - old_purr)/timebase/elapsed;
+	se = get_sysentry("tbr");
+	if (se->value[0] != '\0') {
+		new_tb = strtoll(se->value, NULL, 0);
+		old_tb = strtoll(se->old_value, NULL, 0);
+
+		physc = (new_purr - old_purr) / (new_tb - old_tb);
+	} else {
+		elapsed = elapsed_time() / 1000000.0;
+
+		se = get_sysentry("timebase");
+		timebase = atoi(se->value);
+
+		physc = (new_purr - old_purr)/timebase/elapsed;
+	}
+
 	sprintf(buf, "%.6f", physc);
 }
 
