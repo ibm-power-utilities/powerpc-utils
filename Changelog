@@ -1,3 +1,162 @@
+powerpc-utils-1.3.6
+=====================================================================
+
+commit 01c9cbcf4face809cb6953bc3cd2a30cd075ed16
+Author: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+Date:   Thu Dec 6 17:30:38 2018 -0600
+
+    lparstat: correct calculation of physc to use tbr
+    
+    Currently phsyc is calculated using the sampled PURR values from lparcfg and
+    a derived timebase that lparstat itself calculates. However, both the Timer
+    Facilities section in Book III of the ISA and PAPR outline that this resource
+    calcuation is done by computing the ratio of the PURR delta and the Timebase
+    Register delta for the sampled period.
+    
+    I've sent a patch upstream to the kernel list to also export the Timebase
+    Register (tbr) in /proc/ppc64/lparcfg [1]. Use this value for calculating
+    physc value when running on a kernel that exposes tbr.
+    
+    [1] https://patchwork.ozlabs.org/patch/1009906/
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 7be598c7ffdf1f934e43af88a42e8b1e6391f91e
+Author: Aravinda Prasad <aravinda@linux.vnet.ibm.com>
+Date:   Thu Dec 6 16:21:10 2018 +0530
+
+    lparstat: Enable desired and maximum memory stats
+    
+    This patch enables the display of desired memory
+    and maximum memory stats with lparstat -i flag.
+    The value for these stats are already available
+    in /proc/powerpc/lparcfg file.
+    
+    v2: updated man pages.
+    
+    Signed-off-by: Aravinda Prasad <aravinda@linux.vnet.ibm.com>
+    Reviewed-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit d1576f88dcc7008bcd3448172caff1b928be1254
+Author: Aravinda Prasad <aravinda@linux.vnet.ibm.com>
+Date:   Thu Sep 6 15:01:04 2018 +0530
+
+    lparstat: Show available physical processors in the shared pool
+    
+    This patch adds the "app" field that displays the available
+    processors in the shared pool.
+    
+    The platform provides the summation of the physical processor
+    pool idle cycles through H_PIC hypercall. This data is updated
+    in the "pool_idle_time" field of the /proc/ppc64/lparcfg file.
+    This patch derives the "app" from the "pool_idle_time" field.
+    
+    v2: Handle fgets() errors
+    
+    Signed-off-by: Aravinda Prasad <aravinda@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit fac783d18d61af232b957af259a15ed231f6869b
+Author: Juliet Kim <julietk@linux.vnet.ibm.com>
+Date:   Thu Sep 13 15:57:42 2018 -0400
+
+    ppc64_cpu: Limit number of CPUs for frequency calculation
+    
+    The patch limits the number of threads used for CPU frequency calculation
+    to the minimum of either the actual number of CPUs in the system or
+    CPU_SETSIZE(currently 1024). In other words, if the number of CPUs in the
+    system is less than CPU_SETSIZE, a thread is created for each of the CPUs,
+    otherwise only CPU_SETSIZE threads are created. This is being done because
+    sched_setaffinity() will only work on CPU_SETSIZE CPUs, anything over the
+    limit is not supported.
+    
+    Signed-off-by: Juliet Kim <julietk@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 3ce17a36d10bc09a49af9d56ceadad09708b46f1
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Thu Jul 19 23:12:40 2018 -0500
+
+    lsslot: Add ibm,dynamic-memory-v2 parsing capability
+    
+    In order to support reporting memory LMB information the lsslot
+    command needs to know how to parse the ibm,dynamic-memory-v2
+    property. This patch adds this support to the shared
+    drslot_chrp_mem.c file.
+    
+    In order to prevent the drmgr command from parsing this v2 property
+    a new flag is introduce, is_lsslot_cmd. The reason for this is that
+    we do not support memory DLPAR for ibm,dynamic-memory-v2 from
+    userspace.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 6a1b89bb7e9f58262da0f08906674cae3efc7bfc
+Author: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Date:   Thu Jul 19 23:12:34 2018 -0500
+
+    lsslot: Split dynamic-memory v1 parsing into separate routine
+    
+    In preparation for support of parsing the new ibm,dynamic-memory-v2
+    device tree property, this patch splits the current code that
+    parses the current v1 version of the device tree propertry into
+    its own routine.
+    
+    Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit c3f583a9f62ee33080523c2d1d076fdf8d5520e7
+Author: Mamatha Inamdar <mamatha4@linux.vnet.ibm.com>
+Date:   Tue Jul 17 21:24:31 2018 +0530
+
+    Patch to display logical name using bootlist -o option
+    
+    Problem:
+    System unable to boot when OF device path name's set using -r option
+    EX: # bootlist  -m normal -r /vdevice/v-scsi@30000010/disk@8100000000000000
+    
+    Solution:
+    This patch is to set respective Open firmware device path names(-r)
+    and logical device path names(-o) using bootlist
+    
+    Test Results:
+    
+    Without patch:
+    
+    # bootlist  -m normal -r /vdevice/v-scsi@30000010/disk@8100000000000000
+    sda
+    
+    # bootlist  -m normal -r
+    sda
+    
+    # bootlist  -m normal -o
+    Could not translate sda to logical device name
+    
+    With patch:
+    
+    # ./bootlist -m normal -r /vdevice/v-scsi@30000010/disk@8100000000000000
+    /vdevice/v-scsi@30000010/disk@8100000000000000
+    
+    # ./bootlist -m normal -r
+    /vdevice/v-scsi@30000010/disk@8100000000000000
+    
+    # ./bootlist -m normal -o
+    sda
+    
+    # ./bootlist -m normal -r sda
+    /vdevice/v-scsi@30000010/disk@8100000000000000
+    
+    # ./bootlist -m normal -r
+    /vdevice/v-scsi@30000010/disk@8100000000000000
+    
+    # ./bootlist -m normal -o
+    sda
+    
+    Signed-off-by: Mamatha Inamdar <mamatha4@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
 powerpc-utils-1.3.5
 =====================================================================
 
