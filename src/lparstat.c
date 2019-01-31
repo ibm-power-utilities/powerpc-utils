@@ -176,7 +176,7 @@ void get_cpu_physc(struct sysentry *unused_se, char *buf)
 		physc = (new_purr - old_purr)/timebase/elapsed;
 	}
 
-	sprintf(buf, "%.6f", physc);
+	sprintf(buf, "%.2f", physc);
 }
 
 void get_per_entc(struct sysentry *unused_se, char *buf)
@@ -188,7 +188,7 @@ void get_per_entc(struct sysentry *unused_se, char *buf)
 	get_sysdata("DesEntCap", &descr, entc);
 	get_sysdata("physc", &descr, physc);
 
-	sprintf(buf, "%.6f", atof(physc) / atof(entc) * 100.0);
+	sprintf(buf, "%.2f", atof(physc) / atof(entc) * 100.0);
 }
 
 void get_cpu_app(struct sysentry *unused_se, char *buf)
