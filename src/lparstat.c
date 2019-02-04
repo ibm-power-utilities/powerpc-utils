@@ -655,8 +655,20 @@ void print_default_output(int interval, int count)
 	} while (--count > 0);
 }
 
+static void usage(void)
+{
+	printf("Usage:  lparstat [ options ]\n\tlparstat <interval> [ count ]\n\n"
+	       "options:\n"
+	       "\t-h, --help		Show this message and exit.\n"
+	       "\t-V, --version	\tDisplay lparstat version information.\n"
+	       "\t-i			Lists details on the LPAR configuration.\n"
+	       "interval		The interval parameter specifies the amount of time between each report.\n"
+	       "count			The count parameter specifies how many reports will be displayed.\n");
+}
+
 static struct option long_opts[] = {
 	{"version",	no_argument,	NULL,	'V'},
+	{"help",	no_argument,	NULL,	'h'},
 	{0, 0, 0, 0},
 };
 
@@ -672,7 +684,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	while ((c = getopt_long(argc, argv, "iV",
+	while ((c = getopt_long(argc, argv, "iVh",
 				long_opts, &opt_index)) != -1) {
 		switch(c) {
 			case 'i':
@@ -681,7 +693,12 @@ int main(int argc, char *argv[])
 			case 'V':
 				printf("lparstat - %s\n", VERSION);
 				return 0;
+			case 'h':
+				usage();
+				return 0;
 			case '?':
+				usage();
+				return 1;
 			default:
 				break;
 		}

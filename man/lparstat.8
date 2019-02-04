@@ -9,8 +9,9 @@
 .SH NAME
 lparstat \- Reports logical partition ( LPAR ) related information and statistics.
 .SH SYNOPSIS
-.B /usr/sbin/lparstat
-[ -i ] [ interval [ count ] ]
+.B /usr/sbin/lparstat [ options ]
+.HP
+.B /usr/sbin/lparstat <interval> [ count ]
 .SH DESCRIPTION
 The \fIlparstat\fR command provides a report of LPAR related information and utilization statistics. This command provides a display of current LPAR related parameters and Hypervisor information, as well as utilization statistics for the LPAR.
 
@@ -202,6 +203,17 @@ Desired Variable Capacity Weight
 The variable memory capacity weight of the LPAR. 
 .TP
 .SH
+.TP
+\fB\-h, --help\fR
+Display the usage of lparstat.
+.RS
+.SH
+.TP
+\fB\-V, --version\fR
+Display the lparstat version information.
+.RS
+.SH
+.TP
 interval
 The
 .B interval
