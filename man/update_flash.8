@@ -196,11 +196,15 @@ PowerNV
   /sys/firmware/opal/{validate/manage/update}_flash
 .fi
 .SH NOTES
+.B Download firmware
+.fi
 Firmware may be downloaded from the IBM website. Instructions for
 downloading and installing the firmware image are also there, and
 information there will be more up-to-date than this page.
 
 .P
+.B Firmware update failure
+.fi
 Various conditions can lead to a firmware update failure. If you
 receive an authentication-related error, such as:
 .P
@@ -222,6 +226,8 @@ following the steps outlined here:
 http://publib.boulder.ibm.com/infocenter/powersys/v3r1m5/index.jsp?topic=/p7hatl/iphblresetserverp6.htm
 
 .P
+.B AIX format image
+.fi
 For older "AIX format" images, the file will have a .BIN extension. This
 zip file happens to be an AIX binary, but it can be extracted with the
 unzip command (with password from the web page):
