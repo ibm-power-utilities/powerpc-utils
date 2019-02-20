@@ -226,6 +226,17 @@ following the steps outlined here:
 http://publib.boulder.ibm.com/infocenter/powersys/v3r1m5/index.jsp?topic=/p7hatl/iphblresetserverp6.htm
 
 .P
+.B RPM format image
+.fi
+For "rpm format" images, the file will have a .rpm extension. It can be extracted
+using below command:
+
+       rpm2cpio <rpm filename> | cpio -idmv
+.fi
+.P
+This will extract files under current directory. Pass <image>.img file to this script.
+
+.P
 .B AIX format image
 .fi
 For older "AIX format" images, the file will have a .BIN extension. This
