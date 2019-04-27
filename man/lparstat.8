@@ -36,6 +36,11 @@ Online Memory Capacity.
 .TP
 cpus
 Number of online physical processors in the pool. 
+.RS
+This attribute is referred as
+.B psize
+in legacy mode and only available in shared LPAR environment.
+.RE
 .TP
 ent
 Entitled processing capacity in processor units. This information is displayed only if the partition type is shared. 
@@ -202,6 +207,26 @@ The memory group ID of the Workload Manager group that the LPAR belongs to.
 Desired Variable Capacity Weight
 The variable memory capacity weight of the LPAR. 
 .TP
+.SH
+.TP
+\fB\-l, --legacy\fR
+Display the report in legacy format.
+.RS
+.RS
+Memory attribute in MB instead of KB.
+.RS
+.RE
+.B cpus
+attribute is referred as
+.B psize
+and only available for shared LPAR.
+.RS
+.RE
+.B lcpu
+attribute calculation: lcpu = smt * number of online processors.
+.RE
+.TP
+.RS
 .SH
 .TP
 \fB\-h, --help\fR

@@ -23,6 +23,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 #include <getopt.h>
 #include <unistd.h>
@@ -34,6 +35,8 @@
 #define LPARCFG_FILE	"/proc/ppc64/lparcfg"
 #define SE_NOT_FOUND	"???"
 #define SE_NOT_VALID	"-"
+
+static bool o_legacy = false;
 
 struct sysentry *get_sysentry(char *name)
 {
@@ -479,7 +482,7 @@ void get_mem_total(struct sysentry *se, char *buf)
 {
 	FILE *f;
 	char line[128];
-	char *mem, *nl, *first_line;
+	char *mem, *nl, *first_line, *unit;
 
 	f = fopen("/proc/meminfo", "r");
 	if (!f) {
@@ -500,10 +503,21 @@ void get_mem_total(struct sysentry *se, char *buf)
 		mem++;
 	} while (*mem == ' ');
 
-	nl = strchr(mem, '\n');
+	unit = strchr(mem, ' ');
+	*unit = '\0';
+
+	do {
+		unit++;
+	} while (*unit == ' ');
+
+	nl = strchr(unit, '\n');
 	*nl = '\0';
 
-	sprintf(buf, "%s", mem);
+	if (o_legacy) {
+		sprintf(buf, "%d %s", atoi(mem) / 1024, "MB");
+	} else {
+		sprintf(buf, "%s %s", mem, unit);
+	}
 }
 
 void get_smt_mode(struct sysentry *se, char *buf)
@@ -604,7 +618,8 @@ void print_default_output(int interval, int count)
 	char *fmt = "%5s %5s %5s %8s %8s %5s %5s %5s %5s %5s\n";
 	char *descr;
 	char buf[128];
-	int offset;
+	int offset, smt, active_proc;
+	char type[32];
 	char value[32];
 	char user[32], sys[32], wait[32], idle[32], physc[32], entc[32];
 	char lbusy[32], app[32], vcsw[32], phint[32];
@@ -612,16 +627,30 @@ void print_default_output(int interval, int count)
 	memset(buf, 0, 128);
 	get_sysdata("shared_processor_mode", &descr, value);
 	offset = sprintf(buf, "type=%s ", value);
+	sprintf(type, "%s", value);
 	get_sysdata("capped", &descr, value);
 	offset += sprintf(buf + offset, "mode=%s ", value);
 	get_sysdata("smt_state", &descr, value);
 	offset += sprintf(buf + offset, "smt=%s ", value);
+	if (!strcmp(value, "Off"))
+		smt = 1;
+	else
+		smt = atoi(value);
 	get_sysdata("partition_active_processors", &descr, value);
-	offset += sprintf(buf + offset, "lcpu=%s ", value);
+	active_proc = atoi(value);
+	if (o_legacy)
+		offset += sprintf(buf + offset, "lcpu=%d ", active_proc*smt);
+	else
+		offset += sprintf(buf + offset, "lcpu=%s ", value);
 	get_sysdata("MemTotal", &descr, value);
 	offset += sprintf(buf + offset, "mem=%s ", value);
 	get_sysdata("active_cpus_in_pool", &descr, value);
-	offset += sprintf(buf + offset, "cpus=%s ", value);
+	if (o_legacy) {
+		if (strcmp(type, "Dedicated"))
+			offset += sprintf(buf + offset, "psize=%s ", value);
+	} else {
+		offset += sprintf(buf + offset, "cpus=%s ", value);
+	}
 	get_sysdata("DesEntCap", &descr, value);
 	offset += sprintf(buf + offset, "ent=%s ", value);
 
@@ -662,6 +691,7 @@ static void usage(void)
 	       "\t-h, --help		Show this message and exit.\n"
 	       "\t-V, --version	\tDisplay lparstat version information.\n"
 	       "\t-i			Lists details on the LPAR configuration.\n"
+	       "\t-l, --legacy		Print the report in legacy format.\n"
 	       "interval		The interval parameter specifies the amount of time between each report.\n"
 	       "count			The count parameter specifies how many reports will be displayed.\n");
 }
@@ -669,6 +699,7 @@ static void usage(void)
 static struct option long_opts[] = {
 	{"version",	no_argument,	NULL,	'V'},
 	{"help",	no_argument,	NULL,	'h'},
+	{"legacy",	no_argument,	NULL,	'l'},
 	{0, 0, 0, 0},
 };
 
@@ -684,11 +715,14 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	while ((c = getopt_long(argc, argv, "iVh",
+	while ((c = getopt_long(argc, argv, "iVhl",
 				long_opts, &opt_index)) != -1) {
 		switch(c) {
 			case 'i':
 				i_option = 1;
+				break;
+			case 'l':
+				o_legacy = true;
 				break;
 			case 'V':
 				printf("lparstat - %s\n", VERSION);
