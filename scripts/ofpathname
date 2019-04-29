@@ -84,20 +84,20 @@ err()
     fi
 
     case $emsg in
-        1)  echo "$OFPATHNAME: Could not retrieve Open Firmware device path"
-            echo "            for logical device \"$DEVNAME_ARG\"." ;;
+        1)  echo "$OFPATHNAME: Could not retrieve Open Firmware device path" 1>&2
+            echo "            for logical device \"$DEVNAME_ARG\"." 1>&2 ;;
 
-        2)  echo "$OFPATHNAME: sysfs (/sys) is needed and does not appear"
-            echo "            to be mounted on this system." ;;
+        2)  echo "$OFPATHNAME: sysfs (/sys) is needed and does not appear" 1>&2
+            echo "            to be mounted on this system." 1>&2 ;;
 
-        3)  echo "$OFPATHNAME: Could not find sysfs information for logical"
-            echo "            device \"$DEVNAME_ARG\"." ;;
+        3)  echo "$OFPATHNAME: Could not find sysfs information for logical" 1>&2
+            echo "            device \"$DEVNAME_ARG\"." 1>&2 ;;
 
-        4)  echo "$OFPATHANME: Logical device \"$DEVNAME_ARG\" does not appear"
-            echo "            to be configured." ;;
+        4)  echo "$OFPATHANME: Logical device \"$DEVNAME_ARG\" does not appear" 1>&2
+            echo "            to be configured." 1>&2 ;;
 
-        5)  echo "$OFPATHNAME: Could not retrieve logical device name for"
-            echo "            Open Firmware path \"$DEVNAME_ARG\"."
+        5)  echo "$OFPATHNAME: Could not retrieve logical device name for" 1>&2
+            echo "            Open Firmware path \"$DEVNAME_ARG\"." 1>&2 ;;
     esac
 
     exit 1
@@ -1631,7 +1631,7 @@ of2l_nvme()
 #
 . $PSERIES_PLATFORM
 if [[ $platform = $PLATFORM_POWERNV ]]; then
-	echo "$OFPATHNAME: is not supported on the $platform_name platform"
+	echo "$OFPATHNAME: is not supported on the $platform_name platform" 1>&2
 	exit 1
 fi
 

@@ -225,7 +225,7 @@ show_eth ()
 # Look at every vNIC device
 for dev in $($LS -d /proc/device-tree/vdevice/vnic* 2> /dev/null); do
     # use ofpathname to get the device name (i.e. eth0)
-    name=$($OFPATHNAME -l $(echo $dev | $SED -e "s/\/proc\/device-tree//"))
+    name=$($OFPATHNAME -l $(echo $dev | $SED -e "s/\/proc\/device-tree//") 2> /dev/null)
     connection=$(echo $dev | $SED -e "s/\/proc\/device-tree\/vdevice\/l-lan@//")
     parent="vio"
 
@@ -246,7 +246,7 @@ done
 # Look at every ibmveth (Virtual Ethernet) device 
 for dev in $($LS -d /proc/device-tree/vdevice/l-lan* 2> /dev/null); do 
     # use ofpathname to get the device name (i.e. eth0)
-    name=$($OFPATHNAME -l $(echo $dev | $SED -e "s/\/proc\/device-tree//"))
+    name=$($OFPATHNAME -l $(echo $dev | $SED -e "s/\/proc\/device-tree//") 2> /dev/null)
     connection=$(echo $dev | $SED -e "s/\/proc\/device-tree\/vdevice\/l-lan@//")
     parent="vio"
 
@@ -268,7 +268,7 @@ done
 for pci_dev in $($LS -d /proc/device-tree/pci* 2> /dev/null); do 
     for dev in $($LS -d $pci_dev/ethernet* 2> /dev/null); do 
 	# use ofpathname to get the device name (i.e. eth0)
-	name=$($OFPATHNAME -l $(echo $dev | $SED -e "s/\/proc\/device-tree//"))
+	name=$($OFPATHNAME -l $(echo $dev | $SED -e "s/\/proc\/device-tree//") 2> /dev/null)
 	connection=$(echo $pci_dev | $SED -e "s/\/proc\/device-tree\/pci@//")
 	parent="pci"
 
@@ -280,7 +280,7 @@ for pci_dev in $($LS -d /proc/device-tree/pci* 2> /dev/null); do
 	class="adapter"
 	subclass="pci"
 	prefix="eth"
-	driver=$($LS -l /sys/class/net/$name/device/driver |
+	driver=$($LS -l /sys/class/net/$name/device/driver 2> /dev/null |
 		 $SED -e "s/^.*\///")
 	status=1
 
@@ -312,11 +312,11 @@ for dev in $($LS -d /proc/device-tree/vdevice/v-scsi* 2> /dev/null) ; do
 	prefix="host"
 	driver="ibmvscsic"
 
-	host=$($LS -d /sys/devices/vio/$slot/host*/)
+	host=$($LS -d /sys/devices/vio/$slot/host*/ 2> /dev/null)
 	if [[ -d $host/scsi_host ]]; then
-	     scsihost=$($LS -d $host/scsi_host/host*/)
+	     scsihost=$($LS -d $host/scsi_host/host*/ 2> /dev/null)
 	else
-	     scsihost=$($LS -d $host/scsi_host*/)
+	     scsihost=$($LS -d $host/scsi_host*/ 2> /dev/null)
 	fi
 
 	if [[ $(cat $scsihost/state) == "running" ]] ; then
@@ -365,12 +365,12 @@ for dev in $($LS -d /proc/device-tree/vdevice/v-scsi* 2> /dev/null) ; do
         fi
 
 	# loop through the targets for this host. 
-	for t in $($LS -d $host/target*); do
+	for t in $($LS -d $host/target* 2> /dev/null); do
 	    target=$(echo $($LS -d $t/$($LS $t | $GREP -v uevent | $GREP -v power | $GREP -v subsystem)))
 	    if [[ ! -d $target/block ]]; then
-	         name=$(echo $($LS -d $target/block*) | $SED -e "s/.*://")
+	         name=$(echo $($LS -d $target/block* 2> /dev/null) | $SED -e "s/.*://")
 	    else
-	         name=$($LS $target/block)
+	         name=$($LS $target/block 2> /dev/null)
 	    fi
 
 	    conn=$($OFPATHNAME /dev/$name 2> /dev/null | $SED -e "s/.*disk@//")
@@ -446,7 +446,7 @@ for dev in $($LS -d /proc/device-tree/vdevice/vfc-client* 2> /dev/null) ; do
     slot=$(echo $dev | $SED -e "s/\/proc\/device-tree\/vdevice\/vfc-client@//")
 
     # there is only one host per device, assign it to the path's name
-    for host in $($LS -d /sys/devices/vio/$slot/host*) ; do
+    for host in $($LS -d /sys/devices/vio/$slot/host* 2> /dev/null) ; do
 	parent=$(echo $host | $SED -e "s/.*\///")
 	name=$parent
 
@@ -457,11 +457,11 @@ for dev in $($LS -d /proc/device-tree/vdevice/vfc-client* 2> /dev/null) ; do
 	prefix="host"
 	driver="ibmvfc"
 
-	host=$($LS -d /sys/devices/vio/$slot/host*/)
+	host=$($LS -d /sys/devices/vio/$slot/host*/ 2> /dev/null)
 	if [[ -d $host/scsi_host ]]; then
-	     scsihost=$($LS -d $host/scsi_host/host*/)
+	     scsihost=$($LS -d $host/scsi_host/host*/ 2> /dev/null)
 	else
-	     scsihost=$($LS -d $host/scsi_host*/)
+	     scsihost=$($LS -d $host/scsi_host*/ 2> /dev/null)
 	fi
 
 	if [[ $(cat $scsihost/state) == "running" ]] ; then
@@ -510,16 +510,16 @@ for dev in $($LS -d /proc/device-tree/vdevice/vfc-client* 2> /dev/null) ; do
         fi
 
 	# As opposed to ibmvscsi, there are multiple rports in each host
-	for rport in $($LS -d $host/rport*); do
+	for rport in $($LS -d $host/rport* 2> /dev/null); do
 
 	    # in ibmvfc there are two layers of directories before getting to
 	    # the targets
-	    for t in $($LS -d $rport/target*); do
+	    for t in $($LS -d $rport/target* 2> /dev/null); do
 	        for target in $($LS $t | $GREP "[0-9]*:[0-9]*:[0-9]*:[0-9]*"); do
 		    if [[ ! -d $t/$target/block ]]; then
 			 name=$(echo $($LS -d $t/$target/block*) | $SED -e "s/.*://")
 		    else
-			 name=$($LS $t/$target/block)
+			 name=$($LS $t/$target/block 2> /dev/null)
 		    fi
 
 		    connection=$($OFPATHNAME /dev/$name 2> /dev/null | $SED -e "s/.*disk@//")
