@@ -1,3 +1,119 @@
+
+powerpc-utils-1.3.6
+=====================================================================
+
+commit 1d4147370a148b3a2ebadcf02abd4a6c9a763e6d
+Author: Sourabh Jain <sourabhjain@linux.ibm.com>
+Date:   Sat Apr 27 10:18:32 2019 +0530
+
+    lparstat: add an option to print the lparstat report similar to legacy lparstat tool
+    
+    This patch adds a new command line option (-l, --legacy) to allow
+    users to print the report similar to legacy lprastat tool without
+    affecting existing report format.
+    
+    Changes done to make the current report format similar to legacy
+    report format are listed below:
+    
+    1) The memory attribute will be printed in MB instead of KB.
+    2) cpus attribute will be referred as psize in legacy report format
+       and only printed in shared lpar environment.
+    3) On legacy lparstat tool the lcpu attribute is a combination of
+       two attributes, smt and number of online processor. Formula used
+       to calculate the lcpu is given below.
+                  lcpu = smt * number of online processors
+    
+    Signed-off-by: Sourabh Jain <sourabhjain@linux.ibm.com>
+    Reviewed-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit dd6da6b329bac2743d1c80b5556b494c923c11ad
+Author: Michael Bringmann <mwb@linux.vnet.ibm.com>
+Date:   Mon Apr 29 11:25:18 2019 -0500
+
+    scripts: Improve handling of errors from subsidiary scripts
+    
+    This patch is to fix the handling of errors by 'lsdevinfo' from
+    invocations of 'ofpathname' that also encounter errors.  Error
+    messages from 'ofpathname' were being sent through 'stdout', and
+    interpreted as valid data by a number of script instructions in
+    'lsdevinfo'.  Following is an example of such a failure when the
+    error results were forwarded to an associated HMC.
+    
+        2019-02-19 22:05:38.212 [TID-5f68--72195] VIOS_CACHE: CacheVios.<-> saveCacheData 3*9080-M9S*130A068 cmd=lsdevinfo -c -q physloc=U78CD.001.FZH0128-P1-C1-T3-S4 -F status
+        2019-02-19 22:05:38.212 [TID-5f68--72195] RMC_VIOS: PIRmcViosClient.stdErr=/bin/ls: cannot access /sys/class/net/ofpathname:: No such file or directory
+        /bin/ls: cannot access Could: No such file or directory
+        /bin/ls: cannot access not: No such file or directory
+        /bin/ls: cannot access retrieve: No such file or directory
+        /bin/ls: cannot access logical: No such file or directory
+        /bin/ls: cannot access device: No such file or directory
+        /bin/ls: cannot access name: No such file or directory
+        /bin/ls: cannot access for: No such file or directory
+        /bin/ls: cannot access Open: No such file or directory
+        /bin/ls: cannot access Firmware: No such file or directory
+        /bin/ls: cannot access path: No such file or directory
+        /bin/ls: cannot access "/pci@800000029008004/ethernet@0"./device/driver: No such file or directory
+    
+    This patch makes the following changes:
+    
+    * Redirects the error messages from 'ofpathname' to stderr
+    * Adds more checks to 'lsdevinfo' to filter out stderr text
+      from input to various parsing commands.
+    
+    Signed-off-by: Michael Bringmann <mwb@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 8b7978b114e5df89218daa9b4b48cc0e918ba917
+Author: Sourabh Jain <sourabhjain@linux.ibm.com>
+Date:   Mon Feb 4 16:15:14 2019 +0530
+
+    lparstat: introduce the help command line option to print lparstat usage
+    
+    This patch adds a function to print the usage of lparstat. Also,
+    a new element is added to structure option to handle long command
+    line argument for help.
+    
+    Signed-off-by: Sourabh Jain <sourabhjain@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit bc928b06605371b72c7fe8ec7e81886114a9e9d4
+Author: Sourabh Jain <sourabhjain@linux.ibm.com>
+Date:   Thu Jan 31 14:25:21 2019 +0530
+
+    lparstat: restrict the physc and entc attribute values to two decimal places
+    
+    Print format of physical processors consumed (physc) and percentage of
+    the entitled capacity consumed (entc) attributes has changed from six
+    decimal places to two.
+    
+    The least possible value allowed for processor entitlement to a LPAR
+    is 0.05 so printing physc and entc values with such a high precision
+    is incorrect.
+    
+    Signed-off-by: Sourabh Jain <sourabhjain@linux.ibm.com>
+    Reviewed-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit b5fea40ac98d1c9a685d98c011e88180c31ca0be
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Wed Feb 20 15:44:17 2019 +0530
+
+    man/update_flash: Add details to extract rpm format image
+    
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit f567bdb8b2a3effdb4af06e2cf935b0350f2f881
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Wed Feb 20 15:44:09 2019 +0530
+
+    man/update_flash: Fix man page
+    
+    Add heading to NOTES section.
+    
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
 powerpc-utils-1.3.6
 =====================================================================
 
