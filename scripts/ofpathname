@@ -656,7 +656,7 @@ l2of_nvme()
 
         goto_dir $PWD "device/devspec"
 
-        devspec=`$CAT $PWD/device/devspec`
+        devspec=`$CAT $PWD/device/devspec | tr -d '\000'`
         if [[ -n $devspec ]]; then
             found=1
             break
@@ -681,7 +681,7 @@ l2of_nvme()
 
     # Device type is usually 'namespace'.
     # Get it from device-tree just in case.
-    devtype=`$CAT /proc/device-tree${devspec}/namespace/name`
+    devtype=`$CAT /proc/device-tree${devspec}/namespace/name | tr -d '\000'` 2> /dev/null
     if [[ -z $devtype ]]; then
         err $ERR_NO_OFPATH
     fi

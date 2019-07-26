@@ -169,7 +169,7 @@ get_logical_device_name()
     local devname=$1
     local logical_name
 
-    logical_name=`$OFPATHNAME -l $devname 2>/dev/null`
+    logical_name=`$OFPATHNAME -l $devname 2>/dev/null | tr -d '\000'`
     if [[ $? -ne 0 ]]; then
 	echo ""
     else
@@ -207,11 +207,11 @@ show_bootlist()
     local devlist=$1
     local i
 
-    for i in `$NVRAM --print-config=${devlist} | sed 's/ /\n/g'`; do
+    for i in `$NVRAM --print-config=${devlist} 2> /dev/null | sed 's/ /\n/g'`; do
 	if [[ $TRANSLATE_NAMES = "yes" ]]; then
 	    name=`get_logical_device_name $i`
 	    if [[ -z $name ]]; then
-	        echo "Could not translate $i to logical device name"
+	        echo "Could not translate $i to logical device name" 2>&1
 	    else
 		case $name in
 		    eth*)   parse_eth_info $name $i ;;
@@ -230,7 +230,7 @@ show_bootlist()
 
 . $PSERIES_PLATFORM
 if [[ $platform != $PLATFORM_PSERIES_LPAR ]]; then
-    echo "bootlist: is not supported on the $platform_name platform"
+    echo "bootlist: is not supported on the $platform_name platform" 2>&1
     exit 1
 fi
 
