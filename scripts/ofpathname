@@ -803,8 +803,15 @@ l2of_scsi()
     # move up directories until we find one with devspec information
     goto_dir $PWD "devspec"
 
-    OF_PATH=`$CAT $PWD/devspec`
+    if [[ -e $PWD/devspec ]]; then
+        OF_PATH=`$CAT $PWD/devspec`
+    else
+        err $ERR_NO_OFPATH
+    fi
+
     if [[ -z $OF_PATH ]]; then
+        err $ERR_NO_OFPATH
+    elif [[ ! -e /proc/device-tree/$OF_PATH ]]; then
         err $ERR_NO_OFPATH
     fi
 

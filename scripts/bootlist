@@ -459,6 +459,7 @@ if [[ ${#LOGICAL_NAMES[*]} -ne 0 ]]; then
 
         if [[ -z ${OF_DEVPATH[$ctr]} ]]; then
 	    echo "Device ${LOGICAL_NAMES[$ctr]} does not appear to be valid." >&2
+            exit 1
 	else
 	    # See if this is an ethernet adapter.  If so, the next entries
 	    # may be parameters for the bootlist entry.
