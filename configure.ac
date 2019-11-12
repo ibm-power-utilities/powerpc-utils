@@ -107,5 +107,5 @@ AC_DEFUN([LOCAL_CHECK_FLAGS],[
 ])
 LOCAL_CHECK_FLAGS
 
-AC_CONFIG_FILES([Makefile powerpc-utils.spec systemd/smt_off.service])
+AC_CONFIG_FILES([Makefile powerpc-utils.spec systemd/smt_off.service systemd/smtd.service systemd/smt_init.service])
 AC_OUTPUT
