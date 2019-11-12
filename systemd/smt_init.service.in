@@ -1,0 +1,15 @@
+[Unit]
+Description=SMT automatic initialization service
+ConditionPathExists=@sbindir@/smtd
+Before=basic.target
+After=sysinit.target local-fs.target
+DefaultDependencies=no
+
+[Service]
+Type=oneshot
+ExecStart=@sbindir@/smtd --init
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=basic.target
