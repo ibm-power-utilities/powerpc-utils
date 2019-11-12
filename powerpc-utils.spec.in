@@ -21,6 +21,11 @@ Requires:	/sbin/shutdown
 Requires:	udev
 Requires:	util-linux
 Requires:	which
+%if 0%{?rhel} <= 7
+Requires:	python-inotify
+%else
+Requires:	python3-inotify
+%endif
 
 %description
 Utilities for maintaining and servicing PowerPC systems.
@@ -29,7 +34,7 @@ Utilities for maintaining and servicing PowerPC systems.
 %setup -q
 
 %build
-%configure
+%configure --with-systemd
 %{__make} %{?_smp_mflags}
 
 %install
@@ -69,8 +74,13 @@ Utilities for maintaining and servicing PowerPC systems.
 /usr/sbin/pseries_platform
 /usr/sbin/errinjct
 /usr/sbin/rtas_dbg
+/usr/sbin/smtd
 
 /usr/bin/amsstat
+
+/var/lib/powerpc-utils/smt.state
+/usr/lib/systemd/system/smtd.service
+/usr/lib/systemd/system/smt_init.service
 
 /usr/share/man/man8/update_flash.8.gz
 /usr/share/man/man8/activate_firmware.8.gz
@@ -92,11 +102,31 @@ Utilities for maintaining and servicing PowerPC systems.
 /usr/share/man/man1/amsstat.1.gz
 /usr/share/man/man8/errinjct.8.gz
 /usr/share/man/man8/rtas_dbg.8.gz
+/usr/share/man/man8/smtd.8.gz
 
 %post
 # Post-install script -----------------------------------------------
 ln -sf /usr/sbin/serv_config usr/sbin/uspchrp
 ln -sf /usr/share/man/man8/serv_config.8 usr/share/man/man8/uspchrp.8
+
+systemctl enable smtd.service
+systemctl enable smt_init.service
+systemctl start smtd.service
+/usr/sbin/smtd
+
+%preun
+# Pre-uninstall script ----------------------------------------------
+svc=$(systemctl list-units -la | grep -Fq smtd.service; echo $?)
+if [ "$svc" = "0" ]; then
+    systemctl stop smtd.service
+    systemctl disable smtd.service
+fi
+
+svc=$(systemctl list-units -la | grep -Fq smt_init.service; echo $?)
+if [ "$svc" = "0" ]; then
+    systemctl stop smt_init.service
+    systemctl disable smt_init.service
+fi
 
 %postun
 # Post-uninstall script ---------------------------------------------
@@ -105,6 +135,8 @@ if [ "$1" = "0" ]; then
 	rm -f /usr/sbin/uspchrp
 	rm -f /usr/share/man/man8/uspchrp.8.gz
 fi
+
+systemctl daemon-reload
 
 %changelog
 * Tue Dec  7 2011 Brian King <brking@linux.vnet.ibm.com>
