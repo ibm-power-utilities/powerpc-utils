@@ -1,0 +1,51 @@
+.\"
+.\" Copyright (C) 2019 International Business Machines
+.\"
+.TH SMTD 8 "November 2019" Linux "Linux on Power Service Tools"
+.SH NAME
+smtd \- Save and restore the current SMT state
+.SH SYNOPSIS
+.B /usr/sbin/smtd [ command ]
+.SH DESCRIPTION
+The
+.I smtd
+script is used to persist the current SMT state and to restore it at a convenient time. The idea behind it is to use the script together with Systemd services to save SMT state as soon as
+.I ppc64_cpu --smt=N
+is issued and to restore it at an early stage of the boot process. Such implementation creates a way to persist the SMT state across reboots, without requiring any other configuration from system administrators.
+
+The service
+.I smtd.service
+wraps
+.I smtd --save
+with
+.I pyinotify
+in a daemon that listens to changes to /sys/devices/system/cpu/cpu0/online, which is updated when
+.I ppc64_cpu --smt=N is called, and triggers
+.I smtd --save
+to save the current state at /var/lib/powerpc-utils/.
+
+The service
+.I smt_init.service
+runs only at an early stage of the boot process. This service simply calls
+.I smtd --init
+to read the state file and run
+.I ppc64_cpu --smt=N
+accordingly.
+
+.SH OPTIONS
+.TP
+\fB\-\-save\fR
+Save the value read from
+.I ppc64_cpu --smt -n
+into the state file stored at /var/lib/powerpc-utils/.
+
+.TP
+\fB\-\-init\fR
+Read the saved SMT value from the state file stored at /var/lib/powerpc-utils/ and set ppc64_cpu --smt=value.
+
+.TP
+\fB\-\-help\fR
+Display a concise command usage statement.
+
+.SH AUTHOR
+Written by Jose Ricardo Ziviani

@@ -1,0 +1,8 @@
+# smt.state configures the SMT default value for next
+# boots.
+
+# SMT state. If smt_init.service is enabled, this value will be
+# used to set SMT in the next boot. If smtd.service is enabled,
+# this value will be updated whenever ppc64_cpu --smt=<value>
+# is issued.
+SMT_VALUE=1
