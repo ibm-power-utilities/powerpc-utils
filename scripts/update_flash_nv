@@ -313,7 +313,7 @@ fsp_validate_flash() {
 	echo 1 > $SYS_VALIDATE_FLASH 2>/dev/null
 
 	# Display appropriate message, exiting if necessary
-	output="$(cat $SYS_VALIDATE_FLASH)"
+	output="$(tr -d '\0' < $SYS_VALIDATE_FLASH)"
 	fsp_echo_validate_return_status "$output"
 }
 
