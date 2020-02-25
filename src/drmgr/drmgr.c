@@ -310,12 +310,16 @@ struct command *get_command(void)
  		usr_action = HIBERNATE;
  		return &commands[DRSLOT_CHRP_PHIB];
 		break;
+	case DRC_TYPE_MIGRATION:
+		usr_action = MIGRATE;
+		return &commands[DRMIG_CHRP_PMIG];
+		break;
 	default:
 		/* If we make it this far, the user specified an invalid
 		 * connector type.
 		 */
 		say(ERROR, "Dynamic reconfiguration is not supported for "
-		    "connector\ntype \"%s\" on this system\n", usr_drc_type);
+		    "connector\ntype \"%d\" on this system\n", usr_drc_type);
 		break;
 	}
 
