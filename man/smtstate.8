@@ -1,0 +1,28 @@
+.\"
+.\" Copyright (C) 2020 International Business Machines
+.\"
+.TH SMTSTATE 8 "January 2020" Linux "Linux on Power Service Tools"
+.SH NAME
+smtstate \- Save and restore the current SMT state
+.SH SYNOPSIS
+.B /usr/sbin/smtstate [ option ]
+.SH DESCRIPTION
+The
+.I smtstate
+script is used to persist the current SMT state and to restore it at a convenient time. The idea behind it is to use the script together with a systemd service to save SMT state at any shutdown event and to restore it at an early stage of the boot process. Such implementation creates a way to persist the SMT state across reboots, without requiring any other configuration from system administrators.
+
+.SH OPTIONS
+.TP
+\fB\-\-save\fR
+Save the value read from "ppc64_cpu --smt -n" into the state file stored at /var/lib/powerpc-utils/.
+
+.TP
+\fB\-\-load\fR
+Read the saved SMT value from the state file stored at /var/lib/powerpc-utils/ and set "ppc64_cpu --smt=value".
+
+.TP
+\fB\-\-help\fR
+Display a concise command usage statement.
+
+.SH AUTHOR
+Written by Jose Ricardo Ziviani
