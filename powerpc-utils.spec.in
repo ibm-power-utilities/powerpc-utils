@@ -1,3 +1,4 @@
+%bcond_with systemd
 %define name powerpc-utils
 %define version @PACKAGE_VERSION@
 %define release 1
@@ -29,7 +30,7 @@ Utilities for maintaining and servicing PowerPC systems.
 %setup -q
 
 %build
-%configure
+%configure %{?_with_systemd}
 %{__make} %{?_smp_mflags}
 
 %install
@@ -72,6 +73,14 @@ Utilities for maintaining and servicing PowerPC systems.
 
 /usr/bin/amsstat
 
+%if %{with systemd}
+/usr/sbin/smtstate
+/var/lib/powerpc-utils/smt.state
+/lib/systemd/system/smtstate.service
+/lib/systemd/system/smt_off.service
+/usr/share/man/man8/smtstate.8.gz
+%endif
+
 /usr/share/man/man8/update_flash.8.gz
 /usr/share/man/man8/activate_firmware.8.gz
 /usr/share/man/man8/set_poweron_time.8.gz
@@ -98,6 +107,22 @@ Utilities for maintaining and servicing PowerPC systems.
 ln -sf /usr/sbin/serv_config usr/sbin/uspchrp
 ln -sf /usr/share/man/man8/serv_config.8 usr/share/man/man8/uspchrp.8
 
+%if %{with systemd}
+systemctl daemon-reload
+# update the smt.state file with current SMT
+/usr/sbin/smtstate --save
+%endif
+
+%preun
+# Pre-uninstall script ----------------------------------------------
+%if %{with systemd}
+svc=$(systemctl list-units -la | grep -Fq smtstate.service; echo $?)
+if [ "$svc" = "0" ]; then
+    systemctl stop smtstate.service
+    systemctl disable smtstate.service
+fi
+%endif
+
 %postun
 # Post-uninstall script ---------------------------------------------
 if [ "$1" = "0" ]; then
@@ -105,6 +130,10 @@ if [ "$1" = "0" ]; then
 	rm -f /usr/sbin/uspchrp
 	rm -f /usr/share/man/man8/uspchrp.8.gz
 fi
+
+%if %{with systemd}
+systemctl daemon-reload
+%endif
 
 %changelog
 * Tue Dec  7 2011 Brian King <brking@linux.vnet.ibm.com>

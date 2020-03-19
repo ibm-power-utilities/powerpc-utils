@@ -78,10 +78,10 @@ esac
 AC_SUBST(LIBDL)
 
 # check for systemd
-systemd_unit_dir=/usr/lib/systemd/system
+systemd_unit_dir=/lib/systemd/system
 AC_ARG_WITH([systemd],
 	[AC_HELP_STRING([--with-systemd@<:@=DIR@:>@],
-                    [install systemd unit files (not default and unit dir is /usr/lib/systemd/system)])],
+                    [install systemd unit files (not default and unit dir is /lib/systemd/system)])],
 	[if test "$withval" = "no"; then
 		with_systemd=0
 	else
@@ -108,4 +108,5 @@ AC_DEFUN([LOCAL_CHECK_FLAGS],[
 LOCAL_CHECK_FLAGS
 
 AC_CONFIG_FILES([Makefile powerpc-utils.spec systemd/smt_off.service])
+AC_CONFIG_FILES([systemd/smtstate.service scripts/smtstate])
 AC_OUTPUT

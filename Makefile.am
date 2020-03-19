@@ -54,7 +54,13 @@ EXTRA_DIST += COPYING Changelog powerpc-utils.spec.in doc/activate_firmware.doxy
 	     doc/set_poweron_time.doxycfg doc/uesensor.doxycfg
 
 if WITH_SYSTEMD
-EXTRA_DIST += systemd/smt_off.service.in
+sbin_SCRIPTS += scripts/smtstate
+man_MANS += man/smtstate.8
+EXTRA_DIST += systemd/smt_off.service.in \
+	systemd/smtstate.service.in \
+	scripts/smtstate.in \
+	var/lib/powerpc-utils/smt.state \
+	man/smtstate.8
 endif
 
 sbin_PROGRAMS += src/nvram src/lsprop src/lparstat src/ppc64_cpu
@@ -180,8 +186,14 @@ noinst_HEADERS += \
 src_drmgr_lsslot_LDADD = -lrtas
 
 if WITH_SYSTEMD
-install-data-hook: systemd/smt_off.service
-	$(MKDIR_P) @prefix@${systemd_unit_dir}
-	$(INSTALL_SCRIPT) $< @prefix@${systemd_unit_dir}/
-	sed -i -e 's,$${exec_prefix},@sbindir@,g' @prefix@${systemd_unit_dir}/smt_off.service
+install-data-hook:
+	$(MKDIR_P) $(DESTDIR)${systemd_unit_dir}
+	$(MKDIR_P) $(DESTDIR)/var/lib/@PACKAGE@
+	$(INSTALL_DATA) systemd/smt_off.service $(DESTDIR)${systemd_unit_dir}/
+	$(INSTALL_DATA) systemd/smtstate.service $(DESTDIR)${systemd_unit_dir}/
+	$(INSTALL_DATA) var/lib/powerpc-utils/smt.state $(DESTDIR)/var/lib/@PACKAGE@/
+	$(INSTALL_SCRIPT) scripts/smtstate $(DESTDIR)@sbindir@
+	sed -i -e 's,$${exec_prefix},@prefix@,g' $(DESTDIR)${systemd_unit_dir}/smt_off.service
+	sed -i -e 's,$${exec_prefix},@prefix@,g' $(DESTDIR)${systemd_unit_dir}/smtstate.service
+	sed -i -e 's,$${exec_prefix},@prefix@,g' $(DESTDIR)@sbindir@/smtstate
 endif
