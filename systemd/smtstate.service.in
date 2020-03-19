@@ -1,0 +1,18 @@
+[Unit]
+Description=SMT automatic initialization service
+Documentation=man:smtstate(8)
+Conflicts=shutdown.target
+Before=shutdown.target
+After=sysinit.target
+DefaultDependencies=no
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=@sbindir@/smtstate --load
+ExecStop=@sbindir@/smtstate --save
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=sysinit.target
