@@ -4,8 +4,6 @@ noinst_HEADERS =
 sbin_PROGRAMS =
 EXTRA_DIST =
 
-systemddir = ${systemd_unit_dir}
-ppcutilsdir = ${sharedstatedir}/powerpc-utils
 docdir = $(datadir)/doc/packages/@PACKAGE@
 doc_DATA = README COPYING
 
@@ -46,8 +44,7 @@ man_MANS = \
 	man/lsslot.8 \
 	man/ppc64_cpu.8 \
 	man/errinjct.8 \
-	man/rtas_dbg.8 \
-	man/smtd.8
+	man/rtas_dbg.8
 
 EXTRA_DIST += $(bin_SCRIPTS) $(sbin_SCRIPTS) $(man_MANS)
 
@@ -57,10 +54,7 @@ EXTRA_DIST += COPYING Changelog powerpc-utils.spec.in doc/activate_firmware.doxy
 	     doc/set_poweron_time.doxycfg doc/uesensor.doxycfg
 
 if WITH_SYSTEMD
-EXTRA_DIST += systemd/smt_off.service.in systemd/smtd.service.in systemd/smt_init.service.in
-ppcutils_DATA = var/lib/powerpc-utils/smt.state
-systemd_DATA = systemd/smtd.service systemd/smt_init.service
-sbin_SCRIPTS += scripts/smtd
+EXTRA_DIST += systemd/smt_off.service.in
 endif
 
 sbin_PROGRAMS += src/nvram src/lsprop src/lparstat src/ppc64_cpu
@@ -184,3 +178,10 @@ noinst_HEADERS += \
 	src/drmgr/options.c
 
 src_drmgr_lsslot_LDADD = -lrtas
+
+if WITH_SYSTEMD
+install-data-hook: systemd/smt_off.service
+	$(MKDIR_P) @prefix@${systemd_unit_dir}
+	$(INSTALL_SCRIPT) $< @prefix@${systemd_unit_dir}/
+	sed -i -e 's,$${exec_prefix},@sbindir@,g' @prefix@${systemd_unit_dir}/smt_off.service
+endif
