@@ -70,6 +70,7 @@ Utilities for maintaining and servicing PowerPC systems.
 /usr/sbin/pseries_platform
 /usr/sbin/errinjct
 /usr/sbin/rtas_dbg
+/usr/sbin/vcpustat
 
 /usr/bin/amsstat
 
@@ -101,6 +102,7 @@ Utilities for maintaining and servicing PowerPC systems.
 /usr/share/man/man1/amsstat.1.gz
 /usr/share/man/man8/errinjct.8.gz
 /usr/share/man/man8/rtas_dbg.8.gz
+/usr/share/man/man8/vcpustat.8.gz
 
 %post
 # Post-install script -----------------------------------------------
@@ -136,6 +138,8 @@ systemctl daemon-reload
 %endif
 
 %changelog
+* Fri Mar 06 2020 Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+- Added vcpustat utility
 * Tue Dec  7 2011 Brian King <brking@linux.vnet.ibm.com>
 - Added lsslot man page
 * Fri May 13 2011 Brian King <brking@linux.vnet.ibm.com>

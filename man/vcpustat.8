@@ -1,0 +1,104 @@
+.\" Copyright (C) 2020 International Business Machines.
+.\"
+.TH VCPUSTAT 8 "Mar 2020" Linux "Linux on Power Service Tools"
+.SH NAME
+vcpustat \- Report logical partition (LPAR) dispatch statistics.
+.SH SYNOPSIS
+.B /usr/sbin/vcpustat [ options ] [ <interval> [ count ] ]
+.SH DESCRIPTION
+
+The \fIvcpustat\fR command provides a report of logical processor (vcpu) dispatch statistics. This command provides a display of the logical processor dispatch dispersions, relative to the previous dispatch, as well as relative to the logical processor's home node as indicated by the Hypervisor.
+
+The \fIvcpustat\fR command with no options will generate a single report containing raw dispatch counts since the last time statistics were enabled. This is useful if dispatch statistics have been previously enabled persistently using the -e option.
+
+The following information is displayed in the report for each logical processor:
+.TP
+.B dispatch dispersions:
+Represents logical processor dispatch dispersions, relative to the previous dispatch and includes the below columns:
+.RS
+.TP
+total
+Indicates the total number of dispatches of this logical processor. This is only displayed if numeric or raw values are being shown.
+.TP
+core
+Indicates the number of times this logical processor was dispatched within the same core.
+.TP
+chip
+Indicates the number of times this logical processor was dispatched in a different core, but within the same chip.
+.TP
+socket
+Indicates the number of times this logical processor was dispatched in a different chip, but within the same socket. This is only seen on Multi Chip Modules.
+.TP
+cec
+Indicates the number of times this logical processor was dispatched outside the socket.
+.RE
+.TP
+.B numa dispersions:
+Represents logical processor dispatch dispersions, relative to the logical processor's home node and includes the below columns:
+.RS
+.TP
+home
+Indicates the number of times this logical processor was dispatched in its home node.
+.TP
+adj
+Indicates the number of times this logical processor was dispatched in the adjacent node.
+.TP
+far
+Indicates the number of times this logical processor was dispatched in a further node.
+.RE
+
+.SH OPTIONS
+.TP
+\fB\-e, --enable\fR
+Enable gathering dispatch statistics persistently, and not only when this command is active.
+.TP
+\fB\-d, --disable\fR
+Disable gathering dispatch statistics.
+.TP
+\fB\-n, --numeric\fR
+Display the values in numbers, rather than percentages.
+.TP
+\fB\-r, --raw\fR
+Display the raw values, rather than the delta.
+.TP
+\fB\-h, --help\fR
+Display the usage of vcpustat.
+.TP
+\fB\-V, --version\fR
+Display the vcpustat version information.
+.TP
+interval
+The
+.B interval
+parameter specifies the amount of time between each report.
+.TP
+count
+The
+.B count
+parameter specifies how many reports will be displayed.
+
+.SH NOTES
+The preferred invocation of
+.B vcpustat
+is by specifying
+.B interval
+and an optional
+.B count
+to monitor logical processor dispatch dispersions over a desired interval of time. This enables in-kernel gathering of logical processor dispatch dispersions and provides a view of the same at the desired monitoring interval. With this form of invocation, the statistics are only gathered when the program is active resulting in minimal kernel overhead.
+
+Long-term statistics can be obtained by enabling gathering of statistics in-kernel through the use of
+.B -e
+option, followed by invocations of
+.B vcpustat
+without any options, or using the
+.B -r
+option to display raw values, rather than the difference in each monitoring interval. This should only be used when long-term statistics are desired and results in additional kernel load. It is imperative that the statistics be disabled using
+.B -d
+option once monitoring is complete.
+
+.SH FILES
+.TP
+.B /proc/powerpc/vcpudispatch_stats
+
+.SH AUTHOR
+Written by Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>.

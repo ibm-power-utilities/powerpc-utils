@@ -44,6 +44,7 @@ man_MANS = \
 	man/lsslot.8 \
 	man/ppc64_cpu.8 \
 	man/errinjct.8 \
+	man/vcpustat.8 \
 	man/rtas_dbg.8
 
 EXTRA_DIST += $(bin_SCRIPTS) $(sbin_SCRIPTS) $(man_MANS)
@@ -63,7 +64,7 @@ EXTRA_DIST += systemd/smt_off.service.in \
 	man/smtstate.8
 endif
 
-sbin_PROGRAMS += src/nvram src/lsprop src/lparstat src/ppc64_cpu
+sbin_PROGRAMS += src/nvram src/lsprop src/lparstat src/ppc64_cpu src/vcpustat
 
 pseries_platform_SOURCES = src/common/pseries_platform.c src/common/pseries_platform.h
 
@@ -78,6 +79,8 @@ src_lparstat_SOURCES = src/lparstat.c src/lparstat.h $(pseries_platform_SOURCES)
 
 src_ppc64_cpu_SOURCES = src/ppc64_cpu.c $(pseries_platform_SOURCES)
 src_ppc64_cpu_LDADD = -lpthread
+
+src_vcpustat_SOURCES = src/vcpustat.c $(pseries_platform_SOURCES)
 
 
 AM_CFLAGS = -Wall -g -I $(top_srcdir)/src/common/
