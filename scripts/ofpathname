@@ -824,6 +824,7 @@ l2of_scsi()
     goto_dir $PWD "devspec"
 
     OF_PATH=`$CAT $PWD/devspec`
+    SYS_PATH=$PWD
     if [[ -z $OF_PATH ]]; then
         err $ERR_NO_OFPATH
     fi
@@ -942,6 +943,13 @@ l2of_scsi()
             fi
 	fi
     else
+
+        plug_id=$(ls -dv $SYS_PATH/*/host* 2>/dev/null | grep -n "/host$HOST$")
+        [ -z "$plug_id" ] && {
+                plug_id=$(ls -dv $SYS_PATH/host* 2>/dev/null | grep -n "/host$HOST$")
+        }
+        plug_id=$((${plug_id%%:*}-1))
+
         # make sure the "scsi" information is on the end of the path
         local scsi_name=${OF_PATH##/*/}
         scsi_name=${scsi_name%%@*}
