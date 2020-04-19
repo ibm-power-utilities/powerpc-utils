@@ -37,6 +37,8 @@ PSERIES_PLATFORM=$(dirname $0)/pseries_platform
 PLATFORM=$(sed /proc/cpuinfo -ne "s/^machine\t*: \(.*\)/\1/p")
 case $PLATFORM in
     EFIKA5K2\ *)	PLATFORM=efika ;;
+    PowerBook*)		PLATFORM=mac ;;
+    PowerMac*)		PLATFORM=mac ;;
 esac
 
 # Usage statemnet
@@ -554,7 +556,11 @@ l2of_ide()
         devno=0,0
     fi
 
-    OF_PATH=$OF_PATH/disk@$devno
+    if [ "$PLATFORM" = "mac" ] ; then
+        OF_PATH=$OF_PATH/@$devno
+    else
+        OF_PATH=$OF_PATH/disk@$devno
+    fi
 }
 
 #
@@ -960,8 +966,11 @@ l2of_scsi()
         # make sure the "scsi" information is on the end of the path
         local scsi_name=${OF_PATH##/*/}
         scsi_name=${scsi_name%%@*}
-        if [[ $scsi_name != "scsi" ]]; then
+        if [[ $scsi_name != "scsi" && "$PLATFORM" != "mac" ]]; then
             scsi_name="scsi@$BUS"
+            OF_PATH=$OF_PATH/$scsi_name
+        elif [[ $scsi_name != "scsi" && "$PLATFORM" = "mac" && $devtype != "ata" ]]; then
+            scsi_name="@$plug_id"
             OF_PATH=$OF_PATH/$scsi_name
         fi
 
@@ -976,7 +985,11 @@ l2of_scsi()
              diskno=`get_scsi_disk_no $device_dir`
              OF_PATH=$OF_PATH/disk\@$diskno
         else
-             OF_PATH=$OF_PATH/sd@$ID,$LUN
+             if [ "$PLATFORM" = "mac" ] ; then
+                 OF_PATH=$OF_PATH/@$ID
+             else
+                 OF_PATH=$OF_PATH/sd@$ID,$LUN
+             fi
        fi
     fi
 
