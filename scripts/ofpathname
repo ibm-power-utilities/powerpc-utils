@@ -519,6 +519,13 @@ l2of_ide()
     if [[ -z $link ]]; then
         err $ERR_NO_SYSFS_DEVINFO
     fi
+
+    # partition number: N in sd*N
+    local devpart="${DEVICE##*[a-z]}"
+    if [[ $devpart = $DEVICE ]]; then
+        devpart='' # no partition number
+    fi
+
     cd $link
 
     # get the device number
@@ -584,6 +591,13 @@ l2of_vd()
     if [[ -z $OF_PATH ]]; then
         err $ERR_NO_OFPATH
     fi
+
+    # No partition specified.
+    if [[ -z $devpart ]]; then
+        return
+    fi
+
+    OF_PATH="${OF_PATH}:${devpart}"
 }
 
 #
@@ -786,6 +800,12 @@ l2of_scsi()
         err $ERR_NOT_CONFIG
     fi
 
+    # partition number: N in sd*N
+    local devpart="${DEVICE##*[a-z]}"
+    if [[ $devpart = $DEVICE ]]; then
+        devpart='' # no partition number
+    fi
+
     # follow the 'device' link
     local link=`get_link "device"`
     if [[ -z $link ]]; then
@@ -951,6 +971,13 @@ l2of_scsi()
              OF_PATH=$OF_PATH/sd@$ID,$LUN
        fi
     fi
+
+    # No partition specified.
+    if [[ -z $devpart ]]; then
+        return
+    fi
+
+    OF_PATH="${OF_PATH}:${devpart}"
 }
 
 #
