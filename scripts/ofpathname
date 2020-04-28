@@ -773,7 +773,7 @@ l2of_scsi()
     local devtype
 
     # There may be many instances of DEVICE under /sys
-    for dir in `$FIND /sys -name $DEVICE`; do
+    for dir in `$FIND /sys/class/block -name $DEVICE`; do
 	# Move up until we find one with a device link
 	goto_dir $dir "device" 0
 	if [ $? -eq 0 ]; then
