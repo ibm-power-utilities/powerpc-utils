@@ -47,15 +47,12 @@
 #endif
 
 #include <errno.h>
+#include "cpu_info_helpers.h"
 
 #define PPC64_CPU_VERSION	"1.2"
 
-#define SYSFS_CPUDIR	"/sys/devices/system/cpu/cpu%d"
-#define SYSFS_SUBCORES	"/sys/devices/system/cpu/subcores_per_core"
 #define DSCR_DEFAULT_PATH "/sys/devices/system/cpu/dscr_default"
-#define INTSERV_PATH	"/proc/device-tree/cpus/%s/ibm,ppc-interrupt-server#s"
 
-#define SYSFS_PATH_MAX		128
 #define MAX_NR_CPUS		1024
 #define DIAGNOSTICS_RUN_MODE	42
 #define CPU_OFFLINE		-1
@@ -80,54 +77,14 @@ static int threads_in_system = 0;
 
 static int do_info(void);
 
-static int test_sysattr(char *attribute, int perms)
-{
-	char path[SYSFS_PATH_MAX];
-	int i;
-
-	for (i = 0; i < threads_in_system; i++) {
-		sprintf(path, SYSFS_CPUDIR"/%s", i, attribute);
-		if (access(path, F_OK))
-			continue;
-
-		if (access(path, perms))
-			return 0;
-	}
-
-	return 1;
-}
-
 static int sysattr_is_readable(char *attribute)
 {
-	return test_sysattr(attribute, R_OK);
+	return __sysattr_is_readable(attribute, threads_in_system);
 }
 
 static int sysattr_is_writeable(char *attribute)
 {
-	return test_sysattr(attribute, W_OK);
-}
-
-static int get_attribute(char *path, const char *fmt, int *value)
-{
-	FILE *fp;
-	int rc;
-
-	rc = access(path, F_OK);
-	if (rc)
-		return -1;
-
-
-	fp = fopen(path, "r");
-	if (!fp)
-		return -1;
-
-	rc = fscanf(fp, fmt, value);
-	fclose(fp);
-
-	if (rc == EOF)
-		return -1;
-
-	return 0;
+	return __sysattr_is_writeable(attribute, threads_in_system);
 }
 
 static int set_attribute(const char *path, const char *fmt, int value)
@@ -154,24 +111,6 @@ static int set_attribute(const char *path, const char *fmt, int value)
 close:
 	close(fd);
 	return rc;
-}
-
-static int cpu_online(int thread)
-{
-	char path[SYSFS_PATH_MAX];
-	int rc, online;
-
-	sprintf(path, SYSFS_CPUDIR"/online", thread);
-	rc = get_attribute(path, "%d", &online);
-
-	/* This attribute does not exist in kernels without hotplug enabled */
-	if (rc && errno == ENOENT)
-		return 1;
-
-	if (rc || !online)
-		return 0;
-
-	return 1;
 }
 
 static int get_system_attribute(char *attribute, const char *fmt, int *value,
@@ -316,93 +255,14 @@ static int offline_thread(const char *path)
 	return set_attribute(path, "%d", 0);
 }
 
-static int is_subcore_capable(void)
-{
-	return access(SYSFS_SUBCORES, F_OK) == 0;
-}
-
-static int num_subcores(void)
-{
-	int rc, subcores;
-	rc = get_attribute(SYSFS_SUBCORES, "%d", &subcores);
-	if (rc)
-		return -1;
-	return subcores;
-}
-
-static int get_cpu_info(void)
-{
-	DIR *d;
-	struct dirent *de;
-	int first_cpu = 1;
-	int rc;
-	int subcores;
-
-	d = opendir("/proc/device-tree/cpus");
-	if (!d)
-		return -1;
-
-	while ((de = readdir(d)) != NULL) {
-		if (!strncmp(de->d_name, "PowerPC", 7)) {
-			if (first_cpu) {
-				struct stat sbuf;
-				char path[128];
-
-				sprintf(path, INTSERV_PATH, de->d_name);
-				rc = stat(path, &sbuf);
-				if (!rc)
-					threads_per_cpu = sbuf.st_size / 4;
-
-				first_cpu = 0;
-			}
-
-			cpus_in_system++;
-		}
-	}
-
-	closedir(d);
-	threads_in_system = cpus_in_system * threads_per_cpu;
-
-	subcores = num_subcores();
-	if (is_subcore_capable() && subcores > 0) {
-		threads_per_cpu /= subcores;
-		cpus_in_system *= subcores;
-	}
-	return 0;
-}
-
 static int is_smt_capable(void)
 {
-	struct stat sb;
-	char path[SYSFS_PATH_MAX];
-	int i;
-
-	for (i = 0; i < threads_in_system; i++) {
-		sprintf(path, SYSFS_CPUDIR"/smt_snooze_delay", i);
-		if (stat(path, &sb))
-			continue;
-		return 1;
-	}
-
-	return 0;
+	return __is_smt_capable(threads_in_system);
 }
 
 static int get_one_smt_state(int core)
 {
-	int primary_thread = core * threads_per_cpu;
-	int smt_state = 0;
-	int i;
-
-	if (!sysattr_is_readable("online")) {
-		perror("Cannot retrieve smt state");
-		return -2;
-	}
-
-	for (i = 0; i < threads_per_cpu; i++) {
-		smt_state += cpu_online(primary_thread + i);
-	}
-
-	return smt_state;
+	return __get_one_smt_state(core, threads_per_cpu);
 }
 
 static int get_smt_state(void)
@@ -513,26 +373,6 @@ static int is_dscr_capable(void)
 	return 0;
 }
 
-void print_cpu_list(const cpu_set_t *cpuset, int cpuset_size)
-{
-	int core;
-	const char *comma = "";
-
-	for (core = 0; core < cpus_in_system; core++) {
-		int begin = core;
-		if (CPU_ISSET_S(core, cpuset_size, cpuset)) {
-			while (CPU_ISSET_S(core+1, cpuset_size, cpuset))
-				core++;
-
-			if (core > begin)
-				printf("%s%d-%d", comma, begin, core);
-			else
-				printf("%s%d", comma, core);
-			comma = ",";
-		}
-	}
-}
- 
 static int do_smt(char *state, bool numeric)
 {
 	int rc = 0;
@@ -547,60 +387,7 @@ static int do_smt(char *state, bool numeric)
 	}
 
 	if (!state) {
-		int thread, c;
-		cpu_set_t *cpu_states[threads_per_cpu];
-		int cpu_state_size = CPU_ALLOC_SIZE(cpus_in_system);
-		int start_cpu = 0, stop_cpu = cpus_in_system;
-
-		for (thread = 0; thread < threads_per_cpu; thread++) {
-			cpu_states[thread] = CPU_ALLOC(cpus_in_system);
-			CPU_ZERO_S(cpu_state_size, cpu_states[thread]);
-		}
-
-		for (c = start_cpu; c < stop_cpu; c++) {
-			int threads_online = get_one_smt_state(c);
-
-			if (threads_online < 0) {
-				rc = threads_online;
-				goto cleanup_get_smt;
-			}
-			if (threads_online)
-				CPU_SET_S(c, cpu_state_size,
-					  cpu_states[threads_online - 1]);
-		}
-
-		for (thread = 0; thread < threads_per_cpu; thread++) {
-			if (CPU_COUNT_S(cpu_state_size, cpu_states[thread])) {
-				if (smt_state == 0)
-					smt_state = thread + 1;
-				else if (smt_state > 0)
-					smt_state = -1; /* mix of SMT modes */
-			}
-		} 
-
-		if (smt_state == 1) {
-			if (numeric)
-				printf("SMT=1\n");
-			else
-				printf("SMT is off\n");
-		} else if (smt_state == -1) {
-			for (thread = 0; thread < threads_per_cpu; thread++) {
-				if (CPU_COUNT_S(cpu_state_size,
-						cpu_states[thread])) {
-					printf("SMT=%d: ", thread + 1);
-					print_cpu_list(cpu_states[thread],
-						       cpu_state_size);
-					printf("\n");
-				}
-			}
-		} else {
-			printf("SMT=%d\n", smt_state);
-		}
-
-cleanup_get_smt:
-		for (thread = 0; thread < threads_per_cpu; thread++)
-			CPU_FREE(cpu_states[thread]);
-
+		rc = __do_smt(numeric, cpus_in_system, threads_per_cpu, true);
 	} else {
 		if (!strcmp(state, "on"))
 			smt_state = threads_per_cpu;
@@ -1510,7 +1297,7 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	rc = get_cpu_info();
+	rc = get_cpu_info(&threads_per_cpu, &cpus_in_system, &threads_in_system);
 	if (rc) {
 		printf("Could not determine system cpu/thread information.\n");
 		return rc;

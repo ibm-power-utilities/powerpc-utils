@@ -70,6 +70,8 @@ pseries_platform_SOURCES = src/common/pseries_platform.c src/common/pseries_plat
 
 librtas_error_SOURCES = src/common/librtas_error.c src/common/librtas_error.h
 
+cpu_info_helpers_SOURCES = src/common/cpu_info_helpers.c src/common/cpu_info_helpers.h
+
 src_nvram_SOURCES = src/nvram.c src/nvram.h $(pseries_platform_SOURCES)
 src_nvram_LDADD = -lz @LIBDL@
 
@@ -77,7 +79,7 @@ src_lsprop_SOURCES = src/lsprop.c $(pseries_platform_SOURCES)
 
 src_lparstat_SOURCES = src/lparstat.c src/lparstat.h $(pseries_platform_SOURCES)
 
-src_ppc64_cpu_SOURCES = src/ppc64_cpu.c $(pseries_platform_SOURCES)
+src_ppc64_cpu_SOURCES = src/ppc64_cpu.c $(pseries_platform_SOURCES) $(cpu_info_helpers_SOURCES)
 src_ppc64_cpu_LDADD = -lpthread
 
 src_vcpustat_SOURCES = src/vcpustat.c $(pseries_platform_SOURCES)
