@@ -189,6 +189,10 @@ struct sysentry system_data[] = {
 	 .descr = "SMT",
 	 .get = &get_smt_mode},
 
+	/* online cores, cpu_info_helpers::get_one_smt_state() */
+	{.name = "online_cores",
+	 .descr = "Online Cores"},
+
 	/* /proc/stat */
 	{.name = "cpu_total",
 	 .descr = "CPU Total Time"},

@@ -88,6 +88,11 @@ static int parse_smt_state(void)
 	return __do_smt(false, cpus_in_system, threads_per_cpu, false);
 }
 
+static int get_one_smt_state(int core)
+{
+	return __get_one_smt_state(core, threads_per_cpu);
+}
+
 void get_time()
 {
 	struct timeval t;
@@ -556,6 +561,31 @@ void get_smt_mode(struct sysentry *se, char *buf)
 		sprintf(buf, "%d", smt_state);
 }
 
+void get_online_cores(void)
+{
+	struct sysentry *se;
+	int *core_state;
+	int online_cores = 0;
+	int i;
+
+	core_state = calloc(cpus_in_system, sizeof(int));
+	if (!core_state) {
+		fprintf(stderr, "Failed to read online cores\n");
+		return;
+	}
+
+	for (i = 0; i < cpus_in_system; i++) {
+		core_state[i] = (get_one_smt_state(i) > 0);
+		if (core_state[i])
+			online_cores++;
+	}
+
+	se = get_sysentry("online_cores");
+	sprintf(se->value, "%d", online_cores);
+
+	free(core_state);
+}
+
 long long get_cpu_time_diff()
 {
 	long long old_total = 0, new_total = 0;
@@ -591,6 +621,8 @@ void init_sysinfo(void)
 		fprintf(stderr, "Failed to capture system CPUs information\n");
 		exit(rc);
 	}
+
+	get_online_cores();
 }
 
 void init_sysdata(void)
