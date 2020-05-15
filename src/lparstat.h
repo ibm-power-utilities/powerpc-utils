@@ -184,7 +184,7 @@ struct sysentry system_data[] = {
 	 .descr = "Online Memory",
 	 .get = &get_mem_total},
 
-	/* ppc64_cpu --smt */
+	/* smt mode, cpu_info_helpers::__do_smt() */
 	{.name = "smt_state",
 	 .descr = "SMT",
 	 .get = &get_smt_mode},

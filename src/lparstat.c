@@ -31,12 +31,17 @@
 #include <sys/time.h>
 #include "lparstat.h"
 #include "pseries_platform.h"
+#include "cpu_info_helpers.h"
 
 #define LPARCFG_FILE	"/proc/ppc64/lparcfg"
 #define SE_NOT_FOUND	"???"
 #define SE_NOT_VALID	"-"
 
 static bool o_legacy = false;
+
+static int threads_per_cpu;
+static int cpus_in_system;
+static int threads_in_system;
 
 struct sysentry *get_sysentry(char *name)
 {
@@ -71,6 +76,16 @@ void get_sysdata(char *name, char **descr, char *value)
 	}
 
 	*descr = se->descr;
+}
+
+static int is_smt_capable(void)
+{
+	return __is_smt_capable(threads_in_system);
+}
+
+static int parse_smt_state(void)
+{
+	return __do_smt(false, cpus_in_system, threads_per_cpu, false);
 }
 
 void get_time()
@@ -522,32 +537,23 @@ void get_mem_total(struct sysentry *se, char *buf)
 
 void get_smt_mode(struct sysentry *se, char *buf)
 {
-	FILE *f;
-	char line[128];
-	char *cmd = "/usr/sbin/ppc64_cpu --smt";
-	char *first_line;
+	int smt_state = 0;
 
-	f = popen(cmd, "r");
-	if (!f) {
-		fprintf(stderr, "Failed to execute %s\n", cmd);
+	if (!is_smt_capable()) {
+		sprintf(buf, "1");
 		return;
 	}
 
-	first_line = fgets(line, 128, f);
-	pclose(f);
-
-	if (!first_line) {
-		fprintf(stderr, "Could not read output of %s\n", cmd);
+	smt_state = parse_smt_state();
+	if (smt_state < 0) {
+		fprintf(stderr, "Failed to get smt state\n");
 		return;
 	}
 
-	/* The output is either "SMT=x" or "SMT is off", we can cheat
-	 * by looking at line[8] for an 'f'.
-	 */
-	if (line[8] == 'f')
+	if (smt_state == 1)
 		sprintf(buf, "Off");
 	else
-		sprintf(buf, "%c", line[4]);
+		sprintf(buf, "%d", smt_state);
 }
 
 long long get_cpu_time_diff()
@@ -572,6 +578,19 @@ void get_cpu_stat(struct sysentry *se, char *buf)
 	old_val = atoll(se->old_value);
 	percent = ((new_val - old_val)/(long double)total) * 100;
 	sprintf(buf, "%.2f", percent);
+}
+
+void init_sysinfo(void)
+{
+	int rc = 0;
+
+	/* probe one time system cpu information */
+	rc = get_cpu_info(&threads_per_cpu, &cpus_in_system,
+			  &threads_in_system);
+	if (rc) {
+		fprintf(stderr, "Failed to capture system CPUs information\n");
+		exit(rc);
+	}
 }
 
 void init_sysdata(void)
@@ -746,6 +765,7 @@ int main(int argc, char *argv[])
 	if (optind < argc)
 		count = atoi(argv[optind++]);
 
+	init_sysinfo();
 	init_sysdata();
 
 	if (i_option)

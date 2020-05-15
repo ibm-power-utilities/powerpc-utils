@@ -77,7 +77,8 @@ src_nvram_LDADD = -lz @LIBDL@
 
 src_lsprop_SOURCES = src/lsprop.c $(pseries_platform_SOURCES)
 
-src_lparstat_SOURCES = src/lparstat.c src/lparstat.h $(pseries_platform_SOURCES)
+src_lparstat_SOURCES = src/lparstat.c src/lparstat.h $(pseries_platform_SOURCES) \
+		       $(cpu_info_helpers_SOURCES)
 
 src_ppc64_cpu_SOURCES = src/ppc64_cpu.c $(pseries_platform_SOURCES) $(cpu_info_helpers_SOURCES)
 src_ppc64_cpu_LDADD = -lpthread
