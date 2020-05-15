@@ -171,6 +171,38 @@ void get_sys_uptime(struct sysentry *unused_se, char *uptime)
 	fclose(f);
 }
 
+int get_nominal_frequency(void)
+{
+	FILE *f;
+	char buf[80];
+	struct sysentry *se;
+	char *nfreq = NULL;
+
+	f = fopen("/proc/cpuinfo", "r");
+	if (!f) {
+		fprintf(stderr, "Could not open /proc/cpuinfo\n");
+		return -1;
+	}
+
+	while ((fgets(buf, 80, f)) != NULL) {
+		if (!strncmp(buf, "clock", 5)) {
+			nfreq = strchr(buf, ':') + 2;
+			break;
+		}
+	}
+
+	fclose(f);
+
+	if (!nfreq) {
+		fprintf(stderr, "Failed to read Nominal frequency\n");
+		return -1;
+	}
+
+	se = get_sysentry("nominal_freq");
+	snprintf(se->value, sizeof(se->value), "%s", nfreq);
+
+	return 0;
+}
 
 void get_cpu_physc(struct sysentry *unused_se, char *buf)
 {
@@ -623,6 +655,10 @@ void init_sysinfo(void)
 	}
 
 	get_online_cores();
+
+	rc = get_nominal_frequency();
+	if (rc)
+		exit(rc);
 }
 
 void init_sysdata(void)

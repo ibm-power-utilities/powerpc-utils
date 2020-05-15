@@ -242,6 +242,8 @@ struct sysentry system_data[] = {
 	/* /proc/cpuinfo */
 	{.name = "timebase",
 	 .descr = "Timebase"},
+	{.name = "nominal_freq",
+	 .descr = "Nominal Frequency"},
 
 	/* /proc/interrupts */
 	{.name = "phint",
