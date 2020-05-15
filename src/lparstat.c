@@ -40,6 +40,7 @@
 #define SE_NOT_VALID	"-"
 
 static bool o_legacy = false;
+static bool o_scaled = false;
 
 static int threads_per_cpu;
 static int cpus_in_system;
@@ -928,6 +929,10 @@ void init_sysinfo(void)
 		exit(rc);
 	}
 
+	/* refer to init_sysdata for explanation */
+	if (!o_scaled)
+		return;
+
 	get_online_cores();
 
 	rc = get_nominal_frequency();
@@ -953,6 +958,12 @@ void init_sysdata(void)
 	parse_proc_stat();
 	parse_proc_ints();
 	get_time_base();
+
+	/* Skip reading spurr, purr, idle_{purr,spurr} and calculating
+	 * effective frequency for default option */
+	if (!o_scaled)
+		return;
+
 	rc = parse_sysfs_values();
 	if (rc)
 		exit(rc);
@@ -1067,6 +1078,42 @@ void print_default_output(int interval, int count)
 	} while (--count > 0);
 }
 
+void print_scaled_output(int interval, int count)
+{
+	char purr[32], purr_idle[32], spurr[32], spurr_idle[32];
+	char nominal_f[32], effective_f[32];
+	double nominal_freq, effective_freq;
+	char *descr;
+
+	print_system_configuration();
+
+	fprintf(stdout, "---Actual---                 -Normalized-\n");
+	fprintf(stdout, "%%busy  %%idle   Frequency     %%busy  %%idle\n");
+	fprintf(stdout, "------ ------  ------------- ------ ------\n");
+	do {
+		if (interval) {
+			sleep(interval);
+			update_sysdata();
+		}
+
+		get_sysdata("purr_cpu_util", &descr, purr);
+		get_sysdata("purr_cpu_idle", &descr, purr_idle);
+		get_sysdata("spurr_cpu_util", &descr, spurr);
+		get_sysdata("spurr_cpu_idle", &descr, spurr_idle);
+		get_sysdata("nominal_freq", &descr, nominal_f);
+		get_sysdata("effective_freq", &descr, effective_f);
+		nominal_freq = strtod(nominal_f, NULL);
+		effective_freq = strtod(effective_f, NULL);
+
+		fprintf(stdout, "%6s %6s %5.2fGHz[%3d%%] %6s %6s\n",
+			purr, purr_idle,
+			effective_freq/1000,
+			(int)((effective_freq/nominal_freq * 100)+ 0.44 ),
+			spurr, spurr_idle );
+		fflush(stdout);
+	} while (--count > 0);
+}
+
 static void usage(void)
 {
 	printf("Usage:  lparstat [ options ]\n\tlparstat <interval> [ count ]\n\n"
@@ -1074,6 +1121,7 @@ static void usage(void)
 	       "\t-h, --help		Show this message and exit.\n"
 	       "\t-V, --version	\tDisplay lparstat version information.\n"
 	       "\t-i			Lists details on the LPAR configuration.\n"
+	       "\t-E			Print SPURR metrics.\n"
 	       "\t-l, --legacy		Print the report in legacy format.\n"
 	       "interval		The interval parameter specifies the amount of time between each report.\n"
 	       "count			The count parameter specifies how many reports will be displayed.\n");
@@ -1098,7 +1146,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	while ((c = getopt_long(argc, argv, "iVhl",
+	while ((c = getopt_long(argc, argv, "iEVhl",
 				long_opts, &opt_index)) != -1) {
 		switch(c) {
 			case 'i':
@@ -1106,6 +1154,9 @@ int main(int argc, char *argv[])
 				break;
 			case 'l':
 				o_legacy = true;
+				break;
+			case 'E':
+				o_scaled = true;
 				break;
 			case 'V':
 				printf("lparstat - %s\n", VERSION);
@@ -1134,9 +1185,11 @@ int main(int argc, char *argv[])
 
 	if (i_option)
 		print_iflag_data();
-	else
+	else if (o_scaled) {
+		print_scaled_output(interval, count);
+		close_cpu_sysfs_fds(threads_in_system);
+	} else {
 		print_default_output(interval, count);
-
-	close_cpu_sysfs_fds(threads_in_system);
+	}
 	return 0;
 }
