@@ -60,6 +60,10 @@ extern void get_cpu_physc(struct sysentry *, char *);
 extern void get_per_entc(struct sysentry *, char *);
 extern void get_cpu_app(struct sysentry *, char *);
 extern void get_sys_uptime(struct sysentry *, char *);
+extern void get_cpu_util_purr(struct sysentry *unused_se, char *buf);
+extern void get_cpu_idle_purr(struct sysentry *unused_se, char *buf);
+extern void get_cpu_util_spurr(struct sysentry *unused_se, char *buf);
+extern void get_cpu_idle_spurr(struct sysentry *uunused_se, char *buf);
 
 struct sysentry system_data[] = {
 	/* System Names */
@@ -279,6 +283,24 @@ struct sysentry system_data[] = {
 	/* Sum of per CPU Idle SPURR Values */
 	{.name = "idle_spurr",
 	 .descr = "Scaled Processor Utilization Resource Idle Values"},
+
+	/* Dervied from above sysfs values */
+	/* PURR Utilization */
+	{.name = "purr_cpu_util",
+	 .descr = "Physical CPU consumed - PURR",
+	 .get = &get_cpu_util_purr},
+	/* PURR Idle time */
+	{.name = "purr_cpu_idle",
+	 .descr = "Idle CPU value - PURR",
+	 .get = &get_cpu_idle_purr},
+	/* SPURR Utilization */
+	{.name = "spurr_cpu_util",
+	 .descr = "Physical CPU consumed - SPURR",
+	 .get = &get_cpu_util_spurr},
+	/* SPURR Idle time */
+	{.name = "spurr_cpu_idle",
+	 .descr = "Idle CPU value - SPURR",
+	 .get = &get_cpu_idle_spurr},
 
 	{.name[0] = '\0'},
 };

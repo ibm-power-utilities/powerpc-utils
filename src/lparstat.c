@@ -471,6 +471,93 @@ void get_cpu_app(struct sysentry *unused_se, char *buf)
 	sprintf(buf, "%.2f", app);
 }
 
+static double round_off_freq(void)
+{
+	double effective_freq, nominal_freq, freq;
+	struct sysentry *se;
+
+	se = get_sysentry("effective_freq");
+	effective_freq = strtod(se->value, NULL);
+
+	se = get_sysentry("nominal_freq");
+	nominal_freq = strtod(se->value, NULL);
+
+	freq = ((int)((effective_freq/nominal_freq * 100)+ 0.44) -
+	       (effective_freq/nominal_freq * 100)) /
+	       (effective_freq/nominal_freq * 100) * 100;
+
+	return freq;
+}
+
+void get_cpu_util_purr(struct sysentry *unused_se, char *buf)
+{
+	double delta_tb, delta_purr, delta_idle_purr;
+	double physc;
+
+	delta_tb = get_scaled_tb();
+	delta_purr = get_delta_value("purr");
+	delta_idle_purr = get_delta_value("idle_purr");
+
+	physc = (delta_purr - delta_idle_purr) / delta_tb;
+	physc *= 100.00;
+
+	sprintf(buf, "%.2f", physc);
+}
+
+void get_cpu_idle_purr(struct sysentry *unused_se, char *buf)
+{
+	double delta_tb, delta_purr, delta_idle_purr;
+	double physc, idle;
+
+	delta_tb = get_scaled_tb();
+	delta_purr = get_delta_value("purr");
+	delta_idle_purr = get_delta_value("idle_purr");
+
+	physc = (delta_purr - delta_idle_purr) / delta_tb;
+	idle = (delta_purr / delta_tb) - physc;
+	idle *= 100.00;
+
+	sprintf(buf, "%.2f", idle);
+}
+
+void get_cpu_util_spurr(struct sysentry *unused_se, char *buf)
+{
+	double delta_tb, delta_spurr, delta_idle_spurr;
+	double physc, rfreq;
+
+	delta_tb = get_scaled_tb();
+	delta_spurr = get_delta_value("spurr");
+	delta_idle_spurr = get_delta_value("idle_spurr");
+
+	physc = (delta_spurr - delta_idle_spurr) / delta_tb;
+	physc *= 100.00;
+
+	rfreq = round_off_freq();
+	physc += ((physc * rfreq) / 100);
+
+	sprintf(buf, "%.2f", physc);
+}
+
+void get_cpu_idle_spurr(struct sysentry *unused_se, char *buf)
+{
+	double delta_tb, delta_spurr, delta_idle_spurr;
+	double physc, idle;
+	double rfreq;
+
+	delta_tb = get_scaled_tb();
+	delta_spurr = get_delta_value("spurr");
+	delta_idle_spurr = get_delta_value("idle_spurr");
+
+	physc = (delta_spurr - delta_idle_spurr) / delta_tb;
+	idle = (delta_spurr / delta_tb) - physc;
+	idle *= 100.00;
+
+	rfreq = round_off_freq();
+	idle += ((idle * rfreq) / 100);
+
+	sprintf(buf, "%.2f", idle);
+}
+
 int parse_lparcfg()
 {
 	FILE *f;
