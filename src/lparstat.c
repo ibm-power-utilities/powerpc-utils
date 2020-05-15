@@ -226,6 +226,21 @@ static void sig_int_handler(int signal)
 	exit(1);
 }
 
+long long get_delta_value(char *se_name)
+{
+	long long value, old_value;
+	struct sysentry *se;
+
+	se = get_sysentry(se_name);
+	if (se->value[0] == '\0')
+		return 0LL;
+
+	value = strtoll(se->value, NULL, 0);
+	old_value = strtoll(se->old_value, NULL, 0);
+
+	return (value - old_value);
+}
+
 void get_time()
 {
 	struct timeval t;
