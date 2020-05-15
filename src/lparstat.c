@@ -165,6 +165,61 @@ error:
 	return -1;
 }
 
+int parse_sysfs_values(void)
+{
+	unsigned long long spurr, idle_spurr, idle_purr, value;
+	char line[SYSDATA_VALUE_SZ];
+	struct sysentry *se;
+	int i, rc;
+
+	spurr = idle_spurr = idle_purr = 0UL;
+
+	for (i = 0; cpu_sysfs_fds[i].spurr > 0; i++) {
+		rc = pread(cpu_sysfs_fds[i].spurr, (void *)line, sizeof(line), 0);
+		if (rc == -1) {
+			fprintf(stderr, "Failed to /sys/devices/system/cpu/cpu%d/spurr\n",
+					cpu_sysfs_fds[i].cpu);
+			goto error;
+		}
+
+		value = strtoll(line, NULL, 16);
+		spurr += value;
+
+		rc = pread(cpu_sysfs_fds[i].idle_purr, (void *)line, sizeof(line), 0);
+		if (rc == -1) {
+			fprintf(stderr, "Failed to /sys/devices/system/cpu/cpu%d/idle_purr\n",
+					cpu_sysfs_fds[i].cpu);
+			goto error;
+		}
+
+		value = strtoll(line, NULL, 16);
+		idle_purr += value;
+
+		rc = pread(cpu_sysfs_fds[i].idle_spurr, (void *)line, sizeof(line), 0);
+		if (rc == -1) {
+			fprintf(stderr, "Failed to /sys/devices/system/cpu/cpu%d/idle_spurr\n",
+					cpu_sysfs_fds[i].cpu);
+			goto error;
+		}
+
+		value = strtoll(line, NULL, 16);
+		idle_spurr += value;
+	}
+
+	se = get_sysentry("spurr");
+	sprintf(se->value, "%llu", spurr);
+	se = get_sysentry("idle_purr");
+	sprintf(se->value, "%llu", idle_purr);
+	se = get_sysentry("idle_spurr");
+	sprintf(se->value, "%llu", idle_spurr);
+
+	return 0;
+
+error:
+	close_cpu_sysfs_fds(threads_in_system);
+	return -1;
+}
+
 static void sig_int_handler(int signal)
 {
 	close_cpu_sysfs_fds(threads_in_system);
@@ -750,11 +805,16 @@ void init_sysinfo(void)
 
 void init_sysdata(void)
 {
+	int rc = 0;
+
 	get_time();
 	parse_lparcfg();
 	parse_proc_stat();
 	parse_proc_ints();
 	get_time_base();
+	rc = parse_sysfs_values();
+	if (rc)
+		exit(rc);
 }
 
 void update_sysdata(void)

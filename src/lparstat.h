@@ -266,6 +266,17 @@ struct sysentry system_data[] = {
 	 .descr = "System Uptime",
 	 .get = &get_sys_uptime},
 
+	/* /sys/devices/system/cpu/cpu<n>/ */
+	/* Sum of per CPU SPURR registers */
+	{.name = "spurr",
+	 .descr = "Scaled Processor Utilization Resource Register"},
+	/* Sum of per CPU Idle PURR Values */
+	{.name = "idle_purr",
+	 .descr = "Processor Utilization Resource Idle Values"},
+	/* Sum of per CPU Idle SPURR Values */
+	{.name = "idle_spurr",
+	 .descr = "Scaled Processor Utilization Resource Idle Values"},
+
 	{.name[0] = '\0'},
 };
 
