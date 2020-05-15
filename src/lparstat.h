@@ -256,6 +256,9 @@ struct sysentry system_data[] = {
 	 .descr = "Timebase"},
 	{.name = "nominal_freq",
 	 .descr = "Nominal Frequency"},
+	/* derived from nominal freq */
+	{.name = "effective_freq",
+	 .descr = "Effective Frequency"},
 
 	/* /proc/interrupts */
 	{.name = "phint",

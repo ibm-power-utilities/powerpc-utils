@@ -352,6 +352,28 @@ int get_nominal_frequency(void)
 	return 0;
 }
 
+void get_effective_frequency()
+{
+	struct sysentry *se;
+	double delta_purr, delta_spurr;
+	double nominal_freq, effective_freq;
+
+	se = get_sysentry("nominal_freq");
+	nominal_freq = strtol(se->value, NULL, 10);
+
+	/*
+	 * Calculate the Effective Frequency (EF)
+	 * EF = (delta SPURR / delta PURR) * nominal frequency
+	 */
+	delta_purr = get_delta_value("purr");
+	delta_spurr = get_delta_value("spurr");
+
+	effective_freq = (delta_spurr / delta_purr) * nominal_freq;
+
+	se = get_sysentry("effective_freq");
+	sprintf(se->value, "%f", effective_freq);
+}
+
 void get_cpu_physc(struct sysentry *unused_se, char *buf)
 {
 	struct sysentry *se;
@@ -830,6 +852,7 @@ void init_sysdata(void)
 	rc = parse_sysfs_values();
 	if (rc)
 		exit(rc);
+	get_effective_frequency();
 }
 
 void update_sysdata(void)
