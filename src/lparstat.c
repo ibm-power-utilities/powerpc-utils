@@ -259,18 +259,6 @@ void get_time()
 		(long long)t.tv_sec * 1000000LL + (long long)t.tv_usec);
 }
 
-long long elapsed_time()
-{
-	long long newtime, oldtime = 0;
-	struct sysentry *se;
-
-	se = get_sysentry("time");
-	newtime = strtoll(se->value, NULL, 0);
-	oldtime = strtoll(se->old_value, NULL, 0);
-
-	return newtime - oldtime;
-}
-
 int get_time_base()
 {
 	FILE *f;
@@ -309,7 +297,8 @@ double get_scaled_tb(void)
 	se = get_sysentry("online_cores");
 	online_cores = atoi(se->value);
 
-	elapsed = elapsed_time() / 1000000.0;
+	elapsed = get_delta_value("time");
+	elapsed = elapsed / 1000000.0;
 
 	se = get_sysentry("timebase");
 	timebase = atoi(se->value);
@@ -401,27 +390,25 @@ void get_cpu_physc(struct sysentry *unused_se, char *buf)
 {
 	struct sysentry *se;
 	float elapsed;
-	float new_purr, old_purr;
+	float delta_purr;
 	float timebase, physc;
-	float new_tb, old_tb;
+	float delta_tb;
 
-	se = get_sysentry("purr");
-	new_purr = strtoll(se->value, NULL, 0);
-	old_purr = strtoll(se->old_value, NULL, 0);
+	delta_purr = get_delta_value("purr");
 
 	se = get_sysentry("tbr");
 	if (se->value[0] != '\0') {
-		new_tb = strtoll(se->value, NULL, 0);
-		old_tb = strtoll(se->old_value, NULL, 0);
+		delta_tb = get_delta_value("tbr");
 
-		physc = (new_purr - old_purr) / (new_tb - old_tb);
+		physc = delta_purr / delta_tb;
 	} else {
-		elapsed = elapsed_time() / 1000000.0;
+		elapsed = get_delta_value("time");
+		elapsed = elapsed / 1000000.0;
 
 		se = get_sysentry("timebase");
 		timebase = atoi(se->value);
 
-		physc = (new_purr - old_purr)/timebase/elapsed;
+		physc = delta_purr/timebase/elapsed;
 	}
 
 	sprintf(buf, "%.2f", physc);
@@ -443,7 +430,7 @@ void get_cpu_app(struct sysentry *unused_se, char *buf)
 {
 	struct sysentry *se;
 	float timebase, app, elapsed_time;
-	long long new_app, old_app, newtime, oldtime;
+	long long new_app, old_app, delta_time;
 	char *descr, uptime[32];
 
 	se = get_sysentry("time");
@@ -457,9 +444,8 @@ void get_cpu_app(struct sysentry *unused_se, char *buf)
 		}
 		elapsed_time = atof(uptime);
 	} else {
-		newtime = strtoll(se->value, NULL, 0);
-		oldtime = strtoll(se->old_value, NULL, 0);
-		elapsed_time = (newtime - oldtime) / 1000000.0;
+		delta_time = get_delta_value("time");
+		elapsed_time = delta_time / 1000000.0;
 	}
 
 	se = get_sysentry("timebase");
@@ -898,27 +884,14 @@ void get_online_cores(void)
 	free(core_state);
 }
 
-long long get_cpu_time_diff()
-{
-	long long old_total = 0, new_total = 0;
-	struct sysentry *se;
-
-	se = get_sysentry("cpu_total");
-	new_total = strtoll(se->value, NULL, 0);
-	old_total = strtoll(se->old_value, NULL, 0);
-
-	return new_total - old_total;
-}
-
 void get_cpu_stat(struct sysentry *se, char *buf)
 {
 	float percent;
-	long long total, old_val, new_val;
+	long long total, delta_val;
 
-	total = get_cpu_time_diff();
-	new_val = atoll(se->value);
-	old_val = atoll(se->old_value);
-	percent = ((new_val - old_val)/(long double)total) * 100;
+	total = get_delta_value("cpu_total");
+	delta_val = get_delta_value(se->name);
+	percent = (delta_val/(long double)total) * 100;
 	sprintf(buf, "%.2f", percent);
 }
 
