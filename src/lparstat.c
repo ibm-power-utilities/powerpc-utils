@@ -294,6 +294,23 @@ int get_time_base()
 	return 0;
 }
 
+double get_scaled_tb(void)
+{
+	double elapsed, timebase;
+	struct sysentry *se;
+	int online_cores;
+
+	se = get_sysentry("online_cores");
+	online_cores = atoi(se->value);
+
+	elapsed = elapsed_time() / 1000000.0;
+
+	se = get_sysentry("timebase");
+	timebase = atoi(se->value);
+
+	return (timebase * elapsed) * online_cores;
+}
+
 void get_sys_uptime(struct sysentry *unused_se, char *uptime)
 {
 	FILE *f;
