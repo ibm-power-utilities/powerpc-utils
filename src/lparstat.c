@@ -27,6 +27,8 @@
 #include <string.h>
 #include <getopt.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <signal.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include "lparstat.h"
@@ -42,6 +44,8 @@ static bool o_legacy = false;
 static int threads_per_cpu;
 static int cpus_in_system;
 static int threads_in_system;
+
+static cpu_sysfs_fd *cpu_sysfs_fds;
 
 struct sysentry *get_sysentry(char *name)
 {
@@ -91,6 +95,80 @@ static int parse_smt_state(void)
 static int get_one_smt_state(int core)
 {
 	return __get_one_smt_state(core, threads_per_cpu);
+}
+
+static int assign_read_fd(const char *path)
+{
+	int rc = 0;
+
+	rc = access(path, R_OK);
+	if (rc)
+		return -1;
+
+	rc = open(path, O_RDONLY);
+	return rc;
+}
+
+static void close_cpu_sysfs_fds(int threads_in_system)
+{
+	int i;
+
+	for (i = 0; i < threads_in_system && cpu_sysfs_fds[i].spurr; i++) {
+		close(cpu_sysfs_fds[i].spurr);
+		close(cpu_sysfs_fds[i].idle_purr);
+		close(cpu_sysfs_fds[i].idle_spurr);
+	}
+
+	free(cpu_sysfs_fds);
+}
+
+static int assign_cpu_sysfs_fds(int threads_in_system)
+{
+	int cpu_idx, i;
+	char sysfs_file_path[SYSFS_PATH_MAX];
+
+	cpu_sysfs_fds =
+		(cpu_sysfs_fd*)calloc(sizeof(cpu_sysfs_fd), threads_in_system);
+	if (!cpu_sysfs_fds) {
+		fprintf(stderr, "Failed to allocate memory for sysfs file descriptors\n");
+		return -1;
+	}
+
+	for (cpu_idx = 0, i = 0; i < threads_in_system; i++) {
+		if (!cpu_online(i))
+			continue;
+
+		cpu_sysfs_fds[cpu_idx].cpu = i;
+
+		snprintf(sysfs_file_path, SYSFS_PATH_MAX, SYSFS_PERCPU_SPURR, i);
+		cpu_sysfs_fds[cpu_idx].spurr = assign_read_fd(sysfs_file_path);
+		if (cpu_sysfs_fds[cpu_idx].spurr == -1)
+			goto error;
+
+		snprintf(sysfs_file_path, SYSFS_PATH_MAX, SYSFS_PERCPU_IDLE_PURR, i);
+		cpu_sysfs_fds[cpu_idx].idle_purr = assign_read_fd(sysfs_file_path);
+		if (cpu_sysfs_fds[cpu_idx].idle_purr == -1)
+			goto error;
+
+		snprintf(sysfs_file_path, SYSFS_PATH_MAX, SYSFS_PERCPU_IDLE_SPURR, i);
+		cpu_sysfs_fds[cpu_idx].idle_spurr = assign_read_fd(sysfs_file_path);
+		if (cpu_sysfs_fds[cpu_idx].idle_spurr == -1)
+			goto error;
+
+		cpu_idx++;
+	}
+
+	return 0;
+error:
+	fprintf(stderr, "Failed to open %s\n", sysfs_file_path);
+	close_cpu_sysfs_fds(threads_in_system);
+	return -1;
+}
+
+static void sig_int_handler(int signal)
+{
+	close_cpu_sysfs_fds(threads_in_system);
+	exit(1);
 }
 
 void get_time()
@@ -659,6 +737,15 @@ void init_sysinfo(void)
 	rc = get_nominal_frequency();
 	if (rc)
 		exit(rc);
+
+	if (signal(SIGINT, sig_int_handler) == SIG_ERR) {
+		fprintf(stderr, "Failed to add signal handler\n");
+		exit(-1);
+	}
+
+	rc = assign_cpu_sysfs_fds(threads_in_system);
+	if (rc)
+		exit(rc);
 }
 
 void init_sysdata(void)
@@ -841,5 +928,6 @@ int main(int argc, char *argv[])
 	else
 		print_default_output(interval, count);
 
+	close_cpu_sysfs_fds(threads_in_system);
 	return 0;
 }

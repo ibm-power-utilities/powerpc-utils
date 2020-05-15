@@ -25,6 +25,10 @@
 #define SYSDATA_NAME_SZ		64
 #define SYSDATA_DESCR_SZ	128
 
+#define SYSFS_PERCPU_SPURR	"/sys/devices/system/cpu/cpu%d/spurr"
+#define SYSFS_PERCPU_IDLE_PURR	"/sys/devices/system/cpu/cpu%d/idle_purr"
+#define SYSFS_PERCPU_IDLE_SPURR	"/sys/devices/system/cpu/cpu%d/idle_spurr"
+
 struct sysentry {
 	char	value[SYSDATA_VALUE_SZ];	/* value from file */
 	char	old_value[SYSDATA_VALUE_SZ];	/* previous value from file */
@@ -32,6 +36,14 @@ struct sysentry {
 	char	descr[SYSDATA_DESCR_SZ];	/* description of data */
 	void (*get)(struct sysentry *, char *);
 };
+
+struct cpu_sysfs_file_desc {
+	int cpu;	/* cpu number */
+	int spurr;      /* per-cpu /sys/devices/system/cpu/cpuX/spurr file descriptor */
+	int idle_purr;  /* per-cpu /sys/devices/system/cpu/cpuX/idle_purr file descriptor */
+	int idle_spurr; /* per-cpu /sys/devices/system/cpu/cpuX/idle_spurr file descriptor */
+};
+typedef struct cpu_sysfs_file_desc cpu_sysfs_fd;
 
 extern void get_smt_state(struct sysentry *, char *);
 extern void get_capped_mode(struct sysentry *, char *);
