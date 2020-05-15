@@ -989,16 +989,13 @@ int print_iflag_data()
 	return 0;
 }
 
-void print_default_output(int interval, int count)
+void print_system_configuration(void)
 {
-	char *fmt = "%5s %5s %5s %8s %8s %5s %5s %5s %5s %5s\n";
 	char *descr;
 	char buf[128];
 	int offset, smt, active_proc;
 	char type[32];
 	char value[32];
-	char user[32], sys[32], wait[32], idle[32], physc[32], entc[32];
-	char lbusy[32], app[32], vcsw[32], phint[32];
 
 	memset(buf, 0, 128);
 	get_sysdata("shared_processor_mode", &descr, value);
@@ -1031,6 +1028,16 @@ void print_default_output(int interval, int count)
 	offset += sprintf(buf + offset, "ent=%s ", value);
 
 	fprintf(stdout, "\nSystem Configuration\n%s\n\n", buf);
+}
+
+void print_default_output(int interval, int count)
+{
+	char *fmt = "%5s %5s %5s %8s %8s %5s %5s %5s %5s %5s\n";
+	char *descr;
+	char user[32], sys[32], wait[32], idle[32], physc[32], entc[32];
+	char lbusy[32], app[32], vcsw[32], phint[32];
+
+	print_system_configuration();
 
 	fprintf(stdout, fmt, "\%user", "\%sys", "\%wait", "\%idle", "physc",
 		"\%entc", "lbusy", "app", "vcsw", "phint");
