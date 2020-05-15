@@ -21,6 +21,7 @@
  * @author Nathan Fontenot <nfont@linux.vnet.ibm.com>
  */
 
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -28,6 +29,7 @@
 #include <getopt.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <sched.h>
 #include <signal.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -47,6 +49,7 @@ static int cpus_in_system;
 static int threads_in_system;
 
 static cpu_sysfs_fd *cpu_sysfs_fds;
+static cpu_set_t *online_cpus;
 
 struct sysentry *get_sysentry(char *name)
 {
@@ -180,7 +183,7 @@ int parse_sysfs_values(void)
 		if (rc == -1) {
 			fprintf(stderr, "Failed to /sys/devices/system/cpu/cpu%d/spurr\n",
 					cpu_sysfs_fds[i].cpu);
-			goto error;
+			goto check_cpu_hotplug;
 		}
 
 		value = strtoll(line, NULL, 16);
@@ -190,7 +193,7 @@ int parse_sysfs_values(void)
 		if (rc == -1) {
 			fprintf(stderr, "Failed to /sys/devices/system/cpu/cpu%d/idle_purr\n",
 					cpu_sysfs_fds[i].cpu);
-			goto error;
+			goto check_cpu_hotplug;
 		}
 
 		value = strtoll(line, NULL, 16);
@@ -200,7 +203,7 @@ int parse_sysfs_values(void)
 		if (rc == -1) {
 			fprintf(stderr, "Failed to /sys/devices/system/cpu/cpu%d/idle_spurr\n",
 					cpu_sysfs_fds[i].cpu);
-			goto error;
+			goto check_cpu_hotplug;
 		}
 
 		value = strtoll(line, NULL, 16);
@@ -216,9 +219,11 @@ int parse_sysfs_values(void)
 
 	return 0;
 
-error:
-	close_cpu_sysfs_fds(threads_in_system);
-	return -1;
+check_cpu_hotplug:
+	if(!cpu_online(cpu_sysfs_fds[i].cpu))
+		return 1;
+
+	return rc;
 }
 
 static void sig_int_handler(int signal)
@@ -917,6 +922,52 @@ void get_cpu_stat(struct sysentry *se, char *buf)
 	sprintf(buf, "%.2f", percent);
 }
 
+int has_cpu_topology_changed(void)
+{
+	int i, changed = 1;
+	cpu_set_t *tmp_cpuset;
+	size_t online_cpus_size = CPU_ALLOC_SIZE(threads_in_system);
+
+	if (!online_cpus) {
+		online_cpus = CPU_ALLOC(threads_in_system);
+		if (!online_cpus) {
+			fprintf(stderr, "Failed to allocate memory for cpu_set\n");
+			return -1;
+		}
+
+		CPU_ZERO_S(online_cpus_size, online_cpus);
+
+		for (i = 0; i < threads_in_system; i++) {
+			if (!cpu_online(i))
+				continue;
+			CPU_SET_S(i, online_cpus_size, online_cpus);
+		}
+
+		return changed;
+	}
+
+	tmp_cpuset = CPU_ALLOC(threads_in_system);
+	if (!tmp_cpuset) {
+		fprintf(stderr, "Failed to allocate memory for cpu_set\n");
+		return -1;
+	}
+
+	CPU_ZERO_S(online_cpus_size, tmp_cpuset);
+
+	for (i = 0; i < threads_in_system; i++) {
+		if (!cpu_online(i))
+			continue;
+		CPU_SET_S(i, online_cpus_size, tmp_cpuset);
+	}
+
+	changed = CPU_EQUAL_S(online_cpus_size, online_cpus, tmp_cpuset);
+
+	CPU_FREE(online_cpus);
+	online_cpus = tmp_cpuset;
+
+	return changed;
+}
+
 void init_sysinfo(void)
 {
 	int rc = 0;
@@ -964,10 +1015,23 @@ void init_sysdata(void)
 	if (!o_scaled)
 		return;
 
+	rc = has_cpu_topology_changed();
+	if (!rc)
+		goto cpu_hotplug_restart;
+
 	rc = parse_sysfs_values();
-	if (rc)
+	if (rc == -1)
 		exit(rc);
+	else if (rc)
+		goto cpu_hotplug_restart;
+
 	get_effective_frequency();
+
+	return;
+
+cpu_hotplug_restart:
+	close_cpu_sysfs_fds(threads_in_system);
+	init_sysinfo();
 }
 
 void update_sysdata(void)
