@@ -135,7 +135,7 @@ int get_cpu_info(int *_threads_per_cpu, int *_cpus_in_system,
 		if (!strncmp(de->d_name, "PowerPC", 7)) {
 			if (first_cpu) {
 				struct stat sbuf;
-				char path[128];
+				char path[PATH_MAX];
 
 				snprintf(path, sizeof(path), INTSERV_PATH, de->d_name);
 				rc = stat(path, &sbuf);
