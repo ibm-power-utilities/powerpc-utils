@@ -586,8 +586,10 @@ int parse_lparcfg()
 		*nl = '\0';
 		
 		se = get_sysentry(name);
-		if (se)
-			strncpy(se->value, value, SYSDATA_VALUE_SZ);
+		if (se) {
+			strncpy(se->value, value, SYSDATA_VALUE_SZ - 1);
+			se->value[SYSDATA_VALUE_SZ - 1] = '\0';
+		}
 	}
 
 	fclose(f);
