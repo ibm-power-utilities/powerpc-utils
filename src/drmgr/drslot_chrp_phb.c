@@ -125,7 +125,7 @@ release_phb(struct dr_node *phb)
 
 struct hpdev {
 	struct hpdev *next;
-	char path[256];
+	char *path;
 	char devspec[256];
 };
 
@@ -138,6 +138,7 @@ static void free_hpdev_list(struct hpdev *hpdev_list)
 	while (hpdev_list) {
 		hpdev = hpdev_list;
 		hpdev_list = hpdev_list->next;
+		free(hpdev->path);
 		free(hpdev);
 	}
 }
@@ -169,9 +170,9 @@ static int get_os_hp_devices(struct hpdev **hpdev_list)
 		hpdev->next = hp_list;
 		hp_list = hpdev;
 
-		rc = sprintf(hpdev->path, "%s/%s", SYSFS_PCI_DEV_PATH,
-			     de->d_name);
-		if (rc < 0)
+		rc = asprintf(&hpdev->path, "%s/%s", SYSFS_PCI_DEV_PATH,
+			      de->d_name);
+		if (rc == -1)
 			break;
 
 		rc = get_str_attribute(hpdev->path, "devspec", hpdev->devspec,
