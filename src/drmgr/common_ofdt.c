@@ -335,7 +335,8 @@ static int drc_info_connectors_v2(char *full_path, char *ofdt_path,
 				info.drc_name_prefix,
 				info.drc_name_suffix_start+(i*info.seq_inc));
 
-			strncpy(out_list[ics].type, info.drc_type, DRC_STR_MAX);
+			strncpy(out_list[ics].type, info.drc_type, DRC_STR_MAX - 1);
+			out_list[ics].type[DRC_STR_MAX - 1] = '\0';
 
 			out_list[ics].next = &out_list[ics+1];
 		}
