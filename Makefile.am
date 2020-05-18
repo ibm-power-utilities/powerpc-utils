@@ -86,7 +86,8 @@ src_ppc64_cpu_LDADD = -lpthread
 src_vcpustat_SOURCES = src/vcpustat.c $(pseries_platform_SOURCES)
 
 
-AM_CFLAGS = -Wall -g -I $(top_srcdir)/src/common/
+AM_CFLAGS = -Wall -g
+AM_CPPFLAGS = -I $(top_srcdir)/src/common/
 
 if WITH_LIBRTAS
 sbin_PROGRAMS += \
