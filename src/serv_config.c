@@ -856,7 +856,7 @@ update_value(struct service_var *var, char *val) {
 			param[2] = (uint8_t)atoi(val);
 		}
 		else {
-			*first_16_bits = htobe16(sizeof(val));
+			*first_16_bits = htobe16(strlen(val) + 1);
 			strncpy(param+2, val, BUF_SIZE-2);
 		}
 
