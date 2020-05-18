@@ -941,7 +941,7 @@ add_device_tree_lmb(struct dr_node *lmb, struct lmb_list_head *lmb_list)
 static int
 get_mem_scn_state(struct mem_scn *mem_scn)
 {
-	char path[DR_PATH_MAX];
+	char path[PATH_MAX];
 	char state[8];
 	int file;
 	int rc;
@@ -981,7 +981,7 @@ static int
 set_mem_scn_state(struct mem_scn *mem_scn, int state)
 {
 	int file;
-	char path[DR_PATH_MAX];
+	char path[PATH_MAX];
 	int rc = 0;
 	time_t t;
 	char tbuf[128];
