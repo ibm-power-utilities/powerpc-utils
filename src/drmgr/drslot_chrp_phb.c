@@ -197,7 +197,7 @@ static int get_os_hp_devices(struct hpdev **hpdev_list)
 static int hp_remove_os_device(struct hpdev *hpdev)
 {
 	FILE *file;
-	char path[256];
+	char path[PATH_MAX];
 	int rc;
 
 	sprintf(path, "%s/%s", hpdev->path, "remove");
@@ -229,7 +229,7 @@ static int disable_os_hp_children_recurse(struct dr_node *phb,
 		return -1;
 
 	while ((de = readdir(d)) != NULL) {
-		char devspec[256];
+		char devspec[PATH_MAX] = { 0 };
 
 		if (is_dot_dir(de->d_name))
 			continue;
@@ -240,7 +240,6 @@ static int disable_os_hp_children_recurse(struct dr_node *phb,
 			rc = disable_os_hp_children_recurse(phb, hpdev_list, lpath);
 		}
 
-		memset(devspec, 0, 256);
 		sprintf(devspec, "%s/%s", ofpath + strlen(OFDT_BASE),
 			de->d_name);
 
