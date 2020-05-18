@@ -1373,7 +1373,7 @@ update_of_config_var(struct nvram *nvram, char *config_var, char *pname)
     }
 
     if (strlen(new_config_value)) {
-	strncpy(new_part_offset, config_var, strlen(config_var));
+	memcpy(new_part_offset, config_var, strlen(config_var));
 	new_part_offset += strlen(config_var);
 	*new_part_offset++ = '\0';
     }
