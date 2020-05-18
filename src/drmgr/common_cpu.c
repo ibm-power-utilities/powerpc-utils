@@ -501,6 +501,7 @@ free_cache_info(struct cache_info *cache_list)
 
 	while (tmp != NULL) {
 		cache_list = cache_list->next;
+		free((char *)tmp->path);
 		free(tmp);
 		tmp = cache_list;
 	}
@@ -553,7 +554,7 @@ init_cache_info(struct dr_info *dr_info)
 			}
 
 			snprintf(cache->name, DR_BUF_SZ, "%s", ent->d_name);
-			snprintf(cache->path, DR_BUF_SZ, "%s", path);
+			cache->path = strdup(path);
 
 			cache->removed = 0;
 			cache->next = cache_list;

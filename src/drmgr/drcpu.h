@@ -28,7 +28,7 @@
 
 struct cache_info {
 	char		name[DR_BUF_SZ];	/* node name */
-	char		path[DR_BUF_SZ];	/* node path */
+	const char	*path;			/* node path */
 	uint32_t	phandle;
 	uint32_t	l2cache;
 	uint32_t	removed;
