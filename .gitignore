@@ -43,11 +43,13 @@
 /powerpc-utils.spec
 /scripts/Makefile
 /scripts/Makefile.in
+/scripts/smtstate
 /src/Makefile
 /src/Makefile.in
 /src/drmgr/Makefile
 /src/drmgr/Makefile.in
 /systemd/smt_off.service
+/systemd/smtstate.service
 
 #
 # git files that we don't want to ignore even it they are dot-files
