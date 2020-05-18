@@ -493,7 +493,7 @@ add_node(char *path, struct of_node *new_nodes)
  * @returns 0 on success
  */
 static int
-remove_node(char *path)
+remove_node(const char *path)
 {
 	int rc = 0;
 	int fd;
@@ -596,7 +596,7 @@ add_device_tree_nodes(char *path, struct of_node *new_nodes)
  * @returns 0 on success, !0 otherwise
  */
 int
-remove_device_tree_nodes(char *path)
+remove_device_tree_nodes(const char *path)
 {
         DIR *d;
         struct dirent *de;

@@ -103,7 +103,7 @@ int valid_platform(const char *);
 
 void free_of_node(struct of_node *);
 int add_device_tree_nodes(char *, struct of_node *);
-int remove_device_tree_nodes(char *);
+int remove_device_tree_nodes(const char *path);
 
 int update_property(const char *, size_t);
 int get_property(const char *, const char *, void *, size_t);
