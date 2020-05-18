@@ -21,7 +21,6 @@
  * @author Anton Blanchard <anton@au.ibm.com>
  * @author Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
  */
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

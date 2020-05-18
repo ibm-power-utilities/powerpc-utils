@@ -21,7 +21,6 @@
  * @author Nathan Fontenot <nfont@linux.vnet.ibm.com>
  */
 
-#define _GNU_SOURCE
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>

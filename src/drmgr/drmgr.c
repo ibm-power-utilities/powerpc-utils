@@ -23,7 +23,6 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/stat.h>
-#define _GNU_SOURCE
 #include <getopt.h>
 
 #include "dr.h"

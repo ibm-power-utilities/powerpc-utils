@@ -87,7 +87,7 @@ src_vcpustat_SOURCES = src/vcpustat.c $(pseries_platform_SOURCES)
 
 
 AM_CFLAGS = -Wall -g
-AM_CPPFLAGS = -I $(top_srcdir)/src/common/
+AM_CPPFLAGS = -I $(top_srcdir)/src/common/ -D _GNU_SOURCE
 
 if WITH_LIBRTAS
 sbin_PROGRAMS += \

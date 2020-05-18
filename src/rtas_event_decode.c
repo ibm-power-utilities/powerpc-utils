@@ -33,7 +33,6 @@
  * Bug fixes June 2004 by Linas Vepstas <linas@linas.org>
  */
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

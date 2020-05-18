@@ -53,7 +53,6 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <librtas.h>
-#define _GNU_SOURCE
 #include <getopt.h>
 
 #include "librtas_error.h"
