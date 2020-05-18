@@ -857,7 +857,7 @@ update_value(struct service_var *var, char *val) {
 		}
 		else {
 			*first_16_bits = htobe16(strlen(val) + 1);
-			strncpy(param+2, val, BUF_SIZE-2);
+			strncpy(param + 2, val, BUF_SIZE - 3);
 		}
 
 		rc = rtas_set_sysparm(var->sysparm_num, param);
