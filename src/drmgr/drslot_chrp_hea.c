@@ -113,7 +113,7 @@ hotplug_hea(int action, char *name)
 static int
 hotplug_port(int action, struct dr_node *hea, struct dr_node *port)
 {
-	char fname[128];
+	char fname[PATH_MAX];
 	char port_str[4];
 	char *action_str = (action == ADD) ? "add" : "remove";
 	uint port_no;
