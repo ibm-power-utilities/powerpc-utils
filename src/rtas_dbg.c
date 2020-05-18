@@ -128,13 +128,13 @@ struct rtas_token *get_rtas_tokens(void)
 	while ((dp = readdir(dir)) != NULL) {
 		FILE *fp;
 		struct rtas_token *tok;
-		char dir[128];
+		char dir[512];
 		int rc;
 
 		if (dp->d_name[0] == '.')
 			continue;
 
-		snprintf(dir, 128, "%s/%s", OFDT_RTAS_PATH, dp->d_name);
+		snprintf(dir, sizeof(dir), "%s/%s", OFDT_RTAS_PATH, dp->d_name);
 
 		fp = fopen(dir, "r");
 		if (fp == NULL) {
