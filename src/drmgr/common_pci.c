@@ -331,7 +331,7 @@ init_node(struct dr_node *node)
 {
 	DIR *d;
 	struct dirent *de;
-	char child_path[DR_PATH_MAX];
+	char *child_path;
 	uint32_t my_drc_index;
 	int rc;
 
@@ -344,13 +344,20 @@ init_node(struct dr_node *node)
 
 	rc = 0;
 	while ((de = readdir(d)) != NULL) {
+		int printed;
+
 		if ((de->d_type != DT_DIR) || is_dot_dir(de->d_name))
 			continue;
 
-		sprintf(child_path, "%s/%s", node->ofdt_path, de->d_name);
-
-		if (get_my_drc_index(child_path, &my_drc_index))
+		printed = asprintf(&child_path, "%s/%s", node->ofdt_path,
+				   de->d_name);
+		if (printed == -1)
 			continue;
+
+		if (get_my_drc_index(child_path, &my_drc_index)) {
+			free(child_path);
+			continue;
+		}
 
 		if (node->dev_type == PCI_HP_DEV) {
 			if (node->drc_index == my_drc_index) {
@@ -375,6 +382,7 @@ init_node(struct dr_node *node)
 				add_child_node(node, child_path);
 			}
 		}
+		free(child_path);
 	}
 
 	closedir(d);
@@ -1282,13 +1290,17 @@ pci_remove_device(struct dr_node *node)
 {
 	int rc = 0;
 	FILE *file;
-	char path[DR_PATH_MAX];
+	char *path;
 	int wait_time = 0;
 
-	sprintf(path, "%s/%s", node->sysfs_dev_path, "remove");
+	rc = asprintf(&path, "%s/%s", node->sysfs_dev_path, "remove");
+	if (rc == -1)
+		return -errno;
+
 	file = fopen(path, "w");
 	if (file == NULL) {
 		say(ERROR, "failed to open %s: %s\n", path, strerror(errno));
+		free(path);
 		return -ENODEV;
 	}
 
@@ -1298,8 +1310,10 @@ pci_remove_device(struct dr_node *node)
 
 	fclose(file);
 
-	if (rc == -EACCES)
+	if (rc == -EACCES) {
+		free(path);
 		return rc;
+	}
 
 	do {
 		struct stat sb;
@@ -1325,6 +1339,7 @@ pci_remove_device(struct dr_node *node)
 		rc = 0;
 	}
 
+	free(path);
 	return rc;
 }
 
