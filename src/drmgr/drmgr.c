@@ -314,7 +314,7 @@ struct command *get_command(void)
 		 * connector type.
 		 */
 		say(ERROR, "Dynamic reconfiguration is not supported for "
-		    "connector\ntype \"%s\" on this system\n", usr_drc_type);
+		    "connector type \"%d\" on this system\n", usr_drc_type);
 		break;
 	}
 
