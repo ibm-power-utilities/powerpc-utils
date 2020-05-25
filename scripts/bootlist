@@ -211,7 +211,7 @@ show_bootlist()
 	if [[ $TRANSLATE_NAMES = "yes" ]]; then
 	    name=`get_logical_device_name $i`
 	    if [[ -z $name ]]; then
-	        echo "Could not translate $i to logical device name" 2>&1
+	        echo "Could not translate $i to logical device name" >&2
 	    else
 		case $name in
 		    eth*)   parse_eth_info $name $i ;;
@@ -230,7 +230,7 @@ show_bootlist()
 
 . $PSERIES_PLATFORM
 if [[ $platform != $PLATFORM_PSERIES_LPAR ]]; then
-    echo "bootlist: is not supported on the $platform_name platform" 2>&1
+    echo "bootlist: is not supported on the $platform_name platform" >&2
     exit 1
 fi
 
