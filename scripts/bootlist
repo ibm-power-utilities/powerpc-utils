@@ -169,11 +169,11 @@ get_logical_device_name()
     local devname=$1
     local logical_name
 
-    logical_name=`$OFPATHNAME -l $devname 2>/dev/null | tr -d '\000'`
+    logical_name=`$OFPATHNAME -l $devname 2>/dev/null`
     if [[ $? -ne 0 ]]; then
 	echo ""
     else
-	echo $logical_name
+	echo $logical_name | tr -d '\000'
     fi
 }
 
