@@ -30,7 +30,7 @@ Utilities for maintaining and servicing PowerPC systems.
 %setup -q
 
 %build
-%configure %{?_with_systemd}
+%configure %{?_with_systemd} --disable-werror
 %{__make} %{?_smp_mflags}
 
 %install
