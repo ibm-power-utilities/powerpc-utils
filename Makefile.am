@@ -86,7 +86,7 @@ src_ppc64_cpu_LDADD = -lpthread
 src_vcpustat_SOURCES = src/vcpustat.c $(pseries_platform_SOURCES)
 
 
-AM_CFLAGS = -Wall -Werror -g
+AM_CFLAGS = -Wall -g
 AM_CPPFLAGS = -I $(top_srcdir)/src/common/ -D _GNU_SOURCE
 
 if WITH_LIBRTAS

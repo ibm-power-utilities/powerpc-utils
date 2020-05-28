@@ -93,11 +93,15 @@ AC_ARG_WITH([systemd],
 AM_CONDITIONAL(WITH_SYSTEMD, [test "$with_systemd" = 1])
 AC_SUBST(systemd_unit_dir)
 
+AC_ARG_ENABLE([werror],
+    AS_HELP_STRING([--disable-werror], [avoid treating compiler warnings as fatal errors]))
+
 AC_DEFUN([LOCAL_CHECK_FLAGS],[
   AC_REQUIRE([AX_CHECK_LINK_FLAG])
   AC_REQUIRE([AX_APPEND_COMPILE_FLAGS])
   AC_LANG_PUSH([C])
   AX_APPEND_COMPILE_FLAGS([-Wall])
+  AS_IF([test "x$enable_werror" != "xno"], [AX_APPEND_COMPILE_FLAGS([-Werror])])
   AX_APPEND_COMPILE_FLAGS([-D_FORTIFY_SOURCE=2 -fstack-protector-all])
   AX_APPEND_COMPILE_FLAGS([-fwrapv -fPIE -Wstack-protector])
   AX_APPEND_COMPILE_FLAGS([--param=ssp-buffer-size=1])
