@@ -309,6 +309,8 @@ struct command *get_command(void)
  		usr_action = HIBERNATE;
  		return &commands[DRSLOT_CHRP_PHIB];
 		break;
+	case DRC_TYPE_MIGRATION:
+		return &commands[DRMIG_CHRP_PMIG];
 	default:
 		/* If we make it this far, the user specified an invalid
 		 * connector type.
