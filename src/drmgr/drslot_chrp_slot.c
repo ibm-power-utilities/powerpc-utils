@@ -93,14 +93,17 @@ remove_slot(struct dr_node *node)
 		return -1;
 	}
 
-	rc = disable_hp_children(node->drc_name);
-	if (rc)
-		say(ERROR, "failed to disable hotplug children\n");
+	/* For PCI nodes */
+	if (node->dev_type == PCI_DLPAR_DEV) {
+		rc = disable_hp_children(node->drc_name);
+		if (rc)
+			say(ERROR, "failed to disable hotplug children\n");
 
-	rc = release_hp_children(node->drc_name);
-	if (rc && rc != -EINVAL) {
-		say(ERROR, "failed to release hotplug children\n");
-		return rc;
+		rc = release_hp_children(node->drc_name);
+		if (rc && rc != -EINVAL) {
+			say(ERROR, "failed to release hotplug children\n");
+			return rc;
+		}
 	}
 
 	say(DEBUG, "The sensor-state of drc_index 0x%x is %d\n",
