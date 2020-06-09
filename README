@@ -2,6 +2,7 @@ powerpc-utils package
 ==========================
 
 Mailing List: powerpc-utils-devel@googlegroups.com
+Subscribe: https://groups.google.com/forum/#!forum/powerpc-utils-devel/join
 
 This package contains utilities which are intended for maintenance of IBM 
 powerpc platforms that follow the POWER Architecture Platform Reference (PAPR),
@@ -64,7 +65,7 @@ virtual devices so they can be matched against the VIOS names.
 usysident, usysattn, usysfault:
 -------------------------------
 Deprecated. Moved to ppc64-diag package.
-http://sourceforge.net/projects/linux-diag/files/ppc64-diag/
+https://github.com/power-ras/ppc64-diag
 
 ===================
 
