@@ -1484,7 +1484,7 @@ int drslot_chrp_mem(void)
 	if (usr_drc_name)
 		usr_drc_count = 1;
 
-	if (kernel_dlpar_exists()) {
+	if (kernel_dlpar_exists(usr_drc_type)) {
 		rc = do_mem_kernel_dlpar();
 	} else {
 		if (usr_action == ADD)

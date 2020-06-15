@@ -171,6 +171,6 @@ enum drc_type to_drc_type(const char *);
 #define PRRN_TIMEOUT 30
 int handle_prrn(void);
 
-int kernel_dlpar_exists(void);
+int kernel_dlpar_exists(enum drc_type type);
 int do_kernel_dlpar(const char *, int);
 #endif
