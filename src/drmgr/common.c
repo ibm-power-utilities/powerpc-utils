@@ -1437,8 +1437,25 @@ int is_display_adapter(struct dr_node *node)
 int kernel_dlpar_exists(void)
 {
 	struct stat sbuf;
+	char buf[64];
 
-	if (!stat(SYSFS_DLPAR_FILE, &sbuf))
+	if (stat(SYSFS_DLPAR_FILE, &sbuf))
+		return 0;
+
+	if (!get_str_attribute(SYSFS_DLPAR_FILE, NULL, buf, sizeof(buf))) {
+		switch (usr_drc_type) {
+		case DRC_TYPE_MEM:
+			if (strstr(buf, "memory"))
+				return 1;
+			break;
+		case DRC_TYPE_CPU:
+			if (strstr(buf, "cpu"))
+				return 1;
+			break;
+		default:
+			return 0;
+		}
+	} else if (usr_drc_type == DRC_TYPE_MEM)
 		return 1;
 
 	return 0;
