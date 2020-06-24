@@ -288,7 +288,7 @@ get_usb_storage_no()
 # $3 on_exit behavior on error
 goto_dir()
 {
-    local start_dir=$1
+    local start_dir=$(readlink -f $1)
     local fname=$2
     local found=0
     local on_exit=1
