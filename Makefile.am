@@ -22,7 +22,8 @@ sbin_SCRIPTS = \
 	scripts/ls-vscsi \
 	scripts/ls-vdev \
 	scripts/nvsetenv \
-	scripts/pseries_platform
+	scripts/pseries_platform \
+	scripts/hcnmgr
 
 man_MANS = \
 	man/activate_firmware.8 \
@@ -191,6 +192,14 @@ noinst_HEADERS += \
 	src/drmgr/options.c
 
 src_drmgr_lsslot_LDADD = -lrtas
+
+install-exec-hook:
+	cd $(DESTDIR)${sbindir} && \
+	ln -sf hcnmgr hcncfgdrc && \
+	ln -sf hcnmgr hcnrmhcn && \
+	ln -sf hcnmgr hcnqrydev && \
+	ln -sf hcnmgr hcnrmdev && \
+	ln -sf hcnmgr hcnversion
 
 if WITH_SYSTEMD
 install-data-hook:

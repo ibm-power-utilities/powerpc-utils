@@ -1,0 +1,547 @@
+#! /bin/bash
+
+# Copyright (c) 2020 International Business Machines
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/
+#
+# Author Mingming Cao <mingming.cao@ibm.com>
+#
+# hcnmgr - This utility configure or manage hybrid network to
+#	   support live partition migration with SR_IOV
+#
+
+VERSION="1.0"
+PATH=$PATH:/bin:/usr/bin:/sbin:/usr/sbin
+BOND_BASEPATH="/sys/class/net"
+BONDOPTIONS="mode=1,miimon=100,fail_over_mac=2"
+IFCONFIG_PATH="/etc/sysconfig/network-scripts"
+PSERIES_PLATFORM=$(dirname "$0")/pseries_platform
+DT_PATH="/proc/device-tree"
+HCNMGR="hcnmgr"
+HCNCMD=""
+LOG_FILE="/var/log/hcnmgr"
+HCN_LOGGING_LEVEL=DEBUG
+HCNID=0
+DRC_INDEX=0
+DEVNAME=""
+MODE=""
+PHYSLOC=""
+
+# Usage statements
+usage() {
+	echo "$HCNMGR contains a set of commands to support migratable SR_IOV logical port."
+	echo "The new commands configure/query/remove network devices. New commands should"
+	echo "be called from the HMC, rather than directly from linux LPAR"
+	echo ""
+	echo "Usage: hcncfgdrc DRC_INDEX=<drc_index> [STAKE_TOKEN=NULL] [-d]"
+	echo "        Configure a device to hybrid network HCN"
+	echo ""
+	echo "Usage: hcnrmhcn HCN_ID=<hcnid>"
+	echo "        Remove a hybrid network HCN given an HCN ID"
+	echo ""
+	echo "Usage: hcnrmdev DRC_INDEX=<drc_index> HCN_ID=<hcnid>"
+	echo "        Unconfigure device from HCN"
+	echo ""
+	echo "Usage: hcnqrydev DRC_INDEX=<drc_index> HCN_ID=<hcnid>"
+	echo "        Query a device given a DRC_INDEX or HCN ID"
+	echo ""
+	echo "Usage: hcnversion"
+	echo "        get the current version of the HCN support"
+	echo ""
+	echo "Optional arguments."
+	echo "  -V        Display version information and exit"
+	echo "  -h        Display this help information and exit"
+	echo ""
+}
+
+# Display current version of hybrid network support
+show_version() {
+	echo "$HCNMGR: Version $VERSION"
+	echo "Written by: Mingming Cao <mingming.cao@ibm.com>"
+	hcnlog INFO "HCN_VERSION=$VERSION"
+}
+
+# Error codes
+E_SUCCESS=0       # Success
+E_INVAL=22        # HCN not exist
+E_EPERM=1         # Platform not supported
+E_BUSY=16         # Device busy
+E_ENODEV=19       # Failed get device name
+E_NOMODULE=5      # Failed to load bonding module
+E_ENETUNREACH=101 # No network management command nmcli
+
+#
+# err
+# 	Common routine to print error messages for hcnmgr
+# $1 the error message number, defined above
+#
+err() {
+	local e_mesg
+	local eno=$1
+
+	case $eno in
+	"$E_INVAL")
+		e_mesg="$HCNCMD:error code $eno, hybrid network ID HCNID does not exist"
+		;;
+	"$E_EPERM")
+		e_mesg="$HCNCMD:error code $eno, platform is not supported"
+		;;
+	"$E_BUSY")
+		e_mesg="$HCNCMD:error code $eno, network device busy, no backup device"
+		;;
+	"$E_ENODEV")
+		e_mesg="$HCNCMD:error code $eno, failed to find device or get device name"
+		;;
+	"$E_NOMODULE")
+		e_mesg="$HCNCMD:error code $eno, failed to load bonding module"
+		;;
+	"$E_ENETUNREACH")
+		e_mesg="$HCNCMD:error code $eno, nmcli command not installed"
+		;;
+	*)
+		e_mesg="$HCNCMD:error code $eno"
+		;;
+	esac
+
+	hcnlog ERROR "$e_mesg"
+	exit 1
+}
+
+# Logging
+# All logging messages goes to $LOG_FILE
+# Error, Warn, Info logged in syslog
+# stdout and sterr still keep all information (CmdRC and data info) to pipe back to HMC
+#
+hcnlog() {
+	local log_level=$1
+	local log_message=$2
+
+	case "$log_level" in
+	ERROR)
+		echo "[${log_level}]:${log_message}" 1>&2
+		logger -p user.err -t "$(basename "$0")" "$log_message"
+		;;
+	WARN)
+		echo "[${log_level}]:${log_message}"
+		logger -p user.warn -t "$(basename "$0")" "$log_message"
+		;;
+	INFO)
+		echo "[${log_level}]:${log_message}"
+		logger -p user.info -t "$(basename "$0")" "$log_message"
+		;;
+	DEBUG)
+		echo "[${log_level}]:${log_message}"
+		;;
+	esac
+
+}
+# function search_dev:
+#	Given DRX_INDEX, Search for device-tree, looking for migratable SR_IOV
+#	backend vnic or ibmveth device to configure hybrid network
+#
+# $1 DRC_INDEX of given device
+search_dev() {
+	hcnlog DEBUG "search_dev: enter $1"
+	local index
+
+	hcnlog DEBUG "search sr_iov device with drc_index $1"
+	# Look at pci ethernet devices
+	for pci_dev in "$DT_PATH"/pci*; do
+		[ -d "$pci_dev" ] || continue
+		index=$(xxd -l 4 -p "$pci_dev"/ibm,my-drc-index)
+		if [[ $index != "$1" ]]; then
+			continue
+		fi
+		hcnlog DEBUG "found matching drc_index $index in $pci_dev"
+
+		for dev in "$pci_dev"/ethernet*; do
+			[ -d "$dev" ] || continue
+			if [ -e "$dev"/ibm,hcn-id ] && get_dev_hcn "$dev"; then
+				hcnlog DEBUG "search_dev: found device "
+				hcnlog DEBUG "search_dev: exit"
+				return $E_SUCCESS
+			fi
+		done
+	done
+
+	# Look at every vNIC device
+	hcnlog DEBUG "search vnic device with drc_index $1"
+	for dev in "$DT_PATH"/vdevice/vnic*; do
+		[ -d "$dev" ] || continue
+		index=$(xxd -l 4 -p "$dev"/ibm,my-drc-index)
+		if [[ $index == "$1" ]]; then
+			hcnlog DEBUG "found matching drc_index $index in $dev"
+			if [ -e "$dev"/ibm,hcn-id ] && get_dev_hcn "$dev"; then
+				hcnlog DEBUG "search_dev: found device "
+				hcnlog DEBUG "search_dev: exit"
+				return $E_SUCCESS
+			fi
+		fi
+	done
+
+	# Look at every ibmveth (Virtual Ethernet) device
+	hcnlog DEBUG "search ibmveth device with drc_index $1"
+	for dev in "$DT_PATH"/vdevice/l-lan*; do
+		[ -d "$dev" ] || continue
+		index=$(xxd -l 4 -p "$dev"/ibm,my-drc-index)
+		if [[ $index == "$1" ]]; then
+			hcnlog DEBUG "found matching drc_index $index in $dev"
+			if [ -e "$dev"/ibm,hcn-id ] && get_dev_hcn "$dev"; then
+				hcnlog DEBUG "search_dev: found device "
+				hcnlog DEBUG "search_dev: exit"
+				return $E_SUCCESS
+			fi
+		fi
+	done
+	hcnlog DEBUG "search_dev: exit: couldn't find device with drc_index $1"
+	err $E_ENODEV
+}
+
+#
+# function get_dev_hcn
+#	Given device path, Search for device-tree, get HCNID,
+#	device name, and mode to configure/delete/query device
+#	or active-backup bonding
+#
+# $1 path to device-tree device
+#
+get_dev_hcn() {
+	local wait=20
+	local dev=$1
+
+	hcnlog DEBUG "get_dev_hcn: enter $1"
+	HCNID=$(xxd -l 4 -p "$dev"/ibm,hcn-id)
+	MODE=$(tr -d '\0' <"$dev"/ibm,hcn-mode)
+	PHYSLOC=$(tr -d '\0' <"$dev"/ibm,loc-code)
+
+	# Get the device name. After migration, it may take some time for
+	# sysfs interface up or OFPATHENAME command to translate to device name.
+	# Let's retry a few times.
+	while [ $wait != 0 ]; do
+		if DEVNAME=$(ofpathname -l "$(echo "$dev" | sed -e "s/\/proc\/device-tree//")" 2>/dev/null); then
+			break
+		fi
+		hcnlog DEBUG "ofpathname return $?, devname is $DEVNAME rety counter $wait"
+		sleep 1
+		((wait--))
+		if [[ $wait == 0 ]]; then
+			hcnlog DEBUG "get_dev_hcn: couldn't get dev name"
+			hcnlog DEBUG "HCNID $HCNID devname $DEVNAME mode $MODE physloc $PHYSLOC"
+			hcnlog DEBUG "get_dev_hcn: exit"
+			err $E_ENODEV
+		fi
+	done
+
+	hcnlog DEBUG "HCNID $HCNID devname $DEVNAME mode $MODE"
+	hcnlog DEBUG "get_dev_hcn: exit"
+	return $E_SUCCESS
+}
+
+#
+# function do_config_vdevice
+#	configure or create HCN (active-backup bonding)
+#	add device as bonding slave
+#
+#	On enter, the vdevice name, mode, hcnid and drcindex are set
+#
+do_config_vdevice() {
+	hcnlog DEBUG "do_config_vdevice: enter"
+
+	BONDNAME=bond$HCNID
+	BOND_PATH=$BOND_BASEPATH/$BONDNAME/bonding
+
+	hcnlog DEBUG "Check if there is bond $BONDNAME with hcn id $HCNID"
+
+	hcnlog DEBUG "ifconfig file $IFCONFIG_PATH/ifconfig-$BONDNAME"
+	if [ ! -e "$IFCONFIG_PATH/ifcfg-$BONDNAME" ]; then
+		hcnlog INFO "nmcli con add type bond con-name $BONDNAME ifname $BONDNAME"
+		nmcli con add type bond con-name "$BONDNAME" ifname "$BONDNAME"
+
+		#vnic and sr-iov only support fail_over_mac=2 mode
+		hcnlog INFO "nmcli con mod id $BONDNAME bond.options $BONDOPTIONS"
+		nmcli con mod id "$BONDNAME" bond.options "$BONDOPTIONS"
+		nmcli con up "$BONDNAME"
+	fi
+
+	if ! nmcli -f NAME con show --active | grep -q "$BONDNAME\s" && ! nmcli con up "$BONDNAME"; then
+		hcnlog WARN " Couln't bring up bond $BONDNAME"
+	fi
+
+	hcnlog DEBUG "$BOND_PATH....yes"
+
+	hcnlog DEBUG "check if $DEVNAME already added in $BONDNAME"
+
+	if nmcli -f NAME con show | grep -q "$BONDNAME-$DEVNAME\s"; then
+		hcnlog DEBUG "connection $BONDNAME-$DEVNAME exist"
+		if grep "$DEVNAME" -q "$BOND_PATH"/slaves; then
+			hcnlog DEBUG "connection $BONDNAME-$DEVNAME active"
+			hcnlog DEBUG "do_config_drc: exit"
+			return $E_SUCCESS
+		else
+			hcnlog DEBUG " Bring up connection $BONDNAME-$DEVNAME"
+			nmcli con up "$BONDNAME-$DEVNAME"
+			hcnlog DEBUG "do_config_drc: exit"
+			return $E_SUCCESS
+
+		fi
+	fi
+
+	# Add device to the bond
+	hcnlog INFO "nmcli con add type ethernet ifname $DEVNAME master $BONDNAME"
+	nmcli con add type ethernet con-name "$BONDNAME-$DEVNAME" ifname "$DEVNAME" master "$BONDNAME"
+	hcnlog DEBUG "Bring up the $DEVNAME interface"
+	nmcli con up "$BONDNAME-$DEVNAME"
+
+	# if the device is primary, and link is up, force it as primary se
+	if [[ $MODE == "primary" ]]; then
+		hcnlog INFO "Change bonding primary slave to $DEVNAME"
+		echo "$DEVNAME" >"$BOND_PATH"/active_slave
+	fi
+
+	hcnlog DEBUG "do_config_vdevice: exit"
+	return $E_SUCCESS
+}
+
+#
+# function cfghcn
+#	Given device DRC_INDEX, configure or create HCN (active-backup bonding)
+#	add device as bonding slave
+#
+# $1 DRC_INDEX of the hybrid network device
+#
+cfghcn() {
+	hcnlog DEBUG "cfghcn: enter $1"
+	search_dev "$1"
+	do_config_vdevice
+	show_hcnstatus
+	return $E_SUCCESS
+}
+#
+# function rmhcn
+#	Given HCNID, remove HCN
+#
+# $1 hybrid network ID
+#
+rmhcn() {
+	hcnlog DEBUG "rmhcn: enter $1"
+
+	HCNID=$1
+	BONDNAME=bond$HCNID
+	BOND_PATH=$BOND_BASEPATH/$BONDNAME/bonding
+	if [ ! -d "$BOND_PATH" ]; then
+		hcnlog WARN "bond $BONDNAME is inactive"
+		hcnlog INFO "Remove incactive bond and slave connections"
+	fi
+
+	hcnlog INFO "rmhcn: delete bond $BONDNAME and slaves "
+	nmcli -f NAME con show | grep "$BONDNAME" | xargs sudo nmcli con delete
+	show_hcnstatus
+	hcnlog DEBUG "rmhcn: exit"
+	return $E_SUCCESS
+}
+
+#
+#function qrydev
+#	Called by HMC right before migration, to see if it is safe to
+#	remove an migratable SR-IOV VFs
+#
+#	If this migratable SR_IOV device belongs to an active bonding
+#	but without active virtual device to failover, return failure
+#
+#	In some case, if the bonding is deactived, we should not allow
+#	SR-IOV migrate too. return failure
+#
+# $1 DRC_INDEX of SR_IOV device
+# $2 HCNID hybrid network ID
+#
+qrydev() {
+	hcnlog DEBUG "qrydev: enter $1 $2"
+
+	search_dev "$1"
+
+	if [[ $HCNID != "$2" ]]; then
+		hcnlog WARN "qrydev: mismatch drc index $1 HCNID $2"
+	fi
+
+	BONDNAME=bond$HCNID
+	BOND_PATH=$BOND_BASEPATH/$BONDNAME/bonding
+	hcnlog DEBUG "check if there is bond for this $HCNID"
+	if [ ! -d "$BOND_PATH" ]; then
+		hcnlog DEBUG "bond $BONDNAME is inactive or nonexist"
+		hcnlog DEBUG "HCNID $HCNID devname $DEVNAME mode $MODE physloc $PHYSLOC"
+		# In this case, tell HMC to do rmdev and okay to migrate
+		show_hcnstatus
+		return $E_SUCCESS
+	fi
+
+	hcnlog DEBUG "bonding is active, check if there active backup slave"
+	while read -r dev; do
+		if [[ $dev != "$DEVNAME" ]]; then
+			hcnlog DEBUG "found the failover slave $dev"
+			hcnlog INFO "qrydev return safe to remove $DEVNAME"
+			return $E_SUCCESS
+		fi
+	done <"$BOND_PATH"/slaves
+
+	show_hcnstatus
+	hcnlog DEBUG "Couldn't find active backup device for $DEVNAME"
+	hcnlog DEBUG "HCNID $HCNID devname $DEVNAME mode $MODE physloc $PHYSLOC"
+	err $E_BUSY
+}
+
+#
+#function show_hcnstatus
+#	Display bonding connection and device status
+#
+show_hcnstatus() {
+	hcnlog DEBUG "show connection and device status"
+	nmcli connection show
+	nmcli device status
+}
+
+#
+#function check_eth
+#	Check if an ethernet connection is up
+#
+# $1 network device name
+check_eth() {
+	nmcli -f DEVICE con show | grep -q "$1"
+}
+
+#
+#function rmdev
+#	this is called at pre-migration time, remove sr-iov from HCN
+#	force failover to backup vnic or veth
+#
+# $1 DRC_INDEX of SR_IOV device
+# $2 hybrid network ID
+#
+rmdev() {
+	hcnlog DEBUG "rmdev: enter $1 $2"
+	search_dev "$1"
+
+	BONDNAME=bond$HCNID
+	hcnlog DEBUG "found $DEVNAME with DRC_INDEX $1 with HCNID $HCNID"
+	if [[ $HCNID != "$2" ]]; then
+		hcnlog WARN "rmdev: mismatch drc index $1 HCNID $2"
+	fi
+	if check_eth "$DEVNAME"; then
+		hcnlog INFO "rmdev: delete $BONDNAME-$DEVNAME connection"
+		nmcli con delete "$BONDNAME-$DEVNAME"
+	fi
+	show_hcnstatus
+	hcnlog DEBUG "rmdev: exit"
+	return $E_SUCCESS
+}
+
+#
+# Main
+#
+
+#All echo messages goes into $LOG_FILE
+exec &> >(tee -a $LOG_FILE)
+
+#Start debug log $LOG_FILE with date and time
+NOW=$(date +"%m-%d-%Y %T")
+echo "=======================$NOW============================"
+
+#Validate this tool is running on powerpc platform
+. "$PSERIES_PLATFORM"
+if [ "$platform" != "$PLATFORM_PSERIES_LPAR" ]; then
+	err $E_EPERM
+fi
+
+#Validate NMCLI packages is install to manage networking
+if ! nmcli --version >/dev/null 2>&1; then
+	err $E_ENETUNREACH
+fi
+
+#Validate bonding module is loaded
+if ! lsmod | grep -q bonding; then
+	hcnlog DEBUG "HCNMGR: Bonding module not loaded, load module ..."
+	if ! modprobe bonding; then
+		err $E_NOMODULE
+	fi
+fi
+
+#getops for help and version
+while getopts "Vhd:" arg; do
+	case "$arg" in
+	V)
+		show_version
+		exit 0
+		;;
+	h)
+		usage
+		exit 0
+		;;
+	d)
+		hcnlog DEBUG "HMC pass log level at $OPTARG"
+		hcnlog DEBUG "$HCNCMD is always log at $HCN_LOGGING_LEVEL level"
+		;;
+	*)
+		usage
+		exit 1
+		;;
+	esac
+done
+
+HCNCMD=$(basename "$0")
+hcnlog DEBUG "$HCNCMD enter"
+
+#Log this scripts command line to syslog
+hcnlog INFO "$HCNCMD $*"
+
+#Parse the DRC_INDEX and HCN_ID from the arguments
+for param in "$@"; do
+	if [[ $param =~ ^DRC_INDEX=(.+)$ ]]; then
+		DRC_INDEX=${BASH_REMATCH[1]}
+	fi
+	if [[ $param =~ ^HCN_ID=(.+)$ ]]; then
+		HCNID=$(printf "%08x" "0x${BASH_REMATCH[1]}")
+	fi
+done
+
+#Perform hybrid network configuration
+case "$HCNCMD" in
+*hcncfgdrc)
+	HCNCMD="cfghcn"
+	$HCNCMD "$DRC_INDEX"
+	;;
+*hcnrmdev)
+	HCNCMD="rmdev"
+	$HCNCMD "$DRC_INDEX" "$HCNID"
+	;;
+*hcnrmhcn)
+	HCNCMD="rmhcn"
+	$HCNCMD "$HCNID"
+	;;
+*hcnqrydev)
+	HCNCMD="qrydev"
+	$HCNCMD "$DRC_INDEX" "$HCNID"
+	;;
+*hcnversion)
+	show_version
+	;;
+default)
+	show_version
+	hcnlog WARN "Unknown hybrid network command"
+	usage
+	exit 1
+	;;
+esac
+
+exit 0
+
+# end

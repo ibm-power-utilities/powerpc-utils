@@ -87,3 +87,7 @@ rtas_ibm_get_vpd:
 Used by the lsvpd utility to gather Vital Product Data that changes
 dynamically.
 
+hcnmgr:
+---------
+This utility provides the HMC tools to hybrid virtual network to allow
+SR_IOV VFs on LPAR capable for live partition migration.
