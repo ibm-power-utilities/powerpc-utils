@@ -60,6 +60,7 @@ usage() {
 	echo "        get the current version of the HCN support"
 	echo ""
 	echo "Optional arguments."
+	echo "  -s        scan device-tree and configure HCN"
 	echo "  -V        Display version information and exit"
 	echo "  -h        Display this help information and exit"
 	echo ""
@@ -217,7 +218,7 @@ search_dev() {
 # $1 path to device-tree device
 #
 get_dev_hcn() {
-	local wait=20
+	local wait=30
 	local dev=$1
 
 	hcnlog DEBUG "get_dev_hcn: enter $1"
@@ -229,16 +230,21 @@ get_dev_hcn() {
 	# sysfs interface up or OFPATHENAME command to translate to device name.
 	# Let's retry a few times.
 	while [ $wait != 0 ]; do
-		if DEVNAME=$(ofpathname -l "$(echo "$dev" | sed -e "s/\/proc\/device-tree//")" 2>/dev/null); then
+		if DEVNAME=$(ofpathname -l "$(echo "$1" | sed -e "s/\/proc\/device-tree//")" 2>/dev/null); then
 			break
 		fi
+
 		hcnlog DEBUG "ofpathname return $?, devname is $DEVNAME rety counter $wait"
 		sleep 1
+
 		((wait--))
 		if [[ $wait == 0 ]]; then
 			hcnlog DEBUG "get_dev_hcn: couldn't get dev name"
 			hcnlog DEBUG "HCNID $HCNID devname $DEVNAME mode $MODE physloc $PHYSLOC"
 			hcnlog DEBUG "get_dev_hcn: exit"
+			if [[ $HCNCMD == "hcnscan" ]]; then
+				return $E_SUCCESS
+			fi
 			err $E_ENODEV
 		fi
 	done
@@ -446,6 +452,94 @@ rmdev() {
 }
 
 #
+# function scanhcn
+#	HMC supports adding migratable sr-iov when LPAR is inactive. This allows LPAR
+#	can be migrated when inactive with SR_IOV VFS.	It will set the
+#	migratable sr-iov device and it's backup vdevice vnic or veth with
+#	ibm property ibm,hcn-id. This is done without OS awareness.
+#
+#	When LPAR back online,  the OS will setup the hybrid virtual network (bonding)
+#	to prepare for SR_IoV elgitibale migration, or re-configure the hybrid network
+#	after inactive migration.
+#
+#	This function will scan the device-tree to find SR-IOV vfs and virtual devices
+#	that has configured as migratable sr-iov device or as backup vdevice during LPAR
+#	is inactive.
+#	For each matching primary and backup virtual device with same ibm property
+#	ibm,hcn-id, if the hybrid network has not been created, create HCN
+#	(active-backup bonding) for them.
+#s
+scanhcn() {
+	local HcnIds=()
+
+	hcnlog DEBUG "scanhcn: on boot scan for hybrid virtual network starts"
+
+	hcnlog DEBUG "search sr_iov device with ibm,hcn-id propterty......"
+	# Look at pci ethernet devices for SR_IOV VFs with ibm,hcn-id propterty
+	# join or Create bond for this hcnid if not exist, add SR-IOVs as primary
+	# slave for this bond accosiated with hcnid, if not already to
+	for pci_dev in "$DT_PATH"/pci*; do
+		[ -d "$pci_dev" ] || continue
+		for dev in "$pci_dev"/ethernet*; do
+			[ -d "$dev" ] || continue
+			if [ -e "$dev"/ibm,hcn-id ] && get_dev_hcn "$dev"; then
+				hcnlog DEBUG "scanhcn found sr-iov device with hcnid "
+				hcnlog INFO "scanhcn configure HCN and sr-iov device"
+				do_config_vdevice
+				# Save found HCN ids in array HcnIds
+				HcnIds+=("bond$HCNID-")
+			fi
+		done
+	done
+
+	hcnlog DEBUG "search vnic device with ibm,hcn-id propterty......"
+	# Look at every vNIC device with ibm,hcn-id propterty
+	# join or create bond for this hcnid if not exist, add vnic device as
+	# slave for this bond accosiated with hcnid, if not already to
+	for dev in "$DT_PATH"/vdevice/vnic*; do
+		[ -d "$dev" ] || continue
+		if [ -e "$dev"/ibm,hcn-id ] && get_dev_hcn "$dev"; then
+			hcnlog DEBUG "scanhcn found vnic device with hcnid "
+			hcnlog INFO "scanhcn configure HCN and vnic device"
+			do_config_vdevice
+		fi
+	done
+
+	# Look at every veth device with ibm,hcn-id propterty
+	# join or create bond for this hcnid if not exist, add ibmveth device as
+	# slave for this bond accosiated with hcnid, if not already to
+	hcnlog DEBUG "search ibmveth device with ibm,hcn-id propterty......"
+	for dev in "$DT_PATH"/vdevice/l-lan*; do
+		[ -d "$dev" ] || continue
+		if [ -e "$dev"/ibm,hcn-id ] && get_dev_hcn "$dev"; then
+			hcnlog DEBUG "scanhcn found veth device with hcnid "
+			hcnlog INFO "scanhcn configure HCN and veth device"
+			do_config_vdevice
+		fi
+	done
+	show_hcnstatus
+
+	# Next clean up dead connections left from orgitinal LPAR after inactive miration
+
+	# list of all HCN ids
+	ids="${HcnIds[*]}"
+
+	# After inactive migration, LPAR may have old bonding connections
+	# with network device on original LPAR
+	# clean up dead bonding connections
+	for connection in $(nmcli -f NAME con show | grep "${ids// /\\|}"); do
+		dev=$(echo "$connection" | cut -d '-' -f 2)
+		if [ ! -e /sys/class/net/"$dev" ]; then
+			hcnlog INFO "Delete dead bonding connection $connection"
+			nmcli con delete "$connection"
+		fi
+	done
+	show_hcnstatus
+
+	hcnlog DEBUG "scanhcn: scan for hybrid virtual network finished"
+}
+
+#
 # Main
 #
 
@@ -475,8 +569,11 @@ if ! lsmod | grep -q bonding; then
 	fi
 fi
 
+HCNCMD=$(basename "$0")
+hcnlog DEBUG "$HCNCMD enter"
+
 #getops for help and version
-while getopts "Vhd:" arg; do
+while getopts "sVhd:" arg; do
 	case "$arg" in
 	V)
 		show_version
@@ -485,6 +582,9 @@ while getopts "Vhd:" arg; do
 	h)
 		usage
 		exit 0
+		;;
+	s)
+		HCNCMD="hcnscan"
 		;;
 	d)
 		hcnlog DEBUG "HMC pass log level at $OPTARG"
@@ -496,9 +596,6 @@ while getopts "Vhd:" arg; do
 		;;
 	esac
 done
-
-HCNCMD=$(basename "$0")
-hcnlog DEBUG "$HCNCMD enter"
 
 #Log this scripts command line to syslog
 hcnlog INFO "$HCNCMD $*"
@@ -533,6 +630,9 @@ case "$HCNCMD" in
 	;;
 *hcnversion)
 	show_version
+	;;
+*hcnscan)
+	scanhcn
 	;;
 default)
 	show_version
