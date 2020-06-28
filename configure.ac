@@ -113,4 +113,5 @@ LOCAL_CHECK_FLAGS
 
 AC_CONFIG_FILES([Makefile powerpc-utils.spec systemd/smt_off.service])
 AC_CONFIG_FILES([systemd/smtstate.service scripts/smtstate])
+AC_CONFIG_FILES([systemd/hcn-init.service])
 AC_OUTPUT

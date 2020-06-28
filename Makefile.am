@@ -60,6 +60,7 @@ sbin_SCRIPTS += scripts/smtstate
 man_MANS += man/smtstate.8
 EXTRA_DIST += systemd/smt_off.service.in \
 	systemd/smtstate.service.in \
+	systemd/hcn-init.service.in \
 	scripts/smtstate.in \
 	var/lib/powerpc-utils/smt.state \
 	man/smtstate.8
@@ -207,9 +208,11 @@ install-data-hook:
 	$(MKDIR_P) $(DESTDIR)/var/lib/@PACKAGE@
 	$(INSTALL_DATA) systemd/smt_off.service $(DESTDIR)${systemd_unit_dir}/
 	$(INSTALL_DATA) systemd/smtstate.service $(DESTDIR)${systemd_unit_dir}/
+	$(INSTALL_DATA) systemd/hcn-init.service $(DESTDIR)${systemd_unit_dir}/
 	$(INSTALL_DATA) var/lib/powerpc-utils/smt.state $(DESTDIR)/var/lib/@PACKAGE@/
 	$(INSTALL_SCRIPT) scripts/smtstate $(DESTDIR)@sbindir@
 	sed -i -e 's,$${exec_prefix},@prefix@,g' $(DESTDIR)${systemd_unit_dir}/smt_off.service
 	sed -i -e 's,$${exec_prefix},@prefix@,g' $(DESTDIR)${systemd_unit_dir}/smtstate.service
+	sed -i -e 's,$${exec_prefix},@prefix@,g' $(DESTDIR)${systemd_unit_dir}/hcn-init.service
 	sed -i -e 's,$${exec_prefix},@prefix@,g' $(DESTDIR)@sbindir@/smtstate
 endif
