@@ -256,7 +256,7 @@ static int offline_thread(const char *path)
 
 static int is_smt_capable(void)
 {
-	return __is_smt_capable(threads_in_system);
+	return __is_smt_capable(threads_per_cpu);
 }
 
 static int get_one_smt_state(int core)

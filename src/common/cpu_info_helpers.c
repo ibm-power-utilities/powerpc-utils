@@ -165,20 +165,9 @@ int get_cpu_info(int *_threads_per_cpu, int *_cpus_in_system,
 	return 0;
 }
 
-int __is_smt_capable(int threads_in_system)
+int __is_smt_capable(int threads_per_cpu)
 {
-	struct stat sb;
-	char path[SYSFS_PATH_MAX];
-	int i;
-
-	for (i = 0; i < threads_in_system; i++) {
-		sprintf(path, SYSFS_CPUDIR"/smt_snooze_delay", i);
-		if (stat(path, &sb))
-			continue;
-		return 1;
-	}
-
-	return 0;
+	return threads_per_cpu > 1;
 }
 
 int __get_one_smt_state(int core, int threads_per_cpu)
