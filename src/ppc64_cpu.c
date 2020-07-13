@@ -151,9 +151,9 @@ static int set_system_attribute(char *attribute, const char *fmt, int state)
 		sprintf(path, SYSFS_CPUDIR"/%s", i, attribute);
 		rc = set_attribute(path, fmt, state);
 		/* When a CPU is offline some sysfs files are removed from the CPU
-		 * directory, for example smt_snooze_delay and dscr. The absence of the
-		 * file is not an error, so detect and clear the error when
-		 * set_attribute indicates ENOENT. */
+		 * directory, for example dscr. The absence of the file is not
+		 * an error, so detect and clear the error when set_attribute
+		 * indicates ENOENT. */
 		if (rc == -1 && errno == ENOENT)
 			rc = errno = 0;
 		if (rc)
@@ -221,27 +221,6 @@ static int get_dscr(int *value, int *inconsistent)
 	}
 
 	return rc;
-}
-
-static int set_smt_snooze_delay(int delay)
-{
-	if (!sysattr_is_writeable("smt_snooze_delay")) {
-		perror("Cannot set smt snooze delay");
-		return -2;
-	}
-
-	return set_system_attribute("smt_snooze_delay", "%d", delay);
-}
-
-static int get_smt_snooze_delay(int *delay, int *inconsistent)
-{
-	if (!sysattr_is_readable("smt_snooze_delay")) {
-		perror("Cannot retrieve smt snooze delay");
-		return -2;
-	}
-
-	return get_system_attribute("smt_snooze_delay", "%d", delay,
-				    inconsistent);
 }
 
 static int online_thread(const char *path)
@@ -313,18 +292,12 @@ static int set_one_smt_state(int thread, int online_threads)
 static int set_smt_state(int smt_state)
 {
 	int i, j, rc;
-	int ssd, update_ssd = 1;
-	int inconsistent = 0;
 	int error = 0;
 
 	if (!sysattr_is_writeable("online")) {
 		perror("Cannot set smt state");
 		return -1;
 	}
-
-	rc = get_smt_snooze_delay(&ssd, &inconsistent);
-	if (rc)
-		update_ssd = 0;
 
 	for (i = 0; i < threads_in_system; i += threads_per_cpu) {
 		/* Online means any thread on this core running, so check all
@@ -342,9 +315,6 @@ static int set_smt_state(int smt_state)
 			break;
 		}
 	}
-
-	if (update_ssd)
-		set_smt_snooze_delay(ssd);
 
 	if (error) {
 		fprintf(stderr, "One or more cpus could not be on/offlined\n");
@@ -521,40 +491,6 @@ static int do_dscr(char *state, pid_t pid)
 		}
 	} else
 		rc = set_dscr(dscr_state);
-
-	return rc;
-}
-
-static int do_smt_snooze_delay(char *state)
-{
-	int rc = 0;
-
-	if (!is_smt_capable()) {
-		fprintf(stderr, "Machine is not SMT capable\n");
-		return -1;
-	}
-
-	if (!state) {
-		int ssd, inconsistent = 0;
-		rc = get_smt_snooze_delay(&ssd, &inconsistent);
-		if (rc) {
-			if (inconsistent)
-				printf("Inconsistent smt_snooze_delay\n");
-			else
-				printf("Could not retrieve smt_snooze_delay\n");
-		} else {
-			printf("smt_snooze_delay is %d\n", ssd);
-		}
-	} else {
-		int delay;
-
-		if (!strcmp(state, "off"))
-			delay = -1;
-		else
-			delay = strtol(state, NULL, 0);
-
-		rc = set_smt_snooze_delay(delay);
-	}
 
 	return rc;
 }
@@ -1252,8 +1188,6 @@ static void usage(void)
 "ppc64_cpu --dscr=<val>              # Change DSCR system setting\n"
 "ppc64_cpu --dscr [-p <pid>]         # Get DSCR setting for process <pid>\n"
 "ppc64_cpu --dscr=<val> [-p <pid>]   # Change DSCR setting for process <pid>\n\n"
-"ppc64_cpu --smt-snooze-delay        # Get current smt-snooze-delay setting\n"
-"ppc64_cpu --smt-snooze-delay=<val>  # Change smt-snooze-delay setting\n\n"
 "ppc64_cpu --run-mode                # Get current diagnostics run mode\n"
 "ppc64_cpu --run-mode=<val>          # Set current diagnostics run mode\n\n"
 "ppc64_cpu --frequency [-t <time>]   # Determine cpu frequency for <time>\n"
@@ -1267,7 +1201,6 @@ static void usage(void)
 struct option longopts[] = {
 	{"smt",			optional_argument, NULL, 's'},
 	{"dscr",		optional_argument, NULL, 'd'},
-	{"smt-snooze-delay",	optional_argument, NULL, 'S'},
 	{"run-mode",		optional_argument, NULL, 'r'},
 	{"frequency",		no_argument,	   NULL, 'f'},
 	{"cores-present",	no_argument,	   NULL, 'C'},
@@ -1367,8 +1300,6 @@ int main(int argc, char *argv[])
 		rc = do_smt(action_arg, numeric);
 	else if (!strcmp(action, "dscr"))
 		rc = do_dscr(action_arg, pid);
-	else if (!strcmp(action, "smt-snooze-delay"))
-		rc = do_smt_snooze_delay(action_arg);
 	else if (!strcmp(action, "run-mode"))
 		rc = do_run_mode(action_arg);
 	else if (!strcmp(action, "frequency"))
