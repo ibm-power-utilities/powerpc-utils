@@ -53,9 +53,12 @@ on a partition.
 
 ppc64_cpu:
 ---------
-This allows users to set the smt state, smt-snooze-delay and other settings
-on ppc64 processors. It also allows users to control the number of processor
-cores which are online (not in the sleep state).
+This allows users to set the smt state and other settings on ppc64 processors.
+It also allows users to control the number of processor cores which are online
+(not in the sleep state).
+
+Previously this allowed setting of smt-snooze-delay, but Linux has not
+supported this since 3.14.
 
 lsdevinfo:
 ---------
