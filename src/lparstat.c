@@ -87,7 +87,7 @@ void get_sysdata(char *name, char **descr, char *value)
 
 static int is_smt_capable(void)
 {
-	return __is_smt_capable(threads_in_system);
+	return __is_smt_capable(threads_per_cpu);
 }
 
 static int parse_smt_state(void)
