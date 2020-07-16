@@ -1,0 +1,160 @@
+.\"                                                                              
+.\" Copyright (C) 2020 International Business Machines                           
+.\" 
+.TH DRMGR "8" "June 2020" "Linux" "Linux on Power Service Tools"
+.SH NAME
+drmgr \- Manage DLPAR resources of a virtualized ppc64 system.
+
+
+.SH SYNOPSIS
+.B drmgr
+.RB [ \-d
+.IR detail_level ]
+.RB [ \-w
+.IR minutes ]
+.RB [ \-C | \-\-capabilities ]
+.RB [ \-h | \-\-help ]
+
+.B drmgr
+.BR \-c " {" pci " | " cpu " | " mem " | " port " | " slot " | " phb "}"
+
+.B drmgr \-c pci \-s
+.I slot_location_code
+.RB { "\-i " | " \-a " | " \-r " | " \-R "}\ [ "\-I" ]
+
+.B drmgr \-c cpu
+.RB { \-a " | " \-r "} {" \-q
+.I quantity
+.RB "| " \-s
+.RI { drc_index " | " drc_name }}
+
+.B drmgr \-c mem
+.RB { \-a " | " \-r "} {" \-q
+.I quantity
+.RB "| " \-s
+.RI { drc_index " | " drc_name }}
+
+.B drmgr \-c
+.RB { port " | " slot " | " phb }
+.RB { \-a " | " \-r "} " \-s
+.RI { drc_index " | " drc_name }
+
+
+.SH DESCRIPTION
+.B drmgr
+is a utility for managing logical and physical hot plug capable resources of a PowerVM LPAR or QEMU/KVM pSeries virtual machine via Dynamic Logical Partitioning (DLPAR) operations. Outside of hot plugging a physical PCI I/O slot the 
+.B drmgr
+utility is intended to be invoked remotely by a Hardware Management Console (HMC), or by a local monitoring deamon in response to a hotplug interrupt from the controlling hypervisor.
+
+.PP
+Unless directed by IBM support or performing a PCI hotplug operation use caution invoking \fBdrmgr\fR from the commandline as it can result in inconsistent state between the LPAR and managament system.
+
+
+.SH OPTIONS
+.TP
+.BI \-d " detail_level"
+Set logging verbosity level.
+
+.TP
+.BI \-w " timeout"
+Specify a timeout in minutes to wait on acquiring dynamic resource lock.
+
+.TP
+.B \-C, \-\-capabilities
+Display DLPAR capabilities of the logical partition.
+
+.TP
+.BI \-c " drc_type"
+Dynamic reconfiguration connector type to act upon from the following list:
+.BR pci ", " cpu ", " mem ", " port ", " slot ", " phb "."
+
+.SS "drmgr -c pci -s \fIslot_location_code\fR {\fB\-i\fR | \fB\-a\fR | \fB\-r\fR | \fB\-R\fR} [\fB\-I\fR]" 
+Add, remove, identify, or replace a physical PCI adapter.
+
+.TP
+.BI \-s " slot_location_code"
+The physical slot location code to act upon.
+
+.TP
+.B \-i
+Identify the specified \fIslot_location_code\fR by turning on its visual indicator LED.
+
+.TP
+.B \-R
+Interactively replace the physical PCI adapter, with \fIslot_location_code\fR, by turning on the visual indicator LED to locate the physical slot, then powering down the slot so that the current card can be removed, and finally powering the slot back up after the new adapter has been inserted into the slot.
+
+.TP
+.B \-r
+Interactively remove a physical PCI adapter, from \fIslot_location_code\fR, by turning on the visual indicator LED to locate the physical slot, and then powering down the slot so that the current card can be removed.
+
+.TP
+.B \-a
+Interactively add a physical PCI adpater, to \fIslot_location_code\fR, by turning on the visual indicator LED to locate the physical slot, and then powering up the slot once the new adapter has been inserted into the slot.
+
+.TP
+.B \-I
+Do not perform the identify step during interactive add, remove, or replacement operations.
+
+
+.SS "drmgr -c cpu \fR{\fB-s \fR{\fIdrc_index\fR | \fIdrc_name\fR} | \fB-q \fIcount\fR} {\fB-a\fR | \fB-r\fR}"
+Add or remove logical cpus from the system.
+
+.TP
+.BI \-s " drc_index " | " drc_name"
+The dynamic reconfiguration connector (DRC) index or name is used to identify one specific CPU on which to perform the requested DLPAR operation.
+
+.TP
+.BI \-q " quantity"
+Specify a quantity of CPUs on which to perfrom the requested DLPAR operation.
+
+.TP
+.B \-a
+Perform a DLPAR CPU(s) add operation.
+
+.TP
+.B \-r
+Perform a DLPAR CPU(s) remove operation.
+
+
+.SS "drmgr -c mem \fR{\fB-s \fR{\fIdrc_index\fR | \fIdrc_name\fR} | \fB-q \fIcount\fR} {\fB-a\fR | \fB-r\fR}"
+Add or removel logical memory blocks (LMBs) from the system.
+
+.TP
+.BI \-s " drc_index " | " drc_name"
+The dynamic reconfiguration connector (DRC) index or name is used to identify one specific logical memory block (LMB) on which to perform the requested DLPAR operation.
+
+.TP
+.BI \-q " quantity"
+Specify a quantity of LMBs on which to perfrom the requested DLPAR operation.
+
+.TP
+.B \-a
+Perform a DLPAR LMB(s) add operation.
+
+.TP
+.B \-r
+Perform a DLPAR LMB(s) remove operation.
+
+
+.SS "drmgr -c \fR{\fBport \fR|\fB slot \fR|\fB phb\fR} {\fB-a \fR|\fB -r\fR} \fB-s \fR{\fIdrc_index \fR|\fI drc_name\fr}"
+Add or remove a logical IOA resource such as virtualized storage and network adapters, or a logical PCI Host Bus that physical PCI devices reside under including hotpluggable slots.
+
+.TP
+.BI \-s " drc_index " | " drc_name"
+The dynamic reconfiguration connector (DRC) index or name is used to identify the logical resource on which to perform the associated DLPAR operation.
+
+.TP
+.B \-a
+Perform a DLPAR add operation of the specified logical resource type.
+
+.TP
+.B \-r
+Perform a DLPAR remove operation of the specified logical resource type.
+
+.SH AUTHOR
+.B drmgr
+was written by IBM Corporation
+
+
+.SH SEE ALSO
+.BR lsslot "(8)"

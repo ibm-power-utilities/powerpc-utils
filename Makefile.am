@@ -46,7 +46,8 @@ man_MANS = \
 	man/ppc64_cpu.8 \
 	man/errinjct.8 \
 	man/vcpustat.8 \
-	man/rtas_dbg.8
+	man/rtas_dbg.8 \
+	man/drmgr.8
 
 EXTRA_DIST += $(bin_SCRIPTS) $(sbin_SCRIPTS) $(man_MANS)
 
