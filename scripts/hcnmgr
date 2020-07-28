@@ -330,7 +330,6 @@ cfghcn() {
 	hcnlog DEBUG "cfghcn: enter $1"
 	search_dev "$1"
 	do_config_vdevice
-	show_hcnstatus
 	return $E_SUCCESS
 }
 #
@@ -352,7 +351,6 @@ rmhcn() {
 
 	hcnlog INFO "rmhcn: delete bond $BONDNAME and slaves "
 	nmcli -f NAME con show | grep "$BONDNAME" | xargs sudo nmcli con delete
-	show_hcnstatus
 	hcnlog DEBUG "rmhcn: exit"
 	return $E_SUCCESS
 }
@@ -382,12 +380,22 @@ qrydev() {
 
 	BONDNAME=bond$HCNID
 	BOND_PATH=$BOND_BASEPATH/$BONDNAME/bonding
+
+	hcnlog DEBUG "check if the network interface for this SR_IOV is not up, return success"
+	if ! nmcli -f DEVICE con show --active | grep -q "$BONDNAME-$DEVNAME"; then
+		hcnlog DEBUG "network connection $BONDNAME-$DEVNAME is inactive or nonexist"
+		hcnlog DEBUG "HCNID $HCNID devname $DEVNAME mode $MODE physloc $PHYSLOC"
+		hcnlog DEBUG "qryhcn: exit"
+		# In this case, tell HMC to do rmdev and okay to migrate
+		return $E_SUCCESS
+	fi
+
 	hcnlog DEBUG "check if there is bond for this $HCNID"
 	if [ ! -d "$BOND_PATH" ]; then
 		hcnlog DEBUG "bond $BONDNAME is inactive or nonexist"
 		hcnlog DEBUG "HCNID $HCNID devname $DEVNAME mode $MODE physloc $PHYSLOC"
 		# In this case, tell HMC to do rmdev and okay to migrate
-		show_hcnstatus
+		hcnlog DEBUG "qryhcn: exit"
 		return $E_SUCCESS
 	fi
 
@@ -396,13 +404,14 @@ qrydev() {
 		if [[ $dev != "$DEVNAME" ]]; then
 			hcnlog DEBUG "found the failover slave $dev"
 			hcnlog INFO "qrydev return safe to remove $DEVNAME"
+			hcnlog DEBUG "qryhcn: exit"
 			return $E_SUCCESS
 		fi
 	done <"$BOND_PATH"/slaves
 
-	show_hcnstatus
 	hcnlog DEBUG "Couldn't find active backup device for $DEVNAME"
 	hcnlog DEBUG "HCNID $HCNID devname $DEVNAME mode $MODE physloc $PHYSLOC"
+	hcnlog DEBUG "qryhcn: exit"
 	err $E_BUSY
 }
 
@@ -411,9 +420,11 @@ qrydev() {
 #	Display bonding connection and device status
 #
 show_hcnstatus() {
-	hcnlog DEBUG "show connection and device status"
-	nmcli connection show
-	nmcli device status
+	hcnlog DEBUG "log connection and device status to $LOG_FILE"
+	nmcli connection show >>$LOG_FILE
+	nmcli device status >>$LOG_FILE
+	ifconfig >>$LOG_FILE
+	lsdevinfo >>$LOG_FILE
 }
 
 #
@@ -446,7 +457,6 @@ rmdev() {
 		hcnlog INFO "rmdev: delete $BONDNAME-$DEVNAME connection"
 		nmcli con delete "$BONDNAME-$DEVNAME"
 	fi
-	show_hcnstatus
 	hcnlog DEBUG "rmdev: exit"
 	return $E_SUCCESS
 }
@@ -517,7 +527,6 @@ scanhcn() {
 			do_config_vdevice
 		fi
 	done
-	show_hcnstatus
 
 	# Next clean up dead connections left from orgitinal LPAR after inactive miration
 
@@ -534,7 +543,6 @@ scanhcn() {
 			nmcli con delete "$connection"
 		fi
 	done
-	show_hcnstatus
 
 	hcnlog DEBUG "scanhcn: scan for hybrid virtual network finished"
 }
@@ -641,7 +649,7 @@ default)
 	exit 1
 	;;
 esac
-
+show_hcnstatus
 exit 0
 
 # end
