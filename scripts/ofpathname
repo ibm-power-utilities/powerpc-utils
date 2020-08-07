@@ -144,13 +144,10 @@ get_hbtl()
 
     HOST=${hbtl%%:*}
     hbtl=${hbtl#*:}
-    BUS=${hbtl%%:*}
-    BUS=`echo "ibase=10;obase=16; $BUS" | bc | tr "[:upper:]" "[:lower:]"`
+    BUS=`printf '%x' "${hbtl%%:*}"`
     hbtl=${hbtl#*:}
-    ID=${hbtl%%:*}
-    ID=`echo "ibase=10;obase=16; $ID" | bc | tr "[:upper:]" "[:lower:]"`
-    LUN=${hbtl#*:}
-    LUN=`echo "ibase=10;obase=16; $LUN" | bc | tr "[:upper:]" "[:lower:]"`
+    ID=`printf '%x' "${hbtl%%:*}"`
+    LUN=`printf '%x' "${hbtl#*:}"`
 }
 
 #
@@ -174,13 +171,7 @@ get_scsi_disk_no()
     local vdiskno vdisk
     typeset -i vdiskno
     vdiskno=$((0x1000000 | $C | $D ))
-    vdisk=${vdiskno##-}
-
-    vdisk=`echo \`bc << END
-ibase=10
-obase=16
-$vdisk
-END\``
+    vdisk=`printf '%X' "${vdiskno#-}"`
 
     local extrazeroes="00000000"
     echo $vdisk$extrazeroes
@@ -210,13 +201,7 @@ get_vdisk_no()
     local vdiskno vdisk
     typeset -i vdiskno
     vdiskno=$((0x8000 | $B | $C | $D ))
-    vdisk=${vdiskno##-}
-
-    vdisk=`echo \`bc << END
-ibase=10
-obase=16
-$vdisk
-END\``
+    vdisk=`printf '%X' "${vdiskno#-}"`
 
     local extrazeroes="000000000000"
     echo $vdisk$extrazeroes
@@ -242,14 +227,8 @@ get_usb_vdisk_no()
 
         local vdiskno vdisk
         vdiskno=$((0x1000000 | $B | $LUN ))
-        vdisk=${vdiskno##-}
+        vdisk=`printf '%X' "${vdiskno#-}"`
 
-vdisk=$(bc << END
-ibase=10
-obase=16
-$vdisk
-END
-)
         local extrazeroes="00000000"
         echo $vdisk$extrazeroes
 }
@@ -745,9 +724,7 @@ scsilun_to_int()
     local lunstr=$1
     local A B C D L
 
-    L=${lunstr/00000000}
-    L=`echo $L | tr "[a-z]" "[A-Z]"`
-    L=`echo "ibase=16;obase=A; $L" | bc`
+    L=$(( 0x${lunstr/00000000} ))
 
     A=$(( ($L >> 8) & 0xff ))
     B=$(($L & 0xff))
@@ -761,9 +738,7 @@ scsilun_to_int()
 get_fc_scsilun()
 {
     local lun=$1
-    local L
-    L=`echo $lun | tr "[a-z]" "[A-Z]"`
-    L=`echo "ibase=16;obase=A; $L" | bc`
+    local L=$(( 0x$lun ))
 
     local fc_lun=`int_to_scsilun $L`
     echo "$fc_lun"
@@ -940,12 +915,9 @@ l2of_scsi()
                     OF_PATH=$(printf "%s,%s" $OF_PATH $LUNSTR)
                 fi
             else
-                B=`echo $BUS | tr "[a-z]" "[A-Z]"`
-                B=`echo "ibase=16;obase=A; $B" | bc`
-                T=`echo $ID | tr "[a-z]" "[A-Z]"`
-                T=`echo "ibase=16;obase=A; $T" | bc`
-                L=`echo $LUN | tr "[a-z]" "[A-Z]"`
-                L=`echo "ibase=16;obase=A; $L" | bc`
+                B=$(( 0x$BUS ))
+                T=$(( 0x$ID ))
+                L=$(( 0x$LUN ))
 
                 sas_id=$(( ($B << 16) | ($T << 8) | $L ))
 
@@ -1426,18 +1398,13 @@ of2l_sas()
         local device_dir=$PWD
 
         local B T L
-        B=`echo $BUS | tr "[a-z]" "[A-Z]"`
-        B=`echo "ibase=16;obase=A; $B" | bc`
-        T=`echo $ID | tr "[a-z]" "[A-Z]"`
-        T=`echo "ibase=16;obase=A; $T" | bc`
-        L=`echo $LUN | tr "[a-z]" "[A-Z]"`
-        L=`echo "ibase=16;obase=A; $L" | bc`
+        B=$(( 0x$BUS ))
+        T=$(( 0x$ID ))
+        L=$(( 0x$LUN ))
 
         if [[ $matchtype = "ipr32" ]]; then
             local sas_id=$((($B << 16) | ($T << 8) | $L))
-
-            sas_id=`echo "ibase=A;obase=16; $sas_id" | bc`
-            sas_id=`echo $sas_id | tr "[A-Z]" "[a-z]"`
+            sas_id=`printf '%x' "$sas_id"`
 
             if [[ $sas_id = $DEV_ID ]]; then
                 goto_dir $PWD "devspec"
@@ -1611,9 +1578,7 @@ of2l_fc()
 	local wwpn=`get_fc_wwpn "$device_path/fc_remote_ports*"`
 
         if [[ $wwpn = $OF_WWPN ]]; then
-                local L
-                L=`echo $LUN | tr "[a-z]" "[A-Z]"`
-                L=`echo "ibase=16;obase=A; $L" | bc`
+                local L=$(( 0x$LUN ))
 
                 if [[ $L = $lunint ]]; then
                         LOGICAL_DEVNAME="${dir##*/}"
