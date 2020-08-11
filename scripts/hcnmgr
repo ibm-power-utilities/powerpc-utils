@@ -277,6 +277,17 @@ do_config_vdevice() {
 		#vnic and sr-iov only support fail_over_mac=2 mode
 		hcnlog INFO "nmcli con mod id $BONDNAME bond.options $BONDOPTIONS"
 		nmcli con mod id "$BONDNAME" bond.options "$BONDOPTIONS"
+		# When creating bond, by default the ipv4.method is auto, set to dhcp
+		# In the case of mutiple HNV this can case bond interface deactive and
+		# active again. In addtion HNV requires user to configure IP address manually.
+		#
+		# So here Set default ipv4 method to disable. Bond is created without IP .
+		# User need to configure static IP manually with
+		# nmcli con mod id <bond-name> ipv4.method manual ipv4.address 192.168.2.203/24
+		# if mutiple HNV is setup, make sure that each of the HNV bonded interfaces is
+		# on a different subnet.
+		nmcli con mod id "$BONDNAME" ipv6.method disable
+		nmcli con mod id "$BONDNAME" ipv4.method disable
 		nmcli con up "$BONDNAME"
 	fi
 
@@ -423,7 +434,7 @@ show_hcnstatus() {
 	hcnlog DEBUG "log connection and device status to $LOG_FILE"
 	nmcli connection show >>$LOG_FILE
 	nmcli device status >>$LOG_FILE
-	ifconfig >>$LOG_FILE
+	ip addr show >>$LOG_FILE
 	lsdevinfo >>$LOG_FILE
 }
 
