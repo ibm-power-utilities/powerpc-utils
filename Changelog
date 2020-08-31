@@ -1,5 +1,1466 @@
+powerpc-utils-1.3.8
+=====================================================================
 
-powerpc-utils-1.3.6
+commit ed7f7c84ba320fac543f88b766587328b5ede63b
+Author: Mingming Cao <mmc@linux.vnet.ibm.com>
+Date:   Tue Aug 11 16:19:49 2020 -0700
+
+    Do not use automatic method (DHCP, PPP, etc) when bond interface is setup
+    
+     When creating bond, by default the ipv4.method is auto, set to dhcp
+     In the case of mutiple HNV interfaces, this can case bond interfaces deactive and
+     active again and again.
+    
+     So here Set default ipv4 method to disable. Bond is created without IP .
+    
+     User can configure static IP manually with
+     nmcli con mod id <bond-name> ipv4.method manual ipv4.address 192.168.2.203/24
+    
+    As long as each interface is on a different network, then they should be able to
+    all use dhcp, but the dhcp server would need to support all these different
+    networks and hand out ips on the different subnets
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 9a4a4a2ec9bb8e9d4e69bd2c482d904bc3b27d7f
+Author: Mingming Cao <mmc@linux.vnet.ibm.com>
+Date:   Mon Jul 27 21:37:38 2020 -0700
+
+    Allow hcnqrydev return success when sr-iov VFs are not active
+    
+    When the sr-iov VF nextwork interfact in the bond is not up, that means
+    it is failover to the backup virtual network device already. We should
+    allow hcnqrydev return success in this case, in other words, means it is
+    safe to dlpar remove sr-iov VFs.
+    
+    Also add more system and network status info in show_hcnstatus() and move it to
+    the end of main function.
+    
+    Signed-off-by: Mingming Cao <mmc@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 6bd1f8acdbef807738e2270e3974ceb3b892666d
+Author: David Michael <fedora.dm0@gmail.com>
+Date:   Fri Aug 7 14:14:57 2020 -0400
+
+    ofpathname: Remove the dependency on bc
+    
+    The only use of bc is to convert between decimal and hexadecimal
+    integers, but this functionality is supported by POSIX shell
+    arithmetic expansion and a POSIX-compatible printf program.  Since
+    this script uses #!/bin/bash, the printf utility is a bash builtin,
+    so it won't even add a dependency on an external printf program
+    (which is provided by the required coreutils package anyway).
+    
+    Signed-off-by: David Michael <fedora.dm0@gmail.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit bd8dd36b33cda0d0a72111a9a53fc5fb9a73cdb4
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Thu Jul 16 15:36:25 2020 -0700
+
+    man: add manpage for the drmgr utility
+    
+    Historically we have discouraged users from invoking drmgr from the commandline
+    outside of PCI hotplug, and as such provided no documentation. However, for the
+    sake of those brave powerusers willing to risk putting their system in a state
+    inconsistent from that of theassociated managment interface lets add a manpage
+    with the basic documentation of the various usage options for each of the
+    dynamic reconfiguration connector types.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 1b27e043f00f8f636bdbc6853d7058ee0a63abf3
+Author: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Date:   Wed Jun 17 21:28:38 2020 +0530
+
+    lparstat: Update man page with -E option
+    
+    lparstat -E option reports the actual and normalized system utilization
+    based on the PURR/SPURR registers. Update the lparstat man page too with
+    the -E option details.
+    
+    Reported-by: Pavithra Prakash <pavrampu@in.ibm.com>
+    Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 0a9b1f2309291c82e68eeb866174aeb676329ed4
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Mon Jun 15 19:51:30 2020 -0500
+
+    drmgr: use in-kernel dlpar facility for CPU's when available
+    
+    The helper kernel_dlpar_exists() now queries whether the kernel supports
+    dlpar based on connector/drc_type. As such allow dlpar of cpu's via the
+    kernel interface when available by default.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 267474a488d1a957e7704feb2910cdea2310c8b7
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Mon Jun 15 19:51:29 2020 -0500
+
+    drmgr: query in-kernel dlpar support by DRC connector type
+    
+    Support to initiate kernel facilitated dlpar for CPU and MEM was
+    introduced into drmgr back in 2016 with commit bbc5fc0 however, this
+    proved problematic for CPU as most distros didn't have in kernel CPU
+    dlpar support yet. As a result CPU support was disabled with commit
+    a97c566.
+    
+    The main issue is that drmgr blindly tests for the existence of
+    /sys/kernel/dlpar to identify in kernel dlpar support. This test doesn't
+    reveal if support goes beyond MEM and includes CPU. This further
+    complicates adding new connector types such as PHB, PCI, and SLOT down
+    the road, and backwards compatability of newer drmgr on older kernels.
+    
+    The /sys/kernel/dlpar attribute was extended by the following kernel
+    commit torvalds/linux@673bc43 that introduced a comma separated list of
+    device support.
+    
+    Update drmgr utility to use this mechanism to determine which
+    device/connector/drc_types are supported by in kernel dlpar.
+    
+    1.) For the case where /sys/kernel/dlpar does not exist use legacy dlpar
+    facilities.
+    
+    2.) For the case where /sys/kernel/dlpar exists but does not
+    reading we assume only memory support for in kernel and use legacy
+    all other types.
+    
+    3.) For the case where /sys/kernel/dlpar exists and is readable we parse
+    the returned list for supported devices and fall back to legacy
+    facilities for anything not in the list.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 871646f79bdd6c119c87561952dcf5b528419f67
+Author: Mingming Cao <mmc@linux.vnet.ibm.com>
+Date:   Sun Jun 28 09:41:51 2020 -0600
+
+    Add hcnmgr init systemd service hcn-init.service
+    
+    After LPAR back online, add service automatically
+    configure hybrid network created at inactive time.
+    
+    Update the build process to include the service in build.
+    configure --with-systemd
+    OR
+    rpmbuild -ba powerpc-utils.spec --with systemd
+    
+    Enable this service after reboot.
+    
+    Signed-off-by: Mingming Cao <mmc@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit ae08f34eb8197dee7489fc73dc2e29aa5bbe84bc
+Author: Mingming Cao <mmc@linux.vnet.ibm.com>
+Date:   Sat Jun 27 08:38:13 2020 -0600
+
+    Support inactive migration with migratable SR_IOV
+    
+    HMC supports adding migratable sr-iov when LPAR is inactive.
+    This allows inactive LPAR migrates with SR_IOV VFs. HMC will
+    generate unique HCNID and PHYP the migratable sr-iov device
+    and it's backup virtual device vnic or veth with same ibm
+    property ibm,hcn-id. This is done while the partion is inactive.
+    
+    When LPAR backs online, the OS is responsible to find out the
+    new migritable SR_IOV configured during LPAR was inactive. This
+    makes the new SR_IOV added eligible for migration, or able to
+    re-configure SR_IOV with HCN post migration.
+    
+    Added function in hcnmgr to scan the device-tree, find
+    migratable SR_IOV that has no hybrid network being configured,
+    setting up the active-back bonding with backup matching vnic or
+    veth. Add new SR_IOV and its backing devices as slave. Skip the HCN
+    has already been configured online before.
+    
+    Signed-off-by: Mingming Cao <mmc@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit ed574ffb81e23169d3327e1f8f22fdfb9ad74390
+Author: Mingming Cao <mmc@linux.vnet.ibm.com>
+Date:   Fri Jun 26 17:02:00 2020 -0600
+
+    Tools to support migrtable SR_IOV hybrid virtual network
+    
+    A LPAR that utilizes an SR-IOV logical port (physical device) cannot be
+    migrated. To allow SR_IOV eligiable for live partition migration, HMC can
+    configures a virtual device (virtual ethernet or virtual NIC) as a backup
+    for each SR-IOV logical port and performs failover network operations to
+    the virtual device before migration. After migration, then performs
+    failover network operations again to the SR-IOV logical ports.
+    
+    When HMC configure an migratiable SR_IOV device, the hypervisor will set
+    unique hybrid network ID (HCN ID) propterty for the SR_IOV and backup
+    virtual device. And instruct Guest OS to configre hybrid network.
+    Guest OS will able to recoganize them and configure hybrid
+    network. This patch introduces new commands from HMC to linux to configure an
+    active-backup bonding with the SR-IOV logical port as the primary device and
+    a virtual device such as a virtual Ethernet device or vNIC device as the
+    backup device.
+    
+    hcncfrdrc -- configure migratable SR_IOV hybrid virtual network (HCN) before
+                    or right after migration
+    hcnqrydev -- pre-migration, query SR_IOV device has active backup virtual device
+    hcnrmdev -- remove migritable SR_IOV device from HCN right before migration
+    hcnrmhcn -- clean up hybrid virtual network when remove migratable SR_IOV
+    hcnversion -- returns current HCN support version back to HMC
+    
+    Signed-off-by: Mingming Cao <mmc@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit b289196aa9d9cd02c5d1b7e46cfa6403ea4fbbad
+Author: Joel Stanley <joel@jms.id.au>
+Date:   Mon Jul 13 13:20:25 2020 -0700
+
+    Update smt snooze delay documentation
+    
+    Mostly remove it now that it is not used. A mention is left in the
+    readme so archaeologists can work out where it went.
+    
+    Signed-off-by: Joel Stanley <joel@jms.id.au>
+    [tyreld: fixed type of setting in README]
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit c788e4802205265e653a884e2f0d2dce17e03d2c
+Author: Joel Stanley <joel@jms.id.au>
+Date:   Mon Jul 13 13:20:24 2020 -0700
+
+    ppc64_cpu: Remove smt_snooze_delay
+    
+    The kernel has not supported setting the snooze delay through this API
+    since at least 2014 (v3.14). The sysfs file is present for
+    compatibility, but it has no effect.
+    
+    The lack of this sysfs file means we must use a different method for
+    ppc64_cpu to detect the smt state of the box. It now uses the
+    threads_per_cpu count from the device tree.
+    
+    Signed-off-by: Joel Stanley <joel@jms.id.au>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 3a4617187b300b8c369ca0e30deeb22143dfc2c8
+Author: Joel Stanley <joel@jms.id.au>
+Date:   Mon Jul 13 13:20:23 2020 -0700
+
+    Modify is_smt_capable to not use smt_snooze_delay
+    
+    The sysfs file is present for compatibility, but it has no effect. Use
+    the presence of more than one thread per cpu, which comes from the device
+    tree, to determine SMT capability.
+    
+    Signed-off-by: Joel Stanley <joel@jms.id.au>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 7289eb429e293e33418cc68c922e9c2f61ffd82f
+Author: Joel Stanley <joel@jms.id.au>
+Date:   Thu Jul 9 17:20:34 2020 -0700
+
+    travis: Add basic CI configuration
+    
+    This builds the applications on ppc64le with librtas.
+    
+    Signed-off-by: Joel Stanley <joel@jms.id.au>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit ab1462b9c5644e8dbf75b42e69ffa13b1b7c2370
+Author: Joel Stanley <joel@jms.id.au>
+Date:   Thu Jul 9 17:20:33 2020 -0700
+
+    gitignore: don't ignore .*
+    
+    This includes files such as .travis.yml file that will be part of the
+    repository.
+    
+    Signed-off-by: Joel Stanley <joel@jms.id.au>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 937780a5fcbd887352e458f32a860c67164a2c14
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Wed Jun 24 17:25:35 2020 -0500
+
+    ofpathname: make goto_dir canonicalize directory argument
+    
+    Commit c97fe35b5b6d "ofpathname: speed up l2of_scsi()" attempted to
+    optimize the look up of scsi devices by restricting the base directory
+    input of the 'find' command to /sys/class/block instead of /sys. This
+    works as intended for raw scsi disks such as sda, but broke for scsi disk
+    partitions such as sda1.
+    
+    (0) root @ linux-td1r: /root/powerpc-utils
+    $ ./scripts/ofpathname /dev/sda1
+    : Logical device "/dev/sda1" does not appear
+                to be configured.
+    
+    (1) root @ linux-td1r: /root/powerpc-utils
+    $ ./scripts/ofpathname /dev/sda
+    /vdevice/v-scsi@30000066/disk@8100000000000000
+    
+    The differences in looking up sda1 via /sys/class/block vs /sys:
+    
+    (0) root @ linux-td1r: /root/powerpc-utils
+    $ find /sys/class/block -name sda1
+    /sys/class/block/sda1
+    
+    (0) root @ linux-td1r: /root/powerpc-utils
+    $ find /sys -name sda1
+    /sys/devices/vio/30000066/host0/target0:0:1/0:0:1:0/block/sda/sda1
+    /sys/class/block/sda1
+    
+    In the end /sys/class/block/sda1 is just a symlink to sda1 under /sys/devices/vio/...
+    
+    (0) root @ linux-td1r: /root/powerpc-utils
+    $ ll /sys/class/block/sda1
+    lrwxrwxrwx 1 root root 0 Jun 22 18:56 /sys/class/block/sda1 ->
+    	../../devices/vio/30000066/host0/target0:0:1/0:0:1:0/block/sda/sda1
+    
+    However, ofpathname assumes that by moving up to the parent we will
+    eventually find the raw disk device, in the above example sda,  and this
+    will only happen for paths under /sys/devices in the case of scsi disk
+    partitions.
+    
+    Fix this regression by using readlink in goto_dir() to canonicalize the
+    path name of the device while following all symlinks.
+    
+    Fixes: c97fe35b5b6d ("ofpathname: speed up l2of_scsi()")
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 60d9f54b13b75feee3fd7b25a92b24d0d97ea984
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Tue Jun 9 12:48:38 2020 -0700
+
+    drmgr: don't bother with hp children for non PCI slots
+    
+    Only PCI devices have hotpluggable children. So, there is no need to call
+    disable_hp_children() or release_hp_children() for non-PCI devices. In
+    particular this causes messages for VIO slots, that while harmless, could lead a
+    user to misinterpret as actual errors.
+    
+    linux-xej6:~/powerpc-utils # drmgr -c slot -r -s U8408.E8E.10A7ACV-V1-C3
+    Validating I/O DLPAR capability...yes.
+    failed to open /sys/bus/pci/slots/U8408.E8E.10A7ACV-V1-C3/power: No such file or directory
+    failed to disable hotplug children
+    
+    In remove_slot() check that the device type is PCI_DLPAR_DEV before calling
+    (disable|release)_hp_children().
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit cac0e6b68136d9e18eecb3321b9141f98c819b97
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Tue Jun 9 12:34:41 2020 -0700
+
+    README: add Subscribe link and updated ppc64-diag repo link
+    
+    Added a mailing list subscribe link. This is helpful for users/developers tyring
+    to subscribe to the list who may want to use an email address other than a gmail
+    address. The list is hosted through googlegroups and there is no obvious way
+    to subscribe using a non-gmail address through their web interface.
+    
+    The ppc64-diag package has since been migrate from Sourceforge to Github. So the
+    repository location link has been updated accordingly.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit f8f2f09c413838fe9f0b30478de5d08bdb3e95aa
+Author: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+Date:   Sun Apr 19 11:35:08 2020 +0200
+
+    ofpathname: Add support for Mac-compatible OF pathnames
+    
+    On Macintosh systems, OpenFirmware path follow a slightly
+    different syntax as compared to other OF systems. In particular,
+    the disk ID is not preceeded by the string "disk" and - on
+    SATA systems - the path does not contain the BUS ID as
+    "scsi@ID" but rather the plug ID in the form "@ID".
+    
+    Signed-off-by: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+    Reviewed-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 3fb2c44e220c3051b2593f27105a94208266775d
+Author: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+Date:   Sun Apr 19 11:35:07 2020 +0200
+
+    ofpathname: Add support for the plug ID of a SCSI/SATA host
+    
+    Signed-off-by: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+    Reviewd-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit a3555d297e963c86b0b9e0e266c5aa8ae6827d87
+Author: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+Date:   Sun Apr 19 11:35:06 2020 +0200
+
+    ofpathname: Add partition support to l2of_ide() and l2of_scsi()
+    
+    Currently, only l2of_nvme() supports handling of partitions which
+    will print the partition number at the end of an OF path. However,
+    this feature is also useful for IDE and SCSI targets as well and
+    mandatory for Macintosh systems.
+    
+    Signed-off-by: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+    Reviewed-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit b38076f3022dd0ec9c86df7c792285686b049b2a
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Fri May 29 18:08:04 2020 -0500
+
+    drmgr: don't treat pmig as unsupported when -m is omitted
+    
+    If drmgr is invoked for the pmig connector type but the -m option is
+    not specified get_command() treats the connector type as unsupported.
+    
+    (1) root @ linux-td1r: /root/powerpc-utils
+    Dynamic reconfiguration is not supported for connector type "8" on this system
+    At least one action must be specified
+    
+    Add a case block to catch DRC_TYPE_MIGRATION connector type.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit bbfe5fac8bad092221768291936932142527bd41
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Thu May 21 15:56:56 2020 -0500
+
+    drmgr: fix segfault on unsupported connector type
+    
+    % drmgr -c pmig
+    Received signal 11, attempting to cleanup and exit
+    
+    Reading symbols from /usr/sbin/drmgr...
+    Reading symbols from /usr/lib/debug/usr/sbin/drmgr-1.3.7.1-3.12.1.ppc64le.debug...
+    (gdb) set args -c pmig
+    (gdb) r
+    Starting program: /usr/sbin/drmgr -c pmig
+    Missing separate debuginfos, use: zypper install glibc-debuginfo-2.26-13.45.1.ppc64le
+    
+    Program received signal SIGSEGV, Segmentation fault.
+    0x00007fffb7d742d4 in __strlen_power8 () from /lib64/libc.so.6
+    (gdb) bt
+        at /usr/include/bits/stdio2.h:77
+    
+    The default switch section of get_command() is meant to catch defined
+    connector types that currently have no support. However, the error
+    messages passes usr_drc_type (an integral value) to a %s conversion
+    modifier resulting in a bad address dereference.
+    
+    Fix up to use a %d conversion modifier instead.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 1a611c866010792e31a33e2d520f19418af70855
+Author: Nathan Lynch <nathanl@linux.ibm.com>
+Date:   Thu May 28 18:22:41 2020 -0500
+
+    powerpc-utils.spec: configure with --disable-werror
+    
+    Generally we're not interested in halting the build for compiler
+    warnings when producing RPMs.
+    
+    Signed-off-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 3d8a7f5e2e3b735570ab99bb3a340ff7e0c14841
+Author: Nathan Lynch <nathanl@linux.ibm.com>
+Date:   Thu May 28 18:22:40 2020 -0500
+
+    add option --disable-werror to configure
+    
+    Commit a6929691fd25 ("treat compiler warnings as errors") imposed
+    -Werror unconditionally in Makefile.am, in order to prevent the
+    addition of new warnings to the build. While it's important to keep
+    the project reasonably warning-clean, it's also necessary to provide
+    downstream packagers and users in a variety of environments more
+    flexibility in this area.
+    
+    Keep -Werror by default but make it configurable. The user may specify
+    --disable-werror at configure time to prevent compiler warnings from
+    halting the build. This is a reasonably common way to deal with
+    this (examples include glibc, gdb, json-c).
+    
+    Signed-off-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 0f7abc7f08e088bbc9448b3a77def7c6da61c507
+Author: Michal Suchanek <msuchanek@suse.de>
+Date:   Wed May 27 09:52:07 2020 -0700
+
+    ofpathname: Fix udevadm location
+    
+    The canonical location for udevadm is /usr/bin.
+    
+    Signed-off-by: Michal Suchanek <msuchanek@suse.de>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 3c5a57b5e4dcc661f14a2c6bd11d2203922b66c7
+Author: Michal Suchanek <msuchanek@suse.de>
+Date:   Wed May 27 09:52:06 2020 -0700
+
+    bootlist: Fix redirection of error messages.
+    
+    The redirection added in commit 73839d6bab4d ("powerpc-utils: Suppress
+    errors reading kernel files") does nothing for echo. I assume the intent
+    was to print the error messages to stderr.
+    
+    Fixes: 73839d6bab4d ("powerpc-utils: Suppress errors reading kernel files")
+    
+    Signed-off-by: Michal Suchanek <msuchanek@suse.de>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 5a1e57363554fb609c27e18e9163956580f6632c
+Author: Michal Suchanek <msuchanek@suse.de>
+Date:   Wed May 27 09:52:05 2020 -0700
+
+    Fix ofpathname: Could not retrieve logical device name for Open Firmware path
+    
+    With commit 73839d6bab4d ("powerpc-utils: Suppress errors reading kernel files")
+    the return status of tr rather than ofpathname is tested.
+    
+    Fixes: 73839d6bab4d ("powerpc-utils: Suppress errors reading kernel files")
+    
+    Signed-off-by: Michal Suchanek <msuchanek@suse.de>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 85fe6bf04463ea1dc85d8108f068c1cd1b3609cf
+Author: Nathan Lynch <nathanl@linux.ibm.com>
+Date:   Mon May 18 00:05:58 2020 -0500
+
+    add generated smtstate files to .gitignore
+    
+    Signed-off-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit a6929691fd2578f3049877d2e54a60dd86f07957
+Author: Nathan Lynch <nathanl@linux.ibm.com>
+Date:   Mon May 18 00:05:57 2020 -0500
+
+    treat compiler warnings as errors
+    
+    In order to keep the project warning-clean, add -Werror to AM_CFLAGS.
+    
+    If needed, this can be inhibited at build time by specifying
+    -Wno-error:
+    
+      $ make CFLAGS=-Wno-error
+    
+    Signed-off-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 9d851ad2e44da07775b9ea3a547488ce04b11027
+Author: Nathan Lynch <nathanl@linux.ibm.com>
+Date:   Mon May 18 00:05:56 2020 -0500
+
+    drmgr/common_ofdt: correct stringop-truncation warning
+    
+    With -Wall -Werror GCC 9.3.1 emits:
+    In file included from /usr/include/string.h:495,
+                     from src/drmgr/common_ofdt.c:24:
+    In function ‘strncpy’,
+        inlined from ‘drc_info_connectors_v2’ at src/drmgr/common_ofdt.c:338:4,
+        inlined from ‘get_drc_info’ at src/drmgr/common_ofdt.c:431:8:
+    /usr/include/bits/string_fortified.h:106:10: error: ‘__builtin_strncpy’ specified bound 48 equals destination size [-Werror=stringop-truncation]
+      106 |   return __builtin___strncpy_chk (__dest, __src, __len, __bos (__dest));
+    
+    The GCC manual's documentation for -Wstringop-truncation suggests
+    correcting this case by specifying 'sizeof buf - 1' for the strncpy
+    bound and setting the last element of the buffer to 'NUL', which is
+    sufficient.
+    
+    Signed-off-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 6def5726b1785195121219b1af46c3270270ff9e
+Author: Nathan Lynch <nathanl@linux.ibm.com>
+Date:   Mon May 18 00:05:55 2020 -0500
+
+    cpu_info_helpers: fix format-truncation warning
+    
+    GCC 9.3.1 warns:
+    
+    In file included from src/common/cpu_info_helpers.c:34:
+    src/common/cpu_info_helpers.c: In function ‘get_cpu_info’:
+    src/common/cpu_info_helpers.h:29:25: warning: ‘%s’ directive output may be truncated writing up to 255 bytes into a region of size 105 [-Wformat-truncation=]
+       29 | #define INTSERV_PATH    "/proc/device-tree/cpus/%s/ibm,ppc-interrupt-server#s"
+          |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    src/common/cpu_info_helpers.h:29:25: note: in definition of macro ‘INTSERV_PATH’
+       29 | #define INTSERV_PATH    "/proc/device-tree/cpus/%s/ibm,ppc-interrupt-server#s"
+          |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    src/common/cpu_info_helpers.h:29:49: note: format string is defined here
+       29 | #define INTSERV_PATH    "/proc/device-tree/cpus/%s/ibm,ppc-interrupt-server#s"
+          |                                                 ^~
+    src/common/cpu_info_helpers.c:140:5: note: ‘snprintf’ output between 51 and 306 bytes into a destination of size 128
+      140 |     snprintf(path, sizeof(path), INTSERV_PATH, de->d_name);
+    
+    It's unlikely that any known device tree would have CPU nodes with
+    names long enough too result in the overrun this is warning about, but
+    it's easy enough to address by enlarging the on-stack path buffer.
+    
+    Signed-off-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 5f253c8a04734501822ca77bbace48ca38e14d5d
+Author: Nathan Lynch <nathanl@linux.ibm.com>
+Date:   Mon May 18 00:05:54 2020 -0500
+
+    drmgr/drslot_chrp_phb: fix format-overflow warnings (part 2)
+    
+    GCC 9.3.1 warns:
+    
+    src/drmgr/drslot_chrp_phb.c: In function ‘drslot_chrp_phb’:
+    src/drmgr/drslot_chrp_phb.c:172:33: warning: ‘%s’ directive writing up to 255 bytes into a region of size 235 [-Wformat-overflow=]
+      172 |   rc = sprintf(hpdev->path, "%s/%s", SYSFS_PCI_DEV_PATH,
+    
+    Address this by dynamically allocating struct hpdev->path using
+    asprintf.
+    
+    Signed-off-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 1ec98d4168511af85217404d2a6167185c430a5f
+Author: Nathan Lynch <nathanl@linux.ibm.com>
+Date:   Mon May 18 00:05:53 2020 -0500
+
+    drmgr/drslot_chrp_phb: fix format-overflow warnings (part 1)
+    
+    GCC 9.3.1 warns:
+    
+    src/drmgr/drslot_chrp_phb.c: In function ‘disable_os_hp_children_recurse’:
+    src/drmgr/drslot_chrp_phb.c:244:26: warning: ‘__builtin___sprintf_chk’ may write a terminating nul past the end of the destination [-Wformat-overflow=]
+      244 |   sprintf(devspec, "%s/%s", ofpath + strlen(OFDT_BASE),
+          |                          ^
+    
+    src/drmgr/drslot_chrp_phb.c:203:20: warning: ‘%s’ directive writing 6 bytes into a region of size between 0 and 255 [-Wformat-overflow=]
+      203 |  sprintf(path, "%s/%s", hpdev->path, "remove");
+          |                    ^~                ~~~~~~~~
+    
+    Address these by simply enlarging the too-small on-stack buffers.
+    
+    Signed-off-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit e1ff85745e76346c7df00f5e1e981de78feed4a6
+Author: Nathan Lynch <nathanl@linux.ibm.com>
+Date:   Mon May 18 00:05:52 2020 -0500
+
+    drmgr/drslot_chrp_mem: fix format-overflow warnings
+    
+    GCC 9.3.1 warns:
+    
+    src/drmgr/drslot_chrp_mem.c: In function ‘get_mem_scn_state’:
+    src/drmgr/drslot_chrp_mem.c:950:19: warning: ‘/state’ directive writing 6 bytes into a region of size between 1 and 1024 [-Wformat-overflow=]
+      950 |  sprintf(path, "%s/state", mem_scn->sysfs_path);
+          |                   ^~~~~~
+    In file included from /usr/include/stdio.h:867,
+                     from src/drmgr/drslot_chrp_mem.c:21:
+    /usr/include/bits/stdio2.h:36:10: note: ‘__builtin___sprintf_chk’ output between 7 and 1030 bytes into a destination of size 1024
+       36 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+          |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+       37 |       __bos (__s), __fmt, __va_arg_pack ());
+          |       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    src/drmgr/drslot_chrp_mem.c: In function ‘set_mem_scn_state’:
+    src/drmgr/drslot_chrp_mem.c:993:19: warning: ‘/state’ directive writing 6 bytes into a region of size between 1 and 1024 [-Wformat-overflow=]
+      993 |  sprintf(path, "%s/state", mem_scn->sysfs_path);
+          |                   ^~~~~~
+    In file included from /usr/include/stdio.h:867,
+                     from src/drmgr/drslot_chrp_mem.c:21:
+    /usr/include/bits/stdio2.h:36:10: note: ‘__builtin___sprintf_chk’ output between 7 and 1030 bytes into a destination of size 1024
+       36 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+          |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+       37 |       __bos (__s), __fmt, __va_arg_pack ());
+          |       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+    In these cases simply enlarging the on-stack buffer suffices.
+    
+    Signed-off-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 7823f5b4d0b8c48d620a68418df77b4eba785151
+Author: Nathan Lynch <nathanl@linux.ibm.com>
+Date:   Mon May 18 00:05:51 2020 -0500
+
+    drmgr/drslot_chrp_hea: fix format-overflow warning
+    
+    GCC 9.3.1 warns:
+    
+    src/drmgr/drslot_chrp_hea.c: In function ‘hotplug_port’:
+    src/drmgr/drslot_chrp_hea.c:136:18: warning: ‘%s’ directive writing up to 1023 bytes into a region of size 128 [-Wformat-overflow=]
+      136 |  sprintf(fname, "%s/%s", hea->sysfs_dev_path,
+          |                  ^~
+    In file included from /usr/include/stdio.h:867,
+                     from src/drmgr/drslot_chrp_hea.c:24:
+    		 /usr/include/bits/stdio2.h:36:10: note: ‘__builtin___sprintf_chk’ output between 12 and 1036 bytes into a destination of size 128
+    
+    In this case just enlarge the on-stack buffer.
+    
+    Signed-off-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit a209e103b3cd43163da8a05157371e0e22a9f4fb
+Author: Nathan Lynch <nathanl@linux.ibm.com>
+Date:   Mon May 18 00:05:50 2020 -0500
+
+    drmgr/common_pci: fix format-overflow warnings
+    
+    GCC 9.3.1 warns:
+    
+    src/drmgr/common_pci.c: In function ‘init_node’:
+    src/drmgr/common_pci.c:350:27: warning: ‘%s’ directive writing up to 255 bytes into a region of size between 0 and 1023 [-Wformat-overflow=]
+      350 |   sprintf(child_path, "%s/%s", node->ofdt_path, de->d_name);
+          |                           ^~
+    In file included from /usr/include/stdio.h:867,
+                     from src/drmgr/common_pci.c:25:
+    /usr/include/bits/stdio2.h:36:10: note: ‘__builtin___sprintf_chk’ output between 2 and 1280 bytes into a destination of size 1024
+       36 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+          |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+       37 |       __bos (__s), __fmt, __va_arg_pack ());
+          |       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    src/drmgr/common_pci.c: In function ‘pci_remove_device’:
+    src/drmgr/common_pci.c:1288:20: warning: ‘%s’ directive writing 6 bytes into a region of size between 0 and 1023 [-Wformat-overflow=]
+     1288 |  sprintf(path, "%s/%s", node->sysfs_dev_path, "remove");
+          |                    ^~                         ~~~~~~~~
+    In file included from /usr/include/stdio.h:867,
+                     from src/drmgr/common_pci.c:25:
+    /usr/include/bits/stdio2.h:36:10: note: ‘__builtin___sprintf_chk’ output between 8 and 1031 bytes into a destination of size 1024
+    
+    Avoid these by replacing fixed length stack buffers with dynamic
+    allocations.
+    
+    Signed-off-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 7a5d2cfcdbc6d9f7a757e10a408dd11d0abdbd3c
+Author: Nathan Lynch <nathanl@linux.ibm.com>
+Date:   Mon May 18 00:05:49 2020 -0500
+
+    drmgr/common_cpu: dynamicallly allocate cache_info->path
+    
+    GCC 9.3.1 warns:
+    
+    src/drmgr/common_cpu.c: In function ‘init_cache_info.isra.0’:
+    src/drmgr/common_cpu.c:556:38: warning: ‘%s’ directive output may be truncated writing up to 1023 bytes into a region of size 256 [-Wformat-truncation=]
+      556 |    snprintf(cache->path, DR_BUF_SZ, "%s", path);
+          |                                      ^~   ~~~~
+    In file included from /usr/include/stdio.h:867,
+                     from src/drmgr/common_cpu.c:22:
+    /usr/include/bits/stdio2.h:67:10: note: ‘__builtin_snprintf’ output
+    between 1 and 1024 bytes into a destination of size 256
+    
+    Instead of bloating the cache_info structure to accommodate longer
+    path strings and avoid this (legitimate) warning, dynamically allocate
+    them.
+    
+    Signed-off-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 39441c4b53245496d61680386628e689c38b4a34
+Author: Nathan Lynch <nathanl@linux.ibm.com>
+Date:   Mon May 18 00:05:48 2020 -0500
+
+    drmgr/common: add const to char * function parameters
+    
+    Add const qualifier in a couple of places where it's plain that the
+    argument is a path string that isn't altered by the function through
+    that pointer. This will facilitate changes to come.
+    
+    Signed-off-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 456a96cbb511ef2b0424e1649b82594c27d0df27
+Author: Nathan Lynch <nathanl@linux.ibm.com>
+Date:   Mon May 18 00:05:47 2020 -0500
+
+    rtas_dbg: address string format truncation warning
+    
+    GCC 9.3.1 warns:
+    
+    src/rtas_dbg.c: In function ‘get_rtas_tokens’:
+    src/rtas_dbg.c:137:26: error: ‘%s’ directive output may be truncated writing up to 255 bytes into a region of size 105 [-Werror=format-truncation=]
+      137 |   snprintf(dir, 128, "%s/%s", OFDT_RTAS_PATH, dp->d_name);
+          |                          ^~
+    In file included from /usr/include/stdio.h:867,
+                     from src/rtas_dbg.c:30:
+    /usr/include/bits/stdio2.h:67:10: note: ‘__builtin___snprintf_chk’ output between 24 and 279 bytes into a destination of size 128
+    
+    The lazy but least risky change to make here is to simply enlarge the
+    (oddly named) on-stack buffer to accommodate the longest possible
+    result.
+    
+    Signed-off-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 7a65ca0551b387a228c70e224b1db3626a603e92
+Author: Nathan Lynch <nathanl@linux.ibm.com>
+Date:   Mon May 18 00:05:46 2020 -0500
+
+    serv_config: ensure nul-termination of parameter strings
+    
+    GCC 9.3.1 warns:
+    
+    In file included from /usr/include/string.h:495,
+                     from src/serv_config.c:50:
+    In function ‘strncpy’,
+        inlined from ‘update_value’ at src/serv_config.c:861:4:
+    /usr/include/bits/string_fortified.h:106:10: warning: ‘__builtin_strncpy’ specified bound 4998 equals destination size [-Wstringop-truncation]
+    
+    This means that a value string with length 4998 or greater not
+    including a terminating nul byte would result in this copy leaving the
+    destination buffer unterminated, which violates the specification for
+    ibm,set-system-parameter.
+    
+    In this case we need only reduce the bound by 1.
+    
+    Signed-off-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 7ecf9ebc3a2f18670cf11b1020e1cbe9def96d26
+Author: Nathan Lynch <nathanl@linux.ibm.com>
+Date:   Mon May 18 00:05:45 2020 -0500
+
+    serv_config: use correct length for system parameter string data
+    
+    "val" here is a character string; sizeof(val) yields the size of the
+    pointer. The ibm,set-system-parameter call expects the prepended
+    length field to reflect the string length including the terminating
+    NUL byte.
+    
+    Signed-off-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit f00392a9ae2c43b2c061674a10a4eb28141672ba
+Author: Nathan Lynch <nathanl@linux.ibm.com>
+Date:   Mon May 18 00:05:44 2020 -0500
+
+    lparstat: ensure nul-termination of sysentry->value strings
+    
+    GCC 9.3.1 warns:
+    
+    In function ‘strncpy’,
+        inlined from ‘parse_lparcfg’ at src/lparstat.c:273:4:
+    /usr/include/bits/string_fortified.h:106:10: warning:
+    ‘__builtin_strncpy’ specified bound 64 equals destination size
+    [-Wstringop-truncation]
+    
+    This means that parsed value strings of length SYSDATA_VALUE_SZ or
+    more are not truncated and nul-terminated after copying into the
+    sysentry data structure, which violates assumptions made elsewhere in
+    this file (e.g. get_sysdata()).
+    
+    Correct this by zeroing the value buffer and copying at most
+    SYSDATA_VALUE_SZ - 1 characters.
+    
+    Signed-off-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 3a9cf1c525d3489a739b30340f44d9bbc1ecce37
+Author: Nathan Lynch <nathanl@linux.ibm.com>
+Date:   Mon May 18 00:05:43 2020 -0500
+
+    nvram: suppress stringop-truncation warning
+    
+    GCC 9.3.1 warns:
+    
+    In function ‘strncpy’,
+        inlined from ‘update_of_config_var’ at src/nvram.c:1376:2:
+    /usr/include/bits/string_fortified.h:106:10: warning:
+    ‘__builtin_strncpy’ output truncated before terminating nul copying as
+    many bytes from a string as its length [-Wstringop-truncation]
+    
+    The code does take care to nul-terminate the copied string; in this
+    case the GCC manual suggests using memcpy instead of strncpy. No
+    functional change intended.
+    
+    Signed-off-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 05b83d51943997e04c94cae3d132ee7951345a07
+Author: Nathan Lynch <nathanl@linux.ibm.com>
+Date:   Mon May 18 00:05:42 2020 -0500
+
+    define _GNU_SOURCE project-wide
+    
+    This project uses several nonstandard GNU-specific extensions which
+    are exposed only when _GNU_SOURCE is defined.  Examples include
+    CPU_SET(3) and related APIs by necessity and asprintf(3) for
+    convenience.
+    
+    Currently _GNU_SOURCE is used in a piecemeal fashion, meaning you have
+    to add it to the source file when you introduce a use of asprintf, for
+    example. Also, note that it is used incorrectly in a couple of places:
+    it must appear before any headers are included for it to work reliably.
+    
+    There's not much justification for the code duplication and lack of
+    uniformity here. Put '-D _GNU_SOURCE' in AM_CPPFLAGS for a more
+    consistent experience across the project's C code.
+    
+    This will cause all C code to be built with _GNU_SOURCE.
+    
+    Signed-off-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 65b8e5af04bed31846c1462c48ac940822d70789
+Author: Nathan Lynch <nathanl@linux.ibm.com>
+Date:   Mon May 18 00:05:41 2020 -0500
+
+    place preprocessor flags in AM_CPPFLAGS
+    
+    Setting the include path belongs in AM_CPPFLAGS, not AM_CFLAGS.
+    
+    Signed-off-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit c97fe35b5b6d767b88419fa2084a59e986ac3da0
+Author: Nathan Lynch <nathanl@linux.ibm.com>
+Date:   Mon Apr 27 20:48:04 2020 -0500
+
+    ofpathname: speed up l2of_scsi()
+    
+    There is no need to search the entire /sys hierarchy for kernel device
+    names like "sda". We know that if it is present it will be in
+    /sys/class/block.
+    
+    In an environment with more than 800 scsi devices, this brings the
+    execution time for a command like "lsdevinfo -F name -c -q
+    parent=host1" from over 20 minutes to under two minutes.
+    
+    Signed-off-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit c6c0a86c41d81e85a2e68587ce280bdcff40d079
+Author: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Date:   Fri May 15 11:13:11 2020 +0530
+
+    lparstat: Use get_delta_value() helper
+    
+    Use get_delta_value(), helper, to calculate the delta of interested
+    values instead of duplicating it in various functions.  This reduces
+    the amount of duplication and makes code more readable.
+    
+    Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit fc785bea981598948a9a8f94e926f52f2ee3c6a4
+Author: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Date:   Fri May 15 11:13:10 2020 +0530
+
+    lparstat: Add support for cpu-hotplug
+    
+    For optimizing the read of sysfs file, the file descriptors are
+    assigned at the beginning of the run but they do not change dynamically
+    in event of a cpu hotplug, resulting under-estimated load average in
+    case of new cpus onlined or error in case of cpu removed. This can be
+    solved by checking for the online cpus every interval and re-assign
+    the file descriptors again with new set of cpu on hotplug event.
+    
+    Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit f3ac228ff410bca41a544032dc597df030f6c95f
+Author: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Date:   Fri May 15 11:13:09 2020 +0530
+
+    lparstat: Add switch to print Scaled metrics
+    
+    Add '-E' command line switch to print scaled version of meterics, this
+    switch prints CPU utilization/Idle based on Actual (PURR) and Scaled
+    (SPURR) values along with the current effective frequency of the system.
+    
+    output:
+    
+    ~ # lparstat -E 1 3
+    
+    System Configuration
+    type=Dedicated mode=Capped smt=8 lcpu=2 mem=4324928 kB cpus=0 ent=2.00
+    
+    ---Actual---                 -Normalized-
+    %busy  %idle   Frequency     %busy  %idle
+    ------ ------  ------------- ------ ------
+      0.10  99.90  2.13GHz[ 70%]   0.10  69.91
+      0.07  99.92  2.10GHz[ 69%]   0.05  68.95
+      0.08  99.92  2.10GHz[ 69%]   0.05  68.95
+    
+    Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 0ed656ae4a268569fec68df6f2ca860ea57b9026
+Author: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Date:   Fri May 15 11:13:08 2020 +0530
+
+    lparstat: Move displaying system configuration details to new func
+    
+    System configuration details is required while displaying the
+    scaled metrics too. Move it to a new function, to be called by both
+    default, scaled metrics too.
+    
+    Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 4120f4426d38a8bfa158ad0ab0dfa9282ebf76e6
+Author: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Date:   Fri May 15 11:13:07 2020 +0530
+
+    lparstat: Add helpers to derive PURR/SPURR values
+    
+    For every interval specified by the user, the PURR/SPURR delta values
+    are needed to be calculated. Add helpers to derive them.
+    
+    Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 59b77efef68c42cd623399e80b42d6bc4df1279c
+Author: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Date:   Fri May 15 11:13:06 2020 +0530
+
+    lparstat: Add helper to calculate scaled timebase
+    
+    Timebase is used to derive system wide CPU utilization, scale it to
+    the number of online cores too like the PURR/SPURR registers values
+    accumulated across all online CPU cores.  This helper also scales the
+    timebase register value to the interval passed.
+    
+    Timebase = (Timebase * Elapsed Time) * online cores
+    
+    Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 1b298478da4df562fcb42bbef88693203175fe64
+Author: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Date:   Fri May 15 11:13:05 2020 +0530
+
+    lparstat: Derive effective frequency
+    
+    Effective/current operating frequency is derived by following:
+    
+    Effective frequency = (delta SPURR / delta PURR) * nominal frequency
+    
+    it required to calculate the scaled variants using SPURR, whereas
+    the currently computed values based on the PURR.
+    performed.
+    
+    Effective frequency is derived from PURR/SPURR values, hence call
+    get_frequency() after function updating sysfs values.
+    
+    Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 30231beaba58a175e776597a1f07b35bc26fcfce
+Author: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Date:   Fri May 15 11:13:04 2020 +0530
+
+    lparstat: Add helper function to calculate delta
+    
+    Add a helper function for one of the most often used arithmetics of
+    calculating delta of a sysentry.
+    
+    Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit cdbf3d5ae2414ad0475a4b2a8120b6514148fb9f
+Author: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Date:   Fri May 15 11:13:03 2020 +0530
+
+    lparstat: Read SPURR, Idle_{PURR, SPURR} values
+    
+    Parse per-cpu
+    /sys/devices/system/cpu/cpu/{spurr, idle_purr, idle_spurr} files to
+    accumulate system wide SPURR, Idle PURR, Idle SPURR values like
+    PURR value captured in /proc/powerpc/lparcfg.  Calculating scaled
+    utilization metrics, need them.
+    
+    Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit b0a3cb2dfd5ee772525feaa5a6a6d58426008a19
+Author: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Date:   Fri May 15 11:13:02 2020 +0530
+
+    lparstat: Assign file descriptors to speed up read
+    
+    For every sampling interval, three per-cpu sysfs files is read to
+    capture spurr, idle_purr and idle_spurr values. Every read takes
+    three file operation such as open, read, close, future this scales
+    with number of CPUs in the system.  To reduce the latency involved
+    in open and close, assign a permanent file descriptors per online cpu.
+    
+    without caching file descriptors
+    ---------------------------------
+    
+    System Configuration
+    type=Dedicated mode=Capped smt=8 lcpu=4 mem=8302464 kB cpus=0 ent=4.00
+    
+    ---Actual---                 -Normalized-
+    %busy  %idle   Frequency     %busy  %idle
+    ------ ------  ------------- ------ ------
+      0.04  99.95  3.16GHz[100%]   0.04  99.95      1.1003219
+      0.15  99.85  3.16GHz[100%]   0.15  99.85      1.1003222
+      0.04  99.96  3.16GHz[100%]   0.04  99.96      1.1003179
+      0.03  99.97  3.16GHz[100%]   0.03  99.97      1.1003183
+      0.03  99.97  3.16GHz[100%]   0.03  99.97      1.1003166
+    
+    with caching file descriptors
+    ------------------------------
+    
+    System Configuration
+    type=Dedicated mode=Capped smt=8 lcpu=4 mem=8302464 kB cpus=0 ent=4.00
+    
+    ---Actual---                 -Normalized-
+    %busy  %idle   Frequency     %busy  %idle
+    ------ ------  ------------- ------ ------
+      0.03  99.96  3.16GHz[100%]   0.03  99.97      1.1001793
+      0.03  99.97  3.16GHz[100%]   0.03  99.97      1.1001775
+      0.03  99.97  3.16GHz[100%]   0.03  99.97      1.1001775
+      0.02  99.98  3.16GHz[100%]   0.02  99.98      1.1001766
+      0.02  99.98  3.16GHz[100%]   0.02  99.98      1.1001762
+    
+    Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 182301acd44afe1ca5a813f80f5e1d0427295b26
+Author: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Date:   Fri May 15 11:13:01 2020 +0530
+
+    lparstat: Capture nominal frequency
+    
+    Capture the nominal frequency/clock from the /proc/cpuinfo. This value
+    will be used later to calculate the effective/current frequency at which
+    the processor is running.
+    
+    Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 3182b2a1e97c631430b37eb85cb203223ff836c8
+Author: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Date:   Fri May 15 11:13:00 2020 +0530
+
+    lparstat: Read the online cores
+    
+    The accumulation of PURR/SPURR values are total of all online CPU in
+    the system, hence the timebase also needs to be scaled to the number
+    of cores. Add a helper to read the online cores.
+    
+    Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 95737c3ebb5884ddb516f0958bb7521ff0bf6014
+Author: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Date:   Fri May 15 11:12:59 2020 +0530
+
+    lparstat: Remove ppc64_cpu tool dependency
+    
+    get_smt_mode(), calls ppc64_cpu tool to get the current SMT mode, this
+    method of probing has its disadvantages like tightly coupling lparstat
+    with ppc64_cpu to mention one.  Use, the internal library to fetch this
+    information.
+    
+    Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 35dddf079a8fdcde5ada145b67702545041f6f22
+Author: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Date:   Fri May 15 11:12:58 2020 +0530
+
+    common/cpu_info_helpers: library to capture CPU information
+    
+    ppc64_cpu tool does a lots of heavy lifting in finding the information
+    about the underlying CPU topology and various other details.  These
+    details might be required by other tools, probing the underlying
+    platform for similar details.  Moving such functions to a common
+    library, allows sharing across ppc64_cpu and others tools, instead of
+    multiple implementation of functions capturing same information.
+    
+    Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit e517954a4caa66f321c4cd7a1481c5024c931a75
+Author: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+Date:   Thu Mar 26 13:09:04 2020 +0530
+
+    powerpc-utils: Add vcpustat utility
+    
+    Add a new command 'vcpustat' to display virtual cpu dispatch statistics
+    for Shared Processor LPARs. The vcpu dispatch statistics are enabled and
+    read through /proc/powerpc/vcpudispatch_stats interface from the kernel.
+    The statistics made available through this interface includes
+    information on vcpu dispatch dispersions relative to the previous
+    dispatch, as well as relative to the vcpu's home node/chip as indicated
+    by the Power hypervisor.
+    
+    'vcpustat' enables monitoring this statistic at customizable intervals.
+    By default, the statistics are presented as a percentage of the total
+    dispatches in each monitoring interval. In addition, '-n' option can be
+    used to display numeric values, while '-r' allows displaying the raw
+    values from the kernel.
+    
+    Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 1643ac6026d8aca4c774f4f6aa396bf5a06f3049
+Author: Jose Ricardo Ziviani <joserz@linux.ibm.com>
+Date:   Thu Mar 19 00:48:07 2020 -0300
+
+    Include smtstate.service and smtstate in the build system
+    
+    The new feature provided by smtstate and smtstate.service are not
+    built by default. During the build phase, it's required to use:
+    
+    configure --with-systemd
+    OR
+    rpmbuild -ba powerpc-utils.spec --with systemd
+    
+    to have it shipped in.
+    
+    Signed-off-by: Jose Ricardo Ziviani <joserz@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 5cc433a8ec611c967a2defceef4d52863a326d43
+Author: Jose Ricardo Ziviani <joserz@linux.ibm.com>
+Date:   Thu Mar 19 00:48:05 2020 -0300
+
+    Add smtstate script to persist SMT changes
+    
+    This patch introduces smtstate script responsible to save and restore
+    the current SMT state into /var/lib/powerpc-utils/smt.state.
+    
+    Signed-off-by: Jose Ricardo Ziviani <joserz@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit d055ccead0baf8a92eb50317029077b1cb3b923b
+Author: Jose Ricardo Ziviani <joserz@linux.ibm.com>
+Date:   Thu Mar 19 00:48:06 2020 -0300
+
+    Add a systemd service to persist SMT state across reboots
+    
+    The service smtstate.service exists to persist the SMT state across reboots
+    by using the smtstate script. It is disabled by default.
+    
+    Signed-off-by: Jose Ricardo Ziviani <joserz@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit e3ab5276c51a2128d4816ac1ed75ca8262d99b3c
+Author: Michael W. Bringmann <mwb@linux.ibm.com>
+Date:   Tue Mar 24 15:36:01 2020 -0700
+
+    lsdevinfo: Fix bash command substitution warning
+    
+    This patch is to remove the warning,
+    
+    /usr/sbin/lsdevinfo: line 278: warning: command substitution: ignored null
+    byte in input.
+    
+    observed in some shells.  This warning appears to be a new feature
+    in Bash-4.4.
+    
+    Signed-off-by: Michael W. Bringmann <mwb@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit d1eefb4a449b4b8a5044f27a9fe273e980b78951
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Mon Feb 24 20:04:08 2020 +0530
+
+    update_flash: Fix warning
+    
+    With recent bash `update_flash -v -f <image>` is throwing below warning.
+    
+    update_flash_nv: line 316: warning: command substitution: ignored null byte in input
+    
+    bash enhancement: https://lists.gnu.org/archive/html/bug-bash/2016-09/msg00015.html
+    
+    This patch fixes above issue.
+    
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 4413de5d9d4af1e4cb0cb4d05e2b2bbbf24702e6
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Tue Mar 24 16:33:15 2020 -0500
+
+    Revert "Add smtd script, state file, and man page"
+    
+    This reverts commit fbf513cf2200bd41174e9761166cc74dc61ccfa8.
+    
+    Reverted all 4 original patches for persisting SMT state across reboots in
+    preperation for merging a new and different implmentation.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 3df4e19af0f4e1ee6df3e984639c7dc79c787bf9
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Tue Mar 24 16:32:58 2020 -0500
+
+    Revert "Add services to save and restore SMT state"
+    
+    This reverts commit bf58a942041f7d77e58ca64f494395e20e350fb5.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit ea47b5235bf890dd0def29bd346ee227bd7242f3
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Tue Mar 24 16:31:59 2020 -0500
+
+    Revert "Include smtd feature in the build system"
+    
+    This reverts commit 77052b18673306227f05d4ac88bf23ade3299e39.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 5d1c575fcb0f3ffb61f9b60146ce8d9c7e95f44e
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Tue Mar 24 16:30:39 2020 -0500
+
+    Revert "Include smtd feature in RPM package"
+    
+    This reverts commit d6a939cb6c1ff87aec1498a67620666ec5116510.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit d6a939cb6c1ff87aec1498a67620666ec5116510
+Author: Jose Ricardo Ziviani <joserz@linux.ibm.com>
+Date:   Tue Nov 12 14:13:51 2019 -0300
+
+    Include smtd feature in RPM package
+    
+    Assuming that all RPM distros that support PowerPC uses systemd, this
+    patch includes the new smtd script and services in the package.
+    
+    Signed-off-by: Jose Ricardo Ziviani <joserz@linux.ibm.com>
+    Reviewed-by: Paul Clarke <pc@us.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 77052b18673306227f05d4ac88bf23ade3299e39
+Author: Jose Ricardo Ziviani <joserz@linux.ibm.com>
+Date:   Tue Nov 12 14:13:50 2019 -0300
+
+    Include smtd feature in the build system
+    
+    This patch adds smtd, smt.state, and systemd services in the build
+    system. Argument --with-systemd is required to enable the feature.
+    
+    Signed-off-by: Jose Ricardo Ziviani <joserz@linux.ibm.com>
+    Reviewed-by: Paul Clarke <pc@us.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit bf58a942041f7d77e58ca64f494395e20e350fb5
+Author: Jose Ricardo Ziviani <joserz@linux.ibm.com>
+Date:   Tue Nov 12 14:13:49 2019 -0300
+
+    Add services to save and restore SMT state
+    
+    Two systemd services are included:
+    
+    [1] smt_init runs smtd script to set SMT based on smt.state file.
+    It's configured to run in an early stage of the systemd init process
+    aiming to perform before user workloads.
+    ...
+    [  OK  ] Started SMT automatic initialization service.
+    [  OK  ] Reached target Basic System.
+    ...
+    
+    [2] smtd will daemonize pyinotify, provided by python-inotify package,
+    which will listen to cpu0/online changes and trigger /sbin/smtd to save
+    its current state.
+    
+    Signed-off-by: Jose Ricardo Ziviani <joserz@linux.ibm.com>
+    Reviewed-by: Paul Clarke <pc@us.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit fbf513cf2200bd41174e9761166cc74dc61ccfa8
+Author: Jose Ricardo Ziviani <joserz@linux.ibm.com>
+Date:   Tue Nov 12 14:13:48 2019 -0300
+
+    Add smtd script, state file, and man page
+    
+    The main goal is to provide a mechanism to save/restore current SMT
+    state across system reboots. The script has two functions:
+    
+    * set SMT: read from /var/lib/powerpc-utils/smt.state and set SMT using
+    ppc64_cpu.
+    * save SMT: save current ppc64_cpu --smt value in smt.state file.
+    
+    Signed-off-by: Jose Ricardo Ziviani <joserz@linux.ibm.com>
+    Reviewed-by: Paul Clarke <pc@us.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit 73839d6bab4da24350a60105b7b2c3a6cc7d3a15
+Author: Michael Bringmann <mwb@linux.vnet.ibm.com>
+Date:   Fri Jul 26 09:10:51 2019 -0500
+
+    powerpc-utils: Suppress errors reading kernel files
+    
+    A problem was observed with the evaluation of the '${devspec} by
+    the script 'ofpathname'.  The problem occurred during installation
+    to an nvme device as follows:
+    
+    02:29:41,669 INF program: Running... ofpathname /dev/nvme0n1p1
+    02:29:41,922 INF program: /sbin/ofpathname: line 684: warning: command substitution: ignored null byte in input
+    
+    Detailed examination showed that instances of the device-tree
+    property "/namespace/name" within one or more of the PCI devices
+    contained null bytes which were echoed along with the value e.g.
+    
+    [root device-tree]# cat /proc/device-tree/pci@800000020000029/pci1014,637@0/namespace/name | hexdump -C
+    00000000  6e 61 6d 65 73 70 61 63  65 00                    |namespace.|
+    0000000a
+    [root device-tree]#
+    
+    This patch provides improves handling of errors within that script,
+    and by some of the follow-on uses of the tool by the 'bootlist' script.
+    
+    * Deal with error messages returned sometimes by evaluation
+      of ${devspec} in 'ofpathname'.
+    * Strip embedded nulls from values provided by kernel files.
+    * Redirect more error messages to /dev/null
+    
+    Signed-off-by: Michael Bringmann <mwb@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit ea4db66e941720313af2c6b1afb32a74f3e360f4
+Author: Michael Bringmann <mwb@linux.vnet.ibm.com>
+Date:   Tue Sep 10 14:31:42 2019 -0500
+
+    Safe bootlist update
+    
+    This patch is intended to prevent problems with identifying or parsing
+    the bootlist devices from propagating into the system NVRAM configuration.
+    A number of such problems have been observed when processing USB devices.
+    
+    * If 'bootlist' encounters an invalid OF_DEVPATH entry, it will print
+      an notice, but still continue on to write invalid data to nvram.
+    
+      Changed to abort the script before writing bad data to nvram.
+    
+    * When 'ofpathname' encounters an invalid 'devspec' file or invalid
+      value in a 'devspec' file, while trying to find the logical pathname
+      for a scsi device, it may continue to return the invalid 'devspec'
+      value to the caller/invoking script.
+    
+      Changed to abort with an error message instead of returning that
+      invalid value to a caller like 'bootlist'.
+    
+      Example:
+      # bootlist -m normal sdb
+      # bootlist -m normal -o
+      Could not translate (null)/scsi@0/sd@0,0 to logical device name
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+
+commit b0586b5938e9d371e55671422b2f0a5d2cd10c54
+Author: Michael Bringmann <mwb@linux.vnet.ibm.com>
+Date:   Wed Oct 2 16:54:52 2019 -0500
+
+    powerpc-utils/devtree: Parse 'ibm,drc-info' property
+    
+    Parse new DRC Info: Define data structures to support parsing
+    the new "ibm,drc-info" device tree property.  Integrate the new
+    property information into the existing search mechanisms of the
+    userspace 'drmgr' driver.
+    
+    Signed-off-by: Michael Bringmann <mwb@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+powerpc-utils-1.3.7
 =====================================================================
 
 commit 1d4147370a148b3a2ebadcf02abd4a6c9a763e6d
