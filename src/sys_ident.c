@@ -267,7 +267,8 @@ print_proc_sn_value(void)
 						"parameter from RTAS\n");
 				return 2;
 			}
-			pos = strstr(buf, "uid=");
+			/* Ignore length field (first 2 bytes) */
+			pos = strstr(buf + 2, "uid=");
 			if (pos == NULL) {
 				fprintf(stderr, "Parameter from RTAS does "
 						"not contain uid\n");
