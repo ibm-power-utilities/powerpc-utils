@@ -659,6 +659,11 @@ l2of_nvme()
         devspec=`$CAT $PWD/device/devspec | tr -d '\000'`
         if [[ -n $devspec ]]; then
             found=1
+            if [[ -n $devnsid ]]; then
+                # Linux logical nsid might not match nvme controller nsid
+                goto_dir $dir "nsid"
+                devnsid=`$CAT $PWD/nsid | tr -d '\000'`
+            fi
             break
         fi
     done
@@ -1609,15 +1614,8 @@ of2l_nvme()
     local dir
     local link
 
-    for dir in `$FIND /sys/block -name "nvme*n$nsid"`; do
+    for dir in `$FIND /sys/class/nvme -name "nvme[0-9]*"`; do
         cd $dir
-
-        link=`get_link "device"` # points to nvme[0-9]+ (non-namespace)
-        if [[ -n $link ]]; then
-            cd $link
-        else
-            continue
-        fi
 
         link=`get_link "device"` # points to pci address dir
         if [[ -n $link ]]; then
@@ -1633,6 +1631,16 @@ of2l_nvme()
             LOGICAL_DEVNAME="${dir##*/}"
             break
         fi
+    done
+
+    for dir in `$FIND /sys/block -name "${LOGICAL_DEVNAME}n[0-9]*"`; do
+	    cd $dir
+
+	    local devnsid=`$CAT ./nsid 2>/dev/null`
+	    if [[ $devnsid = $nsid ]]; then
+		    LOGICAL_DEVNAME="${dir##*/}"
+		    break
+	    fi
     done
 
     if [[ -n $LOGICAL_DEVNAME ]] \
