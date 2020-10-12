@@ -239,9 +239,6 @@ static int add_cpus(struct dr_info *dr_info)
 
 	count = 0;
 	while (count < usr_drc_count) {
-		if (drmgr_timed_out())
-			break;
-
 		cpu = get_available_cpu(dr_info);
 		if (!cpu)
 			break;
@@ -293,9 +290,6 @@ static int remove_cpus(struct dr_info *dr_info)
 	struct dr_node *cpu;
 
 	while (count < usr_drc_count) {
-		if (drmgr_timed_out())
-			break;
-
 		if (cpu_count(dr_info) == 1) {
 			say(WARN, "Cannot remove the last CPU\n");
 			rc = -1;

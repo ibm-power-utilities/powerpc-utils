@@ -1328,7 +1328,7 @@ pci_remove_device(struct dr_node *node)
 			sleep(1);
 		}
 	} while (rc == 0 &&
-		 (++wait_time < PCI_REMOVE_TIMEOUT_MAX && !drmgr_timed_out()));
+		 (++wait_time < PCI_REMOVE_TIMEOUT_MAX));
 
 	if (rc == 0) {
 		say(ERROR, "timeout while quiescing device at %s\n",
@@ -1393,9 +1393,6 @@ static int dlpar_io_kernel_op(const char *interface_file, const char *drc_name)
 		}
 
 		sleep(1);
-
-		if (drmgr_timed_out())
-			break;
 	} while (1);
 
 	return -1;
