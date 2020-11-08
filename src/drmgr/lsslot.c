@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
+#include <inttypes.h>
 #include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -755,7 +756,7 @@ int print_drconf_mem(struct lmb_list_head *lmb_list)
 		printf("%s: %s\n", lmb->drc_name,
 		       lmb->is_owned ? "" : "Not Owned");
 
-		printf("    DRC Index: %x        Address: %lx\n",
+		printf("    DRC Index: %x        Address: %"PRIu64"\n",
 		       lmb->drc_index, lmb->lmb_address);
 		printf("    Removable: %s             Associativity: ",
 		       lmb->is_removable ? "Yes" : "No ");

@@ -873,7 +873,7 @@ dump_errlog(struct nvram *nvram)
 	/* ToDo: what is the length of the data?  We dump until the 
 	   next cpu data. */
 	len = cpu_regs[cpu+1] - cpu_regs[cpu];
-	printf("CPU %d Register Data (len=%x, offset=%"PRIx64")\n", cpu, len,
+	printf("CPU %d Register Data (len=%x, offset=%zu)\n", cpu, len,
 		cpu_regs[cpu]-p);
 	if (len < 4096)	/* reasonable bound */
 	    dump_raw_data((char *)cpu_regs[cpu], len);
