@@ -1195,7 +1195,8 @@ static void usage(void)
 "ppc64_cpu --subcores-per-core       # Get number of subcores per core\n"
 "ppc64_cpu --subcores-per-core=X     # Set subcores per core to X (1 or 4)\n"
 "ppc64_cpu --threads-per-core        # Get threads per core\n"
-"ppc64_cpu --info                    # Display system state information)\n");
+"ppc64_cpu --info                    # Display system state information\n"
+"ppc64_cpu --version                 # Display version of ppc64-cpu\n");
 }
 
 struct option longopts[] = {
