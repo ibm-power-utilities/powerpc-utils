@@ -518,6 +518,27 @@ scanhcn() {
 			[ -d "$dev" ] || continue
 			if [ -e "$dev"/ibm,hcn-id ] && get_dev_hcn "$dev"; then
 				hcnlog DEBUG "scanhcn found sr-iov device with hcnid "
+
+				# After online from inactive migration, destination
+				# LPAR may have same mvf devname but associated with different
+				# bonding than from source LPAR
+				# clean up expired bonding SR_IOV connections
+
+				for cfg in $(ls $IFCONFIG_PATH | grep "$DEVNAME" | grep "bond"); do
+					hid=$(echo "$cfg" | sed -e 's/ifcfg-//' | cut -d '-' -f 1 | sed -e 's/bond//')
+					if [ -e "$IFCONFIG_PATH/ifcfg-$DEVNAME" ]; then
+						rm "$IFCONFIG_PATH/ifcfg-$DEVNAME"
+					fi
+					if [[ $hid != "" && $hid != "$HCNID" ]] ; then
+						hcnlog INFO "Delete dead bonding slave ifcfg file $IFCONFIG_PATH/$cfg"
+						rm $IFCONFIG_PATH/"$cfg"
+						if nmcli -f NAME con show | grep -q "bond$hid-$DEVNAME\s"; then
+							hcnlog INFO "Delete dead bonding connection $connection"
+							nmcli con delete "bond$hid-$DEVNAME"
+						fi
+					fi
+				done
+
 				hcnlog INFO "scanhcn configure HCN and sr-iov device"
 				do_config_vdevice
 				# Save found HCN ids in array HcnIds
@@ -558,13 +579,12 @@ scanhcn() {
 
 	# list of all HCN ids
 	ids="${HcnIds[*]}"
-
 	# After inactive migration, LPAR may have old bonding connections
 	# with network device on original LPAR
-	# clean up dead bonding connections
+    # clean up dead bonding connections
 	for connection in $(nmcli -f NAME con show | grep "${ids// /\\|}"); do
 		dev=$(echo "$connection" | cut -d '-' -f 2)
-		if [ ! -e /sys/class/net/"$dev" ]; then
+		if [[ $dev != "NAME" && ! -e /sys/class/net/"$dev" ]]; then
 			hcnlog INFO "Delete dead bonding connection $connection"
 			nmcli con delete "$connection"
 		fi
