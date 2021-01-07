@@ -172,5 +172,9 @@ enum drc_type to_drc_type(const char *);
 int handle_prrn(void);
 
 int kernel_dlpar_exists(void);
-int do_kernel_dlpar(const char *, int);
+int do_kernel_dlpar_common(const char *, int, int);
+static inline int do_kernel_dlpar(const char *cmd, int len)
+{
+	return do_kernel_dlpar_common(cmd, len, 0);
+}
 #endif
