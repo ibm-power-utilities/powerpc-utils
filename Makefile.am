@@ -155,6 +155,7 @@ src_drmgr_drmgr_SOURCES = \
 	src/drmgr/common_cpu.c \
 	src/drmgr/common_ofdt.c \
 	src/drmgr/common_pci.c \
+	src/drmgr/common_numa.c \
 	src/drmgr/drmgr.c \
 	src/drmgr/drmig_chrp_pmig.c \
 	src/drmgr/drslot_chrp_cpu.c \
@@ -171,13 +172,14 @@ noinst_HEADERS += \
 	src/drmgr/drcpu.h \
 	src/drmgr/dr.h \
 	src/drmgr/drmem.h \
+	src/drmgr/common_numa.h \
 	src/drmgr/drpci.h \
 	src/drmgr/rtas_calls.h \
 	src/drmgr/ofdt.h \
 	src/drmgr/rtas_calls.h \
 	src/drmgr/options.c
 
-src_drmgr_drmgr_LDADD = -lrtas
+src_drmgr_drmgr_LDADD = -lrtas -lnuma
 
 src_drmgr_lsslot_SOURCES = \
 	src/drmgr/lsslot.c \
@@ -186,6 +188,7 @@ src_drmgr_lsslot_SOURCES = \
 	src/drmgr/common_cpu.c \
 	src/drmgr/common_pci.c \
 	src/drmgr/common_ofdt.c \
+	src/drmgr/common_numa.c \
 	src/drmgr/rtas_calls.c \
 	src/drmgr/drslot_chrp_mem.c \
 	$(pseries_platform_SOURCES)

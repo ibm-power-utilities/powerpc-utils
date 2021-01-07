@@ -42,6 +42,10 @@ AC_CHECK_HEADER(zlib.h,
 		[AC_CHECK_LIB(z, inflate, [], [AC_MSG_FAILURE([zlib library is required for compilation])])],
 		[AC_MSG_FAILURE([zlib.h is required for compiliation])])
 
+AC_CHECK_HEADER(numa.h,
+		[AC_CHECK_LIB(numa, numa_available, [], [AC_MSG_FAILURE([numa library is required for compilation])])],
+		[AC_MSG_FAILURE([numa.h is required for compiliation])])
+
 # check for librtas
 AC_ARG_WITH([librtas],
     [AS_HELP_STRING([--without-librtas],
