@@ -92,6 +92,7 @@ struct dr_node {
 			uint32_t	_lmb_aa_index;
 			struct mem_scn	*_mem_scns;
 			struct of_node	*_of_node;
+			struct dr_node	*_numa_next;
 		} _smem;
 
 #define lmb_address	_node_u._smem._address
@@ -99,6 +100,7 @@ struct dr_node {
 #define lmb_aa_index	_node_u._smem._lmb_aa_index
 #define lmb_mem_scns	_node_u._smem._mem_scns
 #define lmb_of_node	_node_u._smem._of_node
+#define lmb_numa_next	_node_u._smem._numa_next
 
 		struct hea_info {
 			uint		_port_no;

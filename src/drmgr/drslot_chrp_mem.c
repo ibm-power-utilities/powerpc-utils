@@ -31,11 +31,15 @@
 #include "dr.h"
 #include "ofdt.h"
 #include "drmem.h"
+#include "common_numa.h"
 
 static int block_sz_bytes = 0;
 static char *state_strs[] = {"offline", "online"};
 
 static char *usagestr = "-c mem {-a | -r} {-q <quantity> -p {variable_weight | ent_capacity} | {-q <quantity> | -s [<drc_name> | <drc_index>]}}";
+
+static struct ppcnuma_topology numa;
+static int numa_enabled = 0;
 
 /**
  * mem_usage
@@ -306,6 +310,31 @@ get_mem_node_lmbs(struct lmb_list_head *lmb_list)
 	return rc;
 }
 
+static int link_lmb_to_numa_node(struct dr_node *lmb)
+{
+	int nid;
+	struct ppcnuma_node *node;
+
+	nid = ppcnuma_aa_index_to_node(&numa, lmb->lmb_aa_index);
+	if (nid == NUMA_NO_NODE)
+		return 0;
+
+	node = ppcnuma_fetch_node(&numa, nid);
+	if (!node)
+		return -ENOMEM;
+
+	lmb->lmb_numa_next = node->lmbs;
+	node->lmbs = lmb;
+	node->n_lmbs++;
+
+	if (node->n_cpus)
+		numa.lmb_count++;
+	else
+		numa.cpuless_lmb_count++;
+
+	return 0;
+}
+
 int add_lmb(struct lmb_list_head *lmb_list, uint32_t drc_index,
 	    uint64_t address, uint64_t lmb_sz, uint32_t aa_index,
 	    uint32_t flags)
@@ -323,6 +352,9 @@ int add_lmb(struct lmb_list_head *lmb_list, uint32_t drc_index,
 	lmb->lmb_size = lmb_sz;
 	lmb->lmb_address = address;
 	lmb->lmb_aa_index = aa_index;
+
+	if (numa_enabled && link_lmb_to_numa_node(lmb))
+		return -ENOMEM;
 
 	if (flags & DRMEM_ASSIGNED) {
 		int rc;
@@ -490,7 +522,7 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
 
 	if (stat(DYNAMIC_RECONFIG_MEM_V1, &sbuf) == 0) {
 		rc = get_dynamic_reconfig_lmbs_v1(lmb_sz, lmb_list);
-	} else if (is_lsslot_cmd &&
+	} else if ((is_lsslot_cmd || numa_enabled) &&
 		   stat(DYNAMIC_RECONFIG_MEM_V2, &sbuf) == 0) {
 		rc = get_dynamic_reconfig_lmbs_v2(lmb_sz, lmb_list);
 	} else {
@@ -1424,10 +1456,312 @@ int valid_mem_options(void)
 	return 0;
 }
 
+static int remove_lmb_by_index(uint32_t drc_index)
+{
+	char cmdbuf[128];
+	int offset;
+
+	offset = sprintf(cmdbuf, "memory remove index 0x%x", drc_index);
+
+	return do_kernel_dlpar_common(cmdbuf, offset,
+				      1 /* Don't report error */);
+}
+
+static int remove_lmb_from_node(struct ppcnuma_node *node, uint32_t count)
+{
+	struct dr_node *lmb;
+	int err, done = 0, unlinked = 0;
+
+	say(DEBUG, "Try removing %d / %d LMBs from node %d\n",
+	    count, node->n_lmbs, node->node_id);
+
+	for (lmb = node->lmbs; lmb && done < count; lmb = lmb->lmb_numa_next) {
+		unlinked++;
+		err = remove_lmb_by_index(lmb->drc_index);
+		if (err)
+			say(WARN, "Can't remove LMB node:%d index:0x%x: %s\n",
+			    node->node_id, lmb->drc_index, strerror(-err));
+		else
+			done++;
+	}
+
+	/*
+	 * Decrement the node LMB's count since whatever is the success
+	 * of the removal operation, it will not be tried again on that
+	 * LMB.
+	 */
+	node->n_lmbs -= unlinked;
+
+	/*
+	 * Update the node's list of LMB to not process the one we removed or
+	 * tried to removed again.
+	 */
+	node->lmbs = lmb;
+
+	/* Update numa's counters */
+	if (node->n_cpus)
+		numa.lmb_count -= unlinked;
+	else
+		numa.cpuless_node_count -= unlinked;
+
+	if (!node->n_lmbs) {
+		node->ratio = 0; /* for sanity only */
+		if (node->n_cpus)
+			numa.cpu_count -= node->n_cpus;
+		else
+			numa.cpuless_node_count--;
+	}
+
+	say(INFO, "Removed %d LMBs from node %d\n", done, node->node_id);
+	return done;
+}
+
+#define min(a, b) ((a < b) ? a : b)
+
+static void update_cpuless_node_ratio(void)
+{
+	struct ppcnuma_node *node;
+	int nid;
+
+	/*
+	 * Assumptions:
+	 * 1. numa->cpuless_node_count is up to date
+	 * 2. numa->cpuless_lmb_count is up to date
+	 * Nodes with no memory and nodes with CPUs are ignored here.
+	 */
+	ppcnuma_foreach_node(&numa, nid, node) {
+		if (node->n_cpus || !node->n_lmbs)
+			continue;
+		node->ratio = (node->n_lmbs * 100) / numa.cpuless_lmb_count;
+	}
+}
+
+/*
+ * Remove LMBs from node without CPUs only.
+ * The more the node has LMBs, the more LMBs will be removed from it.
+ *
+ * We have to retry the operation multiple times because some LMB cannot be
+ * removed due to the page usage in the kernel. In that case, that LMB is no
+ * more taken in account and the node's LMB count is decremented, assuming that
+ * LMB is unremovable at this time. Thus each node's ratio has to be computed on
+ * each iteration. This is not a big deal, usually, there are not so much nodes.
+ */
+static int remove_cpuless_lmbs(uint32_t count)
+{
+	struct ppcnuma_node *node;
+	int nid;
+	uint32_t total = count, todo, done = 0, this_loop;
+
+	while (count) {
+		count = min(count, numa.cpuless_lmb_count);
+		if (!count)
+			break;
+
+		update_cpuless_node_ratio();
+
+		this_loop = 0;
+		ppcnuma_foreach_node(&numa, nid, node) {
+			if (!node->n_lmbs || node->n_cpus)
+				continue;
+
+			todo = (count * node->ratio) / 100;
+			todo = min(todo, node->n_lmbs);
+			/* Fix rounded value to 0 */
+			if (!todo && node->n_lmbs)
+				todo = (count - this_loop);
+
+			if (todo)
+				todo = remove_lmb_from_node(node, todo);
+
+			this_loop += todo;
+			done += todo;
+			if (done >= total)
+				break;
+		}
+
+		/* Don't continue if we didn't make any progress. */
+		if (!this_loop)
+			break;
+
+		count -= this_loop;
+	}
+
+	say(DEBUG, "%d / %d LMBs removed from the CPU less nodes\n",
+	    done, total);
+	return done;
+}
+
+static void update_node_ratio(void)
+{
+	int nid;
+	struct ppcnuma_node *node, *n, **p;
+	uint32_t cpu_ratio, mem_ratio;
+
+	/*
+	 * Assumptions:
+	 * 1. numa->cpu_count is up to date
+	 * 2. numa->lmb_count is up to date
+	 * Nodes with no memory and nodes with no CPU are ignored here.
+	 */
+
+	numa.ratio = NULL;
+	ppcnuma_foreach_node(&numa, nid, node) {
+		if (!node->n_lmbs || !node->n_cpus)
+			continue;
+		cpu_ratio = (node->n_cpus * 100) / numa.cpu_count;
+		mem_ratio = (node->n_lmbs * 100) / numa.lmb_count;
+
+		/* Say that CPU ratio is 90% of the ratio */
+		node->ratio = (cpu_ratio * 9 + mem_ratio) / 10;
+	}
+
+	/* Create an ordered link of the nodes */
+	ppcnuma_foreach_node(&numa, nid, node) {
+		if (!node->n_lmbs || !node->n_cpus)
+			continue;
+
+		p = &numa.ratio;
+		for (n = numa.ratio;
+		     n && n->ratio < node->ratio; n = n->ratio_next)
+			p = &n->ratio_next;
+		*p = node;
+		node->ratio_next = n;
+	}
+}
+
+/*
+ * Remove LMBs from node with CPUs.
+ *
+ * The less a node has CPU, the more memory will be removed from it.
+ *
+ * As for the CPU less nodes, we must iterate because some LMBs may not be
+ * removable at this time.
+ */
+static int remove_cpu_lmbs(uint32_t count)
+{
+	struct ppcnuma_node *node;
+	uint32_t total = count, todo, done = 0, this_loop;
+	uint32_t new_lmb_count;
+
+	while (count) {
+		count = min(count, numa.lmb_count);
+		if (!count)
+			break;
+
+		update_node_ratio();
+
+		new_lmb_count = numa.lmb_count - count;
+
+		this_loop = 0;
+		ppcnuma_foreach_node_by_ratio(&numa, node) {
+			if (!node->n_lmbs || !node->n_cpus)
+				continue;
+
+			todo = (new_lmb_count * node->ratio)  / 100;
+			todo = node->n_lmbs - min(todo, node->n_lmbs);
+			todo = min(count, todo);
+
+			if (todo) {
+				todo = remove_lmb_from_node(node, todo);
+				count -= todo;
+				this_loop += todo;
+			}
+
+			if (!count)
+				break;
+		}
+
+		/* Don't continue if we didn't make any progress. */
+		if (!this_loop)
+			break;
+		done += this_loop;
+	}
+
+	say(DEBUG, "%d / %d LMBs removed from the CPU nodes\n",
+	    done, total);
+	return done;
+}
+
+static void build_numa_topology(void)
+{
+	int rc;
+
+	rc = ppcnuma_get_topology(&numa);
+	if (rc)
+		return;
+
+	numa_enabled = 1;
+}
+
+static void clear_numa_lmb_links(void)
+{
+	int nid;
+	struct ppcnuma_node *node;
+
+	ppcnuma_foreach_node(&numa, nid, node)
+		node->lmbs = NULL;
+}
+
+static int numa_based_remove(uint32_t count)
+{
+	struct lmb_list_head *lmb_list;
+	struct ppcnuma_node *node;
+	int nid;
+	uint32_t done = 0;
+
+	/*
+	 * Read the LMBs
+	 * Link the LMBs to their node
+	 * Update global counter
+	 */
+	lmb_list = get_lmbs(LMB_NORMAL_SORT);
+	if (lmb_list == NULL) {
+		clear_numa_lmb_links();
+		return -1;
+	}
+
+	if (!numa.node_count) {
+		clear_numa_lmb_links();
+		free_lmbs(lmb_list);
+		return -EINVAL;
+	}
+
+	ppcnuma_foreach_node(&numa, nid, node) {
+		say(INFO, "node %4d %4d CPUs %8d LMBs\n",
+		    nid, node->n_cpus, node->n_lmbs);
+	}
+
+	done += remove_cpuless_lmbs(count);
+	count -= done;
+
+	done += remove_cpu_lmbs(count);
+
+	report_resource_count(done);
+
+	clear_numa_lmb_links();
+	free_lmbs(lmb_list);
+	return 0;
+}
+
 int do_mem_kernel_dlpar(void)
 {
 	char cmdbuf[128];
 	int rc, offset;
+
+
+	if (usr_action == REMOVE && usr_drc_count) {
+		build_numa_topology();
+		if (numa_enabled) {
+			if (!numa_based_remove(usr_drc_count))
+				return 0;
+
+			/*
+			 * If the NUMA based removal failed, lets try the legacy
+			 * way.
+			 */
+			say(WARN, "Can't do NUMA based removal operation.\n");
+		}
+	}
 
 	offset = sprintf(cmdbuf, "%s ", "memory");
 
