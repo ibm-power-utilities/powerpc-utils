@@ -241,7 +241,10 @@ get_dev_hcn() {
 	# Let's retry a few times.
 	while [ $wait != 0 ]; do
 		if DEVNAME=$(ofpathname -l "$(echo "$1" | sed -e "s/\/proc\/device-tree//")" 2>/dev/null); then
-			break
+			if [ -e /sys/class/net/"$DEVNAME" ]; then
+				hcnlog DEBUG "ofpathname waiting for /sys/class/net device $DEVNAME ready"
+				break
+			fi
 		fi
 
 		hcnlog DEBUG "ofpathname return $?, devname is $DEVNAME rety counter $wait"
@@ -278,9 +281,7 @@ do_config_vdevice() {
 	BOND_PATH=$BOND_BASEPATH/$BONDNAME/bonding
 
 	hcnlog DEBUG "Check if there is bond $BONDNAME with hcn id $HCNID"
-
-	hcnlog DEBUG "ifconfig file $IFCONFIG_PATH/ifconfig-$BONDNAME"
-	if [ ! -e "$IFCONFIG_PATH/ifcfg-$BONDNAME" ]; then
+	if ! nmcli -f NAME con show --active | grep -q "$BONDNAME\s"; then
 		hcnlog INFO "nmcli con add type bond con-name $BONDNAME ifname $BONDNAME"
 		nmcli con add type bond con-name "$BONDNAME" ifname "$BONDNAME"
 
@@ -375,7 +376,10 @@ rmhcn() {
 	fi
 
 	hcnlog INFO "rmhcn: delete bond $BONDNAME and slaves "
-	nmcli -f NAME con show | grep "$BONDNAME" | xargs sudo nmcli con delete
+	for connection in $(nmcli -f NAME con show | grep "$BONDNAME"); do
+		hcnlog INFO "Delete bonding connection $connection"
+		nmcli con delete "$connection"
+	done
 	hcnlog DEBUG "rmhcn: exit"
 	return $E_SUCCESS
 }
@@ -576,19 +580,24 @@ scanhcn() {
 	fi
 
 	# Next clean up dead connections left from orgitinal LPAR after inactive miration
+	# Only do this when the HNV ID array is not empty
 
-	# list of all HCN ids
-	ids="${HcnIds[*]}"
-	# After inactive migration, LPAR may have old bonding connections
-	# with network device on original LPAR
-    # clean up dead bonding connections
-	for connection in $(nmcli -f NAME con show | grep "${ids// /\\|}"); do
-		dev=$(echo "$connection" | cut -d '-' -f 2)
-		if [[ $dev != "NAME" && ! -e /sys/class/net/"$dev" ]]; then
-			hcnlog INFO "Delete dead bonding connection $connection"
-			nmcli con delete "$connection"
-		fi
-	done
+	if [[ ${HcnIds[[@]} ]]; then
+		hcnlog INFO "hcnscan finished. Found HNV devices on this LPAR"
+
+		# list of all HCN ids
+		ids="${HcnIds[*]}"
+		# After inactive migration, LPAR may have old bonding connections
+		# with network device on original LPAR
+		# clean up dead bonding connections
+		for connection in $(nmcli -f NAME con show | grep "${ids// /\\|}"); do
+			dev=$(echo "$connection" | cut -d '-' -f 2)
+			if [[ $dev != "NAME" && ! -e /sys/class/net/"$dev" ]]; then
+				hcnlog INFO "Delete dead bonding connection $connection"
+				nmcli con delete "$connection"
+			fi
+		done
+	fi
 
 	hcnlog DEBUG "scanhcn: scan for hybrid virtual network finished"
 }
