@@ -573,7 +573,6 @@ l2of_vd()
     goto_dir $PWD "devspec"
 
     OF_PATH=`$CAT $PWD/devspec`
-    SYS_PATH=$PWD
     if [[ -z $OF_PATH ]]; then
         err $ERR_NO_OFPATH
     fi
@@ -812,6 +811,7 @@ l2of_scsi()
 
     if [[ -e $PWD/devspec ]]; then
         OF_PATH=`$CAT $PWD/devspec`
+        SYS_PATH=$PWD
     else
         err $ERR_NO_OFPATH
     fi
