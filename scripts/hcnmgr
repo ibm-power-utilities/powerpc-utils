@@ -241,7 +241,10 @@ get_dev_hcn() {
 	# Let's retry a few times.
 	while [ $wait != 0 ]; do
 		if DEVNAME=$(ofpathname -l "$(echo "$1" | sed -e "s/\/proc\/device-tree//")" 2>/dev/null); then
-			break
+			if [ -e /sys/class/net/"$DEVNAME" ]; then
+				hcnlog DEBUG "ofpathname waiting for /sys/class/net device $DEVNAME ready"
+				break
+			fi
 		fi
 
 		hcnlog DEBUG "ofpathname return $?, devname is $DEVNAME rety counter $wait"
