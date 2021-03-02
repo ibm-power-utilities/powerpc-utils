@@ -575,7 +575,13 @@ scanhcn() {
 		done
 	fi
 
+	if [ ${HcnIds[@]} -eq 0 ]; then
+		hcnlog DEBUG "scanhcn: scan for hybrid virtual network finished"
+		return $E_SUCCESS
+	fi
+
 	# Next clean up dead connections left from orgitinal LPAR after inactive miration
+	# Only do this when the HNV ID array is not empty
 
 	# list of all HCN ids
 	ids="${HcnIds[*]}"
