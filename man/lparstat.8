@@ -208,6 +208,20 @@ Desired Variable Capacity Weight
 The variable memory capacity weight of the LPAR.
 .RE
 .TP
+\fB\-x\fR
+Display the LPAR security flavor mode
+.RS
+.TP
+.B 0
+Speculative execution fully enabled
+.TP
+.B 1
+Speculative execution controls to mitigate user-to-kernel side-channel attacks
+.TP
+.B 2
+Speculative execution controls to mitigate user-to-kernel and user-to-user side-channel attacks
+.RE
+.TP
 \fB\-E\fR
 Display Scaled Processor Utilization Resource Register(SPURR) based CPU utilization.
 .RS

@@ -42,6 +42,7 @@
 
 static bool o_legacy = false;
 static bool o_scaled = false;
+static bool o_security = false;
 
 static int threads_per_cpu;
 static int cpus_in_system;
@@ -1152,6 +1153,15 @@ void print_scaled_output(int interval, int count)
 	} while (--count > 0);
 }
 
+static void print_security_flavor(void)
+{
+	char value[64];
+	char *descr;
+
+	get_sysdata("security_flavor", &descr, value);
+	fprintf(stdout, "%-45s: %s\n", descr, value);
+}
+
 static void usage(void)
 {
 	printf("Usage:  lparstat [ options ]\n\tlparstat <interval> [ count ]\n\n"
@@ -1159,6 +1169,7 @@ static void usage(void)
 	       "\t-h, --help		Show this message and exit.\n"
 	       "\t-V, --version	\tDisplay lparstat version information.\n"
 	       "\t-i			Lists details on the LPAR configuration.\n"
+	       "\t-x			Print the security mode settings for the LPAR.\n"
 	       "\t-E			Print SPURR metrics.\n"
 	       "\t-l, --legacy		Print the report in legacy format.\n"
 	       "interval		The interval parameter specifies the amount of time between each report.\n"
@@ -1184,7 +1195,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	while ((c = getopt_long(argc, argv, "iEVhl",
+	while ((c = getopt_long(argc, argv, "iEVhlx",
 				long_opts, &opt_index)) != -1) {
 		switch(c) {
 			case 'i':
@@ -1199,6 +1210,9 @@ int main(int argc, char *argv[])
 			case 'V':
 				printf("lparstat - %s\n", VERSION);
 				return 0;
+			case 'x':
+				o_security = true;
+				break;
 			case 'h':
 				usage();
 				return 0;
@@ -1223,6 +1237,8 @@ int main(int argc, char *argv[])
 
 	if (i_option)
 		print_iflag_data();
+	else if (o_security)
+		print_security_flavor();
 	else if (o_scaled) {
 		print_scaled_output(interval, count);
 		close_cpu_sysfs_fds(threads_in_system);

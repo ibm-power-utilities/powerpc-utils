@@ -302,6 +302,10 @@ struct sysentry system_data[] = {
 	 .descr = "Idle CPU value - SPURR",
 	 .get = &get_cpu_idle_spurr},
 
+	/* Security flavor */
+	{.name = "security_flavor",
+	 .descr = "Speculative Execution Mode"},
+
 	{.name[0] = '\0'},
 };
 
