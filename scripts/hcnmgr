@@ -282,8 +282,7 @@ do_config_vdevice() {
 
 	hcnlog DEBUG "Check if there is bond $BONDNAME with hcn id $HCNID"
 
-	hcnlog DEBUG "ifconfig file $IFCONFIG_PATH/ifconfig-$BONDNAME"
-	if [ ! -e "$IFCONFIG_PATH/ifcfg-$BONDNAME" ]; then
+	if ! nmcli -f NAME con show --active | grep -q "$BONDNAME\s"; then
 		hcnlog INFO "nmcli con add type bond con-name $BONDNAME ifname $BONDNAME"
 		nmcli con add type bond con-name "$BONDNAME" ifname "$BONDNAME"
 
@@ -378,7 +377,10 @@ rmhcn() {
 	fi
 
 	hcnlog INFO "rmhcn: delete bond $BONDNAME and slaves "
-	nmcli -f NAME con show | grep "$BONDNAME" | xargs sudo nmcli con delete
+	for connection in $(nmcli -f NAME con show | grep "$BONDNAME"); do
+		hcnlog INFO "Delete bonding connection $connection"
+		nmcli con delete "$connection"
+	done
 	hcnlog DEBUG "rmhcn: exit"
 	return $E_SUCCESS
 }
