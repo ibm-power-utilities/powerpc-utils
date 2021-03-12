@@ -377,7 +377,10 @@ rmhcn() {
 	fi
 
 	hcnlog INFO "rmhcn: delete bond $BONDNAME and slaves "
-	nmcli -f NAME con show | grep "$BONDNAME" | xargs sudo nmcli con delete
+	for connection in $(nmcli -f NAME con show | grep "$BONDNAME"); do
+		hcnlog INFO "Delete bonding connection $connection"
+		nmcli con delete "$connection"
+	done
 	hcnlog DEBUG "rmhcn: exit"
 	return $E_SUCCESS
 }
