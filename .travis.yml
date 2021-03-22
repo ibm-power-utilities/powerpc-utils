@@ -8,6 +8,7 @@ addons:
     packages:
       - librtas-dev
       - librtasevent-dev
+      - libnuma-dev
 
 script:
   - ./autogen.sh
