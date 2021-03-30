@@ -1,11 +1,12 @@
 [Unit]
 Description=hybrid virtual network scan and config
-After=network-online.target
-Wants=network-online.target
+After=NetworkManager.service
+Requisite=NetworkManager.service
+PartOf=NetworkManager.service
 
 [Service]
 Type=oneshot
 ExecStart=@sbindir@/hcnmgr -s
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=NetworkManager.service
