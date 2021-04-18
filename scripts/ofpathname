@@ -564,6 +564,12 @@ l2of_vd()
         err $ERR_NOT_CONFIG
     fi
 
+    # partition number: N in vd*N
+    local devpart="${DEVICE##*[a-z]}"
+    if [[ $devpart = $DEVICE ]]; then
+        devpart='' # no partition number
+    fi
+
     local link=`get_link "device"`
     if [[ -z $link ]]; then
         err $ERR_NO_SYSFS_DEVINFO
