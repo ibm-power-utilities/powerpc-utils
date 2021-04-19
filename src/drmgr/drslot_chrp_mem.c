@@ -1749,7 +1749,7 @@ int do_mem_kernel_dlpar(void)
 	int rc, offset;
 
 
-	if (usr_action == REMOVE && usr_drc_count) {
+	if (usr_action == REMOVE && usr_drc_count && !usr_drc_index) {
 		build_numa_topology();
 		if (numa_enabled) {
 			if (!numa_based_remove(usr_drc_count))
