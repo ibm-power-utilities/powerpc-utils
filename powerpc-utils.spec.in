@@ -152,7 +152,7 @@ systemctl daemon-reload
 %changelog
 * Fri Mar 06 2020 Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
 - Added vcpustat utility
-* Tue Dec  7 2011 Brian King <brking@linux.vnet.ibm.com>
+* Wed Dec  7 2011 Brian King <brking@linux.vnet.ibm.com>
 - Added lsslot man page
 * Fri May 13 2011 Brian King <brking@linux.vnet.ibm.com>
 - Fixed some ofpathname issues with various SAS and FC adapters
