@@ -109,6 +109,7 @@ Utilities for maintaining and servicing PowerPC systems.
 /usr/share/man/man8/errinjct.8.gz
 /usr/share/man/man8/rtas_dbg.8.gz
 /usr/share/man/man8/vcpustat.8.gz
+/usr/share/man/man8/drmgr.8.gz
 
 %post
 # Post-install script -----------------------------------------------
