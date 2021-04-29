@@ -25,8 +25,15 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <endian.h>
+#include <errno.h>
 #include "dr.h"
 #include "ofdt.h"
+
+#define RTAS_DIRECTORY		"/proc/device-tree/rtas"
+#define CHOSEN_DIRECTORY	"/proc/device-tree/chosen"
+#define ASSOC_REF_POINTS	"ibm,associativity-reference-points"
+#define ASSOC_LOOKUP_ARRAYS	"ibm,associativity-lookup-arrays"
+#define ARCHITECTURE_VEC_5	"ibm,architecture-vec-5"
 
 struct of_list_prop {
 	char	*_data;
@@ -714,4 +721,124 @@ get_drc_by_index(uint32_t drc_index, struct dr_connector *drc_list)
 	}
 
 	return NULL;
+}
+
+/*
+ * Allocate and read a property, return the size.
+ * The read property is not converted to the host endianess.
+ */
+static int load_property(const char *dir, const char *prop, uint32_t **buf)
+{
+	int size;
+
+	size = get_property_size(dir, prop);
+	if (!size)
+		return -ENOENT;
+
+	*buf = zalloc(size);
+	if (!*buf) {
+		say(ERROR, "Could not allocate buffer read %s (%d bytes)\n",
+		    prop, size);
+		return -ENOMEM;
+	}
+
+	if (get_property(dir, prop, *buf, size)) {
+		free(*buf);
+		say(ERROR, "Can't retrieve %s/%s\n", dir, prop);
+		return -EINVAL;
+	}
+
+	return size;
+}
+
+/*
+ * Get the minimal common depth, based on the form 1 of the ibm,associativ-
+ * ity-reference-points property. We only support that form.
+ *
+ * We should check that the "ibm,architecture-vec-5" property byte 5 bit 0
+ * has the value of one.
+ */
+int get_min_common_depth(void)
+{
+	int size;
+	uint32_t *p;
+	unsigned char val;
+
+	size = load_property(CHOSEN_DIRECTORY, ARCHITECTURE_VEC_5, &p);
+	if (size < 0)
+		return size;
+
+	/* PAPR byte start at 1 (and not 0) but there is the length field */
+	if (size < 6) {
+		report_unknown_error(__FILE__, __LINE__);
+		free(p);
+		return -EINVAL;
+	}
+	val = ((unsigned char *)p)[5];
+	free(p);
+
+	if (!(val & 0x80))
+		return -ENOTSUP;
+
+	size = load_property(RTAS_DIRECTORY, ASSOC_REF_POINTS, &p);
+	if (size <= 0)
+		return size;
+	if (size < sizeof(uint32_t)) {
+		report_unknown_error(__FILE__, __LINE__);
+		free(p);
+		return -EINVAL;
+	}
+
+	/* Get the first entry */
+	size = be32toh(*p);
+	free(p);
+	return size;
+}
+
+int get_assoc_arrays(const char *dir, struct assoc_arrays *aa,
+		     int min_common_depth)
+{
+	int size;
+	int rc;
+	uint32_t *prop, i;
+
+	size = load_property(dir, ASSOC_LOOKUP_ARRAYS, &prop);
+	if (size < 0)
+		return size;
+
+	size /= sizeof(uint32_t);
+	if (size < 2) {
+		say(ERROR, "Could not find the associativity lookup arrays\n");
+		free(prop);
+		return -EINVAL;
+	}
+
+	aa->n_arrays = be32toh(prop[0]);
+	aa->array_sz = be32toh(prop[1]);
+
+	rc = -EINVAL;
+	if (min_common_depth > aa->array_sz) {
+		say(ERROR, "Bad min common depth or associativity array size\n");
+		goto out_free;
+	}
+
+	/* Sanity check */
+	if (size != (aa->n_arrays * aa->array_sz + 2)) {
+		say(ERROR, "Bad size of the associativity lookup arrays\n");
+		goto out_free;
+	}
+
+	aa->min_array = zalloc(aa->n_arrays * sizeof(uint32_t));
+
+	/* Keep only the most significant value */
+	for (i = 0; i < aa->n_arrays; i++) {
+		int prop_index = i * aa->array_sz + min_common_depth + 1;
+
+		aa->min_array[i] = be32toh(prop[prop_index]);
+	}
+	rc = 0;
+
+out_free:
+	free(prop);
+	return rc;
 }

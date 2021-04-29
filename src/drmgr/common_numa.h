@@ -32,12 +32,6 @@ struct ppcnuma_node {
 	struct ppcnuma_node *ratio_next;
 };
 
-struct assoc_arrays {
-	uint32_t        n_arrays;
-	uint32_t        array_sz;
-	uint32_t        *min_array;
-};
-
 struct ppcnuma_topology {
 	unsigned int		cpu_count;
 	unsigned int		lmb_count;
@@ -46,21 +40,13 @@ struct ppcnuma_topology {
 	unsigned int		node_count, node_min, node_max;
 	struct ppcnuma_node	*nodes[MAX_NUMNODES];
 	struct ppcnuma_node	*ratio;
-	uint32_t		min_common_depth;
+	int			min_common_depth;
 	struct assoc_arrays	aa;
 };
 
 int ppcnuma_get_topology(struct ppcnuma_topology *numa);
 struct ppcnuma_node *ppcnuma_fetch_node(struct ppcnuma_topology *numa,
 					int node_id);
-
-static inline int ppcnuma_aa_index_to_node(struct ppcnuma_topology *numa,
-					   uint32_t aa_index)
-{
-	if (aa_index < numa->aa.n_arrays)
-		return numa->aa.min_array[aa_index];
-	return NUMA_NO_NODE;
-}
 
 static inline int ppcnuma_next_node(struct ppcnuma_topology *numa, int nid,
 				    struct ppcnuma_node **node)

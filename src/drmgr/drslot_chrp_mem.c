@@ -315,8 +315,8 @@ static int link_lmb_to_numa_node(struct dr_node *lmb)
 	int nid;
 	struct ppcnuma_node *node;
 
-	nid = ppcnuma_aa_index_to_node(&numa, lmb->lmb_aa_index);
-	if (nid == NUMA_NO_NODE)
+	nid = aa_index_to_node(&numa.aa, lmb->lmb_aa_index);
+	if (nid == -1)
 		return 0;
 
 	node = ppcnuma_fetch_node(&numa, nid);
