@@ -33,7 +33,7 @@
 #include "drmem.h"
 #include "common_numa.h"
 
-static int block_sz_bytes = 0;
+int block_sz_bytes = 0;
 static char *state_strs[] = {"offline", "online"};
 
 static char *usagestr = "-c mem {-a | -r} {-q <quantity> -p {variable_weight | ent_capacity} | {-q <quantity> | -s [<drc_name> | <drc_index>]}}";
