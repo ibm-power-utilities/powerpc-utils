@@ -1,0 +1,32 @@
+.\"
+.\" Copyright (C) 2021 International Business Machines
+.\" Laurent Dufour <ldufour@linux.ibm.com>
+.\"
+.TH LPARNUMASCORE 8 2021-04-14 Linux "Linux on Power Service Tools"
+.SH NAME
+lparnumascore \- display the NUMA affinity score for the running LPAR
+.SH SYNOPSIS
+.BI "lparnumascore [-c | -d ]"
+.SH DESCRIPTION
+The
+.B lparnumascore
+command can be used to display the NUMA affinity score for the running
+LPAR. Each score reflect the amount of resources the Linux kernel is seeing as
+bound to a node while the hypervisor has moved that resource to another node.
+
+The score is a number between 0 and 100. A score of 100 means that all the
+resources are seen correctly, while a score of 0 means that all the resources
+have been moved to different nodes. There is a dedicated score for
+each resource type.
+.SH OPTIONS
+.TP
+.B \-c <resource type>
+Display the score for this type of resources. The valid resource types are
+"mem" for memory, and "cpu" for cpu's. By default, the score for each of
+supported resources is reported.
+.TP
+.B \-d <detail level>
+Enable debugging output. When displaying memory information this flag will
+also enable printing information about LMBs not currently owned by the system.
+.SH AUTHOR
+Laurent Dufour <ldufour@linux.ibm.com>

@@ -11,7 +11,7 @@ Group:		System Environment
 Source:		powerpc-utils-%{version}.tar.gz
 BuildRoot:	/tmp/%{name}-buildroot/
 Vendor:         IBM Corp.
-Requires:	/bin/bash, /bin/sh, /bin/sed, /usr/bin/perl, librtas >= 1.4.0, zlib
+Requires:	/bin/bash, /bin/sh, /bin/sed, /usr/bin/perl, librtas >= 1.4.0, zlib, numactl-libs
 Requires:	coreutils
 Requires:	findutils
 Requires:	gawk
@@ -54,6 +54,7 @@ Utilities for maintaining and servicing PowerPC systems.
 /usr/sbin/sys_ident
 /usr/sbin/drmgr
 /usr/sbin/lsslot
+/usr/sbin/lparnumascore
 /usr/sbin/lsprop
 /usr/sbin/nvram
 /usr/sbin/nvsetenv
@@ -110,6 +111,7 @@ Utilities for maintaining and servicing PowerPC systems.
 /usr/share/man/man8/rtas_dbg.8.gz
 /usr/share/man/man8/vcpustat.8.gz
 /usr/share/man/man8/drmgr.8.gz
+/usr/share/man/man8/lparnumascore.8.gz
 
 %post
 # Post-install script -----------------------------------------------
@@ -151,6 +153,8 @@ systemctl daemon-reload
 %endif
 
 %changelog
+* Wed Apr 14 2021 Laurent Dufour <ldufour@linux.ibm.com>
+- Added lparnumascore
 * Fri Mar 06 2020 Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
 - Added vcpustat utility
 * Wed Dec  7 2011 Brian King <brking@linux.vnet.ibm.com>

@@ -51,6 +51,12 @@ lsslot:
 Tool used to determine dyanmic reconfiguration capable slots/cpus/memory
 on a partition.
 
+lparnumascore:
+------
+Tool used to compute the NUMA affinity score reflecting the difference
+between NUMA topology exposed by the hypervisor and the one the linux
+kernel has taken in account.
+
 ppc64_cpu:
 ---------
 This allows users to set the smt state and other settings on ppc64 processors.

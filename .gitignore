@@ -88,6 +88,7 @@ GTAGS
 /src/activate_firmware
 /src/drmgr/drmgr
 /src/drmgr/lsslot
+/src/drmgr/lparnumascore
 /src/lparstat
 /src/lsprop
 /src/nvram

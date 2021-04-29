@@ -4,7 +4,7 @@ PPU_ADDONS_NAME = powerpc-utils-sles10-addons
 VERSION = 1.0.2
 
 SCRIPTS = ../scripts/lsdevinfo ../scripts/ls-vdev ../scripts/ls-veth ../scripts/ls-vscsi
-UTILS = ../src/drmgr/drmgr ../src/drmgr/lsslot
+UTILS = ../src/drmgr/drmgr ../src/drmgr/lsslot ../src/drmgr/lparnumascore
 DOCS = ../COPYRIGHT README
 
 INSTALL = /usr/bin/install
