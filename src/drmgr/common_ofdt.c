@@ -34,6 +34,7 @@
 #define ASSOC_REF_POINTS	"ibm,associativity-reference-points"
 #define ASSOC_LOOKUP_ARRAYS	"ibm,associativity-lookup-arrays"
 #define ARCHITECTURE_VEC_5	"ibm,architecture-vec-5"
+#define ASSOCIATIVITY		"ibm,associativity"
 
 struct of_list_prop {
 	char	*_data;
@@ -842,3 +843,32 @@ out_free:
 	free(prop);
 	return rc;
 }
+
+/*
+ * Read the associativity property and return the node id matching the
+ * min_common_depth entry.
+ */
+int of_associativity_to_node(const char *dir, int min_common_depth)
+{
+	int size;
+	uint32_t *prop;
+
+	size = load_property(dir, ASSOCIATIVITY, &prop);
+	if (size < 0)
+		return size;
+
+	if (size < 1) {
+		say(ERROR, "Could not read associativity for node %s", dir);
+		return -EINVAL;
+	}
+
+	if (be32toh(prop[0]) < min_common_depth) {
+		say(ERROR,
+		    "Too short associativity property for node %s (%d/%d)",
+		    dir, be32toh(prop[0]), min_common_depth);
+		return -EINVAL;
+	}
+
+	return be32toh(prop[min_common_depth]);
+}
+
