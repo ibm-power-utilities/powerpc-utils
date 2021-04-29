@@ -35,37 +35,6 @@
 /* maximum seconds to wait for pci device removal */
 #define PCI_REMOVE_TIMEOUT_MAX 60
 
-/**
- * alloc_node
- *
- * XXX: This doesn't do any cleanup on error conditions.  could be bad.
- *
- * @param drc
- * @param dev_type
- * @param of_path
- * @returns pointer to node on success, NULL otherwise
- */
-struct dr_node *
-alloc_dr_node(struct dr_connector *drc, int dev_type, const char *of_path)
-{
-	struct dr_node *node;
-
-	node = zalloc(sizeof(*node));
-	if (node == NULL)
-		return NULL;
-
-	node->dev_type = dev_type;
-	set_drc_info(node, drc);
-
-	if (of_path) {
-		get_property(of_path, "ibm,loc-code", node->loc_code,
-			     sizeof(node->loc_code));
-
-		snprintf(node->ofdt_path, DR_PATH_MAX, "%s", of_path);
-	}
-
-	return node;
-}
 
 /**
  * find_ofdt_dname
@@ -474,43 +443,6 @@ static inline int is_hp_type(char *type)
 static inline int is_logical_type(char *type)
 {
 	return (!strcmp(type, "SLOT"));
-}
-
-/**
- * free_node
- * @brief free a list of node struct and any allocated memory they reference
- *
- * @param node_list list of nodes to free
- */
-void
-free_node(struct dr_node *node_list)
-{
-	struct dr_node *node;
-
-	if (node_list == NULL)
-		return;
-
-	while (node_list) {
-		node = node_list;
-		node_list = node->next;
-
-		if (node->children)
-			free_node(node->children);
-
-		if (node->dev_type == MEM_DEV) {
-			struct mem_scn *mem_scn;
-			while (node->lmb_mem_scns != NULL) {
-				mem_scn = node->lmb_mem_scns;
-				node->lmb_mem_scns = mem_scn->next;
-				free(mem_scn);
-			}
-
-			if (node->lmb_of_node)
-				free(node->lmb_of_node);
-		}
-
-		free(node);
-	}
 }
 
 /**
