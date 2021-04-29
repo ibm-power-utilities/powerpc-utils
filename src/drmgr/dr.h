@@ -32,7 +32,7 @@
 extern int output_level;
 extern int log_fd;
 
-extern int is_lsslot_cmd;
+extern int read_dynamic_memory_v2;
 
 /* Error Exit Codes */
 #define RC_IN_USE		1

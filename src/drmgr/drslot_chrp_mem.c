@@ -522,7 +522,7 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
 
 	if (stat(DYNAMIC_RECONFIG_MEM_V1, &sbuf) == 0) {
 		rc = get_dynamic_reconfig_lmbs_v1(lmb_sz, lmb_list);
-	} else if ((is_lsslot_cmd || numa_enabled) &&
+	} else if ((read_dynamic_memory_v2 || numa_enabled) &&
 		   stat(DYNAMIC_RECONFIG_MEM_V2, &sbuf) == 0) {
 		rc = get_dynamic_reconfig_lmbs_v2(lmb_sz, lmb_list);
 	} else {
