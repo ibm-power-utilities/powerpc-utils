@@ -605,7 +605,7 @@ scanhcn() {
 		done
 	fi
 
-	if [ ${HcnIds[@]} -eq 0 ]; then
+	if [ ${#HcnIds[@]} -eq 0 ]; then
 		hcnlog DEBUG "scanhcn: scan for hybrid virtual network finished"
 		return $E_SUCCESS
 	fi
