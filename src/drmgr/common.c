@@ -38,6 +38,8 @@
 char *add_slot_fname = ADD_SLOT_FNAME;
 char *remove_slot_fname = REMOVE_SLOT_FNAME;
 
+#define DR_MAX_LOG_SZ (1 << 20)
+
 #define DR_LOG_PATH	"/var/log/drmgr"
 #define DR_LOG_PATH0	"/var/log/drmgr.0"
 
@@ -214,7 +216,7 @@ inline void
 dr_fini(void)
 {
 	struct stat sbuf;
-	int max_dr_log_sz = 25000;
+	int max_dr_log_sz = DR_MAX_LOG_SZ;
 	int rc;
 	time_t t;
 	char tbuf[128];
