@@ -28,7 +28,9 @@
 #include <signal.h>
 #include <errno.h>
 #include <dirent.h>
+#ifdef __GLIBC__
 #include <execinfo.h>
+#endif
 #include <ctype.h>
 #include <sys/wait.h>
 #include <endian.h>
@@ -853,6 +855,7 @@ sighandler(int signo)
 	say(ERROR, "Received signal %d, attempting to cleanup and exit\n",
 	    signo);
 
+#ifdef __GLIBC__
 	if (log_fd) {
 		void *callstack[128];
 		int sz;
@@ -860,6 +863,7 @@ sighandler(int signo)
 		sz = backtrace(callstack, 128);
 		backtrace_symbols_fd(callstack, sz, log_fd);
 	}
+#endif
 
 	dr_fini();
 	exit(-1);
@@ -925,8 +929,10 @@ sig_setup(void)
 	if (sigaction(SIGBUS, &sigact, NULL))
 		return -1;
 
+#ifdef __GLIBC__
 	/* dummy call to backtrace to get symbol loaded */
 	backtrace(callstack, 128);
+#endif
 	return 0;
 }
 

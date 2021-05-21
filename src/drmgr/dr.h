@@ -26,6 +26,7 @@
 #include <nl_types.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <limits.h>
 #include "rtas_calls.h"
 #include "drpci.h"
 
