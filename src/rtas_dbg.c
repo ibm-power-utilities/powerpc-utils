@@ -32,6 +32,7 @@
 #include <getopt.h>
 #include <dirent.h>
 #include <string.h>
+#include <endian.h>
 #include <sys/syscall.h>
 #include <unistd.h>
 #include <linux/unistd.h>

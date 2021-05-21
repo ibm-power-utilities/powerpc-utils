@@ -29,6 +29,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <dirent.h>
+#include <limits.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include "cpu_info_helpers.h"
