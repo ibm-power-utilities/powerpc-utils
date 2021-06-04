@@ -448,7 +448,7 @@ fi
 # open firmware device paths.
 if [[ ${#LOGICAL_NAMES[*]} -ne 0 ]]; then
     ctr=0
-    while [[ $ctr -lt ${#LOGICAL_NAMES[*]} ]]; do
+    while [[ $ctr -lt ${#LOGICAL_NAMES[*]} ]] && [[ $ctr -lt 5 ]]; do
         OF_DEVPATH[$ctr]=`get_logical_device_name ${LOGICAL_NAMES[$ctr]}`
         if [[ -z ${OF_DEVPATH[$ctr]} ]]; then
 	    # See if this is an OF pathname
