@@ -64,6 +64,24 @@ struct cpu_freq {
 	double freq;
 };
 
+struct energy_freq_info {
+	char power_perf_mode[64];
+	char ips[64];
+	float min_freq_mhz;
+	float stat_freq_mhz;
+	float max_freq_mhz;
+	int processor_folding_status;
+};
+
+enum energy_freq_attrs {
+	POWER_PERFORMANCE_MODE = 1,
+	IDLE_POWER_SAVER_STATUS = 2,
+	MIN_FREQ = 3,
+	STAT_FREQ = 4,
+	MAX_FREQ = 6,
+	PROC_FOLDING_STATUS = 8
+};
+
 #ifndef __NR_perf_event_open
 #define __NR_perf_event_open	319
 #endif
@@ -787,6 +805,82 @@ static void setrlimit_open_files(void)
 	setrlimit(RLIMIT_NOFILE, &new_rlim);
 }
 
+static bool has_str_val(int id)
+{
+	switch(id){
+		case POWER_PERFORMANCE_MODE:
+		case IDLE_POWER_SAVER_STATUS:
+			return true;
+	}
+	return false;
+}
+
+static int report_platform_energy_freq_mode(struct energy_freq_info *eq)
+{
+	const char *path = "/sys/firmware/papr/energy_scale_info";
+	struct dirent *entry;
+	struct stat s;
+	DIR *dirp;
+
+	if (stat(path, &s) || !S_ISDIR(s.st_mode))
+		return -1;
+	dirp = opendir(path);
+
+	while ((entry = readdir(dirp)) != NULL) {
+		char val_buf[64], file_name[64];
+		int id, num_val;
+		FILE *f;
+
+		if (strcmp(entry->d_name,".") == 0 ||
+		    strcmp(entry->d_name,"..") == 0)
+			continue;
+
+		id = atoi(entry->d_name);
+
+		sprintf(file_name, "%s/%d/value", path, id);
+		f = fopen(file_name, "r");
+		if (!f)
+			return -1;
+		if (fgets(val_buf, 64, f) == NULL)
+			return -1;
+		fclose(f);
+		num_val = atoi(val_buf);
+
+		if (has_str_val(id)) {
+			sprintf(file_name, "%s/%d/value_desc", path, id);
+			f = fopen(file_name, "r");
+			if (!f || fgets(val_buf, 64, f) == NULL)
+				return -1;
+			fclose(f);
+		}
+
+		switch(id){
+		case POWER_PERFORMANCE_MODE:
+			strcpy(eq->power_perf_mode, val_buf);
+			break;
+		case IDLE_POWER_SAVER_STATUS:
+			strcpy(eq->ips, val_buf);
+			break;
+		case MIN_FREQ:
+			eq->min_freq_mhz = num_val;
+			break;
+		case STAT_FREQ:
+			eq->stat_freq_mhz = num_val;
+			break;
+		case MAX_FREQ:
+			eq->max_freq_mhz = num_val;
+			break;
+		case PROC_FOLDING_STATUS:
+			eq->processor_folding_status = num_val;
+			break;
+		}
+	}
+
+	closedir(dirp);
+
+	return 0;
+}
+
 static int do_cpu_frequency(int sleep_time)
 {
 	int i, rc;
@@ -797,6 +891,7 @@ static int do_cpu_frequency(int sleep_time)
 	double sum = 0;
 	unsigned long count = 0;
 	struct cpu_freq *cpu_freqs;
+	struct energy_freq_info eq;
 	int max_thread;
 
 	setrlimit_open_files();
@@ -860,10 +955,24 @@ static int do_cpu_frequency(int sleep_time)
 		count++;
 	}
 
-	report_system_power_mode();
-	printf("min:\t%.3f GHz (cpu %ld)\n", min, min_cpu);
-	printf("max:\t%.3f GHz (cpu %ld)\n", max, max_cpu);
-	printf("avg:\t%.3f GHz\n\n", sum / count);
+	if (report_platform_energy_freq_mode(&eq)) {
+		report_system_power_mode();
+	} else {
+		printf("Power and Performance Mode: %s", eq.power_perf_mode);
+		printf("Idle Power Saver Status: %s", eq.ips);
+		if (strcmp(eq.ips, "Not Supported\n")) {
+			printf("Processor Folding Status: %d\n",
+			       eq.processor_folding_status);
+		}
+		printf("Platform reported frequencies\n");
+		printf("min\t:\t%.3f GHz\n", (eq.min_freq_mhz/1000));
+		printf("max\t:\t%.3f GHz\n", (eq.max_freq_mhz/1000));
+		printf("static\t:\t%.3f GHz\n\n", (eq.stat_freq_mhz/1000));
+	}
+	printf("Tool Computed frequencies\n");
+	printf("min\t:\t%.3f GHz (cpu %ld)\n", min, min_cpu);
+	printf("max\t:\t%.3f GHz (cpu %ld)\n", max, max_cpu);
+	printf("avg\t:\t%.3f GHz\n", sum / count);
 
 	free(cpu_freqs);
 	return 0;
