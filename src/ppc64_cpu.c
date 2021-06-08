@@ -291,7 +291,7 @@ static int set_one_smt_state(int thread, int online_threads)
 
 static int set_smt_state(int smt_state)
 {
-	int i, j, rc;
+	int i, j, rc = 0;
 	int error = 0;
 
 	if (!sysattr_is_writeable("online")) {
