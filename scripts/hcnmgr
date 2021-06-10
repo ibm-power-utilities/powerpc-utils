@@ -284,7 +284,7 @@ do_config_vdevice() {
 
 	hcnlog DEBUG "Check if there is bond $BONDNAME with hcn id $HCNID"
 
-	if ! nmcli -f NAME con show --active | grep -q "$BONDNAME\s"; then
+	if ! nmcli -f NAME con show | grep -q "$BONDNAME\s"; then
 		hcnlog INFO "nmcli con add type bond con-name $BONDNAME ifname $BONDNAME"
 		nmcli con add type bond con-name "$BONDNAME" ifname "$BONDNAME"
 
