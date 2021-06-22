@@ -289,8 +289,8 @@ do_config_vdevice() {
 		nmcli con add type bond con-name "$BONDNAME" ifname "$BONDNAME"
 
 		#vnic and sr-iov only support fail_over_mac=2 mode
-		hcnlog INFO "nmcli con mod id $BONDNAME bond.options $BONDOPTIONS"
-		nmcli con mod id "$BONDNAME" bond.options "$BONDOPTIONS"
+		hcnlog INFO "nmcli con mod id $BONDNAME bond.options $BONDOPTIONS connection.autoconnect-slaves 1"
+		nmcli con mod id "$BONDNAME" bond.options "$BONDOPTIONS" connection.autoconnect-slaves 1
 		# When creating bond, by default the ipv4.method is auto, set to dhcp
 		# In the case of mutiple HNV this can case bond interface deactive and
 		# active again. In addtion HNV requires user to configure IP address manually.
