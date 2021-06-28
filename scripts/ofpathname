@@ -1523,6 +1523,11 @@ of2l_vfc()
                 err $ERR_NO_LOGDEV
         fi
 
+        # Skip if this is not the correct FC port
+        if [[ $OF_PATH != $DEVPATH ]] ; then
+                continue;
+        fi
+
         local vdev=${OF_PATH%/*}
         local tmp=${OF_PATH//\/vdevice/}
         local vdevtype=${tmp%@*}
@@ -1559,6 +1564,8 @@ of2l_fc()
     fi
 
     lunint=`scsilun_to_int $OF_LUN`
+# Need to correlate the node_name in fc_host with the port-wwn in the device tree
+# to be sure we have the right port
 
     local dir
     for dir in `$FIND /sys/block -name 's[dr]*'`; do
@@ -1592,6 +1599,11 @@ of2l_fc()
         OF_PATH=`$CAT devspec`
         if [[ -z $OF_PATH ]]; then
                 err $ERR_NO_LOGDEV
+        fi
+
+        # Skip if this is not the correct FC port
+        if [[ $OF_PATH != $DEVPATH ]] ; then
+                continue;
         fi
 
 	local wwpn=`get_fc_wwpn "$device_path/fc_remote_ports*"`
