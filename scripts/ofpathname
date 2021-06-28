@@ -1000,10 +1000,6 @@ ofpathname_to_logical()
         print_aliases $OF_PATH
     fi
 
-    if [[ $DEVTYPE = "disk" && $DEVICE != ${DEVICE%:*} ]]; then
-        DEVTYPE=${DEVICE%:*}
-    fi
-
     if [[ $DEVTYPE = "disk" && $FC = "v-scsi" ]]; then
         DEVTYPE="v-scsi"
     fi
@@ -1058,6 +1054,13 @@ ofpathname_to_logical()
 	DEVICE=${DEVICE%,*}
     fi
 
+    # Remove any possible partition reference
+    PART=$(expr "$DEVICE" : '.*\(:[0-9]\)')
+    if [[ -n $PART ]] ; then
+        PART=${PART:1}
+        DEVICE=${DEVICE%:[0-9]}
+    fi
+
     case $DEVTYPE in
         sd* | scsi*   )  of2l_scsi ;;
         sas           )  of2l_sas ;;
@@ -1077,6 +1080,11 @@ ofpathname_to_logical()
 
     if [[ -z $LOGICAL_DEVNAME ]]; then
         err $ERR_NO_LOGDEV
+    fi
+
+    # Add any previously stripped partition reference
+    if [[ -n $PART ]] ; then
+        LOGICAL_DEVNAME=$LOGICAL_DEVNAME$PART
     fi
 
     # See if this device is the cdrom
