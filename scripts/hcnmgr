@@ -168,7 +168,7 @@ search_dev() {
 	# Look at pci ethernet devices
 	for pci_dev in "$DT_PATH"/pci*; do
 		[ -d "$pci_dev" ] || continue
-		index=$(xxd -l 4 -p "$pci_dev"/ibm,my-drc-index)
+		index=$(hexdump -n 4 -e '/1 "%02x"' "$pci_dev"/ibm,my-drc-index)
 		if [[ $index != "$1" ]]; then
 			continue
 		fi
@@ -189,7 +189,7 @@ search_dev() {
 	hcnlog DEBUG "search vnic device with drc_index $1"
 	for dev in "$DT_PATH"/vdevice/vnic*; do
 		[ -d "$dev" ] || continue
-		index=$(xxd -l 4 -p "$dev"/ibm,my-drc-index)
+		index=$(hexdump -n 4 -e '/1 "%02x"' "$dev"/ibm,my-drc-index)
 		if [[ $index == "$1" ]]; then
 			hcnlog DEBUG "found matching drc_index $index in $dev"
 			if [ -e "$dev"/ibm,hcn-id ] && get_dev_hcn "$dev"; then
@@ -205,7 +205,7 @@ search_dev() {
 	hcnlog DEBUG "search ibmveth device with drc_index $1"
 	for dev in "$DT_PATH"/vdevice/l-lan*; do
 		[ -d "$dev" ] || continue
-		index=$(xxd -l 4 -p "$dev"/ibm,my-drc-index)
+		index=$(hexdump -n 4 -e '/1 "%02x"' "$dev"/ibm,my-drc-index)
 		if [[ $index == "$1" ]]; then
 			hcnlog DEBUG "found matching drc_index $index in $dev"
 			if [ -e "$dev"/ibm,hcn-id ] && get_dev_hcn "$dev"; then
@@ -233,7 +233,7 @@ get_dev_hcn() {
 	local dev=$1
 
 	hcnlog DEBUG "get_dev_hcn: enter $1"
-	HCNID=$(xxd -l 4 -p "$dev"/ibm,hcn-id)
+	HCNID=$(hexdump -n 4 -e '/1 "%02x"' "$dev"/ibm,hcn-id)
 	MODE=$(tr -d '\0' <"$dev"/ibm,hcn-mode)
 	PHYSLOC=$(tr -d '\0' <"$dev"/ibm,loc-code)
 	DEVPATH=$1
