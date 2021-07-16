@@ -1,3 +1,726 @@
+powerpc-utils-1.3.9
+=====================================================================
+
+commit 88ebfd97d1c4f9868e1ef2839bd0c375fcbf0153
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Fri May 21 15:28:28 2021 -0700
+
+    drmgr: increase log size to 1MB
+    
+    The current log threshold is currently a skant 25000 bytes. The resulting log
+    rotations from higher verbosity detail levels (eg. -d 15 to get rtas debug
+    output) can hinder problem determination.
+    
+    Raise the log rotation threshold to 1MB so that more history is preserved.
+    
+    Suggested-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit ef7d286e3d56c186a9a95ff38847a0cfc7f22915
+Author: Mingming Cao <mmc@linux.vnet.ibm.com>
+Date:   Thu Jul 15 15:50:10 2021 -0700
+
+    Fix checking HCNID array size at boot time
+    
+    In commit 0b59d4a372aa ("hcnmgr: Avoid cleanup of bond interface at boot time
+    when no HNV exists") it checks whether the HCNID array is empty to avoid
+    cleanup of non-HNV related network profiles after reboot. The hcnmgr scan run
+    log shows checking the number of HCNID array elements has not been done
+    properly.
+    
+    hcnmgr[905]: [DEBUG]:search ibmveth device with ibm,hcn-id propterty......
+    hcnmgr[905]: /usr/sbin/hcnmgr: line 585: ${HcnIds[[@]}: bad substitution
+    
+    Fixes: 0b59d4a372aa ("hcnmgr: Avoid cleanup of bond interface at boot time when no HNV exists")
+    Signed-off-by: Mingming Cao <mmc@linux.vnet.ibm.com>
+    [tyreld: fixed up commit log, added Fixes tag]
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 2a6726509b21c36feb54ed4f0607ea5d8d860665
+Author: Michal Suchanek <msuchanek@suse.de>
+Date:   Thu Jul 15 15:41:57 2021 -0700
+
+    hcnmgr: Set autoconnect-slaves on HNV connections.
+    
+    When not set bringing up the HNV connection does not bring up network
+    connectivity.
+    
+    Signed-off-by: Michal Suchanek <msuchanek@suse.de>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit c87b25f928d2311ebd640a78c17e14431c68c551
+Author: Michal Suchanek <msuchanek@suse.de>
+Date:   Thu Jul 15 15:41:56 2021 -0700
+
+    hcnmgr: When trying to detect HNV bond list all connections, not only active ones.
+    
+    When NM is starting up the HNV connection is not active when hcnmgr
+    looks for it and it is recreated.
+    
+    Signed-off-by: Michal Suchanek <msuchanek@suse.de>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 29c725495181203e10c75cb946ae08a402476221
+Author: Michal Suchanek <msuchanek@suse.de>
+Date:   Thu Jul 15 15:41:55 2021 -0700
+
+    hcnmgr: Use hexdump from util-linux rather than xxd from vim
+    
+    xxd is part of vim which may not be installed in minimal environments or
+    on systems using other text editor. hexdump is part of util-linux which
+    is likely to be available.
+    
+    Signed-off-by: Michal Suchanek <msuchanek@suse.de>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit b27b3bd624b7bc68835d6c39f9f1870393c11445
+Author: Michal Suchanek <msuchanek@suse.de>
+Date:   Thu Jul 15 15:41:54 2021 -0700
+
+    hcn-init.service: Start together with NetworkManager.
+    
+    hcn-init uses NetworkManager so it does not make sense to run it when
+    different connection manager is in use. Also when NetworkManager is in
+    use it should be started automatically.
+    
+    Signed-off-by: Michal Suchanek <msuchanek@suse.de>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 9375e34aa02b73a81209112f0ee9e1489793d626
+Author: Brian King <brking@linux.vnet.ibm.com>
+Date:   Mon Jun 28 17:15:37 2021 -0500
+
+    ofpathname: Fix OF to logical FC lookup for multipath
+    
+    If a FC target has multiple initiator ports that can see
+    the same target ports, attempting to do an OF to logical
+    lookup will return the wrong value sometimes. Fix this
+    by checking to ensure we are using the correct initiator
+    port.
+    
+    Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 9be8e8b7cffb293bf8bc928134ad076efde42606
+Author: Brian King <brking@linux.vnet.ibm.com>
+Date:   Mon Jun 28 17:15:36 2021 -0500
+
+    ofpathname: Fix OF to logical lookup with partitions
+    
+    If the OF pathname has the disk partition specified with a :1,
+    for example, we currently fail to find the logical device name.
+    Fix this by stripping it and reapplying it after we find the
+    device.
+    
+    Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 9f741349064153bef4d710db19b9e50a5c732301
+Author: Brian King <brking@linux.vnet.ibm.com>
+Date:   Mon Jun 28 17:15:35 2021 -0500
+
+    bootlist: Fix for multipath devices with > 5 paths
+    
+    Only five entries can be added to the bootlist. If more than that
+    are specified, the script flags this as an error and aborts.
+    However, if a multipath device with more than 5 paths is
+    specified, this is also failing. Rather than failing to set
+    any boot entries in this case, we should simply truncate the
+    boot list to the first 5 paths, which is what this patch does.
+    
+    Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 9104167a0ee93989757326136b94daad585cd87c
+Author: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+Date:   Sun Apr 18 10:05:49 2021 +0200
+
+    ofpathname: Add missing substring extraction of devpart in l2of_vd()
+    
+    l2of_vd() contains the necessary bits to append the partition number
+    to the resulting OFPATH, but it does not actually extract the partition
+    number from the logical device path in the first place. This adds the
+    missing substring extraction of the partition number from the logical
+    device path so that the partition number is appended to OFPATH when
+    the logical device is a partition.
+    
+    Signed-off-by: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 4336877347adfd799881ad6bde5ee2dd9ca5acd5
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Thu Apr 29 18:00:05 2021 +0200
+
+    Introducing lparnumascore
+    
+    This command is computing the LPAR NUMA score for CPU and memory.
+    
+    After a LPM, resources like CPU and memory could be reassigned to a
+    different NUMA node. But the Linux kernel is not able to replicate these
+    changes and since the kernel commit bb7c3d36e3b1 ("powerpc/pseries: remove
+    prrn special case from DT update path"), PRRN event are only updating the
+    device tree, but not the resource's assignement the kernel is managing.
+    
+    This new command detects CPU and memory resources the kernel keep binded to
+    the NUMA node topology of the departure node. It computes a ratio, and
+    print it to the standard output.
+    
+    The ratio is between 0 (worst) and 100 (best).
+    
+    For instance when half of the CPUs have been reassigned to a new NUMA node,
+    the score would be 50. If all the CPUs are on the right node, the score
+    would be 100.
+    
+    The command can compute the CPU and memory score or only one if specified
+    through the -c option.
+    
+    Example of output:
+    $ ./lparnumascore -h
+    Usage: lparnumascore [-d detail_level] [-c {mem | cpu}]
+    
+    $ ./lparnumascore
+    CPU score: 80
+    MEM score: 45
+    
+    $ ./lparnumascore -c mem
+    MEM score: 45
+    
+    $ ./lparnumascore -c cpu
+    CPU score: 80
+    
+    The command is not locking /var/lock/dr_config_lock so user should ensure
+    that there is not ongoing command impacting the computed scores. This
+    allows the command to be run without special privileges.
+    
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit fb5feb0da8fa7295e623741776e81ba85411ab3c
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Thu Apr 29 18:00:04 2021 +0200
+
+    drmgr: export block_sz_bytes
+    
+    Callers of get_lmb() could be interested in knowing the block size.
+    
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 66b91615ed94ae7253f72f66572976a3a82d97f3
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Thu Apr 29 18:00:03 2021 +0200
+
+    drmgr: introduce of_associativity_to_node
+    
+    This device tree related function reads the ibm,associativity propertie of
+    a node and, using the specified min_common_deth, is returning the NUMA node
+    id.
+    
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 13e8b81a1d0e4c104aa70c06f9205c09c7233d96
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Thu Apr 29 18:00:02 2021 +0200
+
+    drmgr: rename is_lsslot_cmd into read_dynamic_memory_v2
+    
+    is_lsslot_cmd is used to decide if ibm,dynamic-memory-v2 should be read or
+    not.
+    
+    Rename it as read_dynamic_memory_v2 so it would be used by command other
+    than lsslot.
+    
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 6cef0ada83248fd804d04a6577af3ab3c5e7278c
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Thu Apr 29 18:00:01 2021 +0200
+
+    drmgr: move associativity lookup arrays management to common-ofdt.c
+    
+    This is related to the DT reading so should reside to common-ofdt.c.
+    
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 8ac3aca62371c250f55254a0c369ce0385cadebb
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Thu Apr 29 18:00:00 2021 +0200
+
+    drmgr: move some code to common_ofdt.c
+    
+    alloc_dr_node() and free_node() should be put in common_ofdt.c instead of
+    common_pci.c.
+    
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 00312816661accf9bbf090572fbf22b71cac3682
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Thu Apr 29 17:59:59 2021 +0200
+
+    rpm: fix rpmbuild error
+    
+    rpmbuild is reporting the following error:
+    
+    Checking for unpackaged file(s): /usr/lib/rpm/check-files /home/laurent/rpmbuild/BUILDROOT/powerpc-utils-1.3.8-1.ppc64le
+    error: Installed (but unpackaged) file(s) found:
+       /usr/share/man/man8/drmgr.8.gz
+    
+    This is because the file is not mentioned in the RPM specification file.
+    
+    Fixes: bd8dd36b33cd ("man: add manpage for the drmgr utility")
+    Cc: Tyrel Datwyler <tyreld@linux.ibm.com>
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit b0d65380dc02377f09c06bd51dc07ad7d86646f5
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Thu Apr 29 17:59:58 2021 +0200
+
+    rpm: fix bogus date in the changelog
+    
+    rmbuild is complaining because Tue December 7th didn't exist, this was a
+    Wednesday:
+    
+    $ rpmbuild SPECS/powerpc-utils.spec
+    warning: bogus date in %changelog: Tue Dec  7 2011 Brian King <brking@linux.vnet.ibm.com>
+    
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 07c4ee28b2c93279e25534a16600baad5c0331a7
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Mon Apr 19 10:40:15 2021 +0200
+
+    drmgr: fix remove by index operation
+    
+    The commit e9f06531356f ("drmgr: introduce NUMA based LMB removal")
+    introduce a special processing when NUMA is on and the remove by count
+    operation is done.
+    
+    Unfortunately, that code is also triggered when doing a remove by index
+    operation (-s argument) becauses usr_drc_count is set to 1. As a
+    consequence the index constraint is not respected and any LMB can be
+    removed.
+    
+    Add a check agains usr_drc_index which is set when a remove by index
+    operation is done to ensure the numa removal code is not triggered in that
+    case.
+    
+    Fixes: e9f06531356f ("drmgr: introduce NUMA based LMB removal")
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 67e974dbb8e4462c69c9c0e3a3b0c3a7219a2d45
+Author: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+Date:   Tue Feb 9 01:10:01 2021 +0100
+
+    ofpathname: Move definition of SYS_PATH from l2of_vs() to l2of_scsi()
+    
+    SYS_PATH, which is required to calculate the plug ID of a SCSI/SATA
+    host in l2of_scsi(), is actually never set in this function but in
+    l2of_vd() where it is not used at all. Thus, move the definition of
+    SYS_PATH from l2of_vd() to l2of_scsi() to fix the calculation of the
+    plug ID in l2of_scsi().
+    
+    Fixes: 3fb2c44e22 ("ofpathname: Add support for the plug ID of a SCSI/SATA host")
+    Signed-off-by: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 97269d301797e23b75d0c7a5cb63ce280783f615
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Thu Mar 4 14:51:38 2021 +0100
+
+    lpartstat: add -x option for the security flavor
+    
+    This allows user to get the security flavor settings fer the LPAR.
+    
+    The output is :
+    
+    $ lparstat -x
+    Speculative Execution Mode                   : 1
+    
+    Where the output number means
+     0 = Speculative execution fully enabled
+     1 = Speculative execution controls to mitigate user-to-kernel side-channel
+         attacks
+     2 = Speculative execution controls to mitigate user-to-kernel and
+         user-to-user side-channel attacks
+    
+    In the case the running kernel is not exposing the security flavor in
+    /proc/powerpc/lparcfg, the output is:
+    
+    $ lparstat -x
+    Speculative Execution Mode                   : -
+    
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 70c15669607885aa358a566006224d0acd345f90
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Thu Mar 4 14:51:37 2021 +0100
+
+    man lparstat: fix nroff warnings and errors
+    
+    Fix errors and warning reported by mandoc for the lparstat.8 file
+    
+    $ mandoc -W base man/lparstat.8 1>/dev/null
+    mandoc: man/lparstat.8:7:4: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:20:72: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:26:168: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:32:37: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:35:24: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:38:50: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:46:117: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:73:50: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:76:94: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:81:243: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:84:117: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:90:104: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:94:106: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:101:47: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:104:34: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:107:171: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:119:173: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:122:69: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:125:46: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:131:51: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:134:51: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:137:71: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:140:35: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:143:55: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:152:156: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:155:132: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:158:132: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:161:122: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:164:83: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:167:79: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:170:91: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:173:98: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:176:351: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:179:317: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:182:100: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:188:40: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:193:57: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:199:60: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:202:52: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:205:76: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:208:49: STYLE: whitespace at end of input line
+    mandoc: man/lparstat.8:209:2: WARNING: line scope broken: SH breaks TP
+    mandoc: man/lparstat.8:210:2: WARNING: line scope broken: TP breaks SH
+    mandoc: man/lparstat.8:220:2: WARNING: line scope broken: SH breaks TP
+    mandoc: man/lparstat.8:221:2: WARNING: line scope broken: TP breaks SH
+    mandoc: man/lparstat.8:239:2: WARNING: line scope broken: RS breaks TP
+    mandoc: man/lparstat.8:241:2: WARNING: line scope broken: TP breaks SH
+    mandoc: man/lparstat.8:246:2: WARNING: line scope broken: TP breaks SH
+    mandoc: man/lparstat.8:251:2: WARNING: line scope broken: TP breaks SH
+    mandoc: man/lparstat.8:257:2: WARNING: line scope broken: SH breaks TP
+    mandoc: man/lparstat.8:263:2: WARNING: line scope broken: EOF breaks TP
+    mandoc: man/lparstat.8:8:16: WARNING: cannot parse date, using it verbatim: May 2011
+    mandoc: man/lparstat.8:217:2: WARNING: empty block: RS
+    mandoc: man/lparstat.8:228:2: WARNING: empty block: RS
+    mandoc: man/lparstat.8:234:2: WARNING: empty block: RS
+    mandoc: man/lparstat.8:240:2: WARNING: empty block: RS
+    mandoc: man/lparstat.8:245:2: WARNING: empty block: RS
+    mandoc: man/lparstat.8:250:2: WARNING: empty block: RS
+    
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit e9f06531356f88ffcf046af336ee4303dac0954d
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Thu Jan 7 17:49:26 2021 +0100
+
+    drmgr: introduce NUMA based LMB removal
+    
+    When the NUMA topology can be read, all the LMBs found in the Device Tree
+    are linked the corresponding node. LMB not associated to node are
+    considered as not used.
+    
+    LMB associated to CPU less node are accounted separately because they will
+    be targeted first to be remove. The LMB are removed from the CPU less nodes
+    to reach an average number LMBs per CPU less node.
+    
+    Node with CPU have a ration indexed on their number of CPUs. The higher a
+    node have CPU the lower number LMB will be removed. This way node with a
+    high number of CPU will get a higher amount of memory.
+    
+    When a LMB can't be removed (because its memory can't be offlined by the
+    kernel), the LMB count for node is decremented and the LMB is removed from
+    the node's LMB list. This way, it is no more accounted as 'active' and the
+    removal operation will continue without taking it in account anymore.
+    
+    The removal is done through the remove by DRC index API, allowing to remove
+    a LMB at a time. One futur optimization would be to extend that API to
+    remove a linear range of LMB each time.
+    
+    When the requested amount of LMB could not be removed a partial status is
+    reported. This is a major difference since currently the kernel is adding back
+    again the removed LMBs in case the requested amount to remove cannot be reached.
+    That's odd and reporting a partial status is better when user want to remove as
+    much as memory as possible.
+    
+    If the NUMA topology can't be read, we fallback using the legacy remove
+    way.
+    
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    [tyreld: fixed up some pedantic coding style issues]
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 80cc3ff6de0bcbaae1103bd449e0072f8ca96004
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Mon Mar 22 18:52:56 2021 +0100
+
+    Travis: add libnuma-dev dependency for numa.h
+    
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit e9cb06ba3165d9da6c8997b0a7cf620296604953
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Thu Jan 7 17:49:25 2021 +0100
+
+    drmgr: read the CPU NUMA topology
+    
+    This will be used in the next commit to compute LMB removal based on the
+    NUMA topology.
+    
+    The NUMA topology is read using the libnuma, so a dependency against it is
+    added in the configure file.
+    
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 4b2c9a3c850353c7a61fc29834c8916184abea72
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Thu Jan 7 17:49:24 2021 +0100
+
+    drmgr: don't open sysfs file for each command
+    
+    The new do_kernel_dlpar_common() API will be used in later commit to remove
+    by DRC Index LMB per LMB. This will avoiding opennig and closing the fd
+    each time.
+    
+    The fd closing will now be done at the process exit time.
+    
+    In addition add an optinal parameter to silently ignore some error.
+    
+    Also, change the log level of the "success" message to debug to match
+    the previous one saying "Trying.."
+    
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 344bb3238ee6d671979d279368230ef7c8bdb87c
+Author: Mingming Cao <mmc@linux.vnet.ibm.com>
+Date:   Sun Mar 14 07:16:23 2021 -0700
+
+    hcnmgr: Fix ofpathname race with udev rename
+    
+    When hcncfgdrc is called to configure an sr-iov or a backend vdevice, drmgr
+    has already returned from DR add. However sometimes the two commands happens too
+    fast that the OS has not completed its work to get the device ready. There is
+    still a small race window between udev rename and ofpathname lookup. This leads
+    to ofpathname grabbing a stale devname as a result of udev renaming a device to
+    something else. This causes hcncfgdrc failure to enslave the sr-iov or backend
+    vdevice silently, and later causes Live Parition Migration failure due to
+    missing backend slave for primary sr-iov device
+    
+    Fix by catching the failure of enslave vdevice at the time of calling
+    do_config_vdevice to enslave the device, and in the case of failure wait for
+    udev settle to complete udev events before repeating enslave attempt.
+    
+    Signed-off-by: Mingming Cao <mmc@linux.vnet.ibm.com>
+    [tyreld: reworded change log]
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 628ed06de76d40ce8ee74b055a3004e3cfc2aa0b
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Mon Oct 5 13:03:45 2020 -0700
+
+    ofpathname: Use NVMe controller physical nsid
+    
+    Linux creates logical block devices of the the form nvmeXnYpZ such that X = the
+    controller, Y = namepsace, and Z = partition. For example:
+    
+    /dev/nvme0n1p1
+    
+    The Linux namespace numbering scheme for namespaces always starts at 1 and
+    increases monotonically regardless of the actual numbering scheme of the
+    namespaces as seen by the  physical NVMe controller. Accordingly, the Open
+    firmware path binding utilizes the namespace id as seen by the controller and
+    not the necessarily the one given in the logical block device name.
+    
+    As such we need to use the "nsid" attribute in the sysfs entry for the logical
+    device to properly map back and forth from OP pathnames.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 1cb8bd89d6386c60e75c47d4a4452d3f130d5138
+Author: Mingming Cao <mmc@linux.vnet.ibm.com>
+Date:   Fri Mar 12 14:18:18 2021 -0800
+
+    hcnmgr: Avoid using xargs to process NM show connections
+    
+    When removing HNV bonding connections xargs can fail to process the output of
+    nmcli show propererly.
+    
+    Instead of piping into xargs fix this by using a loop to check for all related
+    bonding connections and remove them explicitly one by one.
+    
+    Signed-off-by: Mingming Cao <mmc@linux.vnet.ibm.com>
+    [tyreld: fixed up commit log]
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit e25d71be411b610e5e889f8efaaf04b38c2d9ecb
+Author: Mingming Cao <mmc@linux.vnet.ibm.com>
+Date:   Fri Mar 12 13:50:33 2021 -0800
+
+    hcnmgr: Avoid using ifcfg file for checking bonding interface status
+    
+    When configuring migratable sr_iov into hybrid network, it checks if
+    there is an existing HNV using the presense of ifcfg file location. This
+    is not preferred as the location can be different on distros.
+    
+    This patch fixes this by using NetworkManager nmcli.
+    
+    Signed-off-by: Mingming Cao <mmc@linux.vnet.ibm.com>
+    [tyreld: fixed spelling]
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit d9bcb21179ccfea122f326aca4690afe0f7de0c6
+Author: Mingming Cao <mmc@linux.vnet.ibm.com>
+Date:   Mon Mar 1 21:34:34 2021 -0800
+
+    hcnmgr: Wait for sysfs device ready when looking up device name
+    
+    At the time of calling ofpathname to look up for devicename, wait
+    for sysfs device ready. Otherwise, the OS may be in the middle of device
+    renaming.
+    
+    Signed-off-by: Mingming Cao <mmc@linux.vnet.ibm.com>
+    [tyreld: fixed up commit log]
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 0b59d4a372aa266caa75f3b6a253b8f5aeaf3802
+Author: Mingming Cao <mmc@linux.vnet.ibm.com>
+Date:   Mon Mar 1 19:34:29 2021 -0800
+
+    hcnmgr: Avoid cleanup of bond interface at boot time when no HNV exists
+    
+    At boot time, hcn scans the device tree and discovers if there was a new
+    HNV being added while lpar was inactive. It also cleans up the old hnv
+    interfaces. This patch avoids cleaning up bonding interface when no HNV
+    network devices exists.
+    
+    Signed-off-by: Mingming Cao <mmc@linux.vnet.ibm.com>
+    [tyreld: fixup commit log]
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 366e17553ed647613668678c2d301d369038f41b
+Author: Brahadambal Srinivasan <latha@linux.vnet.ibm.com>
+Date:   Thu Nov 12 19:00:47 2020 +0530
+
+    Update ppc64-cpu usage
+    
+    'ppc64_cpu --help' doesn't list '--version' as an option. This patch
+    adds the option in the usage information of ppc64-cpu command.
+    
+    Signed-off-by: Brahadambal Srinivasan <latha@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 2d5ee16db487c0e4886c8ba9edc237242e5357fc
+Author: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Date:   Mon Oct 5 11:54:20 2020 +0530
+
+    sys_ident: Skip length field from search
+    
+    Signed-off-by: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+    [tyreld: fixed up missing space after + operator]
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit e51995667279164a6c8ce4c3ba0217fffda22d6d
+Author: Mingming Cao <mmc@linux.vnet.ibm.com>
+Date:   Thu Nov 19 21:41:31 2020 -0800
+
+    Clean up dead network config interface after inactive migration
+    
+    With inactive parition migration, we found there are
+    dead network interface asscoiated with the SR_IOV from
+    source LPAR that still exist.
+    
+    We need to cleanup the old network interface
+    related to this devname from source LPAR. Normally
+    in the active parition migration case, this was done
+    when HMC issue commands to OS remove the
+    VF from hybrid network. Because of the inactive
+    migration, the OS was not notified before migration
+    that the VF was removed, thus leaves the dead network
+    interface belongs on the original MVF on source lpar
+    not cleaned up. This cause the confusion of the network
+    manager to bring up the bondings with new MVFs at destination
+    LPAR.
+    
+    After inactive parition migration the same devname
+    could possiblily used at the destination LPAR.
+    It can be assigned to a different hybrid
+    network (different hcnid). At the OS boot time,
+    the same devname but with different hcnid will
+    be configured. However the old network work interface
+    associated with the same devname from the source LPAR
+    has not been cleaned up yet.
+    
+    This patch fix this by during the boot time scan and
+    if found an VFs has more than two bonding interfaces,
+    or has old VF ifcfg, removed the expired one.
+    
+    Signed-off-by: Mingming Cao <mmc@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 4b2d10942e2d964ecc1fe58c9460c34993ff10be
+Author: Mingming Cao <mmc@linux.vnet.ibm.com>
+Date:   Thu Nov 19 21:38:24 2020 -0800
+
+    Disable vnic as backup vdevice for migratable SR_IOV
+    
+    In version 1.0 we only allow configure ibmveth as
+    migritable SR_IOV backup vdevice. When ibmvnic become
+    more stablized we will enable vnic as backup.
+    
+    Signed-off-by: Mingming Cao <mmc@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit f1ec5f04fdac3e87c3c85c2d85f79339d916e864
+Author: Mingming Cao <mmc@linux.vnet.ibm.com>
+Date:   Thu Nov 19 21:30:40 2020 -0800
+
+    HNV fixes for qrydev and remove lsdevinfo
+    
+    This patch fixes a few issues found during testing:
+    
+    1) Fix qrydev checking for active interface error
+    
+    2) Skip collecting lsdevinfo right before migration
+    When the LPARs has large number of devices, this can
+    take quite a long time and flood the log message.
+    
+    3) Wait for OS ready to lookup device name for configure
+    HNV device. We need give OS longer time to prepare pci
+    device after DLPAR to show up for ofpathname(). We have
+    run into several issues HNV issues the hcncfgdrc command
+    to configure the vdevices before ofpathname able
+    to find the device name yet.
+    
+    4) Currently the hybrid network virtualization is only
+    supported on PowerVM LPAR. We should allow exit the hcnmgr
+    gracefully on other power platform instead of return error.
+    
+    Signed-off-by: Mingming Cao <mmc@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
 powerpc-utils-1.3.8
 =====================================================================
 
