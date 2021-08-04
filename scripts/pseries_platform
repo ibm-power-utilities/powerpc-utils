@@ -23,19 +23,24 @@ export PLATFORM_POWERNV=1
 export PLATFORM_POWERKVM_GUEST=2
 export PLATFORM_PSERIES_LPAR=3
 
-export platform_name="Unknown"
-export platform=$PLATFORM_UNKNOWN
+export platform_name
+export platform
 
-if grep -q "PowerNV" $PLATFORM_FILE; then
+platform_string=$(sed -n 's/^platform\t*: \(.*\)/\1/p' $PLATFORM_FILE)
+case "$platform_string" in
+"PowerNV")
 	platform_name="PowerNV Host"
-	platform=$PLATFORM_POWERNV
-elif grep -q "IBM pSeries (emulated by qemu)" $PLATFORM_FILE; then
+	platform=$PLATFORM_POWERNV;;
+"IBM pSeries (emulated by qemu)")
 	platform_name="Power KVM pSeries Guest"
-	platform=$PLATFORM_POWERKVM_GUEST
-elif  grep -q "pSeries" $PLATFORM_FILE; then
+	platform=$PLATFORM_POWERKVM_GUEST;;
+"pSeries")
 	platform_name="PowerVM pSeries LPAR"
-	platform=$PLATFORM_PSERIES_LPAR
-fi
+	platform=$PLATFORM_PSERIES_LPAR;;
+*)
+	platform_name="Unknown"
+	platform=$PLATFORM_UNKNOWN;;
+esac
 
 if [ $SOURCE_FILE = `basename $0` ]; then
 	echo $platform_name
