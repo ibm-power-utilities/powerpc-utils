@@ -30,6 +30,7 @@ OFPATHNAME="ofpathname"
 VERSION="0.5"
 FIND=/usr/bin/find
 CAT=/bin/cat
+LSPROP=/sbin/lsprop
 PSERIES_PLATFORM=$(dirname $0)/pseries_platform
 
 # Find out what platfrom we are running on.  Hopefully this
@@ -414,6 +415,21 @@ is_net_interface()
     fi
 }
 
+# is_nvmf_device
+# Check to see if this is a nvmf device
+#
+is_nvmf_device()
+{
+    local res
+
+    res=`$FIND /sys/devices/virtual/nvme-fabrics -name $1`
+    if [[ ${#res} = 0 ]]; then
+	    echo "no"
+    else
+	    echo "yes"
+    fi
+}
+
 #
 # logical_to_ofpathname
 # Conversion for logical device name to an Open Firmware device path
@@ -466,7 +482,14 @@ logical_to_ofpathname()
                     logical_to_ofpathname
                     exit
                     ;;
-	nvme*)	    l2of_nvme ;;
+        nvme*)     #check if the device is a nvmf device
+                    local ctrl_name="${DEVICE%n[0-9]*}"
+                    is_nvmf=$(is_nvmf_device $ctrl_name)
+                    if [[ $is_nvmf = "yes" ]]; then
+                        l2of_nvmf
+                    else
+                        l2of_nvme
+                    fi ;;
 	*)         # check if the device is a network interface
                    is_net=$(is_net_interface $DEVICE)
                    if [[ $is_net = "yes" ]]; then
@@ -704,6 +727,95 @@ l2of_nvme()
     fi
 
     OF_PATH="${OF_PATH}:${devpart}"
+}
+
+#
+# l2of_nvmf
+# Conversion routine for logical => OF path of nvme devices
+#
+l2of_nvmf()
+{
+
+    # OF path: <devspec>/nvme-of/controller@<target-wwpn>,<ctrl-id>:
+    #          nqn=<tgt-subsystem-nqn> /namespace@<namespace-id>:
+    #          <disk-label-args>
+
+    # disk: nvmeX, nvmeXnY; not nvmeXnYpZ
+    local devdisk="${DEVICE%p[0-9]*}"
+
+    # namespace id: Y in nvmeXnY, nvmeXnYpZ
+    local devnsid="${devdisk#nvme[0-9]*n}"
+    if [[ $devnsid = $devdisk ]]; then
+        devnsid='' # no namespace id
+    fi
+
+    # partition number: Z in nvmeXnYpZ
+    local devpart="${DEVICE##*p}"
+    if [[ $devpart = $DEVICE ]]; then
+        devpart='' # no partition number
+    fi
+
+    # controller name: nvmeX
+    local ctrl_name="${DEVICE%n[0-9]*}"
+
+    # Get the device-tree device specification (devspec).
+    local dir
+
+    for dir in `$FIND /sys/devices/virtual/nvme-fabrics -name "$ctrl_name"`; do
+        cd $dir
+        h_wwpn=`$CAT $PWD/address | cut -d "-" -f 5`
+        h_wwpn="${h_wwpn#0x}"
+        t_wwpn=`$CAT $PWD/address | cut -d "-" -f 3`
+        t_wwpn="${t_wwpn#0x}"
+        t_wwpn="${t_wwpn%,*}"
+        nqn=`$CAT $PWD/subsysnqn`
+        cntlid_dec=`$CAT $PWD/cntlid`
+        cntlid=`echo "obase=16; $cntlid_dec" |bc`
+        if [[ -n $h_wwpn ]]; then
+            for f in `$FIND /sys/devices -name "port_name"`; do
+                    sys_wwpn=`$CAT $f 2>/dev/null`
+                    sys_wwpn="${sys_wwpn#0x}"
+                    if [[ $h_wwpn = $sys_wwpn ]] && \
+                        [[ "$f" == *"fc_host"* ]]; then
+                        f=${f%/*}
+                        goto_dir $f "device" 0
+                        link=`get_link "device"`
+                        cd $link
+                        goto_dir $PWD "devspec"
+                        if [[ -e $PWD/devspec ]]; then
+                            OF_PATH=`$CAT $PWD/devspec`
+                            break
+                        fi
+                    fi
+                done
+        fi
+    done
+
+    if [[ -z $OF_PATH ]]; then
+        err $ERR_NO_OFPATH
+    fi
+
+    OF_PATH="${OF_PATH}/nvme-of/controller@${t_wwpn},${cntlid}:nqn=${nqn}"
+
+    # No namespace id (nY) specified.
+    if [[ -n $devnsid ]]; then
+        res=`$FIND /sys/devices/virtual -name ${devdisk}`
+        if [[ ${#res} = 0 ]]; then
+            OF_PATH=""
+        else
+            OF_PATH="$OF_PATH/namespace@$devnsid"
+        fi
+    fi
+ 
+    # No partition (pZ) specified.
+    if [[ -n $devpart ]]; then
+        res=`$FIND /sys/devices/virtual -name ${devdisk}p${devpart}`
+        if [[ ${#res} = 0 ]]; then
+            OF_PATH=""
+        else
+            OF_PATH="${OF_PATH}:${devpart}"
+        fi
+    fi
 }
 
 #
@@ -1043,6 +1155,11 @@ ofpathname_to_logical()
         DEVTYPE="nvme"
     fi
 
+    if [[ "$DEVPATH" == *"nvme-of"* ]]; then
+        DEVTYPE="nvmf"
+    fi
+
+
     # Remove any possible cdrom data from DEVICE
     if [[ ${DEVICE##*,} = "\ppc\bootinfo.txt" ||
           ${DEVICE##*,} = \ppc\bootinfo.txt ]]; then
@@ -1056,7 +1173,8 @@ ofpathname_to_logical()
 
     # Remove any possible partition reference
     PART=$(expr "$DEVICE" : '.*\(:[0-9]\)')
-    if [[ -n $PART ]] ; then
+    if [[ -n $PART ]] && \
+    [[ $DEVTYPE != "nvmf" ]]; then
         PART=${PART:1}
         DEVICE=${DEVICE%:[0-9]}
     fi
@@ -1076,6 +1194,7 @@ ofpathname_to_logical()
         disk*         )  of2l_ide ;;
         usb           )  of2l_usb ;;
         nvme          )  of2l_nvme ;;
+        nvmf          )  of2l_nvmf ;;
     esac
 
     if [[ -z $LOGICAL_DEVNAME ]]; then
@@ -1083,7 +1202,8 @@ ofpathname_to_logical()
     fi
 
     # Add any previously stripped partition reference
-    if [[ -n $PART ]] ; then
+    if [[ -n $PART ]] && \
+       [[ $DEVTYPE != "nvmf" ]]; then
         LOGICAL_DEVNAME=$LOGICAL_DEVNAME$PART
     fi
 
@@ -1676,6 +1796,92 @@ of2l_nvme()
             LOGICAL_DEVNAME="${LOGICAL_DEVNAME}p${part}"
         else
             LOGICAL_DEVNAME=''
+        fi
+    fi
+}
+
+# of2l_nvmf
+# Conversion routine for OF path => logical name for nvme devices
+#
+of2l_nvmf()
+{
+    # get namespace id and partition number
+    DEVICE=${DEVNAME##/*/}
+    if [[ "$DEVICE" == *"namespace"* ]]; then
+        local nsid_part=${DEVICE##*@} # <namespace-id>[:partition-number]
+        local nsid=${nsid_part%:*} # namespace id
+    fi
+    of_path_addr=`echo $DEVNAME | cut -d "/" -f 2,3`
+    ctrl_name=`echo $DEVNAME | cut -d "/" -f 5`
+    OF_WWPN=${ctrl_name%,*}
+    OF_WWPN=${OF_WWPN#*@}
+    of_cntlid=${ctrl_name%%:*}
+    of_cntlid=${of_cntlid#*,}
+    # set partition number only if ':' is present
+    case "${nsid_part}" in
+    *:*)
+        part=${nsid_part#*:}
+        ;;
+    esac
+    local dir
+
+    for dir in `$FIND /sys/devices/virtual/nvme-fabrics -name "nvme[0-9]*"`; do
+        dir_path=${dir##*/}
+        if [[ "$dir_path" == *"c"* ]]; then
+            continue
+        fi
+
+        cd $dir
+        if [[ -n $PWD/address ]]; then
+            t_wwpn=`$CAT $PWD/address | cut  -f 3 -d "-" 2>/dev/null`
+            t_wwpn="${t_wwpn#0x}"
+            t_wwpn="${t_wwpn%,*}"
+            h_wwpn=`$CAT $PWD/address | cut  -f 5 -d "-" 2>/dev/null`
+            h_wwpn="${h_wwpn#0x}"
+            cntlid_dec=`$CAT $PWD/cntlid 2>/dev/null`
+            cntlid=`echo "obase=16; $cntlid_dec" |bc`
+            if [[ $t_wwpn = $OF_WWPN ]] && \
+                [[ $cntlid == $of_cntlid ]]; then
+                for f in `$FIND /sys/devices -name "port_name"`; do
+                    sys_wwpn=`$CAT $f 2>/dev/null`
+                    sys_wwpn="${sys_wwpn#0x}"
+                    if [[ $h_wwpn = $sys_wwpn ]] && \
+                      [[ "$f" == *"fc_host"* ]]; then
+                        f=${f%/*}
+                        goto_dir $f "device" 0
+                        link=`get_link "device"`
+                        cd $link
+                        goto_dir $PWD "devspec"
+                        if [[ -e $PWD/devspec ]]; then
+                            pci_addr=`$CAT $PWD/devspec`
+                            pci_addr=${pci_addr#*/}
+                        fi
+                        if [[ $of_path_addr = $pci_addr ]]; then 
+                            LOGICAL_DEVNAME="${dir##*/}"
+                            break
+                        fi
+                    fi
+                done
+            fi
+        fi
+    done
+    if [[ -n $LOGICAL_DEVNAME ]] && \
+       [[ -n $nsid ]]; then
+        res=`$FIND /sys/devices/virtual -name ${LOGICAL_DEVNAME}n${nsid}`
+        if [[ ${#res} = 0 ]]; then
+            LOGICAL_DEVNAME=''
+        else
+            LOGICAL_DEVNAME="${LOGICAL_DEVNAME}n${nsid}"
+        fi
+    fi
+
+    if [[ -n $LOGICAL_DEVNAME ]] && \
+       [[ -n $part ]]; then
+        res=`$FIND /sys/devices/virtual -name ${LOGICAL_DEVNAME}p${part}`
+        if [[ ${#res} = 0 ]]; then
+            LOGICAL_DEVNAME=''
+        else
+            LOGICAL_DEVNAME="${LOGICAL_DEVNAME}p${part}"
         fi
     fi
 }
