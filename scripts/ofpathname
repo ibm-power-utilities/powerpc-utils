@@ -640,6 +640,7 @@ l2of_nvme()
     # disk: nvmeX, nvmeXnY; not nvmeXnYpZ
     local devdisk="${DEVICE%p[0-9]*}"
 
+    local dev_ctrl=${devdisk%n[0-9]*}
     # namespace id: Y in nvmeXnY, nvmeXnYpZ
     local devnsid="${devdisk#nvme[0-9]*n}"
     if [[ $devnsid = $devdisk ]]; then
@@ -656,7 +657,7 @@ l2of_nvme()
     local dir
     local found=0
 
-    for dir in `$FIND /sys/devices -name "$DEVICE"`; do
+    for dir in `$FIND /sys/devices -name "$dev_ctrl"`; do
         cd $dir
 
         goto_dir $PWD "device/devspec"
@@ -666,8 +667,10 @@ l2of_nvme()
             found=1
             if [[ -n $devnsid ]]; then
                 # Linux logical nsid might not match nvme controller nsid
-                goto_dir $dir "nsid"
-                devnsid=`$CAT $PWD/nsid | tr -d '\000'`
+                for nsid_dir in `$FIND /sys/devices -name "DEVICE"`; do
+                    goto_dir $dir_dir "nsid"
+                    devnsid=`$CAT $PWD/nsid | tr -d '\000'`
+                done
             fi
             break
         fi
@@ -1056,7 +1059,8 @@ ofpathname_to_logical()
 
     # Remove any possible partition reference
     PART=$(expr "$DEVICE" : '.*\(:[0-9]\)')
-    if [[ -n $PART ]] ; then
+    if [[ -n $PART ]] && \
+    [[ $DEVTYPE != "nvme" ]]; then
         PART=${PART:1}
         DEVICE=${DEVICE%:[0-9]}
     fi
@@ -1083,7 +1087,8 @@ ofpathname_to_logical()
     fi
 
     # Add any previously stripped partition reference
-    if [[ -n $PART ]] ; then
+    if [[ -n $PART ]] && \
+    [[ $DEVTYPE != "nvme" ]]; then
         LOGICAL_DEVNAME=$LOGICAL_DEVNAME$PART
     fi
 
@@ -1647,6 +1652,10 @@ of2l_nvme()
         if [[ -n $link ]]; then
             cd $link
         else
+            continue
+        fi
+
+        if [[ "$PWD" == *"nvme-fabrics"* ]]; then
             continue
         fi
 
