@@ -834,7 +834,7 @@ void get_mem_total(struct sysentry *se, char *buf)
 	*nl = '\0';
 
 	if (o_legacy) {
-		sprintf(buf, "%d %s", atoi(mem) / 1024, "MB");
+		sprintf(buf, "%lld %s", atoll(mem) / 1024, "MB");
 	} else {
 		sprintf(buf, "%s %s", mem, unit);
 	}
