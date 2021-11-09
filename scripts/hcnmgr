@@ -21,7 +21,7 @@
 #	   support live partition migration with SR_IOV
 #
 
-VERSION="1.0"
+VERSION="1.1"
 PATH=$PATH:/bin:/usr/bin:/sbin:/usr/sbin
 BOND_BASEPATH="/sys/class/net"
 BONDOPTIONS="mode=1,miimon=100,fail_over_mac=2"
@@ -661,6 +661,9 @@ fi
 if ! nmcli --version >/dev/null 2>&1; then
 	err $E_ENETUNREACH
 fi
+# HNV can support VNIC or Veth as backup device.
+# In the first HNV version 1.0, the vNIC as backup support was turned off
+# HNV VERSION greater than 1.0 starts to support vNIC as the backup device
 if [[ $VERSION == "1.0" ]]; then
 	VNIC_SPT="OFF"
 fi
