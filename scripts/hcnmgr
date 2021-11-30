@@ -21,7 +21,7 @@
 #	   support live partition migration with SR_IOV
 #
 
-VERSION="1.1"
+FEATURES="vnic"
 PATH=$PATH:/bin:/usr/bin:/sbin:/usr/sbin
 BOND_BASEPATH="/sys/class/net"
 BONDOPTIONS="mode=1,miimon=100,fail_over_mac=2"
@@ -39,7 +39,6 @@ MODE=""
 PHYSLOC=""
 DEVPATH=""
 VIO_TYPE=""
-VNIC_SPT=""
 
 # Usage statements
 usage() {
@@ -71,9 +70,9 @@ usage() {
 
 # Display current version of hybrid network support
 show_version() {
-	echo "$HCNMGR: Version $VERSION"
+	echo "$HCNMGR (features: $FEATURES)"
 	echo "Written by: Mingming Cao <mingming.cao@ibm.com>"
-	hcnlog INFO "HCN_VERSION=$VERSION"
+	hcnlog INFO "$HCNMGR (features: $FEATURES)"
 }
 
 # Error codes
@@ -365,10 +364,6 @@ cfghcn() {
 
 	hcnlog DEBUG "cfghcn: enter $1"
 	search_dev "$1"
-	if [[ $VIO_TYPE == "VNIC" && $VNIC_SPT == "OFF" ]]; then
-		hcnlog WARN "Backing device $VIO_TYPE for Migratable VF is not supported in hcnmgr version $VERSION"
-		err $E_INVAL_DEV
-	fi
 	while [ $retry != 0 ]; do
 		hcnlog DEBUG "cfg_hcn: calling do_confi_vdevice to enslave $DEVNAME to HNV"
 		if do_config_vdevice; then
@@ -596,20 +591,18 @@ scanhcn() {
 		fi
 	done
 
-	if [[ $VNIC_SPT != "OFF" ]]; then
-		hcnlog DEBUG "search vnic device with ibm,hcn-id propterty......"
-		# Look at every vNIC device with ibm,hcn-id propterty
-		# join or create bond for this hcnid if not exist, add vnic device as
-		# slave for this bond accosiated with hcnid, if not already to
-		for dev in "$DT_PATH"/vdevice/vnic*; do
-			[ -d "$dev" ] || continue
-			if [ -e "$dev"/ibm,hcn-id ] && get_dev_hcn "$dev"; then
-				hcnlog DEBUG "scanhcn found vnic device with hcnid "
-				hcnlog INFO "scanhcn configure HCN and vnic device"
-				do_config_vdevice
-			fi
-		done
-	fi
+	hcnlog DEBUG "search vnic device with ibm,hcn-id propterty......"
+	# Look at every vNIC device with ibm,hcn-id propterty
+	# join or create bond for this hcnid if not exist, add vnic device as
+	# slave for this bond accosiated with hcnid, if not already to
+	for dev in "$DT_PATH"/vdevice/vnic*; do
+		[ -d "$dev" ] || continue
+		if [ -e "$dev"/ibm,hcn-id ] && get_dev_hcn "$dev"; then
+			hcnlog DEBUG "scanhcn found vnic device with hcnid "
+			hcnlog INFO "scanhcn configure HCN and vnic device"
+			do_config_vdevice
+		fi
+	done
 
 	if [ ${#HcnIds[@]} -eq 0 ]; then
 		hcnlog DEBUG "scanhcn: scan for hybrid virtual network finished"
@@ -660,12 +653,6 @@ fi
 #Validate NMCLI packages is install to manage networking
 if ! nmcli --version >/dev/null 2>&1; then
 	err $E_ENETUNREACH
-fi
-# HNV can support VNIC or Veth as backup device.
-# In the first HNV version 1.0, the vNIC as backup support was turned off
-# HNV VERSION greater than 1.0 starts to support vNIC as the backup device
-if [[ $VERSION == "1.0" ]]; then
-	VNIC_SPT="OFF"
 fi
 
 #Validate bonding module is loaded
