@@ -795,6 +795,10 @@ void get_node_name(struct sysentry *se, char *buf)
 
 void get_partition_name(struct sysentry *se, char *buf)
 {
+	if (se->value[0] != '\0') {
+		strcpy(buf, se->value);
+		return;
+	}
 	return get_name("/proc/device-tree/ibm,partition-name", buf);
 }
 
