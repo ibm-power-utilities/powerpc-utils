@@ -232,7 +232,7 @@ static int parse_sysfsname(void)
 {
 	char path[BUFSZ];
 	char *devspec;
-	char *at;
+	char *at, *nl;
 	uint32_t addr;
 	uint64_t phb_id;
 
@@ -246,6 +246,14 @@ static int parse_sysfsname(void)
 	devspec = read_file(path, NULL);
 	if (!devspec)
 		return 1;
+
+	/* Linux Kernel Commit: 14c19b2a40b6 ("PCI/sysfs: Add 'devspec' newline")
+	 * began reporting the devspec value for pci devices with a trailing newline.
+	 * Remove the newline if present to ensure our built pathname for obtaining
+	 * the config address is valid. */
+	nl = strchr(devspec, '\n');
+	if (nl)
+		*nl = '\0';
 
 	/* Now we parse something like /pci@400000000112/pci@2/ethernet@1 for
 	 * BUID HI =4000 and LOW 00000112 */
