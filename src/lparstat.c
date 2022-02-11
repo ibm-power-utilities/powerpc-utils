@@ -1126,9 +1126,9 @@ void print_scaled_output(int interval, int count)
 
 	print_system_configuration();
 
-	fprintf(stdout, "---Actual---                 -Normalized-\n");
-	fprintf(stdout, "%%busy  %%idle   Frequency     %%busy  %%idle\n");
-	fprintf(stdout, "------ ------  ------------- ------ ------\n");
+	fprintf(stdout, "---Actual---\t\t\t---Normalized---\n");
+	fprintf(stdout, "%%busy\t%%idle\tFrequency\t%%busy\t%%idle\n");
+
 	do {
 		if (interval) {
 			sleep(interval);
@@ -1144,7 +1144,7 @@ void print_scaled_output(int interval, int count)
 		nominal_freq = strtod(nominal_f, NULL);
 		effective_freq = strtod(effective_f, NULL);
 
-		fprintf(stdout, "%6s %6s %5.2fGHz[%3d%%] %6s %6s\n",
+		fprintf(stdout, "%s\t%s\t%.2f GHz [%d%%]\t%4s\t%4s\n",
 			purr, purr_idle,
 			effective_freq/1000,
 			(int)((effective_freq/nominal_freq * 100)+ 0.44 ),
