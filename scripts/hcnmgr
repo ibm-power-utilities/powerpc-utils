@@ -32,6 +32,7 @@ DT_PATH="/proc/device-tree"
 HCNMGR="hcnmgr"
 HCNCMD=""
 HCNTRACE=""
+STATEDIR="/var/lib/powerpc-utils/hcnmgr"
 LOG_FILE="/var/log/hcnmgr"
 HCN_LOGGING_LEVEL=DEBUG
 HCNID=0
@@ -165,6 +166,28 @@ hcnlog() {
 #	Print first 4 bytes of specified file in hexadecimal
 xdump4() {
 	hexdump -n 4 -ve '/1 "%02x"' "$1"
+}
+
+hcnid_state_create()
+{
+	local hcnid="$1"
+	[ "X$hcnid" != "X" ] && mkdir -p -- "$STATEDIR/$hcnid"
+}
+hcnid_state_remove()
+{
+	local hcnid="$1"
+	[ "X$hcnid" != "X" ] && rm -rf -- "$STATEDIR/$hcnid"
+}
+hcnid_state_list()
+{
+	local revert
+
+	shopt -q nullglob ; revert=$?
+	shopt -s nullglob
+	for dir in "$STATEDIR"/* ; do
+		echo "${dir##*/}"
+	done
+	[ $revert -eq 0 ] || shopt -u nullglob
 }
 
 # function search_dev:
@@ -414,6 +437,7 @@ do_config_vdevice_wicked() {
 }
 
 do_config_vdevice() {
+	hcnid_state_create "$HCNID"
 	case $SERVICE in
 		NetworkManager.service)
 			do_config_vdevice_nm
@@ -542,6 +566,7 @@ rmhcn() {
 			rmhcn_wicked
 			;;
 	esac
+	hcnid_state_remove "$HCNID"
 	hcnlog DEBUG "rmhcn: exit"
 	return $E_SUCCESS
 }
@@ -837,11 +862,13 @@ scanhcn_nm() {
 #	is inactive (or during manual 'hcnmgr -s' call).
 #
 scanhcn_wicked() {
-	local hcnids=()
+	local hcnid hcnids=()
 	local -A hcn_devs hcn_primary
 	local file dev
 
 	hcnlog DEBUG "scanhcn: on boot scan for hybrid virtual network starts"
+
+	udevadm settle
 
 	hcnlog DEBUG "search sr_iov device with ibm,hcn-id propterty......"
 	# Look at pci ethernet devices for SR_IOV VFs with ibm,hcn-id propterty
@@ -891,22 +918,37 @@ scanhcn_wicked() {
 		fi
 	done
 
-	# TODO: when the LPAR has been shut down and the configuration changes then,
-	#	e.g. from: bond$HCNID_old { eth0, eth1 }
-	#	     into: bond$HCNID_new { eth0, eth2 }
-	#	                            ^^^^
-	#     	there is still a config for bond$HCNID_old that we need to remove
-	#	at LPAR boot _before_ we can setup bond$HCNID_new as the new bond
-	#	is (re)using one slave device of the old bond..
-	#	This requires to know which bond is managed via HCN and we may need
-	#	to mark or remember the hcn managed bonds...
+	# Cleanup (and shutdown) obsolete bondings or unenslave obsolete slaves
+	# This can happen when the LPAR has been shut down and reconfigured at
+	# next boot (or as attempt to fix via manual rescan when something went
+	# wrong before).
+	for hcnid in $(hcnid_state_list) ; do
+		local bond="bond$hcnid"
+		if suse_wlist_find "$hcnid" "${hcnids[@]}" ; then
+			local devices=(${hcn_devs[$hcnid]})
+			for dev in $(suse_ifcfg_bond_get_slaves "$bond") ; do
+				suse_wlist_find "$dev" "${devices[@]}" && continue
+				suse_ifcfg_bond_del_slave "$bond" "$dev"
+				if systemctl is-active -q wicked.service ; then
+					wicked ifdown "$dev"
+				fi
+			done
+		else
+			suse_ifcfg_bond_delete "$bond"
+			if systemctl is-active -q wicked.service ; then
+				wicked ifdown "$bond"
+			fi
+			hcnid_state_remove "$hcnid"
+		fi
+	done
 
-	# (Re)configure all bonds
-	for id in "${hcnids[@]}" ; do
-		local bond="bond$id"
-		local primary="${hcn_primary[$id]}"
-		local devices="${hcn_devs[$id]}"
+	# Configure (and set up) actual bonds with current device list
+	for hcnid in "${hcnids[@]}" ; do
+		local bond="bond$hcnid"
+		local primary="${hcn_primary[$hcnid]}"
+		local devices="${hcn_devs[$hcnid]}"
 
+		hcnid_state_create "$hcnid"
 		hcnlog INFO "scanhcn configure HCN $bond with devices '$devices'"
 		if suse_ifcfg_bond_modify "$bond" "$devices" ; then
 			hcnlog INFO "scanhcn configured bond '$bond' config with devices '$devices'"
@@ -921,8 +963,8 @@ scanhcn_wicked() {
 		fi
 
 		if systemctl is-active -q wicked.service ; then
-			hcnlog INFO "scanhcn reloading HCN bonding: $bond"
-			wicked ifreload "$bond"
+			hcnlog INFO "scanhcn starting HCN bonding: $bond"
+			wicked ifup "$bond"
 		else
 			hcnlog INFO "scanhcn omits HCN bondings reload due to inactive network"
 			# at boot, hcn-init.service adjusts the configuration and
