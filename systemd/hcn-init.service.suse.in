@@ -1,0 +1,13 @@
+[Unit]
+Description=hybrid virtual network scan and config
+After=network-pre.target NetworkManager.service
+Before=wicked.service
+Requisite=network.service
+PartOf=network.service
+
+[Service]
+Type=oneshot
+ExecStart=@sbindir@/hcnmgr -s
+
+[Install]
+WantedBy=multi-user.target network.target
