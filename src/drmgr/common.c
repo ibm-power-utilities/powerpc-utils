@@ -984,6 +984,15 @@ char *php_slot_type_msg[]={
 	"PCI-E capable, Rev 4, 16x lanes with 16x lanes connected",
 	"U.2 PCI-E capable, Rev 3, 4x lanes with 4x lanes connected",
 	"U.2 PCI-E capable, Rev 4, 4x lanes with 4x lanes connected",
+	"U.2 PCI-E capable, Rev 4, 4x lanes with 2x lanes connected", 	/* 45 */
+	"PCI-E capable, Rev 5, 8x lanes with 1 lane connected",
+	"PCI-E capable, Rev 5, 8x lanes with 4x lanes connected",
+	"PCI-E capable, Rev 5, 8x lanes with 8x lanes connected",
+	"PCI-E capable, Rev 5, 16x lanes with 1 lane connected",
+	"PCI-E capable, Rev 5, 16x lanes with 4x lanes connected",	/* 50 */
+	"PCI-E capable, Rev 5, 16x lanes with 8x lanes connected",
+	"U.2 PCI-E capable, Rev 5, 4x lanes with 2x lanes connected",
+	"U.2 PCI-E capable, Rev 5, 4x lanes with 4x lanes connected",
 };
 
 char *
@@ -994,7 +1003,7 @@ node_type(struct dr_node *node)
 
 	desc_msg_num = atoi(node->drc_type);
 	if ((desc_msg_num >= 1 &&  desc_msg_num <= 8) ||
-	    (desc_msg_num >= 11 && desc_msg_num <= 44))
+	    (desc_msg_num >= 11 && desc_msg_num <= 53))
 		desc = php_slot_type_msg[desc_msg_num];
 	else {
 		switch (node->dev_type) {
