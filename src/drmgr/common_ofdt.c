@@ -512,12 +512,10 @@ get_drc_info(const char *of_path)
 	if (rc == 0) {
 		list->all_next = all_drc_lists;
 		all_drc_lists = list;
-	} else {
-		if (full_path)
-			free(full_path);
+	} else
 		list = NULL;
-	}
 
+	free(full_path);
 	return list;
 }
 
