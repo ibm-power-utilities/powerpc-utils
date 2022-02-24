@@ -80,6 +80,10 @@ Utilities for maintaining and servicing PowerPC systems.
 
 /usr/bin/amsstat
 
+%if 0%{?suse_version}
+/usr/lib/powerpc-utils/functions.suse
+%endif
+
 %if %{with systemd}
 /usr/sbin/smtstate
 /var/lib/powerpc-utils/smt.state
