@@ -33,7 +33,7 @@ AC_TYPE_UINT8_T
 # Checks for library functions.
 AC_FUNC_FORK
 AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
-AC_FUNC_MALLOC
+#AC_FUNC_MALLOC
 AC_FUNC_MKTIME
 AC_CHECK_FUNCS([memset strchr strcspn strdup strerror strrchr strstr strtol strtoul strtoull gettimeofday])
 

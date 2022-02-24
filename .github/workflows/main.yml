@@ -1,0 +1,103 @@
+name: CI
+
+# Controls when the workflow will run.
+on:
+  # This allows the build to be triggered manually via the github UI.
+  workflow_dispatch:
+
+  # Push to any branch
+  push:
+
+  # Any pull request
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        host: [powerpc-linux-gnu, powerpc64-linux-gnu, powerpc64le-linux-gnu, x86_64-linux-gnu]
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        repository: ibm-power-utilities/librtas
+        path: ./librtas
+
+    - name: Install powerpc cross compiler
+      if: matrix.host != 'x86_64-linux-gnu'
+      run: |
+        sudo apt update
+        sudo apt install -y gcc-${{ matrix.host }}
+
+    - name: Install libnuma-dev.x86_64
+      if: matrix.host == 'x86_64-linux-gnu'
+      run: sudo apt install -y libnuma-dev
+
+    - name: Build and install librtas
+      run: |
+        cd ./librtas
+        ./autogen.sh
+        ./configure --prefix=/usr --host=${{ matrix.host }} --build=x86_64-linux-gnu
+        make
+        sudo make install
+        cd ..
+
+    - uses: actions/checkout@v2
+      with:
+        repository: madler/zlib
+        ref: v1.2.11
+        path: ./zlib
+
+    - name: Build and install zlib for powerpc
+      if: matrix.host != 'x86_64-linux-gnu'
+      run: |
+        cd ./zlib
+        CHOST=${{ matrix.host }} ./configure --prefix=/usr
+        make
+        sudo make install
+        cd ..
+
+    - uses: actions/checkout@v2
+      with:
+        repository: numactl/numactl
+        ref: v2.0.14
+        path: ./numactl
+
+    - name: Build and install libnuma for powerpc
+      if: matrix.host != 'x86_64-linux-gnu'
+      run: |
+        cd ./numactl
+        ./autogen.sh
+        ./configure --prefix=/usr --host=${{ matrix.host }} --build=x86_64-linux-gnu
+        make
+        sudo make install
+        cd ..
+
+    - uses: actions/checkout@v2
+
+    - name: Register problem matchers
+      run: |
+        echo "::add-matcher::.github/problem-matchers/compiler-source.json"
+
+    - name: autogen
+      run: ./autogen.sh
+
+    - name: configure
+      run: |
+       ./configure --prefix=/usr --host=${{ matrix.host }} --disable-werror --build=x86_64-linux-gnu CFLAGS='-O2 -g'
+
+    - name: Collect config.log
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: config.log
+        path: ./config.log
+
+    - name: make
+      run: make V=1
+
+    - name: distcheck
+      run: |
+        make distcheck V=1 DISTCHECK_CONFIGURE_FLAGS='--disable-werror --host=${{ matrix.host }}'
