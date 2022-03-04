@@ -21,7 +21,7 @@
 #	   support live partition migration with SR_IOV
 #
 
-FEATURES="vnic"
+FEATURES="vnic wicked"
 PATH=$PATH:/bin:/usr/bin:/sbin:/usr/sbin
 BOND_BASEPATH="/sys/class/net"
 BOND_MODPROBE_OPTS="max_bonds=0"
