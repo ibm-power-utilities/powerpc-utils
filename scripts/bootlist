@@ -277,7 +277,7 @@ dm_to_part()
                 tmajmin=$(printf "%d:%d" 0x$tmajor 0x$tminor)
                 if [[ "$tmajmin" = "$dmpmajmin" ]]; then
                         partstart=${kp##* }
-                        for part in `ls -1d /sys/block/$sddev/$sddev*`; do
+                        for part in `ls -1d /sys/block/$sddev/$sddev* 2>/dev/null`; do
                                 pstart=$(cat $part/start 2>/dev/null)
                                 if [[ "$pstart" -eq "$partstart" ]] ; then
                                         echo "${part##*/}"
