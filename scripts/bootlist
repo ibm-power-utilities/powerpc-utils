@@ -270,7 +270,7 @@ dm_to_part()
         done
 
 
-        kpartx -p $delim -l $dmmapper | while read kp ; do
+        kpartx -p "$delim" -l "$dmmapper" | while read kp ; do
                 kpname=${kp%% *}
                 tmajor=$(stat -L --format="%t" /dev/mapper/$kpname 2>/dev/null)
                 tminor=$(stat -L --format="%T" /dev/mapper/$kpname 2>/dev/null)
