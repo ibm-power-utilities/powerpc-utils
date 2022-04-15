@@ -44,10 +44,10 @@ drmgr \- Manage DLPAR resources of a virtualized ppc64 system.
 .B drmgr
 is a utility for managing logical and physical hot plug capable resources of a PowerVM LPAR or QEMU/KVM pSeries virtual machine via Dynamic Logical Partitioning (DLPAR) operations. Outside of hot plugging a physical PCI I/O slot the 
 .B drmgr
-utility is intended to be invoked remotely by a Hardware Management Console (HMC), or by a local monitoring deamon in response to a hotplug interrupt from the controlling hypervisor.
+utility is intended to be invoked remotely by a Hardware Management Console (HMC), or by a local monitoring daemon in response to a hotplug interrupt from the controlling hypervisor.
 
 .PP
-Unless directed by IBM support or performing a PCI hotplug operation use caution invoking \fBdrmgr\fR from the commandline as it can result in inconsistent state between the LPAR and managament system.
+Unless directed by IBM support or performing a PCI hotplug operation use caution invoking \fBdrmgr\fR from the commandline as it can result in inconsistent state between the LPAR and management system.
 
 
 .SH OPTIONS
@@ -89,7 +89,7 @@ Interactively remove a physical PCI adapter, from \fIslot_location_code\fR, by t
 
 .TP
 .B \-a
-Interactively add a physical PCI adpater, to \fIslot_location_code\fR, by turning on the visual indicator LED to locate the physical slot, and then powering up the slot once the new adapter has been inserted into the slot.
+Interactively add a physical PCI adapter, to \fIslot_location_code\fR, by turning on the visual indicator LED to locate the physical slot, and then powering up the slot once the new adapter has been inserted into the slot.
 
 .TP
 .B \-I
@@ -105,7 +105,7 @@ The dynamic reconfiguration connector (DRC) index or name is used to identify on
 
 .TP
 .BI \-q " quantity"
-Specify a quantity of CPUs on which to perfrom the requested DLPAR operation.
+Specify a quantity of CPUs on which to perform the requested DLPAR operation.
 
 .TP
 .B \-a
@@ -117,7 +117,7 @@ Perform a DLPAR CPU(s) remove operation.
 
 
 .SS "drmgr -c mem \fR{\fB-s \fR{\fIdrc_index\fR | \fIdrc_name\fR} | \fB-q \fIcount\fR} {\fB-a\fR | \fB-r\fR}"
-Add or removel logical memory blocks (LMBs) from the system.
+Add or remove logical memory blocks (LMBs) from the system.
 
 .TP
 .BI \-s " drc_index " | " drc_name"
@@ -125,7 +125,7 @@ The dynamic reconfiguration connector (DRC) index or name is used to identify on
 
 .TP
 .BI \-q " quantity"
-Specify a quantity of LMBs on which to perfrom the requested DLPAR operation.
+Specify a quantity of LMBs on which to perform the requested DLPAR operation.
 
 .TP
 .B \-a
