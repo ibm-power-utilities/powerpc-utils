@@ -6,6 +6,7 @@ PartOf=NetworkManager.service
 
 [Service]
 Type=oneshot
+RemainAfterExit=yes
 ExecStart=@sbindir@/hcnmgr -s
 
 [Install]
