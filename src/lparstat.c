@@ -183,7 +183,7 @@ int parse_sysfs_values(void)
 	for (i = 0; cpu_sysfs_fds[i].spurr > 0; i++) {
 		rc = pread(cpu_sysfs_fds[i].spurr, (void *)line, sizeof(line), 0);
 		if (rc == -1) {
-			fprintf(stderr, "Failed to /sys/devices/system/cpu/cpu%d/spurr\n",
+			fprintf(stderr, "Failed to read /sys/devices/system/cpu/cpu%d/spurr\n",
 					cpu_sysfs_fds[i].cpu);
 			goto check_cpu_hotplug;
 		}
@@ -193,7 +193,7 @@ int parse_sysfs_values(void)
 
 		rc = pread(cpu_sysfs_fds[i].idle_purr, (void *)line, sizeof(line), 0);
 		if (rc == -1) {
-			fprintf(stderr, "Failed to /sys/devices/system/cpu/cpu%d/idle_purr\n",
+			fprintf(stderr, "Failed to read /sys/devices/system/cpu/cpu%d/idle_purr\n",
 					cpu_sysfs_fds[i].cpu);
 			goto check_cpu_hotplug;
 		}
@@ -203,7 +203,7 @@ int parse_sysfs_values(void)
 
 		rc = pread(cpu_sysfs_fds[i].idle_spurr, (void *)line, sizeof(line), 0);
 		if (rc == -1) {
-			fprintf(stderr, "Failed to /sys/devices/system/cpu/cpu%d/idle_spurr\n",
+			fprintf(stderr, "Failed to read /sys/devices/system/cpu/cpu%d/idle_spurr\n",
 					cpu_sysfs_fds[i].cpu);
 			goto check_cpu_hotplug;
 		}
