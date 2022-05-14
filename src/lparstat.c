@@ -27,6 +27,7 @@
 #include <string.h>
 #include <getopt.h>
 #include <unistd.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <sched.h>
 #include <signal.h>
@@ -164,7 +165,8 @@ static int assign_cpu_sysfs_fds(int threads_in_system)
 
 	return 0;
 error:
-	fprintf(stderr, "Failed to open %s\n", sysfs_file_path);
+	fprintf(stderr, "Failed to open %s: %s\n",
+			sysfs_file_path, strerror(errno));
 	close_cpu_sysfs_fds(threads_in_system);
 	return -1;
 }
