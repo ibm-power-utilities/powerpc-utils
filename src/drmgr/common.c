@@ -1545,6 +1545,12 @@ enum drc_type to_drc_type(const char *arg)
 	if (!strncmp(arg, "pmig", 4))
 		return DRC_TYPE_MIGRATION;
 
+	/*
+	 * Accelerator
+	 */
+	if (!strncmp(arg, "acc", 3))
+		return DRC_TYPE_ACC;
+
 	return DRC_TYPE_NONE;
 }
 

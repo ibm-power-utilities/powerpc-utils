@@ -43,7 +43,8 @@ uint32_t usr_drc_index = 0;
  */
 int usr_prompt = 1;
 
-/* user specified number of devices to add/remove */
+/* user-specified quantity of devices to add/remove */
+/* user-specified quantity of accelerator QoS credits to assign */
 int usr_drc_count = 0;
 
 /* user specified drc type to use */
@@ -51,6 +52,13 @@ enum drc_type usr_drc_type = DRC_TYPE_NONE;
 
 /* user specified -p option, meaning varies depending on usr_drc_type */
 char *usr_p_option = NULL;
+
+/*
+ * user specified -t option, meaning varies depending on usr_drc_type
+ * Used only for DRC_TYPE_ACCT right now to pass accelerator type
+ * such as gzip
+ */
+char *usr_t_option = NULL;
 
 /* user specified workaround for qemu pci dlpar */
 int pci_virtio = 0;

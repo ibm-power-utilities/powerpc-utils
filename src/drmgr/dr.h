@@ -68,7 +68,7 @@ enum drmgr_action {NONE, ADD, REMOVE, QUERY, REPLACE, IDENTIFY,
 
 enum drc_type {DRC_TYPE_NONE, DRC_TYPE_PCI, DRC_TYPE_SLOT, DRC_TYPE_PHB,
 	       DRC_TYPE_CPU, DRC_TYPE_MEM, DRC_TYPE_PORT,
-	       DRC_TYPE_HIBERNATE, DRC_TYPE_MIGRATION};
+	       DRC_TYPE_HIBERNATE, DRC_TYPE_MIGRATION, DRC_TYPE_ACC};
 
 extern enum drmgr_action usr_action;
 extern int display_capabilities;
@@ -80,6 +80,7 @@ extern int usr_prompt;
 extern int usr_drc_count;
 extern enum drc_type usr_drc_type;
 extern char *usr_p_option;
+extern char *usr_t_option;
 extern int pci_virtio;     /* qemu virtio device (legacy guest workaround) */
 extern char *prrn_filename;
 extern int show_available_slots;
@@ -162,6 +163,10 @@ int drmig_chrp_pmig(void);
 int valid_pmig_options(void);
 void pmig_usage(char **);
 void phib_usage(char **);
+
+int dracc_chrp_acc(void);
+int valid_acc_options(void);
+void acc_usage(char **);
 
 int ams_balloon_active(void);
 

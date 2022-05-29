@@ -65,6 +65,7 @@ struct command {
 #define DRSLOT_CHRP_CPU		6
 #define DRMIG_CHRP_PMIG		7
 #define DRSLOT_CHRP_PHIB	8
+#define DRACC_CHRP_ACC		9
 
 static struct command commands[] = {
 	{ .func = drmgr,
@@ -103,6 +104,10 @@ static struct command commands[] = {
 	  .validate_options = valid_pmig_options,
 	  .usage = phib_usage,
 	},
+	{ .func = dracc_chrp_acc,
+	  .validate_options = valid_acc_options,
+	  .usage = acc_usage,
+	},
 };
 
 static struct option long_options[] = {
@@ -131,7 +136,7 @@ command_usage(struct command *command) {
 
 	free(buffer);
 }
-static char *usagestr = "{-c {port | slot | phb | pci | mem | cpu} | -m}\n"
+static char *usagestr = "{-c {port | slot | phb | pci | mem | cpu | acc} | -m}\n"
 	"For more information on the specific options for the various\n"
 	"connector types, run drmgr -c <type> -h";
 
@@ -253,6 +258,7 @@ int parse_options(int argc, char *argv[])
 			pci_hotplug_only = 1;
 			break;
 		    case 't': /* target lpid (pmig, not used) */
+			usr_t_option = optarg;	/* Used for Accelerator type (ex:gzip) */
 			break;
 		    case 'V': /* qemu virtio pci device (workaround) */
                         pci_virtio = 1;
@@ -311,6 +317,8 @@ struct command *get_command(void)
 		break;
 	case DRC_TYPE_MIGRATION:
 		return &commands[DRMIG_CHRP_PMIG];
+	case DRC_TYPE_ACC:
+		return &commands[DRACC_CHRP_ACC];
 	default:
 		/* If we make it this far, the user specified an invalid
 		 * connector type.
