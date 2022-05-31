@@ -1,3 +1,681 @@
+powerpc-utils-1.3.10
+=====================================================================
+
+commit 8eb14d62d6b3bb14391679bd3e1b4538be9b382c
+Author: Pratik R. Sampat <psampat@linux.ibm.com>
+Date:   Tue Jun 8 13:10:43 2021 +0530
+
+    ppc64_cpu: Add support to parse PAPR information for energy and frequency
+    
+    H_GET_EM_PARMS H_CALL was previously responsible for exporting energy,
+    frequency related information in the "/proc/ppc64/lparcfg", when the
+    --frequency option was invoked, however the H_GET_EM_PARMS H_CALL will
+    be deprecated P10 onwards.
+    The information within lparcfg was encoded and was needed to be parsed
+    in order to extract the state.
+    
+    The new "H_GET_ENERGY_SCALE_INFO" H_CALL has the ability to export
+    information in plain-text and userspace programs can simply parse this
+    from a sysfs interface, with just the knowledge of the ids of the
+    attributes and without the need for interpretation of the values.
+    
+    The new interface exports information as follows:
+    /sys/firmware/papr/energy_scale_info/
+       |-- <id>/
+         |-- desc
+         |-- value
+         |-- value_desc (if exists)
+       |-- <id>/
+         |-- desc
+         |-- value
+         |-- value_desc (if exists)
+    
+    The commit adds capability to parse this information from the new
+    interface and in case of faliure it rolls back to the lparcfg parse to
+    report this information.
+    The frequency information computation has been kept intact and a the
+    frequencies reported from the platform is displayed in a different
+    header.
+    
+    Sample output from the powerpc-utils tool is as follows:
+    
+    Power and Performance Mode: XXXX
+    Idle Power Saver Status   : XXXX
+    Processor Folding Status  : XXXX --> Printed if Idle power save status is supported
+    
+    Platform reported frequencies --> Frequencies reported from the platform's H_CALL i.e PAPR interface
+    min        :    NNNN GHz
+    max        :    NNNN GHz
+    static     :    NNNN GHz
+    
+    Tool Computed frequencies
+    min        :    NNNN GHz (cpu XX)
+    max        :    NNNN GHz (cpu XX)
+    avg        :    NNNN GHz
+    
+    Signed-off-by: Pratik R. Sampat <psampat@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 0255a7b2bc62a8b41b79e3fe446361e1278cf374
+Author: Pratik R. Sampat <psampat@linux.ibm.com>
+Date:   Tue Jun 8 19:22:25 2021 +0530
+
+    ppc64_cpu: Variable maybe unitilized at the time of return
+    
+    Variable "rc" maybe unitilized, as rc's value is assigned within a loop
+    with no guarantee the loop will execute and can return undefined values.
+    
+    Therefore, fix the bug by initializing the return code to zero.
+    
+    Fixes: 49ad3ef26883 ("This is really more of a re-write than an update")
+    Signed-off-by: Pratik R. Sampat <psampat@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit c57b66c62d96f50f3e94d17a770a4954f526a06b
+Author: Sathvika Vasireddy <sv@linux.ibm.com>
+Date:   Mon May 9 13:48:10 2022 +0530
+
+    lparstat: Fix error message
+    
+    This patch displays proper error message in case pread() fails.
+    
+    Suggested-by: Paul A. Clarke <pc@us.ibm.com>
+    Signed-off-by: Sathvika Vasireddy <sv@linux.ibm.com>
+    Reviewed-by: Paul A. Clarke <pc@us.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 89c2efa11a22bd7d2b1647b854e3bcc73a5eb9f6
+Author: Sathvika Vasireddy <sv@linux.ibm.com>
+Date:   Sat May 14 13:33:39 2022 +0530
+
+    powerpc-utils: Enhance error message when lparstat -E fails on max config systems
+    
+    Report clear error indicating what caused lparstat -E
+    option to fail on max config systems.
+    
+    Without this patch:
+    =====================================================
+     # lparstat -E
+    Failed to open /sys/devices/system/cpu/cpu340/idle_purr
+    =====================================================
+    
+    With this patch:
+    =====================================================
+     # lparstat -E
+    Failed to open /sys/devices/system/cpu/cpu340/idle_purr: Too many open files
+    =====================================================
+    
+    Reported-by: Pavithra Prakash <pavrampu@linux.vnet.ibm.com>
+    Signed-off-by: Sathvika Vasireddy <sv@linux.ibm.com>
+    Reviewed-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 82c89b17e00b872a18b486375a688a4fec804527
+Author: Haren Myneni <haren@linux.ibm.com>
+Date:   Sat May 28 18:15:35 2022 -0700
+
+    drmgr: Add support for 'acc' command
+    
+    Using HMC interface, the user can change the quality of service
+    credits (QoS) dynamically for NX GZIP accelerator. This interface
+    invokes drmgr command which writes the new QoS credit value to
+    sysfs file. So to support NX accelerator, 'acc' command is
+    introduced and the drmgr is executed with following arguments.
+    
+    drmgr -c acc -t <accelType> -q <qos_count> -w <timeout> -d <detail level>
+    
+      accelType: Only GZIP accelerator type is supported now
+      qos_count: New total QoS credits
+    
+    Signed-off-by: Haren Myneni <haren@linux.ibm.com>
+    Reviewed-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit aff2dcf4276f19aef7b499148b4d421456851e21
+Author: Michal Suchanek <msuchanek@suse.de>
+Date:   Mon May 2 18:44:02 2022 +0200
+
+    hcn-init.service: Add RemainAfterExit=yes
+    
+    This is consistent with other services provided by powerpc-utils.
+    
+    Signed-off-by: Michal Suchanek <msuchanek@suse.de>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 09846b0346273deed7b85b3f93dbd42ff9f268ef
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Fri Apr 15 11:13:08 2022 +0200
+
+    man/drmgr: fix multiple typos
+    
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit b46743ca68b6a06a2c82de4048d94d3d5191717f
+Author: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+Date:   Sun Nov 8 16:08:22 2020 +0100
+
+    Fix format specifiers in printf() and sprintf() calls
+    
+    There are various warnings reported on ppc32 builds for mismatched
+    printf format specifiers like the following:
+    
+    src/errinjct/ioa_bus_error.c:449:32: error: format ‘%lx’ expects argument of type ‘long unsigned int’,
+            but argument 2 has type ‘uint64_t’ {aka ‘long long unsigned int’} [-Werror=format=]
+      449 |     printf("ADDR MASK:\t\t%.16lx\n", mask);
+          |                           ~~~~~^     ~~~~
+          |                                |     |
+          |                                |     uint64_t {aka long long unsigned int}
+          |                                long unsigned int
+          |                           %.16llx
+    src/errinjct/ioa_bus_error.c:451:31: error: format ‘%lx’ expects argument of type ‘long unsigned int’,
+            but argument 2 has type ‘uint64_t’ {aka ‘long long unsigned int’} [-Werror=format=]
+      451 |     printf("ADDR MASK:\t\t%.8lx\n", mask);
+          |                           ~~~~^     ~~~~
+          |                               |     |
+          |                               |     uint64_t {aka long long unsigned int}
+          |                               long unsigned int
+          |                           %.8llx
+    
+    Signed-off-by: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+    [tyreld: added commit log description]
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 61c22ea0e37c8851d17f7d878978b8764169437c
+Author: Mingming Cao <mmc@linux.vnet.ibm.com>
+Date:   Fri Mar 4 15:01:14 2022 -0800
+
+    hcnmgr: Add new feature "wicked" in HNV FEATURE list
+    
+    After support wicked in HNV, now add it in the FEATURE list.
+    
+    Signed-off-by: Mingming Cao <mmc@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit ff2d61b49c48fcb98716cc696864b2cb0987c43b
+Author: Mingming Cao <mmc@linux.vnet.ibm.com>
+Date:   Thu Feb 24 12:22:11 2022 -0800
+
+    hcnmgr: Update Makefile and powerpc-utils spec file to support HNV and wicked
+    
+    Add installation of new functions.suse for wicked HNV
+    
+    Signed-off-by: Mingming Cao <mmc@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 5c2d5e838e8a9e2e744b89fa42724118e1cccded
+Author: Mingming Cao <mmc@linux.vnet.ibm.com>
+Date:   Thu Feb 24 09:02:05 2022 -0800
+
+    hcnmgr: Fix NM HNV setting primary slave
+    
+    Fix incorrect usage active_slave attribute instead of primary.
+    
+    Signed-off-by: Mingming Cao <mmc@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit f4eb928b0935f0e2afcb7e776c8fea46d171e108
+Author: Mingming Cao <mmc@linux.vnet.ibm.com>
+Date:   Wed Feb 16 01:09:05 2022 -0800
+
+    hcnmgr: Add hcn-init.service.suse
+    
+    Add SuSE specific hcn-init service.
+    
+    Signed-off-by: Mingming Cao <mmc@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 38d329ff98c0bd2fc80042b4aed6a0b6d4930319
+Author: Marius Tomaschewski <mt@suse.de>
+Date:   Wed Feb 16 19:20:27 2022 +0100
+
+    hcnmgr: maintain hcnid state for later cleanup
+    
+    When the LPAR has been shut down and the configuration changes then,
+    there is still previous bonding config (e.g. bond<old HCNID>), that
+    needs to be cleaned up while in hcn-init.service start (hcnmgr -s).
+    
+    Signed-off-by: Marius Tomaschewski <mt@suse.com>
+    Signed-off-by: Mingming Cao <mmc@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 4be90c732c465cf3b21191c6860767b3cdb3c7cb
+Author: Mingming Cao <mmc@linux.vnet.ibm.com>
+Date:   Wed Feb 16 00:31:23 2022 -0800
+
+    hcnmgr: Support wicked HNV using new wicked functions for bonding
+    
+    first: Add wicked support hnv command functions
+    
+    second: fixed offline remove HNV
+    
+    Added scanhcn_wicked() to be able to reconfigure HNV at the end of scan.
+    When lpar has been shut down, and an old HNV can be removed, the virtual
+    device can be added to a new HNV,  the configration
+    changes then. This requires to reconfigure all bonds.
+    
+    third: udev renaming racing with hcncfg and wicked ifup, here we improved
+    wicked cfghcn function by always waiting for udev events complete before
+    search for device to get the device-ready device names
+    
+    last: post LPM migration the new sr_iov should be set as primary, it
+    currently calling wicked ifup after the ifcfg file modified to make the
+    sr_iov as primary device. However the kernel is not noticed, we added a
+    workaround here to directly update via sysfs
+    
+    Signed-off-by: Marius Tomaschewski <mt@suse.com>
+    Signed-off-by: Mingming Cao <mmc@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 5b50974f3545cdacfd5bf541394e544684f3a82a
+Author: Mingming Cao <mmc@linux.vnet.ibm.com>
+Date:   Wed Feb 16 00:16:52 2022 -0800
+
+    hcnmgr: Add new wicked functions for SuSE to manage bonding
+    
+    SuSE specific hcnmgr utilities to manipulate SuSE ifcfg files
+    as supported by yast2 network.
+    
+    Signed-off-by: Marius Tomaschewski <mt@suse.com>
+    Signed-off-by:  Mingming Cao <mmc@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 39c2bf7279df0a8d87ecfb215513eef69fdf15c8
+Author: Mingming Cao <mmc@linux.vnet.ibm.com>
+Date:   Tue Feb 15 23:59:43 2022 -0800
+
+    hcnmgr: Factor out NetworkManager nmcli code
+    
+    Move nmcli code to corresponding hcn command/functions for networkmanager
+    
+    Signed-off-by: Marius Tomaschewski <mt@suse.com>
+    Signed-off-by: Mingming Cao <mmc@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit cb9ccfd774d7af00c2e97dab085339473dcfa4bb
+Author: Mingming Cao <mmc@linux.vnet.ibm.com>
+Date:   Tue Feb 15 23:29:12 2022 -0800
+
+    hcnmgr: Validate connection manager and add tracing option
+    
+    Check and validate what OS is on the system and what type
+     of connection manager is used: Wicked or NetworkManager
+    
+    This patch also add -x option to trace hcnmgr script execution
+    
+    Last, check platform/service after getopts parsing
+    
+    Signed-off-by: Marius Tomaschewski <mt@suse.com>
+    Signed-off-by: Mingming Cao <mmc@linux.vnet.ibm.com>
+    [tyreld: removed lsmod check prior to modprobe]
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit d512169a87cc146bcd3844f266abef903d8d3c54
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Sat Mar 5 15:34:06 2022 -0600
+
+    bootlist: fix invalid hex number message
+    
+    In dm_to_part() when kpartx returns no partitions tmajor and tminor are
+    empty. As a result the $(printf %d:%d 0x$tmajor 0x$tminor) command
+    subsititution reports the following error:
+    
+    /usr/sbin/bootlist: line 277: printf: 0x: invalid hex number
+    
+    Fix this by redirecting stderr to /dev/null.
+    
+    Suggested-by: Than Ngo <than@redhat.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit c44313686e69123c00406727ea44e52873a1e2c4
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Sat Mar 5 15:31:25 2022 -0600
+
+    bootlist: fix passing -l flag to kpartx as -p delimiter value
+    
+    When $delim is empty in dm_to_part() the kpartx command will wrongly use
+    the -l option flag as the delimiter input for the -p flag. Fix this be
+    quoting $delim.
+    
+    The variable delim is NULL (empty) in this case and it shows wrong
+    partitions.
+    
+    kpartx -p  -l /dev/mapper/mpatha
+    mpatha-l1 : 0 8192 /dev/mapper/mpatha 8192
+    mpatha-l2 : 0 2097152 /dev/mapper/mpatha 16384
+    mpatha-l3 : 0 14663680 /dev/mapper/mpatha 2113536
+    
+    With quotation it shows correct correct.
+    
+    kpartx -p  "" -l /dev/mapper/mpatha
+    mpatha1 : 0 8192 /dev/mapper/mpatha 8192
+    mpatha2 : 0 2097152 /dev/mapper/mpatha 16384
+    mpatha3 : 0 14663680 /dev/mapper/mpatha 2113536
+    
+    Suggested-by: Than Ngo <than@redhat.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 1c71116c7fc504d13e091f36781c368de4eeab56
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Thu Feb 24 14:45:27 2022 -0600
+
+    ci: add GitHub Actions build tests
+    
+    GitHub's hosted x86 Ubuntu runners have cross toolchains suitable for
+    building powerpc-utils and its various library dependencies (librtas,
+    zlib, and libnuma) for its targeted architectures. Add a matrix build
+    including these (32- and 64-bit big-endian, 64-bit little-endian) powerpc
+    platforms which perform a basic build and distcheck.
+    
+    Also perform a native x86 build since it "works": it produces nothing you
+    would want to run, but the build succeeds. If we are to add tests in the
+    future, running them as native code on the build host may be the best
+    option. So it's in our interest to keep the x86 build working.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 313bb6fdc145c6df401050e414bf0bf925fd46c1
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Wed Feb 23 17:56:08 2022 -0600
+
+    lsslot: fix memory leak when listing IO slots
+    
+    Valgring reports the following leak when listing IO slots.
+    
+    ==2102767== Command: src/drmgr/lsslot -c slot
+    ==2102767==
+    U9040.MR9.132944X-V16-C0    Virtual I/O Slot  30000000      vty
+    U9040.MR9.132944X-V16-C11   Virtual I/O Slot  3000000b      l-lan
+    U9040.MR9.132944X-V16-C101  Virtual I/O Slot  30000065      v-scsi
+    U9040.MR9.132944X-V16-C312  Virtual I/O Slot  30000138      vfc-client
+    U9040.MR9.132944X-V16-C313  Virtual I/O Slot  30000139      vfc-client
+    ==2102767==
+    ==2102767== HEAP SUMMARY:
+    ==2102767==     in use at exit: 64 bytes in 2 blocks
+    ==2102767==   total heap usage: 5,203 allocs, 5,201 frees, 203,943,832 bytes allocated
+    ==2102767==
+    ==2102767== 26 bytes in 1 blocks are definitely lost in loss record 1 of 2
+    ==2102767==    at 0x40A53B8: malloc (vg_replace_malloc.c:381)
+    ==2102767==    by 0x429F2F3: strdup (in /usr/lib64/libc.so.6)
+    ==2102767==    by 0x1000F3A3: of_to_full_path (common_ofdt.c:456)
+    ==2102767==    by 0x1000F5CF: get_drc_info (common_ofdt.c:499)
+    ==2102767==    by 0x1000BEBF: add_pci_vio_node (common_pci.c:632)
+    ==2102767==    by 0x1000D307: get_dlpar_nodes (common_pci.c:856)
+    ==2102767==    by 0x10003083: lsslot_chrp_pci (lsslot.c:568)
+    ==2102767==    by 0x100047DF: main (lsslot.c:965)
+    ==2102767==
+    ==2102767== 38 bytes in 1 blocks are definitely lost in loss record 2 of 2
+    ==2102767==    at 0x40A53B8: malloc (vg_replace_malloc.c:381)
+    ==2102767==    by 0x429F2F3: strdup (in /usr/lib64/libc.so.6)
+    ==2102767==    by 0x1000F3A3: of_to_full_path (common_ofdt.c:456)
+    ==2102767==    by 0x1000F5CF: get_drc_info (common_ofdt.c:499)
+    ==2102767==    by 0x1000BEBF: add_pci_vio_node (common_pci.c:632)
+    ==2102767==    by 0x1000D337: get_dlpar_nodes (common_pci.c:859)
+    ==2102767==    by 0x10003083: lsslot_chrp_pci (lsslot.c:568)
+    ==2102767==    by 0x100047DF: main (lsslot.c:965)
+    ==2102767==
+    ==2102767== LEAK SUMMARY:
+    ==2102767==    definitely lost: 64 bytes in 2 blocks
+    
+    Fix by freeing full_path in get_drc_info() regardless of success of
+    drc_info_connector_vX() call.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit fe7c23df64d5679a01dfe52eeaae2cfec8cdead1
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Wed Feb 23 12:39:37 2022 -0800
+
+    lsslot: Add new DRC type description strings for latest PCIe slot types
+    
+    The following Rev 4 and Rev 5 type PCIe slots can be reported by
+    firmware on machines with such capable slots.
+    
+    DRC-TYPE        Description
+    45      A U.2 PCI Express Rev 4 4x lane slot with 2x lanes connected
+    46      A PCI Express Rev 5 8x lane slot with 1 lane connected
+    47      A PCI Express Rev 5 8x lane slot with 4x lanes connected
+    48      A PCI Express Rev 5 8x lane slot with 8x lanes connected
+    49      A PCI Express Rev 5 16x lane slot with 1 lane connected
+    50      A PCI Express Rev 5 16x lane slot with 4x lanes connected
+    51      A PCI Express Rev 5 16x lane slot with 8x lanes connected
+    52      A U.2 PCI Express Rev 5 4x lane slot with 2x lanes connected
+    53      A U.2 PCI Express Rev 5 4x lane slot with 4x lanes connected
+    
+    Currently, the lsslot utility reports "Unknown" for the description of
+    these pci devices. Update the php_slot_type_msg[] with these new slot
+    descriptions so that lsslot correctly reports them.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 615e8a4d003b4aba46bcf2103a7fa9e26b16169b
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Wed Dec 1 20:09:27 2021 +0100
+
+    lparstat: report LPAR name from lparcfg
+    
+    If the kernel is reporting the LPAR name in /proc/powerpc/lparcfg, report
+    that value instead of the one found in the Device Tree which is not updated
+    when the user change the LPAR in the HMC.
+    
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit d8408b429ff022ff446ac2607bc26eaf60627658
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Mon Jan 10 16:55:58 2022 -0500
+
+    errinjct: sanitize devspec output of a newline if one is present
+    
+    Linux Kernel Commit: 14c19b2a40b6 ("PCI/sysfs: Add 'devspec' newline")
+    introduced a newline character at the end of the devspec result which
+    historically did not have one before. When a newline is present the
+    errinjct utility constructs an invalid pathname for a PCI devices /reg
+    property in the device tree. As a result the tool fails to provide a
+    valid config address to RTAS resulting in a (-3) Parameter Error.
+    
+    errinjct eeh -v -f 6 -s net/eth1 -a 0xe0800000 -m 0xff800000
+    errinjct: Could not open file /proc/device-tree//pci@800000020000154/ethernet@0,1
+    /reg, No such file or directory
+    
+    Injecting an ioa-bus-error with the following data:
+    
+    BUS ADDR:               e0800000
+    ADDR MASK:              ff800000
+    CONFIG ADDR:            1
+    PHB UNIT_ID:            800000020000154
+    FUNCTION:               6
+    Store to PCI Memory Address Space - inject an Address Parity Error
+    errinjct: RTAS error injection failed!
+    
+    errinjct: RTAS: ioa-bus-error: Argument error (-3)
+    
+    Fix this issue by nul terminating the devspec output string at the newline
+    if present.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit c73206b62d6d827cbc37a10f0195b5d2cf3f2fbb
+Author: Fabian Groffen <grobian@gentoo.org>
+Date:   Fri May 21 11:25:21 2021 +0200
+
+    add includes/defines for musl libc support
+    
+    - add some missing includes to get proper definitions for beXXtoh and
+      PATH_MAX
+    - guard backtrace() from execinfo.h usage for it is glibc only
+    
+    Signed-off-by: Fabian Groffen <grobian@gentoo.org>
+    Reviewed-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 5d2d0a0b50ff386b7d9416e122d05214846573b6
+Author: Thomas Abraham <tabraham@suse.com>
+Date:   Tue Oct 12 09:21:38 2021 -0400
+
+    lparstat: Fix reported online memory in legacy format
+    
+    On systems with more than 2TB of online memory, legacy mode
+    will calculate and report a negative value due to exceeding
+    the maximum value for a signed 32-bit integer:
+    
+    $ lparstat -i | grep "Online Memory"
+    Online Memory : 3771084032 kB
+    
+    $ lparstat -il | grep "Online Memory"
+    Online Memory : -511604 MB
+    
+    Signed-off-by: Thomas Abraham <tabraham@suse.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 8a10a623a781ed3e56d0e7fecec7a035bb9e9755
+Author: Wen Xiong <wenxiong@linux.ibm.com>
+Date:   Thu Sep 30 08:53:14 2021 -0500
+
+    ofpathname: Add support for NVMf devices
+    
+    To support boot/installtion over nvme-over-fc devices.
+    This patch converts a NVMf device name between open firmware device path
+    and logical device.
+    
+    Signed-off-by: Wen Xiong <wenxiong@linux.ibm.com>
+    Reviewed-by: Brian King <brking@linux.ibm.com>
+    [tyreld: removed trailing whitespace]
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 98c8519b832ddb93021c3eeb8eee0f5e51c49197
+Author: Wen Xiong <wenxiong@linux.ibm.com>
+Date:   Thu Sep 30 08:53:13 2021 -0500
+
+    ofpathname: Fix nvme support in ANA mode
+    
+    nvme_core.multipath is Y by defaut in the latest rhel
+    and sles linux release. The patch fixes the issue when
+    nvme_core.multipath=Y
+    
+    Signed-off-by: Wen Xiong <wenxiong@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 1e23f0265608f49679a462072d3a4f17139edfc0
+Author: Michal Suchanek <msuchanek@suse.de>
+Date:   Tue Nov 30 12:04:37 2021 +0100
+
+    hcnmgr: Remove some dead code
+    
+    There is VNIC_SPT which enables support for vnic as beckup device which
+    is set based on value of VERSION variable which is hardcoded in the
+    script and does not correspond the actual HNV support level on the LPAR.
+    
+    Remove all this. We do support vnic backend so enable it
+    unconditionally.
+    
+    It is the job of HMC to decide if vnic backup device is supported and
+    can be configured. When it is configured by HMC make use of it.
+    
+    Signed-off-by: Michal Suchanek <msuchanek@suse.de>
+    Reviewed-by: Mingming Cao <mmc@linux.vnet.ibm.com>
+    Tested-by: Mingming Cao <mmc@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 6951f22553e646ae88b78103427f2f52e846e538
+Author: Mingming Cao <mmc@linux.vnet.ibm.com>
+Date:   Tue Nov 9 15:45:44 2021 -0800
+
+    hcnmgr: Support vNIC as backup device
+    
+    HNV version 1.0 supports ibmveth as backup device for HNV.
+    
+    As ibmvnic is more stablized, enable support for vnic as backup
+    vdevice for HNV in new version 1.1
+    
+    Signed-off-by: Mingming Cao <mmc@linux.vnet.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 4d56ac27688743ff707966255cfe958f19eb5b6d
+Author: Michal Suchanek <msuchanek@suse.de>
+Date:   Thu Oct 28 11:11:27 2021 +0200
+
+    hcnmgr: Avoid hexdump squeezing consecutive identical bytes.
+    
+    When the file contains multiple consecutive bytes of the same value
+    hexdump squeezes them replacing all but first with *
+    
+    Use the -v argument to avoid this problem.
+    
+    Also put the hexdump invocation into a function.
+    
+    Signed-off-by: Michal Suchanek <msuchanek@suse.de>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 4c6dc50d8de1a8b171675ee6b742c9f0250c28a1
+Author: Scott Cheloha <cheloha@linux.ibm.com>
+Date:   Tue Jul 27 11:30:58 2021 -0500
+
+    lsdevinfo: optimize criteria filtering
+    
+    lsdevinfo is significantly slower when a criteria filter is set with the
+    -q flag.
+    
+    There are two culprits:
+    
+    1. The criteria string given on the command line is parsed every time
+       we call check_criteria().  We're forking two sed(1) processes whenever
+       we hit that function.  We hit it a lot.
+    
+    2. Criteria checking runs in constant time.  We call check_criteria() and
+       do the parsing in (1) for every relevant attribute, even if we already
+       have a match from a prior check_criteria() invocation.
+    
+    We can fix issue (1) by parsing the criteria string once at the start
+    of the script.  I have added a function, parse_criteria(), that parses
+    the $criteria string and selects an appropriate matching function.
+    
+    This approach also fixes problem (2), but we first need to check
+    whether the user's criteria is relevant to the attributes the script
+    cares about before calling the matching function.  We do this with
+    criteria_is_relevant().
+    
+    The speed improvement is nice.  Consider my test machine with around
+    thirty devices.  On this machine, lsdevinfo without any options runs
+    in 1.35s, but with the "status=1" criteria it runs in 2.12s:
+    
+    $ /usr/sbin/lsdevinfo | fgrep -c device:
+    29
+    $ command time -p /usr/sbin/lsdevinfo > /dev/null
+    real 1.35
+    user 1.42
+    sys 0.16
+    $ command time -p /usr/sbin/lsdevinfo -q status=1 > /dev/null
+    real 2.12
+    user 2.22
+    sys 0.30
+    
+    With this patch, lsdevinfo with the "status=1" criteria now runs in
+    1.35s:
+    
+    $ command time -p /usr/sbin/lsdevinfo -q status=1 > /dev/null
+    real 1.35
+    user 1.41
+    sys 0.18
+    
+    This patch eliminates nearly all of the criteria-checking overhead in
+    the current code.
+    
+    Signed-off-by: Scott Cheloha <cheloha@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 43d1d1011ee57c98fd7a3f8a6d2ebf8b441d1b57
+Author: Scott Cheloha <cheloha@linux.ibm.com>
+Date:   Wed Aug 4 14:17:29 2021 -0500
+
+    pseries_platform: read /proc/cpuinfo once
+    
+    We only need to read /proc/cpuinfo once to determine which platform
+    we're running on.
+    
+    Signed-off-by: Scott Cheloha <cheloha@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
 powerpc-utils-1.3.9
 =====================================================================
 
