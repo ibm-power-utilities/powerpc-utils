@@ -180,7 +180,7 @@ int parse_sysfs_values(void)
 
 	spurr = idle_spurr = idle_purr = 0UL;
 
-	for (i = 0; cpu_sysfs_fds[i].spurr > 0; i++) {
+	for (i = 0; (i < threads_in_system) && (cpu_sysfs_fds[i].spurr >= 0); i++) {
 		rc = pread(cpu_sysfs_fds[i].spurr, (void *)line, sizeof(line), 0);
 		if (rc == -1) {
 			fprintf(stderr, "Failed to read /sys/devices/system/cpu/cpu%d/spurr\n",
