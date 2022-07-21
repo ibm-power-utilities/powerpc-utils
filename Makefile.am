@@ -63,7 +63,7 @@ sbin_SCRIPTS += scripts/smtstate
 man_MANS += man/smtstate.8
 EXTRA_DIST += systemd/smt_off.service.in \
 	systemd/smtstate.service.in \
-	systemd/hcn-init.service.in \
+	systemd/hcn-init.service.in.in \
 	scripts/smtstate.in \
 	var/lib/powerpc-utils/smt.state \
 	man/smtstate.8
@@ -223,17 +223,22 @@ install-exec-hook:
 
 if WITH_SYSTEMD
 install-data-hook:
+	for i in NetworkManager wicked ; do \
+		sed -e "s,@CM@,$${i},g" < systemd/hcn-init.service.in > systemd/hcn-init-$${i}.service ;\
+	done
 	$(MKDIR_P) $(DESTDIR)${systemd_unit_dir}
 	$(MKDIR_P) $(DESTDIR)/var/lib/@PACKAGE@
 	$(MKDIR_P) $(DESTDIR)/usr/lib/@PACKAGE@
 	$(INSTALL_DATA) systemd/smt_off.service $(DESTDIR)${systemd_unit_dir}/
 	$(INSTALL_DATA) systemd/smtstate.service $(DESTDIR)${systemd_unit_dir}/
-	$(INSTALL_DATA) systemd/hcn-init.service $(DESTDIR)${systemd_unit_dir}/
+	$(INSTALL_DATA) systemd/hcn-init-NetworkManager.service $(DESTDIR)${systemd_unit_dir}/
+	$(INSTALL_DATA) systemd/hcn-init-wicked.service $(DESTDIR)${systemd_unit_dir}/
 	$(INSTALL_DATA) var/lib/powerpc-utils/smt.state $(DESTDIR)/var/lib/@PACKAGE@/
 	$(INSTALL_SCRIPT) scripts/functions.suse $(DESTDIR)/usr/lib/@PACKAGE@/
 	$(INSTALL_SCRIPT) scripts/smtstate $(DESTDIR)@sbindir@
 	sed -i -e 's,$${exec_prefix},@prefix@,g' $(DESTDIR)${systemd_unit_dir}/smt_off.service
 	sed -i -e 's,$${exec_prefix},@prefix@,g' $(DESTDIR)${systemd_unit_dir}/smtstate.service
-	sed -i -e 's,$${exec_prefix},@prefix@,g' $(DESTDIR)${systemd_unit_dir}/hcn-init.service
+	sed -i -e 's,$${exec_prefix},@prefix@,g' $(DESTDIR)${systemd_unit_dir}/hcn-init-NetworkManager.service
+	sed -i -e 's,$${exec_prefix},@prefix@,g' $(DESTDIR)${systemd_unit_dir}/hcn-init-wicked.service
 	sed -i -e 's,$${exec_prefix},@prefix@,g' $(DESTDIR)@sbindir@/smtstate
 endif

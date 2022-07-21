@@ -89,7 +89,8 @@ Utilities for maintaining and servicing PowerPC systems.
 /var/lib/powerpc-utils/smt.state
 /lib/systemd/system/smtstate.service
 /lib/systemd/system/smt_off.service
-/lib/systemd/system/hcn-init.service
+/lib/systemd/system/hcn-init-NetworkManager.service
+/lib/systemd/system/hcn-init-wicked.service
 /usr/share/man/man8/smtstate.8.gz
 %endif
 
@@ -124,8 +125,10 @@ ln -sf /usr/share/man/man8/serv_config.8 usr/share/man/man8/uspchrp.8
 
 %if %{with systemd}
 systemctl daemon-reload
-systemctl start hcn-init.service
-systemctl enable hcn-init.service
+for i in NetworkManager wicked ; do
+	systemctl start hcn-init-${i}.service
+	systemctl enable hcn-init-${i}.service
+done
 # update the smt.state file with current SMT
 /usr/sbin/smtstate --save
 %endif
@@ -138,10 +141,12 @@ if [ "$svc" = "0" ]; then
     systemctl stop smtstate.service
     systemctl disable smtstate.service
 fi
-if systemctl is-enabled hcn-init.service |grep -q "enabled"; then
-	systemctl stop hcn-init.service
-	systemctl disable hcn-init.service
-fi
+for i in NetworkManager wicked ; do
+	if systemctl is-enabled hcn-init-${i}.service |grep -q "enabled"; then
+		systemctl stop hcn-init-${i}.service
+		systemctl disable hcn-init-${i}.service
+	fi
+done
 %endif
 
 %postun
