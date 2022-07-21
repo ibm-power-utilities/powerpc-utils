@@ -1,0 +1,13 @@
+[Unit]
+Description=hybrid virtual network scan and config for @CM@
+After=@CM@.service
+Requisite=@CM@.service
+PartOf=@CM@.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=@sbindir@/hcnmgr -s
+
+[Install]
+WantedBy=@CM@.service
