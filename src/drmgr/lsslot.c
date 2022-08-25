@@ -741,7 +741,7 @@ int print_drconf_mem(struct lmb_list_head *lmb_list)
 	if (usr_drc_name)
 		drc_index = strtol(usr_drc_name, NULL, 0);
 
-	printf("Dynamic Reconfiguration Memory (LMB size 0x%x)\n",
+	printf("Dynamic Reconfiguration Memory (LMB size 0x%"PRIx64")\n",
 	       lmb_list->lmbs->lmb_size);
 
 	for (lmb = lmb_list->lmbs; lmb; lmb = lmb->next) {
@@ -808,7 +808,7 @@ int lsslot_chrp_mem(void)
 	if (lmb_list->drconf_buf) {
 		print_drconf_mem(lmb_list);
 	} else {
-		printf("lmb size: 0x%x\n", lmb_list->lmbs->lmb_size);
+		printf("lmb size: 0x%"PRIx64"\n", lmb_list->lmbs->lmb_size);
 		printf("%-20s  %-5s  %c  %s\n", "Memory Node", "Name", 'R',
 		       "Sections");
 		printf("%-20s  %-5s  %c  %s\n", "-----------", "----", '-',

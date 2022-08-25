@@ -33,7 +33,7 @@
 #include "drmem.h"
 #include "common_numa.h"
 
-int block_sz_bytes = 0;
+uint64_t block_sz_bytes = 0;
 static char *state_strs[] = {"offline", "online"};
 
 static char *usagestr = "-c mem {-a | -r} {-q <quantity> -p {variable_weight | ent_capacity} | {-q <quantity> | -s [<drc_name> | <drc_index>]}}";
@@ -118,7 +118,7 @@ free_lmbs(struct lmb_list_head *lmb_list)
 static int
 get_mem_scns(struct dr_node *lmb)
 {
-	uint32_t lmb_sz = lmb->lmb_size;
+	uint64_t lmb_sz = lmb->lmb_size;
 	uint64_t phys_addr = lmb->lmb_address;
 	uint32_t mem_scn;
 	int rc = 0;

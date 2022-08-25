@@ -58,7 +58,7 @@ struct drconf_mem_v2 {
 #define LMB_REVERSE_SORT	1
 #define LMB_RANDOM_SORT		2
 
-extern int block_sz_bytes;
+extern uint64_t block_sz_bytes;
 
 struct lmb_list_head *get_lmbs(unsigned int);
 void free_lmbs(struct lmb_list_head *);

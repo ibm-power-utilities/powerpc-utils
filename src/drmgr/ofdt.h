@@ -94,7 +94,7 @@ struct dr_node {
 	union {
 		struct mem_info {
 			uint64_t	_address;
-			uint32_t	_lmb_size;
+			uint64_t	_lmb_size;
 			uint32_t	_lmb_aa_index;
 			struct mem_scn	*_mem_scns;
 			struct of_node	*_of_node;
