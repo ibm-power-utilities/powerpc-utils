@@ -718,6 +718,16 @@ void get_capped_mode(struct sysentry *se, char *buf)
 	sprintf(buf, "%s", value);
 }
 
+void get_dedicated_mode(struct sysentry *se, char *buf)
+{
+	const char *value = "Capped";
+
+	if (se->value[0] == '1')
+		value = "Donating";
+
+	sprintf(buf, "%s", value);
+}
+
 void get_percent_entry(struct sysentry *se, char *buf)
 {
 	float value;
@@ -1057,7 +1067,10 @@ void print_system_configuration(void)
 	get_sysdata("shared_processor_mode", &descr, value);
 	offset = sprintf(buf, "type=%s ", value);
 	sprintf(type, "%s", value);
-	get_sysdata("capped", &descr, value);
+	if (!strcmp(value, "Dedicated"))
+		get_sysdata("DedDonMode", &descr, value);
+	else
+		get_sysdata("capped", &descr, value);
 	offset += sprintf(buf + offset, "mode=%s ", value);
 	get_sysdata("smt_state", &descr, value);
 	offset += sprintf(buf + offset, "smt=%s ", value);

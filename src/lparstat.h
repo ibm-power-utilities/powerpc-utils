@@ -47,6 +47,7 @@ typedef struct cpu_sysfs_file_desc cpu_sysfs_fd;
 
 extern void get_smt_state(struct sysentry *, char *);
 extern void get_capped_mode(struct sysentry *, char *);
+extern void get_dedicated_mode(struct sysentry *, char *);
 extern void get_memory_mode(struct sysentry *, char *);
 extern void get_percent_entry(struct sysentry *, char *);
 extern void get_phys_cpu_percentage(struct sysentry *, char *);
@@ -110,7 +111,8 @@ struct sysentry system_data[] = {
 	{.name = "DesVarCapWt",
 	 .descr = "Desired Variable Capacity Weight"},
 	{.name = "DedDonMode",
-	 .descr = "Dedicated Donation Mode"},
+	 .descr = "Dedicated Donation Mode",
+	 .get = &get_dedicated_mode},
 	{.name = "partition_entitled_capacity",
 	 .descr = "Partition Entitled Capacity"},
 	{.name = "system_active_processors",
