@@ -756,7 +756,7 @@ int print_drconf_mem(struct lmb_list_head *lmb_list)
 		printf("%s: %s\n", lmb->drc_name,
 		       lmb->is_owned ? "" : "Not Owned");
 
-		printf("    DRC Index: %x        Address: %"PRIu64"\n",
+		printf("    DRC Index: %x        Address: %"PRIx64"\n",
 		       lmb->drc_index, lmb->lmb_address);
 		printf("    Removable: %s             Associativity: ",
 		       lmb->is_removable ? "Yes" : "No ");
