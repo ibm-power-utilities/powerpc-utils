@@ -695,7 +695,6 @@ void post_mobility_update(void)
 int drmig_chrp_pmig(void)
 {
 	int rc;
-	char sys_src[20];
 	uint64_t stream_val;
 
 	/* Ensure that this partition is migratable/mobile */
@@ -732,10 +731,6 @@ int drmig_chrp_pmig(void)
 		say(ERROR, "Invalid streamid specified: %s\n", strerror(errno));
 		return -1;
 	}
-	
-	/* Get the ID of the original system, for later logging */
-	get_str_attribute(OFDT_BASE, "system-id", sys_src, 20);
-	sleep(5);
 
 	/* Now do the actual migration */
 	do {
