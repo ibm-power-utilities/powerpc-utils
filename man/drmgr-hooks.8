@@ -1,0 +1,82 @@
+.\"
+.\" Copyright (C) 2022 International Business Machines
+.\"
+.TH DRMGR-HOOKS 8 "May 24, 2022" Linux "Linux on Power Service Tools"
+.SH NAME
+drmgr\-hooks \- Hooks run by drmgr
+.SH DESCRIPTION
+When
+.B drmgr
+is run to perform PowerVM Dynamic Logical Partitioning (DLPAR) operations,
+a set of hooks may be triggered to validate, and, or be aware of the incoming operation.
+.P
+Not all the DLPAR operations are providing hook calls.
+Currently only the LPAR Migration operation (LPM) is concerned.
+.P
+The hooks are executable files stored in a directory named "DRC TYPE" in
+.IR /etc/drmgr.d/ .
+For instance, hooks run when a LPAR migration is done are stored in
+.IR /etc/drmgr.d/pmig .
+.P
+Hook files can be symbolic links to executable files. All the hooks can be stored in
+.IR /etc/drmgr.d
+and linked into multiple directories to provide multiple DRC type's hooks.
+.SH ARGUMENTS
+.P
+Hooks are called without any arguments but with  at least these 2 environment variable set:
+.TP
+.BI "DRC_TYPE"
+The Dynamic reconfiguration connector type to act upon from the following list:
+.BR pmig ", " pci ", " cpu ", " mem ", " port ", " slot ", " phb "."
+.TP
+.BI "PHASE"
+The phase of the operation from the following list:
+.BR check ", " undocheck ", " pre ", " post "."
+.SH LPAR MIGRATION
+.P
+When a LPAR migration is initiated the
+.B check
+phase is first triggered. Hooks called at check phase may returned a non zero value to prevent the migration operation to happen.
+The error messages displayed in
+.BR STDOUT " or " STDERR
+would be reported to the end user through the HMC.
+.P
+If the
+.B check
+phase has failed, because at least one hook has returned a non null value, the
+.B undocheck
+phase is launched. Return value for the
+.B
+undocheck
+phase is ignored.
+.P
+If the
+.B check
+phase succeeded, the
+.BR pre " and later " post
+phases are triggered. Returned values for these 2 phases are ignored, and the
+.B post
+phase is triggered even if the LPM operation has failed.
+.SH ENVIRONMENT
+.P
+The drmgr's hooks are called while holding the DLPAR lock, so any other
+DLPAR operation initiated from a hook is expected to fail.
+.P
+The hooks standard input
+.B STDIN
+is redirected to
+.I /dev/null
+while STDOUT and STDERR are redirected to pipes.
+The outputs done in these pipes are reported to the end user when a hook has returned an error value and that error value is not ignored (e.g in the LPM, the
+.B check
+phase but not the
+.BR pre "or " post
+phase)
+.P
+Except the variables specified in the ARGUMENTS section, all the environment variables are unset before calling the hook.
+.SH FILES
+.IR /etc/drmgr.d/pmig/
+.SH AUTHOR
+Laurent Dufour <ldufour@linux.ibm.com>
+.SH SEE ALSO
+.BR drmgr (8)

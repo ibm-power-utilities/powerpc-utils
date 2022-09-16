@@ -48,6 +48,7 @@ man_MANS = \
 	man/vcpustat.8 \
 	man/rtas_dbg.8 \
 	man/drmgr.8 \
+	man/drmgr-hooks.8 \
 	man/lparnumascore.8
 
 EXTRA_DIST += $(bin_SCRIPTS) $(sbin_SCRIPTS) $(man_MANS)
