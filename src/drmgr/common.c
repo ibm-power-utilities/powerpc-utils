@@ -174,7 +174,7 @@ inline int dr_init(void)
 	}
 
 
-	log_fd = open(DR_LOG_PATH, O_RDWR | O_CREAT | O_APPEND,
+	log_fd = open(DR_LOG_PATH, O_RDWR | O_CREAT | O_APPEND | O_CLOEXEC,
 		      S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 	if (log_fd == -1) {
 		log_fd = 0;
@@ -314,7 +314,7 @@ int dr_lock(void)
 	mode_t          old_mode;
 
 	old_mode = umask(0);
-	dr_lock_fd = open(DR_LOCK_FILE, O_RDWR | O_CREAT,
+	dr_lock_fd = open(DR_LOCK_FILE, O_RDWR | O_CREAT | O_CLOEXEC,
 			  S_IRUSR | S_IRGRP | S_IROTH);
 	if (dr_lock_fd < 0)
 		return -1;
@@ -1496,7 +1496,7 @@ int do_kernel_dlpar_common(const char *cmd, int cmdlen, int silent_error)
 
 	/* write to file */
 	if (fd == -1) {
-		fd = open(SYSFS_DLPAR_FILE, O_WRONLY);
+		fd = open(SYSFS_DLPAR_FILE, O_WRONLY | O_CLOEXEC);
 		if (fd < 0) {
 			say(ERROR,
 			    "Could not open %s to initiate DLPAR request\n",
