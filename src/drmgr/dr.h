@@ -70,6 +70,8 @@ enum drc_type {DRC_TYPE_NONE, DRC_TYPE_PCI, DRC_TYPE_SLOT, DRC_TYPE_PHB,
 	       DRC_TYPE_CPU, DRC_TYPE_MEM, DRC_TYPE_PORT,
 	       DRC_TYPE_HIBERNATE, DRC_TYPE_MIGRATION, DRC_TYPE_ACC};
 
+enum hook_phase {HOOK_CHECK, HOOK_UNDOCHECK, HOOK_PRE, HOOK_POST};
+
 extern enum drmgr_action usr_action;
 extern int display_capabilities;
 extern int usr_slot_identification;
@@ -132,6 +134,8 @@ int mem_entitlement_capable(void);
 void print_dlpar_capabilities(void);
 
 void set_output_level(int);
+
+int run_hooks(enum drc_type drc_type, enum hook_phase phase);
 
 #define DR_BUF_SZ	256
 

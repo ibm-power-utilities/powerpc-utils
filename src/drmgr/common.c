@@ -49,6 +49,8 @@ char *remove_slot_fname = REMOVE_SLOT_FNAME;
 
 #define SYSFS_DLPAR_FILE	"/sys/kernel/dlpar"
 
+#define DR_SCRIPT_DIR	"/etc/drmgr.d"
+
 static int dr_lock_fd = 0;
 static long dr_timeout;
 
@@ -65,6 +67,13 @@ static char *drc_type_str[] = {
 	[DRC_TYPE_HIBERNATE]	= "phib",
 	[DRC_TYPE_MIGRATION]	= "pmig",
 	[DRC_TYPE_ACC]		= "acc",
+};
+
+static char *hook_phase_name[] = {
+	[HOOK_CHECK]		= "check",
+	[HOOK_UNDOCHECK]	= "undocheck",
+	[HOOK_PRE]		= "pre",
+	[HOOK_POST]		= "post",
 };
 
 /**
@@ -1546,3 +1555,138 @@ enum drc_type to_drc_type(const char *arg)
 	return DRC_TYPE_NONE;
 }
 
+static int run_one_hook(enum drc_type drc_type,	enum hook_phase phase,
+			const char *name)
+{
+	int rc;
+	pid_t child;
+
+	fflush(NULL);
+	child = fork();
+	if (child == -1) {
+		say(ERROR, "Can't fork to run a hook: %s\n", strerror(errno));
+		return -1;
+	}
+
+	if (child) {
+		/* Father side */
+		while (waitpid(child, &rc, 0) == -1) {
+			if (errno == EINTR)
+				continue;
+			say(ERROR, "waitpid error: %s\n", strerror(errno));
+			return -1;
+		}
+
+		if (WIFSIGNALED(rc)) {
+			say(INFO, "hook '%s' terminated by signal %d\n",
+			    name, WTERMSIG(rc));
+			rc = 1;
+		} else {
+			rc = WEXITSTATUS(rc);
+			say(INFO, "hook '%s' exited with status %d\n",
+			    name, rc);
+		}
+		return rc;
+	}
+
+
+	/* Child side */
+	say(DEBUG, "Running hook '%s' for phase %s (PID=%d)\n",
+	    name, hook_phase_name[phase], getpid());
+
+	if (chdir("/")) {
+		say(ERROR, "Can't change working directory to / : %s\n",
+		    strerror(errno));
+		exit(255);
+	}
+
+	if (clearenv() ||
+	    setenv("DRC_TYPE", drc_type_str[drc_type], 1) ||
+	    setenv("PHASE", hook_phase_name[phase], 1)) {
+		say(ERROR, "Can't set environment variables: %s\n",
+		    strerror(errno));
+		exit(255);
+	}
+
+	execl(name, name, (char *)NULL);
+	say(ERROR, "Can't exec hook %s : %s\n", strerror(errno));
+	exit(255);
+}
+
+static int is_file_or_link(const struct dirent *entry)
+{
+	if ((entry->d_type == DT_REG) || (entry->d_type == DT_LNK))
+		return 1;
+	return 0;
+}
+
+/*
+ * Run all executable hooks found in a given directory.
+ * Return 0 if all run script have returned 0 status.
+ */
+int run_hooks(enum drc_type drc_type, enum hook_phase phase)
+{
+	int rc = 0, fdd, num, i;
+	DIR *dir;
+	struct dirent **entries = NULL;
+
+	/* Sanity check */
+	if (drc_type <= DRC_TYPE_NONE || drc_type >= ARRAY_SIZE(drc_type_str)) {
+		say(ERROR, "Invalid DRC TYPE detected (%d)\n", drc_type);
+		return -1;
+	}
+
+	if (phase < HOOK_CHECK || phase > HOOK_POST) {
+		say(ERROR, "Invalid hook phase %d\n", phase);
+		return -1;
+	}
+
+	dir = opendir(DR_SCRIPT_DIR);
+	if (dir == NULL) {
+		if (errno == ENOENT)
+			return 0;
+		say(ERROR, "Can't open %s: %s\n", DR_SCRIPT_DIR,
+		    strerror(errno));
+		return -1;
+	}
+
+	fdd = dirfd(dir);
+	num = scandirat(fdd, drc_type_str[drc_type], &entries,
+			is_file_or_link, versionsort);
+	closedir(dir);
+
+	for (i = 0; i < num; i++) {
+		struct stat st;
+		struct dirent *entry = entries[i];
+		char *name;
+
+		if (asprintf(&name, "%s/%s/%s", DR_SCRIPT_DIR,
+			     drc_type_str[drc_type], entry->d_name) == -1) {
+			say(ERROR,
+			    "Can't allocate filename string (%zd bytes)\n",
+			    strlen(DR_SCRIPT_DIR) + 1 +
+			    strlen(drc_type_str[drc_type]) + 1 +
+			    strlen(entry->d_name) + 1);
+			rc = 1;
+			free(entry);
+			continue;
+		}
+
+		/*
+		 * Report error only in the case the hook itself fails.
+		 * Any other error (file is not executable etc.) is ignored.
+		 */
+		if (stat(name, &st))
+			say(WARN, "Can't stat file %s: %s\n",
+			    name, strerror(errno));
+		else if (S_ISREG(st.st_mode) && (st.st_mode & S_IXUSR) &&
+			 run_one_hook(drc_type, phase, name))
+			rc = 1;
+
+		free(name);
+		free(entry);
+	}
+
+	free(entries);
+	return rc;
+}
