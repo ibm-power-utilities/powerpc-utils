@@ -52,6 +52,21 @@ char *remove_slot_fname = REMOVE_SLOT_FNAME;
 static int dr_lock_fd = 0;
 static long dr_timeout;
 
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+
+static char *drc_type_str[] = {
+	[DRC_TYPE_NONE]		= "unknwon",
+	[DRC_TYPE_PCI]		= "pci",
+	[DRC_TYPE_SLOT]		= "slot",
+	[DRC_TYPE_PHB]		= "phb",
+	[DRC_TYPE_CPU]		= "cpu",
+	[DRC_TYPE_MEM]		= "mem",
+	[DRC_TYPE_PORT]		= "port",
+	[DRC_TYPE_HIBERNATE]	= "phib",
+	[DRC_TYPE_MIGRATION]	= "pmig",
+	[DRC_TYPE_ACC]		= "acc",
+};
+
 /**
  * set_output level
  * @brief Common routine to set the output level
@@ -1521,35 +1536,12 @@ int do_kernel_dlpar_common(const char *cmd, int cmdlen, int silent_error)
 
 enum drc_type to_drc_type(const char *arg)
 {
-	if (!strncmp(arg, "pci", 3))
-		return DRC_TYPE_PCI;
+	enum drc_type i;
 
-	if (!strncmp(arg, "slot", 4))
-		return DRC_TYPE_SLOT;
-
-	if (!strncmp(arg, "phb", 3))
-		return DRC_TYPE_PHB;
-
-	if (!strncmp(arg, "cpu", 3))
-		return DRC_TYPE_CPU;
-
-	if (!strncmp(arg, "mem", 3))
-		return DRC_TYPE_MEM;
-
-	if (!strncmp(arg, "port", 4))
-		return DRC_TYPE_PORT;
-
-	if (!strncmp(arg, "phib", 4))
-		return DRC_TYPE_HIBERNATE;
-
-	if (!strncmp(arg, "pmig", 4))
-		return DRC_TYPE_MIGRATION;
-
-	/*
-	 * Accelerator
-	 */
-	if (!strncmp(arg, "acc", 3))
-		return DRC_TYPE_ACC;
+	for (i = DRC_TYPE_NONE + 1; i < ARRAY_SIZE(drc_type_str); i++) {
+		if (!strcmp(arg, drc_type_str[i]))
+			return i;
+	}
 
 	return DRC_TYPE_NONE;
 }
