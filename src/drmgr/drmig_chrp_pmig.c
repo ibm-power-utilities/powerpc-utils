@@ -753,8 +753,5 @@ int drmig_chrp_pmig(void)
 
 	post_mobility_update();
 
-	say(DEBUG, "Refreshing RMC via refrsrc\n");
-	rc = system("/usr/sbin/rsct/bin/refrsrc IBM.ManagementServer");
-
 	return 0;
 }
