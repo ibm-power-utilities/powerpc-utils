@@ -141,7 +141,7 @@ void print_stats(struct vcpudispatch_stat stats1[],
 	char raw_header1[] = "%22s %43s | %32s\n";
 	char raw_header2[] = "%-7s | %10s | %10s %10s %10s %10s | %10s %10s %10s\n";
 	char raw_fmt[] = "cpu%-4d | %10d | %10d %10d %10d %10d | %10d %10d %10d\n";
-	struct vcpudispatch_stat stat;
+	struct vcpudispatch_stat stat = {};
 	int i;
 
 	if (stats_off) {
