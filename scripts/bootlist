@@ -327,16 +327,10 @@ add_nvmf()
 		cd $dir
 		link=`get_link "device"`
 		cd $link
-		for slave in $PWD/*; do
-			slavedev=${slave##*/}
-			if [[ "$slavedev" == nvme[0-9]* ]] ; then
-				cd $slave
-				res=`$FIND . -name "${ctrl_name}*"`
-				if [[ ${#res} != 0 ]]; then
-					LOGICAL_NAMES[$ctr]=${slavedev}
-					ctr=$[$ctr + 1]
-				fi
-			fi
+        for slave in `ls -d $PWD/nvme*`; do
+            slavedev=${slave##*/}
+            LOGICAL_NAMES[$ctr]=${slavedev}
+            ctr=$[$ctr + 1]
 		done
 	done
 
@@ -502,11 +496,17 @@ while [[ -n $1 ]]; do
             ctrl_name="${ctrl_name%n[0-9]*}"
             is_nvmf=$(is_nvmf_device $ctrl_name)
             if [[ $is_nvmf = "yes" ]]; then
-		if [[ "$1" == *"nvme-of"* ]]; then
-			master_of_path=$1
-		else
-			master_of_path=`get_of_device_name $1`
-		fi
+                if [[ "$1" == *"nvme-of"* ]]; then
+                    master_of_path=$1
+                else
+                    master_of_path=`get_of_device_name $1`
+                fi
+
+                if [[ -z $master_of_path ]]; then
+                    echo "Device $1 does not appear to be valid." >&2
+                    exit 1
+                fi
+
                 namespace_base=${master_of_path##*/}
                 DEVTYPE="nvme-of"
                 add_nvmf $ctrl_name

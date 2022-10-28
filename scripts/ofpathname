@@ -1875,19 +1875,28 @@ of2l_nvmf()
         fi
     done
 
+    local ana_dir
     if [[ -n $LOGICAL_DEVNAME ]] && \
        [[ -n $nsid ]]; then
-        for dir in `$FIND /sys/block -name "${LOGICAL_DEVNAME}n[0-9]*"`; do
-            cd $dir
-
-            local devnsid=`$CAT ./nsid 2>/dev/null`
-            devnsid=`echo "obase=16; $devnsid" |bc`
-            if [[ $devnsid = $nsid ]]; then
-                found=1
-                LOGICAL_DEVNAME="${dir##*/}"
-                break
-            fi
+        for ana_dir in `$FIND /sys/devices/virtual/nvme-fabrics -name "$LOGICAL_DEVNAME"`; do
+            cd $ana_dir
+            link=`get_link "device"`
+            cd $link
+            for ana_name in `ls -d $PWD/nvme*`; do
+                for dev_name in `$FIND /sys/block -name "${ana_name##*/}n[0-9]*"`; do
+                    cd $dev_name
+                    local devnsid=`$CAT ./nsid 2>/dev/null`
+                    devnsid=`echo "obase=16; $devnsid" |bc`
+                    if [[ $devnsid = $nsid ]]; then
+                        found=1
+                        NS_ID="${dev_name##*n}"
+                        LOGICAL_DEVNAME="${LOGICAL_DEVNAME}n${NS_ID}"
+                        break
+                    fi
+                 done
+            done
         done
+        
     	 if [[ $found -eq 0 ]]; then
             LOGICAL_DEVNAME=""
          fi
