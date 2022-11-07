@@ -375,7 +375,8 @@ do_config_vdevice_nm() {
 	# if the device is primary, and link is up, force it as primary se
 	if [[ $MODE == "primary" ]]; then
 		hcnlog INFO "Change bonding primary slave to $DEVNAME"
-		echo "$DEVNAME" >"$BOND_PATH"/primary
+		nmcli con mod id "$BONDNAME" +bond.options "primary=$DEVNAME"
+		nmcli con up "$BONDNAME"
 	fi
 
 	hcnlog DEBUG "do_config_vdevice: exit"
