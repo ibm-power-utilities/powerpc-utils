@@ -809,7 +809,7 @@ l2of_nvmf()
         else
             goto_dir $res
             devnsid=`$CAT $PWD/nsid | tr -d '\000'`
-            devnsid=`echo "obase=16; $devnsid" |bc`
+	    devnsid=$(printf "%x" $devnsid)
             OF_PATH="$OF_PATH/namespace@$devnsid"
         fi
     fi
@@ -1886,7 +1886,7 @@ of2l_nvmf()
                 for dev_name in `$FIND /sys/block -name "${ana_name##*/}n[0-9]*"`; do
                     cd $dev_name
                     local devnsid=`$CAT ./nsid 2>/dev/null`
-                    devnsid=`echo "obase=16; $devnsid" |bc`
+		    devnsid=$(printf "%x" $devnsid)
                     if [[ $devnsid = $nsid ]]; then
                         found=1
                         NS_ID="${dev_name##*n}"
