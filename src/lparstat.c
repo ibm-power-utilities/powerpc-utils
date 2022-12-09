@@ -492,6 +492,15 @@ void get_cpu_util_purr(struct sysentry *unused_se, char *buf)
 	delta_purr = get_delta_value("purr");
 	delta_idle_purr = get_delta_value("idle_purr");
 
+	/*
+	 * Given that these values are read from different
+	 * sources (purr from lparcfg and idle_purr from sysfs),
+	 * a small variation in the values is possible.
+	 * In such cases, round down delta_idle_purr to delta_purr.
+	 */
+	if (delta_idle_purr > delta_purr)
+		delta_idle_purr = delta_purr;
+
 	physc = (delta_purr - delta_idle_purr) / delta_tb;
 	physc *= 100.00;
 
@@ -506,6 +515,15 @@ void get_cpu_idle_purr(struct sysentry *unused_se, char *buf)
 	delta_tb = get_scaled_tb();
 	delta_purr = get_delta_value("purr");
 	delta_idle_purr = get_delta_value("idle_purr");
+
+	/*
+	 * Given that these values are read from different
+	 * sources (purr from lparcfg and idle_purr from sysfs),
+	 * a small variation in the values is possible.
+	 * In such cases, round down delta_idle_purr to delta_purr.
+	 */
+	if (delta_idle_purr > delta_purr)
+		delta_idle_purr = delta_purr;
 
 	physc = (delta_purr - delta_idle_purr) / delta_tb;
 	idle = (delta_purr / delta_tb) - physc;
