@@ -121,7 +121,7 @@ hotplug_port(int action, struct dr_node *hea, struct dr_node *port)
 
 	say(DEBUG, "Attempting to hotplug %s Port.\n", action_str);
 	
-	if (! hea->sysfs_dev_path) {
+	if (!strlen(hea->sysfs_dev_path)) {
 		say(DEBUG, "Non-existant sysfs dev path for Port, hotplug "
 		    "failed.\n");
 		return -EINVAL;
