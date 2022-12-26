@@ -462,7 +462,7 @@ devspec_check_node(struct dr_node *node, char *sysfs_path,
 
 	*found = 0;
 
-	if (node->ofdt_path == NULL)
+	if (!strlen(node->ofdt_path))
 		return 0;
 
 	if (! strcmp(full_of_path, node->ofdt_path)) {
