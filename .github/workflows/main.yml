@@ -86,7 +86,7 @@ jobs:
 
     - name: configure
       run: |
-       ./configure --prefix=/usr --host=${{ matrix.host }} --disable-werror --build=x86_64-linux-gnu CFLAGS='-O2 -g'
+       ./configure --prefix=/usr --host=${{ matrix.host }} --enable-werror --build=x86_64-linux-gnu CFLAGS='-O2 -g'
 
     - name: Collect config.log
       if: ${{ failure() }}
@@ -100,4 +100,4 @@ jobs:
 
     - name: distcheck
       run: |
-        make distcheck V=1 DISTCHECK_CONFIGURE_FLAGS='--disable-werror --host=${{ matrix.host }}'
+        make distcheck V=1 DISTCHECK_CONFIGURE_FLAGS='--enable-werror --host=${{ matrix.host }}'
