@@ -84,7 +84,7 @@ AC_SUBST(LIBDL)
 # check for systemd
 systemd_unit_dir=/lib/systemd/system
 AC_ARG_WITH([systemd],
-	[AC_HELP_STRING([--with-systemd@<:@=DIR@:>@],
+	[AS_HELP_STRING([--with-systemd@<:@=DIR@:>@],
                     [install systemd unit files (not default and unit dir is /lib/systemd/system)])],
 	[if test "$withval" = "no"; then
 		with_systemd=0
