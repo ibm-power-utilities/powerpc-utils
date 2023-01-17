@@ -380,7 +380,7 @@ static char *recurse_hunt_file_contents(char *base_path, const char *filename,
  */
 static int hunt_loc_code(void)
 {
-	char path[BUFSZ];
+	char path[BUFSZ-5];
 	char *match_dir;
 	char *devspec;
 	char *at;

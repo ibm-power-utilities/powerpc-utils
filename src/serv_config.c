@@ -707,9 +707,8 @@ retrieve_value(struct service_var *var, char *buf, size_t size) {
 				byte_to_string(param[2], buf, size);
 			}
 			else {
-				strncpy(buf, param+2, ((size>ret_size)?
-					ret_size:size));
-				buf[ret_size] = '\0';
+				strncpy(buf, param+2, size-2);
+				buf[((size>ret_size)?ret_size:size)] = '\0';
 			}
 			return RC_SUCCESS;
 		case -1:	/* hardware error */
