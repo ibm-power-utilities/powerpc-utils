@@ -199,12 +199,11 @@ int ioa_bus_error_arg(char arg, char *optarg)
  */
 static uint32_t get_config_addr_from_reg(char *devpath)
 {
-	char path[BUFSZ];
+	char *path = devpath;
 	char *buf;
 	uint32_t *be_caddr;
 	uint32_t caddr = 0;
 
-	strncpy(path, devpath, BUFSZ-5);
 	strcat(path, "/reg");
 
 	buf = read_file(path, NULL);
