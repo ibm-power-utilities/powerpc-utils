@@ -687,7 +687,7 @@ retrieve_value(struct service_var *var, char *buf, size_t size) {
 			if (var->sysparm_num == USE_CALL_HOME_SYSPARM)
 				break;
 
-			ret_size = be16toh(*param);
+			ret_size = be16toh(*((uint16_t *)param));
 			if (!strcmp(var->nvram_var, "sp-ri-pon") ||
 				!strcmp(var->nvram_var, "sp-remote-pon") ||
 				!strcmp(var->nvram_var, "sp-sen")) {
