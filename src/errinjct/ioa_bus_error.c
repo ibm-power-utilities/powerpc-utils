@@ -50,7 +50,7 @@ static char *loc_code;       /**< location code of adapter to inject to */
 
 #define IOA_BUSERR_MAXFUNC		19
 
-#define BUFSZ 4000
+#define BUFSZ 4096
 
 /**
  * ioa_buserr_fnames
