@@ -194,20 +194,16 @@ int ioa_bus_error_arg(char arg, char *optarg)
  * Given the directory /proc/device-tree/pci@...,
  * yank out the config address out of the reg file
  *
- * @param devpath device-tree path of the reg file
+ * @param regpath device-tree path of the reg file
  * @return 0 on failure, config address (!0) on success
  */
-static uint32_t get_config_addr_from_reg(char *devpath)
+static uint32_t get_config_addr_from_reg(char *regpath)
 {
-	char path[BUFSZ];
 	char *buf;
 	uint32_t *be_caddr;
 	uint32_t caddr = 0;
 
-	strncpy(path, devpath, BUFSZ-5);
-	strcat(path, "/reg");
-
-	buf = read_file(path, NULL);
+	buf = read_file(regpath, NULL);
 	if (!buf)
 		return 1;
 
@@ -272,6 +268,7 @@ static int parse_sysfsname(void)
 	/* Obtain the config address from the device-tree reg file */
 	strcpy(path, "/proc/device-tree/");
 	strcat(path, devspec);
+	strcat(path, "/reg");
 	addr = get_config_addr_from_reg(path);
 	if (addr) {
 		config_addr = addr;
@@ -412,6 +409,7 @@ static int hunt_loc_code(void)
 	phb_id_lo = phb_id & 0xFFFFFFFF;
 
 	/* Try to get the config address from the dev-tree reg file. */
+	strcat(path, "/reg");
 	addr = get_config_addr_from_reg(path);
 	if (addr) {
 		config_addr = addr;
