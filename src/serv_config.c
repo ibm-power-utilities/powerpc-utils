@@ -662,6 +662,7 @@ retrieve_value(struct service_var *var, char *buf, size_t size) {
 	char err_buf[ERR_BUF_SIZE];
 	char param[BUF_SIZE];
 	uint16_t ret_size;
+	size_t cpy_size = (size > (BUF_SIZE - 2) ? BUF_SIZE - 2: size);
 
 	if (!no_rtas_get_sysparm && (var->sysparm_num != NO_SYSPARM_NUM))
 	{ 
@@ -707,8 +708,9 @@ retrieve_value(struct service_var *var, char *buf, size_t size) {
 				byte_to_string(param[2], buf, size);
 			}
 			else {
-				strncpy(buf, param+2, ((size>ret_size)?
-					ret_size:size));
+				memcpy(buf, param+2, cpy_size);
+				ret_size = (cpy_size > ret_size) ?
+					    ret_size : cpy_size;
 				buf[ret_size] = '\0';
 			}
 			return RC_SUCCESS;
