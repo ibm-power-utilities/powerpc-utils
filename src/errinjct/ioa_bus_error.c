@@ -50,8 +50,6 @@ static char *loc_code;       /**< location code of adapter to inject to */
 
 #define IOA_BUSERR_MAXFUNC		19
 
-#define BUFSZ 4000
-
 /**
  * ioa_buserr_fnames
  * @brief list of IOA bus error functionalities
@@ -227,7 +225,7 @@ static uint32_t get_config_addr_from_reg(char *regpath)
  */
 static int parse_sysfsname(void)
 {
-	char path[BUFSZ];
+	char path[PATH_MAX];
 	char *devspec;
 	char *at, *nl;
 	uint32_t addr;
@@ -304,7 +302,7 @@ static char *recurse_hunt_file_contents(char *base_path, const char *filename,
 					const char *desired_file_contents,
 					int chase_link_cnt)
 {
-	char path[BUFSZ];
+	char path[PATH_MAX];
 	char *loco;
 
 	strcpy(path, base_path);
@@ -377,7 +375,7 @@ static char *recurse_hunt_file_contents(char *base_path, const char *filename,
  */
 static int hunt_loc_code(void)
 {
-	char path[BUFSZ];
+	char path[PATH_MAX];
 	char *match_dir;
 	char *devspec;
 	char *at;
