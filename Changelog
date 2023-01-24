@@ -1,3 +1,541 @@
+powerpc-utils-1.3.11
+=====================================================================
+commit fc3b6044401e5625bc825d594f8b89fda49b6596
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Tue Jan 17 17:32:10 2023 -0800
+
+    ci: rev Ubuntu action runner from 20.04 -> 22.04
+    
+    Move the CI runner from previous LTS release to the current LTS release.
+    This as the added benefit of moving the gcc-toolchain from gcc-9 to
+    gcc-11.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 72b1a6e9b739382716b4c06829d3f99555be398e
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Wed Jan 18 16:19:48 2023 -0800
+
+    errinjct: use PATH_MAX instead of BUFSZ
+    
+    The arbitary BUFSZ macro of 4000 is less than that of PATH_MAX defined
+    by Linux. BUFSZ is only used for pathname buffer allocations. As such
+    remove BUFSZ macro and use PATH_MAX instead.
+    
+    Suggested-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 21b6e512edd651c1297794c1eb4c70f8adb143fc
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Wed Jan 18 15:46:27 2023 -0800
+
+    errinjct: pass full device reg path to get_config_addr_from_reg()
+    
+    The following string truncation error is reported by gcc-11 and gcc-12
+    toolchains:
+    
+    In file included from /usr/powerpc-linux-gnu/include/string.h:535,
+            from src/errinjct/ioa_bus_error.c:34:
+    
+    In function ‘strncpy’,
+            inlined from ‘get_config_addr_from_reg’ at src/errinjct/ioa_bus_error.c:207:2,
+            inlined from ‘hunt_loc_code’ at src/errinjct/ioa_bus_error.c:415:9:
+    Warning: /usr/powerpc-linux-gnu/include/bits/string_fortified.h:95:10: warning: ‘__builtin_strncpy’ output may be truncated copying 3995 bytes from a string of length 3999 [-Wstringop-truncation]
+    
+    This is the result of the caller defining a buffer of BUFSZ, but the
+    callee only copying BUFSZ-5 of data into a new string so that there is
+    room to strcat "/reg" to the resulting pathname. We can save a strncpy
+    and static buffer allocation by doing the strcat of "/reg" to the
+    pathname before calling get_conig_addr_from_reg() which in general
+    appears to be inlined anyways.
+    
+    Reported-by: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+    Reviewed-by: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit a540ff88416413b080e572c074e57aad362c3e50
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Wed Jan 18 15:28:13 2023 -0800
+
+    serv_config: cast param to correct size before byte swap
+    
+    The first two bytes of the param buffer returned by the
+    ibm,get-system-parameter RTAS call contain the the length of the
+    remaining data in the buffer. However, param is a char buffer and
+    as such the current code attempts to use be16toh which only gets one
+    byte of data. Type cast param to (uint16_t *) before the dereference to
+    ensure we get both bytes of data. This fixes the following string
+    truncation error with gcc-11 and gcc-12 toolchains:
+    
+    In file included from /usr/powerpc-linux-gnu/include/string.h:535,
+                     from src/serv_config.c:50:
+    In function ‘strncpy’,
+        inlined from ‘retrieve_value’ at src/serv_config.c:710:5:
+    Error: /usr/powerpc-linux-gnu/include/bits/string_fortified.h:95:10: error: ‘__builtin_strncpy’ output may be truncated copying between 0 and 255 bytes from a string of length 4997 [-Werror=stringop-truncation]
+    
+    Reported-by: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+    Reviewed-by: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 73b1bdf7452e1825c797dcf708fd1b9e6b518ca5
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Wed Jan 4 16:20:55 2023 -0800
+
+    configure.ac: replace deprecated AC_HELP_STRING macro
+    
+    AC_HELP_STRING has been deprecated in favor of AS_HELP_STRING.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit b661a2e221232c7064efa6779ac82c6f1399d0b4
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Wed Jan 4 16:16:51 2023 -0800
+
+    ci: update checkout@v2 action to checkout@v3
+    
+    Node.js 12 actions are deprecated. Update checkout action to v3 which
+    uses Node.js 16. In response to the following CI warning:
+    
+    Node.js 12 actions are deprecated. For more information see:
+    https://github.blog/changelog/2022-09-22-github-actions-all-actions-will-begin-running-on-node16-instead-of-node12/.
+    Please update the following actions to use Node.js 16: actions/checkout@v2
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 52df81cc1b937b235f7dbdc1dd92e38b99def1c7
+Author: Nathan Lynch <nathanl@linux.ibm.com>
+Date:   Wed Jan 4 14:02:52 2023 -0600
+
+    configure.ac: disable -Werror by default
+    
+    Enabling -Werror should be opt-in and done only in known
+    environments (e.g. a seldom-changing build configuration in
+    CI). Making -Werror the default for our build configuration causes
+    more pain for downstream projects than it's worth. It remains enabled
+    in the project CI (see previous commit).
+    
+    Signed-off-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 57a8c1c4de7c5de7606b15b58691d0f81aa1158b
+Author: Nathan Lynch <nathanl@linux.ibm.com>
+Date:   Wed Jan 4 14:02:51 2023 -0600
+
+    CI: enable -Werror for builds
+    
+    The CI builds all seem to be warning-free. Ensure we fail runs when
+    new warnings are introduced.
+    
+    Signed-off-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 3607e6dabdef641c363233eddd3a1cf8c2e5c6d8
+Author: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+Date:   Mon Dec 26 10:54:38 2022 +0100
+
+    drmgr/drslot_chrp_hea: Prefer strlen() to check for valid string length
+    
+    This fixes the following warning when building with gcc-12 that is
+    the result of sysfs_dev_path being a fixed-sized array which means
+    that (char *)sysfs_dev_path never be NULL:
+    
+    src/drmgr/drslot_chrp_hea.c: In function 'hotplug_port':
+    src/drmgr/drslot_chrp_hea.c:124:13: error: the comparison will always evaluate as 'true' for the address of 'sysfs_dev_path' will never be NULL [-Werror=address]
+      124 |         if (! hea->sysfs_dev_path) {
+          |             ^
+    In file included from src/drmgr/drpci.h:25,
+                     from src/drmgr/rtas_calls.h:25,
+                     from src/drmgr/dr.h:30,
+                     from src/drmgr/drslot_chrp_hea.c:31:
+    src/drmgr/ofdt.h:84:25: note: 'sysfs_dev_path' declared here
+       84 |         char            sysfs_dev_path[DR_PATH_MAX];
+          |                         ^~~~~~~~~~~~~~
+    
+    Signed-off-by: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+    Reviewed-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 5de0a4a070981b5ee005f2242b31db5422be297a
+Author: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+Date:   Mon Dec 26 10:54:37 2022 +0100
+
+    drmgr/common_pci: Prefer strlen() to check for valid string length
+    
+    This fixes the following warning when building with gcc-12 that is
+    the result of ofdt_path being a fixed-sized array which means that
+    (char *)ofdt_path never be NULL:
+    
+    src/drmgr/common_pci.c: In function 'devspec_check_node':
+    src/drmgr/common_pci.c:465:29: error: the comparison will always evaluate as 'false' for the address of 'ofdt_path' will never be NULL [-Werror=address]
+      465 |         if (node->ofdt_path == NULL)
+          |                             ^~
+    In file included from src/drmgr/drpci.h:25,
+                     from src/drmgr/rtas_calls.h:25,
+                     from src/drmgr/dr.h:30,
+                     from src/drmgr/common_pci.c:31:
+    src/drmgr/ofdt.h:78:25: note: 'ofdt_path' declared here
+       78 |         char            ofdt_path[DR_PATH_MAX];
+          |
+    
+    Signed-off-by: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+    Reviewed-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit aef8f14ed8b241ab66d88fb9a5aeefe47a847267
+Author: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+Date:   Mon Dec 26 10:54:36 2022 +0100
+
+    vcpustat: Add missing field initialization to quell compiler warning
+    
+    This fixes the following compiler warning when building with gcc-12:
+    
+    In file included from /usr/include/stdio.h:906,
+                     from src/vcpustat.c:26:
+    In function 'printf',
+        inlined from 'print_stats' at src/vcpustat.c:182:4:
+    /usr/include/powerpc64-linux-gnu/bits/stdio2.h:86:10: error: 'stat.far_numa_node' may be used uninitialized [-Werror=maybe-uninitialized]
+       86 |   return __printf_chk (__USE_FORTIFY_LEVEL - 1, __fmt, __va_arg_pack ());
+          |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    src/vcpustat.c: In function 'print_stats':
+    src/vcpustat.c:144:34: note: 'stat.far_numa_node' was declared here
+      144 |         struct vcpudispatch_stat stat;
+          |                                  ^~~~
+    
+    Signed-off-by: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+    Reviewed-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 04e5c9646296e1f12048723bba4cee663c3f74ed
+Author: Wen Xiong <wenxiong@linux.ibm.com>
+Date:   Thu Dec 1 05:22:37 2022 -0600
+
+    ofpathname: Handle nsid as hex in nvmf boot/install support
+    
+    Didn't handle nsid correctly in nvmf boot/install support.
+    Need to handle it as hexadecimal number
+    
+    For example,
+    /pci@800000020000132/fibre-channel@0,1/nvme-of/controller@50050768101935e5,ffff
+    :nqn=nqn.1986-03.com.ibm:nvme:2145.0000020420006CEA/namespace@26c
+    
+    26c should be a hexadecimal number.
+    
+    Signed-off-by: Wen Xiong <wenxiong@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 3847a1c25a640394c4afd2b8938ad21190bf5dbe
+Author: Wen Xiong <wenxiong@linux.ibm.com>
+Date:   Fri Oct 28 09:20:38 2022 -0500
+
+    Support multiple dev paths for a nvmf boot device
+    
+    This patch adds the support for multiple dev/of paths with a nvmf boot dev
+    
+    # bootlist -m normal -o nvme1n4
+    nvme1n4
+    nvme3n4
+    nvme5n4
+    nvme6n4
+    # bootlist -m normal -o
+    nvme1n4
+    nvme3n4
+    nvme5n4
+    nvme6n4
+    # bootlist -m normal -r
+    /pci@800000020000017/fibre-channel@0/nvme-of/controller@50050768101935e5,ffff:nqn=nqn.1986-03.com.ibm:nvme:2145.0000020420006CEA/namespace@147
+    /pci@800000020000017/fibre-channel@0/nvme-of/controller@5005076810193675,ffff:nqn=nqn.1986-03.com.ibm:nvme:2145.0000020420006CEA/namespace@147
+    /pci@800000020000017/fibre-channel@0,1/nvme-of/controller@5005076810193675,ffff:nqn=nqn.1986-03.com.ibm:nvme:2145.0000020420006CEA/namespace@147
+    /pci@800000020000017/fibre-channel@0,1/nvme-of/controller@50050768101935e5,ffff:nqn=nqn.1986-03.com.ibm:nvme:2145.0000020420006CEA/namespace@147
+    
+    Signed-off-by: Wen Xiong <wenxiong@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit acaf9c45a340f9bb49d6b21ba7ad60c21326ea73
+Author: Mingming Cao <mmc@linux.vnet.ibm.com>
+Date:   Mon Nov 7 14:39:02 2022 -0800
+
+    hcnmgr: Fix setting primary slave across reboots
+    
+    Using nmcli to set bonding of primary slave so that is set correctly
+    across reboots.
+    
+    Signed-off-by: Mingming Cao <mmc@linux.vnet.ibm.com>
+    [tyreld: Reworded commit log]
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit b6bd4ddd0c0a24cce97c220ab0cadfd004dd58c4
+Author: Sathvika Vasireddy <sv@linux.ibm.com>
+Date:   Fri Jul 15 14:35:13 2022 +0530
+
+    lparstat: Fix array overflow issue
+    
+    lparstat is trying to read from out of bound file descriptors. Fix
+    this by making sure array overflow does not occur.
+    
+    Without this patch:
+    ===================================================================
+    ltcden8-lp7:/home/sathvika/powerpc-utils # lparstat -E 1 1
+    Failed to /sys/devices/system/cpu/cpu1162167776/spurr
+    ===================================================================
+    
+    With this patch:
+    ===================================================================
+    ltcden8-lp7:/home/sathvika/powerpc-utils # ./src/lparstat -E 1 1
+    
+    System Configuration
+    type=Dedicated mode=Capped smt=8 lcpu=6 mem=81341376 kB cpus=0 ent=6.00
+    
+    ---Actual---                 -Normalized-
+    %busy  %idle   Frequency     %busy  %idle
+    ------ ------  ------------- ------ ------
+      0.01  99.99  4.00GHz[116%]   0.02 115.98
+    ====================================================================
+    
+    Reported-by: Sachin Sant <sachinp@linux.ibm.com>
+    Signed-off-by: Sathvika Vasireddy <sv@linux.ibm.com>
+    Tested-by: Sachin Sant <sachinp@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit b1b9e76de0f3ab1dfcd9426779fa20fd77cd5625
+Author: Luciano Chavez <lnx1138@linux.ibm.com>
+Date:   Wed Aug 24 21:11:32 2022 -0500
+
+    lsslot: Fix lsslot -c mem output when using 4GB LMB size
+    
+    When using a LMB size of 4GB, the output of lsslot -c mem would get
+    reported incorrectly as:
+    
+    Dynamic Reconfiguration Memory (LMB size 0x0)
+    :
+        DRC Index: 80000001        Address: 100000000
+        Removable: No              Associativity: (index: 1) 0 1 4 9
+        Section(s):
+    
+    This patch changes the declaration of the _node_u._smem._lmb_size from
+    a uint32_t to uint64_t to store the value properly. Any variables that
+    store the lmb_size are also declared as uint64_t. In addition, we
+    use the PRIx64 macro in printf statements to properly print the
+    lmb_size value.
+    
+    The patch also includes a necessary change to declare the global
+    variable block_sz_bytes as a uint64_t to fix an infinite loop in
+    the function get_mem_scns() when the above changes were introduced.
+    
+    Signed-off-by: Luciano Chavez <lnx1138@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit e1f1deb06d9168a95a381a2236e1d8c693d3d229
+Author: Luciano Chavez <lnx1138@linux.ibm.com>
+Date:   Wed Aug 24 21:17:54 2022 -0500
+
+    lsslot: Explicity declare that lmb_address be displayed in hexadecimal
+    
+    A printf statement used is lsslot.c was specifying the macro PRIu64 to
+    display the lmb_address. Depending on the compilation, this would
+    either display as a hexadecimal or decimal value.
+    
+    This patch replaces PRIu64 with PRIx64 to explicitly declare to print
+    the value as hexadecimal as that was is normally expected of an address.
+    
+    Signed-off-by: Luciano Chavez <lnx1138@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit f4c2b0d142f623e7dd28a5d685e446d41be75601
+Author: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+Date:   Thu Aug 25 12:19:27 2022 +0530
+
+    lparstat: Fix display of mode for dedicated-donating partition
+    
+     From the lparstat man page:
+      mode
+      Indicates whether the partition processor capacity is capped or uncapped
+      allowing it to consume idle cycles from the shared pool. Dedicated LPAR
+      is capped or donating.
+    
+    However, on a dedicated partition, lparstat always displays the mode as
+    'Capped' today. Fix this by using 'DedDonMode' field from lparcfg for
+    determining the cycle donation status of a dedicated partition.
+    
+    On a dedicated-donating partition:
+      $ grep -e shared -e DedDonMode -e capped /proc/powerpc/lparcfg
+      DedDonMode=1
+      capped=1
+      shared_processor_mode=0
+    
+    Before this patch:
+      $ lparstat
+    
+      System Configuration
+      type=Dedicated mode=Capped smt=8 lcpu=1 mem=3335424 kB cpus=0 ent=1.00
+    
+    After this patch:
+      $ lparstat
+    
+      System Configuration
+      type=Dedicated mode=Donating smt=8 lcpu=1 mem=3335424 kB cpus=0 ent=1.00
+    
+    Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+    Reviewed-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 7698adc945372e901c2bc3f7066a5a1c219bf1d8
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Fri Sep 16 18:39:18 2022 +0200
+
+    drmgr: add the drmgr-hooks man file.
+    
+    This man page describe the various drmgr's hooks.
+    
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit d0bc79aedaf76eff09a5d1f399da09561a4d4d7d
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Fri Sep 16 18:39:17 2022 +0200
+
+    drmgr: introducing the LPM hooks
+    
+    There are 3 hooks run when an LPM is performed:
+    1. check before the LPM is really initiated
+     1 bis. undocheck if check failed.
+    2. pre just before entering the switch over
+    3. post at the end of the LPM operation
+    
+    Only the check hook's return status is taken in account. If the check hook
+    return value is different from 0, the LPM is aborted and the outputs of the
+    check hook are reported to the end user through the HMC.
+    
+    In the case at least one check hook returned a non zero status, the
+    undocheck event is run (for all the hooks), and the pre and post events are
+    not triggered.
+    
+    The post event is triggered even if the LPM operation has failed.
+    
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit e0928dc5e5375591a4cff6ffabc6063771288f59
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Fri Sep 16 18:39:16 2022 +0200
+
+    drmgr: introducing the hook framework
+    
+    The hook framework run in a sequence any executable file found in the
+    relevant directory (/etc/drmgr.d/<DRC TYPE NAME>/)
+    
+    The hook are run according to the versionsort()'s output order.
+    
+    The hook inherits from drmgr its standard I/O streams. All others file
+    descriptor should have the close on exec flag set to ensure they will be
+    closed when executing an hook.
+    
+    The hooks are run with no arguments, arguments are passed through
+    environment variable.
+    
+    The inherited environment is cleaned and 2 environment variables
+    are set:
+    - DRC_TYPE containing the DRC type string
+    - PHASE containing the current phase
+    
+    There are 4 known phases: check, undocheck, pre and post.
+    
+    The hook's run is recorded in the drmgr's log, so blocking hook could be
+    identified.
+    
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 372599ed28d65a79d4c3b3405a8e04034eb58e09
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Fri Sep 16 18:39:15 2022 +0200
+
+    drmgr: introduce a DRC type name table
+    
+    So that there is only one place to convert the name of the drc to the type
+    of drc and vice versa.
+    
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit f2a4619ef6be747f53e5f631f8b23b5edb9bb023
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Fri Sep 16 18:39:14 2022 +0200
+
+    drmgr: prevent file descriptor to be inherited when execing a child
+    
+    When a file descriptor is opened and remain opened, the O_CLOEXEC should be
+    set so execed children are not inheriting it.
+    
+    There is no need for file descriptor opened and closed immediately, like in
+    probe_cpu().
+    
+    Reviewed-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 1ac96f8ab7c27095be90eb2e69ae57e8b43eccbe
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Fri Sep 16 18:39:13 2022 +0200
+
+    drmgr/pmig: remove deprecated call to refrsrc IBM.ManagementServer
+    
+    As Nathan reported while reviewing this series:
+    
+    This RSCT doc indicates that the IBM.ManagementServer resource class has
+    been superseded:
+    
+    https://www.ibm.com/docs/en/rsct/3.2?topic=security-management-domain-configuration
+    
+    Removing that deprecated call in this series because it is conflicting with
+    a following patch. The system returned value is stored in rc to prevent
+    compilation error (due to warning if system returned value is not read).
+    
+    Suggested-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit c3ce3040ea9ed49345756136d61eb402e32402e8
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Fri Sep 16 18:39:12 2022 +0200
+
+    drmgr/pmig: remove unused code
+    
+    The original system id is read but never used, so remove that useless code.
+    Remove also an unjustified sleep(5) call.
+    
+    Reviewed-by: Nathan Lynch <nathanl@linux.ibm.com>
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 2fbd7c1ff428e534d80f60e03501d625ab594eca
+Author: Wen Xiong <wenxiong@linux.ibm.com>
+Date:   Wed Jun 15 13:05:51 2022 -0500
+
+    ofpathname: Fix several issues in nvmf boot/install support
+    
+    This patch fixes several issues in boot/install over nvme-over-fc
+    device support.
+    
+    - change cntlid to ffff
+    - add devnisd from sysfs
+    - add subsysnqn
+    
+    Signed-off-by: Wen Xiong <wenxiong@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit c015807d5bef0ebdeaf99883793173f2b636e740
+Author: Wen Xiong <wenxiong@linux.ibm.com>
+Date:   Wed Jun 15 13:05:18 2022 -0500
+
+    bootlist: Add install/boot support for nvmf devices
+    
+    This patch adds the boot/installation support for nvme-over-fc devices.
+    It can set nvmf device as boot device in both of logical device name
+    and open firmware device path name.
+    
+    Signed-off-by: Wen Xiong <wenxiong@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
 powerpc-utils-1.3.10
 =====================================================================
 
