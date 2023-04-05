@@ -23,7 +23,7 @@ Hook files can be symbolic links to executable files. All the hooks can be store
 and linked into multiple directories to provide multiple DRC type's hooks.
 .SH ARGUMENTS
 .P
-Hooks are called without any arguments but with  at least these 2 environment variable set:
+Hooks are called without any arguments but with these environment variables set:
 .TP
 .BI "DRC_TYPE"
 The Dynamic reconfiguration connector type to act upon from the following list:
@@ -32,6 +32,13 @@ The Dynamic reconfiguration connector type to act upon from the following list:
 .BI "PHASE"
 The phase of the operation from the following list:
 .BR check ", " undocheck ", " pre ", " post "."
+.TP
+.BI "ACTION"
+The action in progress from the following list:
+.BR add ", " remove ", " migrate "."
+.TP
+.BI "DRC_COUNT"
+The number of impacted items.
 .SH LPAR MIGRATION
 .P
 When a LPAR migration is initiated the
@@ -57,6 +64,41 @@ phase succeeded, the
 phases are triggered. Returned values for these 2 phases are ignored, and the
 .B post
 phase is triggered even if the LPM operation has failed.
+.P
+The
+.B ACTION
+variable is set always to
+.B migrate
+.P
+The DRC_COUNT variable is set to 0.
+.SH CPU
+When a CPU DLPAR add or remove operation is initiated, the
+.B pre
+and then
+.B post
+phases are triggered with the
+.B ACTION
+variable set to either
+.B add
+or
+.B remove
+value.
+.P
+When the
+.B pre
+phase is called, the
+.B DRC_COUNT
+variable contains the desired number of CPU to add or remove. When the
+.B post
+phase is called,
+.B DRC_COUNT
+contains the number of CPU effectively added or removed.
+.P
+Return values for these 2 phases are ignored.
+.P
+The
+.B post
+phase is triggered even if the operation has failed.
 .SH ENVIRONMENT
 .P
 The drmgr's hooks are called while holding the DLPAR lock, so any other
@@ -66,16 +108,20 @@ The hooks standard input
 .B STDIN
 is redirected to
 .I /dev/null
-while STDOUT and STDERR are redirected to pipes.
+while
+.BR STDOUT " and " STDERR
+are redirected to pipes.
 The outputs done in these pipes are reported to the end user when a hook has returned an error value and that error value is not ignored (e.g in the LPM, the
 .B check
 phase but not the
-.BR pre "or " post
+.BR pre " or " post
 phase)
 .P
 Except the variables specified in the ARGUMENTS section, all the environment variables are unset before calling the hook.
 .SH FILES
 .IR /etc/drmgr.d/pmig/
+.P
+.IR /etc/drmgr.d/cpu/
 .SH AUTHOR
 Laurent Dufour <ldufour@linux.ibm.com>
 .SH SEE ALSO
