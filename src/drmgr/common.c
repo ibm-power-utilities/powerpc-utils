@@ -56,7 +56,7 @@ static long dr_timeout;
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
-static char *drc_type_str[] = {
+static const char * const drc_type_str[] = {
 	[DRC_TYPE_NONE]		= "unknwon",
 	[DRC_TYPE_PCI]		= "pci",
 	[DRC_TYPE_SLOT]		= "slot",
@@ -69,7 +69,7 @@ static char *drc_type_str[] = {
 	[DRC_TYPE_ACC]		= "acc",
 };
 
-static char *hook_phase_name[] = {
+static const char * const hook_phase_name[] = {
 	[HOOK_CHECK]		= "check",
 	[HOOK_UNDOCHECK]	= "undocheck",
 	[HOOK_PRE]		= "pre",
