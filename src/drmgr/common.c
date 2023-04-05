@@ -1567,7 +1567,8 @@ enum drc_type to_drc_type(const char *arg)
 }
 
 static int run_one_hook(enum drc_type drc_type, enum drmgr_action action,
-			enum hook_phase phase, const char *name)
+			enum hook_phase phase, const char *drc_count_str,
+			const char *name)
 {
 	int rc;
 	pid_t child;
@@ -1613,6 +1614,7 @@ static int run_one_hook(enum drc_type drc_type, enum drmgr_action action,
 
 	if (clearenv() ||
 	    setenv("DRC_TYPE", drc_type_str[drc_type], 1) ||
+	    setenv("DRC_COUNT", drc_count_str, 1) ||
 	    setenv("ACTION", hook_action_name[action], 1) ||
 	    setenv("PHASE", hook_phase_name[phase], 1)) {
 		say(ERROR, "Can't set environment variables: %s\n",
@@ -1637,11 +1639,12 @@ static int is_file_or_link(const struct dirent *entry)
  * Return 0 if all run script have returned 0 status.
  */
 int run_hooks(enum drc_type drc_type, enum drmgr_action action,
-	      enum hook_phase phase)
+	      enum hook_phase phase, int drc_count)
 {
 	int rc = 0, fdd, num, i;
 	DIR *dir;
 	struct dirent **entries = NULL;
+	char *drc_count_str;
 
 	/* Sanity check */
 	if (drc_type <= DRC_TYPE_NONE || drc_type >= ARRAY_SIZE(drc_type_str)) {
@@ -1668,6 +1671,12 @@ int run_hooks(enum drc_type drc_type, enum drmgr_action action,
 			is_file_or_link, versionsort);
 	closedir(dir);
 
+	if (asprintf(&drc_count_str, "%d", drc_count) == -1) {
+		say(ERROR, "Can't allocate new string : %s", strerror(errno));
+		free(entries);
+		return -1;
+	}
+
 	for (i = 0; i < num; i++) {
 		struct stat st;
 		struct dirent *entry = entries[i];
@@ -1693,13 +1702,15 @@ int run_hooks(enum drc_type drc_type, enum drmgr_action action,
 			say(WARN, "Can't stat file %s: %s\n",
 			    name, strerror(errno));
 		else if (S_ISREG(st.st_mode) && (st.st_mode & S_IXUSR) &&
-			 run_one_hook(drc_type, action, phase, name))
+			 run_one_hook(drc_type, action, phase, drc_count_str,
+				      name))
 			rc = 1;
 
 		free(name);
 		free(entry);
 	}
 
+	free(drc_count_str);
 	free(entries);
 	return rc;
 }

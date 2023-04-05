@@ -135,7 +135,8 @@ void print_dlpar_capabilities(void);
 
 void set_output_level(int);
 
-int run_hooks(enum drc_type drc_type, enum drmgr_action, enum hook_phase phase);
+int run_hooks(enum drc_type drc_type, enum drmgr_action, enum hook_phase phase,
+	      int drc_count);
 
 #define DR_BUF_SZ	256
 
