@@ -231,14 +231,13 @@ struct dr_node *get_available_cpu(struct dr_info *dr_info)
  * @param nr_cpus
  * @returns 0 on success, !0 otherwise
  */
-static int add_cpus(struct dr_info *dr_info)
+static int add_cpus(struct dr_info *dr_info, int *count)
 {
 	int rc = -1;
-	uint count;
 	struct dr_node *cpu = NULL;
 
-	count = 0;
-	while (count < usr_drc_count) {
+	*count = 0;
+	while (*count < usr_drc_count) {
 		if (drmgr_timed_out())
 			break;
 
@@ -255,10 +254,10 @@ static int add_cpus(struct dr_info *dr_info)
 		}
 
 		fprintf(stdout, "%s\n", cpu->drc_name);
-		count++;
+		(*count)++;
 	}
 
-	say(DEBUG, "Acquired %d of %d requested cpu(s).\n", count,
+	say(DEBUG, "Acquired %d of %d requested cpu(s).\n", *count,
 	    usr_drc_count);
 	return rc ? 1 : 0;
 }
@@ -286,13 +285,13 @@ static int add_cpus(struct dr_info *dr_info)
  * @param nr_cpus
  * @returns 0 on success, !0 otherwise
  */
-static int remove_cpus(struct dr_info *dr_info)
+static int remove_cpus(struct dr_info *dr_info, int *count)
 {
 	int rc = 0;
-	uint count = 0;
 	struct dr_node *cpu;
 
-	while (count < usr_drc_count) {
+	*count = 0;
+	while (*count < usr_drc_count) {
 		if (drmgr_timed_out())
 			break;
 
@@ -318,10 +317,10 @@ static int remove_cpus(struct dr_info *dr_info)
 		}
 
 		fprintf(stdout, "%s\n", cpu->drc_name);
-		count++;
+		(*count)++;
 	}
 
-	say(DEBUG, "Removed %d of %d requested cpu(s)\n", count,
+	say(DEBUG, "Removed %d of %d requested cpu(s)\n", *count,
 	    usr_drc_count);
 	return rc;
 }
@@ -406,7 +405,7 @@ int valid_cpu_options(void)
 int drslot_chrp_cpu(void)
 {
 	struct dr_info dr_info;
-	int rc;
+	int rc, count = 0;
 
 	if (! cpu_dlpar_capable()) {
 		say(ERROR, "CPU DLPAR capability is not enabled on this "
@@ -442,17 +441,23 @@ int drslot_chrp_cpu(void)
 		return rc;
 	}
 
+	if (usr_action == ADD || usr_action == REMOVE)
+		run_hooks(DRC_TYPE_CPU, usr_action, HOOK_PRE, usr_drc_count);
+
 	switch (usr_action) {
 	case ADD:
-		rc = add_cpus(&dr_info);
+		rc = add_cpus(&dr_info, &count);
 		break;
 	case REMOVE:
-		rc = remove_cpus(&dr_info);
+		rc = remove_cpus(&dr_info, &count);
 		break;
 	default:
 		rc = -1;
 		break;
 	}
+
+	if (usr_action == ADD || usr_action == REMOVE)
+		run_hooks(DRC_TYPE_CPU, usr_action, HOOK_POST, count);
 
 	free_cpu_drc_info(&dr_info);
 	return rc;
