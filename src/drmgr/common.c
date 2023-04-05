@@ -76,6 +76,17 @@ static const char * const hook_phase_name[] = {
 	[HOOK_POST]		= "post",
 };
 
+static const char * const hook_action_name[] = {
+	[NONE]		= "none",
+	[ADD]		= "add",
+	[REMOVE]	= "remove",
+	[QUERY]		= "query",
+	[REPLACE]	= "replace",
+	[IDENTIFY]	= "identify",
+	[MIGRATE]	= "migrate",
+	[HIBERNATE]	= "hibernate",
+};
+
 /**
  * set_output level
  * @brief Common routine to set the output level
@@ -1555,8 +1566,8 @@ enum drc_type to_drc_type(const char *arg)
 	return DRC_TYPE_NONE;
 }
 
-static int run_one_hook(enum drc_type drc_type,	enum hook_phase phase,
-			const char *name)
+static int run_one_hook(enum drc_type drc_type, enum drmgr_action action,
+			enum hook_phase phase, const char *name)
 {
 	int rc;
 	pid_t child;
@@ -1602,6 +1613,7 @@ static int run_one_hook(enum drc_type drc_type,	enum hook_phase phase,
 
 	if (clearenv() ||
 	    setenv("DRC_TYPE", drc_type_str[drc_type], 1) ||
+	    setenv("ACTION", hook_action_name[action], 1) ||
 	    setenv("PHASE", hook_phase_name[phase], 1)) {
 		say(ERROR, "Can't set environment variables: %s\n",
 		    strerror(errno));
@@ -1624,7 +1636,8 @@ static int is_file_or_link(const struct dirent *entry)
  * Run all executable hooks found in a given directory.
  * Return 0 if all run script have returned 0 status.
  */
-int run_hooks(enum drc_type drc_type, enum hook_phase phase)
+int run_hooks(enum drc_type drc_type, enum drmgr_action action,
+	      enum hook_phase phase)
 {
 	int rc = 0, fdd, num, i;
 	DIR *dir;
@@ -1680,7 +1693,7 @@ int run_hooks(enum drc_type drc_type, enum hook_phase phase)
 			say(WARN, "Can't stat file %s: %s\n",
 			    name, strerror(errno));
 		else if (S_ISREG(st.st_mode) && (st.st_mode & S_IXUSR) &&
-			 run_one_hook(drc_type, phase, name))
+			 run_one_hook(drc_type, action, phase, name))
 			rc = 1;
 
 		free(name);

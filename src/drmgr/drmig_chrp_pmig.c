@@ -709,9 +709,9 @@ int drmig_chrp_pmig(void)
 	}
 
 	if (usr_action == MIGRATE && (strcmp(usr_p_option, "check") == 0)) {
-		rc = run_hooks(drc_type, HOOK_CHECK);
+		rc = run_hooks(drc_type, usr_action, HOOK_CHECK);
 		if (rc)
-			run_hooks(drc_type, HOOK_UNDOCHECK);
+			run_hooks(drc_type, usr_action, HOOK_UNDOCHECK);
 		return rc;
 	}
 
@@ -736,7 +736,7 @@ int drmig_chrp_pmig(void)
 	/* Now do the actual migration */
 	do {
 		if (usr_action == MIGRATE)
-			run_hooks(drc_type, HOOK_PRE);
+			run_hooks(drc_type, usr_action, HOOK_PRE);
 
 		if (usr_action == MIGRATE)
 			rc = do_migration(stream_val);
@@ -758,6 +758,6 @@ int drmig_chrp_pmig(void)
 
 	/* Post hook is called even if the migration has failed */
 	if (usr_action == MIGRATE)
-		run_hooks(drc_type, HOOK_POST);
+		run_hooks(drc_type, usr_action, HOOK_POST);
 	return rc;
 }
