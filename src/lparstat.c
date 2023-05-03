@@ -163,6 +163,10 @@ static int assign_cpu_sysfs_fds(int threads_in_system)
 		cpu_idx++;
 	}
 
+	/* Mark extra slots for offline threads unset, see parse_sysfs_values */
+	for (; cpu_idx < threads_in_system; cpu_idx++)
+		cpu_sysfs_fds[cpu_idx].spurr = -1;
+
 	return 0;
 error:
 	fprintf(stderr, "Failed to open %s: %s\n",
