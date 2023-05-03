@@ -245,7 +245,7 @@ int __do_smt(bool numeric, int cpus_in_system, int threads_per_cpu,
 			if (smt_state == 0)
 				smt_state = thread + 1;
 			else if (smt_state > 0)
-				smt_state = -1; /* mix of SMT modes */
+				smt_state = 0; /* mix of SMT modes */
 		}
 	}
 
@@ -257,7 +257,7 @@ int __do_smt(bool numeric, int cpus_in_system, int threads_per_cpu,
 			printf("SMT=1\n");
 		else
 			printf("SMT is off\n");
-	} else if (smt_state == -1) {
+	} else if (smt_state == 0) {
 		for (thread = 0; thread < threads_per_cpu; thread++) {
 			if (CPU_COUNT_S(cpu_state_size,
 						cpu_states[thread])) {

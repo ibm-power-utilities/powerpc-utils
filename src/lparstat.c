@@ -884,13 +884,15 @@ void get_smt_mode(struct sysentry *se, char *buf)
 	}
 
 	smt_state = parse_smt_state();
-	if (smt_state < 0) {
+	if (smt_state == -1) {
 		fprintf(stderr, "Failed to get smt state\n");
 		return;
 	}
 
 	if (smt_state == 1)
 		sprintf(buf, "Off");
+	else if (smt_state == 0)
+		sprintf(buf, "Mixed");
 	else
 		sprintf(buf, "%d", smt_state);
 }
