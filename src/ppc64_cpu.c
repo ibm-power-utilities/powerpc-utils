@@ -1269,31 +1269,40 @@ static int do_cores_on(char *state)
 	return 0;
 }
 
+static bool core_is_online(int core)
+{
+	return  cpu_physical_id(core * threads_per_cpu) != -1;
+}
+
 static int do_info(void)
 {
 	int i, j, thread_num;
 	char online;
-	int subcores = 0;
+	int core, subcores = 0;
 
 	if (is_subcore_capable())
 		subcores = num_subcores();
 
-	for (i = 0; i < cpus_in_system; i++) {
+	for (i = 0, core = 0; core < cpus_in_system; i++) {
+
+		if (!core_is_online(i))
+			continue;
 
 		if (subcores > 1) {
-			if (i % subcores == 0)
-				printf("Core %3d:\n", i/subcores);
-			printf("  Subcore %3d: ", i);
+			if (core % subcores == 0)
+				printf("Core %3d:\n", core/subcores);
+			printf("  Subcore %3d: ", core);
 		} else {
-			printf("Core %3d: ", i);
+			printf("Core %3d: ", core);
 		}
 
-		for (j = 0; j < threads_per_cpu; j++) {
-			thread_num = i*threads_per_cpu + j;
+		thread_num = i * threads_per_cpu;
+		for (j = 0; j < threads_per_cpu; j++, thread_num++) {
 			online = cpu_online(thread_num) ? '*' : ' ';
 			printf("%4d%c ", thread_num, online);
 		}
 		printf("\n");
+		core++;
 	}
 	return 0;
 }
