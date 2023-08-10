@@ -32,6 +32,7 @@
 
 extern int __sysattr_is_readable(char *attribute, int threads_in_system);
 extern int __sysattr_is_writeable(char *attribute, int threads_in_system);
+extern int cpu_physical_id(int thread);
 extern int cpu_online(int thread);
 extern int is_subcore_capable(void);
 extern int num_subcores(void);

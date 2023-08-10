@@ -83,6 +83,20 @@ int __sysattr_is_writeable(char *attribute, int threads_in_system)
 	return test_sysattr(attribute, W_OK, threads_in_system);
 }
 
+int cpu_physical_id(int thread)
+{
+	char path[SYSFS_PATH_MAX];
+	int rc, physical_id;
+
+	sprintf(path, SYSFS_CPUDIR"/physical_id", thread);
+	rc = get_attribute(path, "%d", &physical_id);
+
+	/* This attribute does not exist in kernels without hotplug enabled */
+	if (rc && errno == ENOENT)
+		return -1;
+	return physical_id;
+}
+
 int cpu_online(int thread)
 {
 	char path[SYSFS_PATH_MAX];
