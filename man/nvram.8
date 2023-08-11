@@ -67,6 +67,22 @@ be more verbose.
 \fB\--help
 print usage information including other low level options useful for
 debugging nvram.
+.TP
+\fB\--ascii \fIname
+print partition contents as ASCII text
+.TP
+\fB\--dump \fIname
+raw dump of partition (use --partitions to see names)
+.TP
+\fB\--nvram-size
+specify size of nvram data, must in multiples of 16 Bytes (for repair 
+operations)
+.TP
+\fB\--unzip \fIname
+decompress and print compressed data from partition
+.TP
+\fB\--zero | 0 \fR
+terminate config pairs with a NULL character
 .SH FILES
 /dev/nvram
 .SH AUTHOR
