@@ -1507,6 +1507,10 @@ main (int argc, char *argv[])
 		break;
 	    case 's':	/* nvram-size */
 		nvram.nbytes = strtoul(optarg, &endp, 10);
+		if (nvram.nbytes > DEFAULT_NVRAM_SZ) {
+                   err_msg("nvram size shouldn't be greater than default nvram-size %d\n", DEFAULT_NVRAM_SZ );
+                   exit(1);
+		}
 		if (!*optarg || *endp) {
 		    err_msg("specify nvram-size as an integer\n");
 		    exit(1);
