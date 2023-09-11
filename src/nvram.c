@@ -460,8 +460,12 @@ nvram_parse_partitions(struct nvram *nvram)
 	c_sum = checksum(phead);
 	if (c_sum != phead->checksum)
 	    warn_msg("this partition checksum should be %02x!\n", c_sum);
-	phead->length = be16toh(phead->length);
-	p_start += phead->length * NVRAM_BLOCK_SIZE;
+	if (phead->length != 0) {
+		phead->length = be16toh(phead->length);
+		p_start += phead->length * NVRAM_BLOCK_SIZE;
+	} else {
+		break;
+	}
     }
 
     if (verbose)
