@@ -722,6 +722,7 @@ l2of_nvme()
         err $ERR_NO_OFPATH
     fi
 
+    devnsid=$(printf "%x" $devnsid)
     OF_PATH="$OF_PATH/$devtype@$devnsid"
 
     # No partition (pZ) specified.
@@ -1798,6 +1799,7 @@ of2l_nvme()
 	    cd $dir
 
 	    local devnsid=`$CAT ./nsid 2>/dev/null`
+	    devnsid=$(printf "%x" $devnsid)
 	    if [[ $devnsid = $nsid ]]; then
 		    LOGICAL_DEVNAME="${dir##*/}"
 		    break
