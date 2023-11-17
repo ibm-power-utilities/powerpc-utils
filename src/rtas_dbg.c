@@ -200,10 +200,10 @@ void print_rtas_tokens(struct rtas_token *tok, struct rtas_token *tok_list)
 	struct rtas_token *t;
 
 	if (tok)
-		printf("%-40s%d\n", tok->name, tok->token);
+		printf("%-40s%u\n", tok->name, tok->token);
 	else {
 		for (t = tok_list; t; t = t->next)
-			printf("%-40s%d\n", t->name, t->token);
+			printf("%-40s%u\n", t->name, t->token);
 	}
 }
 
@@ -217,7 +217,7 @@ int set_rtas_dbg(struct rtas_token *tok)
 	args.nret = htobe32(1);
 	args.args[0] = htobe32(tok->token);
 
-	printf("Enabling rtas debug for %s (%d)\n", tok->name, tok->token);
+	printf("Enabling rtas debug for %s (%u)\n", tok->name, tok->token);
 
 	rc = rtas(&args);
 
