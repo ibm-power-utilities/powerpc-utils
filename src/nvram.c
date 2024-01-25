@@ -1280,7 +1280,7 @@ print_of_config(struct nvram *nvram, char *config_var, char *pname,
 
 	data = (char *)phead + sizeof(*phead);
 	while (*data != '\0') {
-	    if ((data[varlen] == '=') && 
+	    if (strlen(data) > varlen && (data[varlen] == '=') &&
 		strncmp(config_var, data, varlen) == 0) {
 		printf("%s%c", data + varlen + 1, terminator);
 		rc = 0;
