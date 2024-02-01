@@ -38,8 +38,8 @@ list_cpus(struct dr_info *dr_info)
 {
 	struct dr_node *cpu;
 	struct thread *t;
-	char *fmt_s = "%-11s%-20s%-13s%-13s\n";
-	char *fmt = "%-11s%-20s%-12x";
+	char *fmt_s = "%-10s%-20s%-11s%-13s\n";
+	char *fmt = "%-10s%-20s%-11x";
 
 	printf(fmt_s, "drc-name", "OFDT-node", "drc_index", "thread id(s)");
 
@@ -48,7 +48,7 @@ list_cpus(struct dr_info *dr_info)
 			printf(fmt, cpu->drc_name, cpu->name ? cpu->name : "--",
 			       cpu->drc_index);
 			for (t = cpu->cpu_threads; t; t = t->sibling)
-				printf(" %x", t->id);
+				printf("%-2x ", t->id);
 			printf("\n");
 		}
 	}
@@ -84,8 +84,8 @@ list_cpus_and_caches(struct dr_info *dr_info)
 {
 	struct dr_node *cpu = NULL;
 	struct thread *t;
-	int thread_id_field_sz = 17;
-	char *fmt_s = "%-10s%-18s%-11s%-17s%-15s%-15s\n";
+	int thread_id_field_sz = 25;
+	char *fmt_s = "%-10s%-20s%-11s%-25s%-15s%-15s\n";
 	char *fmt = "%-10s%-20s%-11x";
 	char *fmt_caches = "%-15s%-15s\n";
 
@@ -101,8 +101,8 @@ list_cpus_and_caches(struct dr_info *dr_info)
 		       cpu->drc_index);
 
 		for (t = cpu->cpu_threads; t; t = t->sibling) {
-			printf("%x ", t->id);
-			count += 2;
+			printf("%-2x ", t->id);
+			count += 3;
 		}
 
 		/* pad out the thread ids field */
