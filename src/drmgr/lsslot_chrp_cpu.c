@@ -86,7 +86,7 @@ list_cpus_and_caches(struct dr_info *dr_info)
 	struct thread *t;
 	int thread_id_field_sz = 17;
 	char *fmt_s = "%-10s%-18s%-11s%-17s%-15s%-15s\n";
-	char *fmt = "%-10s%-18s%-11x%";
+	char *fmt = "%-10s%-20s%-11x";
 	char *fmt_caches = "%-15s%-15s\n";
 
 	printf(fmt_s, "drc-name", "OFDT-node", "drc_index", "thread id(s)",
