@@ -1,3 +1,572 @@
+powerpc-utils-1.3.12
+=====================================================================
+commit 2f0bdb051fe70fbd6cb608ea1b63a75223dc44a4
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Tue Feb 6 16:58:12 2024 -0800
+
+    lsslot: fix reporting of L3 caches with -b option
+    
+    Currently if a L2 cache has an associated dependent L3 cache the lsslot
+    command for cpu connector types will fail to report the L3 cache when
+    using the -b option. This is due to a typo such that the check is made
+    between the the L2 caches l2-cache property value and its own
+    ibm,phandle property. The check should be against the L3 caches
+    ibm,phandle property as the l2-cache property contains the phandle of
+    the dependent cache.
+    
+    Without patch:
+    ./src/drmgr/lsslot -c cpu -b
+    drc-name  OFDT-node           drc_index  thread id(s)             l2-cache       l3-cache
+    CPU 1     PowerPC,POWER8@0    10000000   0  1  2  3  4  5  6  7   l2-cache@200a  N/A
+    
+    With patch:
+    ./src/drmgr/lsslot -c cpu -b
+    drc-name  OFDT-node           drc_index  thread id(s)             l2-cache       l3-cache
+    CPU 1     PowerPC,POWER8@0    10000000   0  1  2  3  4  5  6  7   l2-cache@200a  l3-cache@310a
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit a63f08289611e3c76814a3b9fbb7ef7c56d13ff5
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Thu Feb 1 07:19:58 2024 +0530
+
+    lsslot: fix and unify formatting of cpu slots
+    
+    When listing cpu slots with and without the -b option the formatting is
+    inconsistent and some column headers and associated data are not aligned.
+    
+    Adjusted format strings accordingly.
+    
+    Without patch:
+    localhost:~/powerpc-utils # ./src/drmgr/lsslot -c cpu
+    drc-name   OFDT-node           drc_index    thread id(s)
+    CPU 41     PowerPC,POWER10@28  10000028     28 29 2a 2b 2c 2d 2e 2f
+    CPU 33     PowerPC,POWER10@20  10000020     20 21 22 23 24 25 26 27
+    CPU 25     PowerPC,POWER10@18  10000018     18 19 1a 1b 1c 1d 1e 1f
+    CPU 17     PowerPC,POWER10@10  10000010     10 11 12 13 14 15 16 17
+    CPU 9      PowerPC,POWER10@8   10000008     8 9 a b c d e f
+    CPU 1      PowerPC,POWER10@0   10000000     0 1 2 3 4 5 6 7
+    
+    localhost:~/powerpc-utils # ./src/drmgr/lsslot -c cpu -b
+    drc-name  OFDT-node         drc_index  thread id(s)     l2-cache       l3-cache
+    CPU 41    PowerPC,POWER10@28  10000028   28 29 2a 2b 2c 2d 2e 2f  N/A            N/A
+    CPU 33    PowerPC,POWER10@20  10000020   20 21 22 23 24 25 26 27  N/A            N/A
+    CPU 25    PowerPC,POWER10@18  10000018   18 19 1a 1b 1c 1d 1e 1f  N/A            N/A
+    CPU 17    PowerPC,POWER10@10  10000010   10 11 12 13 14 15 16 17  N/A            N/A
+    CPU 9     PowerPC,POWER10@8   10000008   8 9 a b c d e f  N/A            N/A
+    CPU 1     PowerPC,POWER10@0   10000000   0 1 2 3 4 5 6 7  N/A            N/A
+    
+    With patch:
+    localhost:~/powerpc-utils # ./src/drmgr/lsslot -c cpu
+    drc-name  OFDT-node           drc_index  thread id(s)
+    CPU 41    PowerPC,POWER10@28  10000028   28 29 2a 2b 2c 2d 2e 2f
+    CPU 33    PowerPC,POWER10@20  10000020   20 21 22 23 24 25 26 27
+    CPU 25    PowerPC,POWER10@18  10000018   18 19 1a 1b 1c 1d 1e 1f
+    CPU 17    PowerPC,POWER10@10  10000010   10 11 12 13 14 15 16 17
+    CPU 9     PowerPC,POWER10@8   10000008   8  9  a  b  c  d  e  f
+    CPU 1     PowerPC,POWER10@0   10000000   0  1  2  3  4  5  6  7
+    
+    localhost:~/powerpc-utils # ./src/drmgr/lsslot -c cpu -b
+    drc-name  OFDT-node           drc_index  thread id(s)             l2-cache       l3-cache
+    CPU 41    PowerPC,POWER10@28  10000028   28 29 2a 2b 2c 2d 2e 2f  N/A            N/A
+    CPU 33    PowerPC,POWER10@20  10000020   20 21 22 23 24 25 26 27  N/A            N/A
+    CPU 25    PowerPC,POWER10@18  10000018   18 19 1a 1b 1c 1d 1e 1f  N/A            N/A
+    CPU 17    PowerPC,POWER10@10  10000010   10 11 12 13 14 15 16 17  N/A            N/A
+    CPU 9     PowerPC,POWER10@8   10000008   8  9  a  b  c  d  e  f   N/A            N/A
+    CPU 1     PowerPC,POWER10@0   10000000   0  1  2  3  4  5  6  7   N/A            N/A
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 01bc16de40385467cd32440da43ff02b0f0e856c
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Thu Feb 1 07:02:49 2024 +0530
+
+    lsslot: fix displaying cpu slots and caches with -b option
+    
+    The format string for printing the drc-name, OFDT-node, and drc-index in
+    list_cpus_and_caches() contains a spurious '%' qualifier at the end of
+    the string. Historically, this was ignored by compilers and the string
+    populated anyways. However, we since observed lsslot built on SLES 15
+    SP6 where the string is not populated.
+    
+    Removing the spurious '%' fixes the issue.
+    
+    Without patch:
+    localhost:~ # lsslot -c cpu -b
+    drc-name  OFDT-node         drc_index  thread id(s)     l2-cache       l3-cache
+    28 29 2a 2b 2c 2d 2e 2f  N/A            N/A
+    20 21 22 23 24 25 26 27  N/A            N/A
+    18 19 1a 1b 1c 1d 1e 1f  N/A            N/A
+    10 11 12 13 14 15 16 17  N/A            N/A
+    8 9 a b c d e f  N/A            N/A
+    0 1 2 3 4 5 6 7  N/A            N/A
+    
+    With patch:
+    localhost:~/powerpc-utils # ./src/drmgr/lsslot -c cpu -b
+    drc-name  OFDT-node         drc_index  thread id(s)     l2-cache       l3-cache
+    CPU 41    PowerPC,POWER10@28  10000028   28 29 2a 2b 2c 2d 2e 2f  N/A            N/A
+    CPU 33    PowerPC,POWER10@20  10000020   20 21 22 23 24 25 26 27  N/A            N/A
+    CPU 25    PowerPC,POWER10@18  10000018   18 19 1a 1b 1c 1d 1e 1f  N/A            N/A
+    CPU 17    PowerPC,POWER10@10  10000010   10 11 12 13 14 15 16 17  N/A            N/A
+    CPU 9     PowerPC,POWER10@8   10000008   8 9 a b c d e f  N/A            N/A
+    CPU 1     PowerPC,POWER10@0   10000000   0 1 2 3 4 5 6 7  N/A            N/A
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 5f825c75c6dfc2a95af1eebb6e364587d178deee
+Author: Michal Suchanek <msuchanek@suse.de>
+Date:   Thu Jul 21 12:38:16 2022 +0200
+
+    hcn-init: Split services per connection manager.
+    
+    The universal service using network.service alias does not work
+    reliably.
+    
+    Use one service per supported connection manager.
+    
+    Signed-off-by: Michal Suchanek <msuchanek@suse.de>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit f1a8ed892e18b83cb0483e8f8f8cbc512fa8510c
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Thu Aug 10 11:47:07 2023 +0200
+
+    ppc64_cpu/info: fix bad report when non continuous CPU ids
+    
+    When CPU ids are not continuous, let say that the kernel didn't reuse a set
+    of CPU ids already used on a different nodes, the output of ppc64_cpu
+    --info is not correct.
+    
+    For instance, in the example below the CPU id 48 to 55 haven't been reused
+    by the kernel when a CPU has been added after a LPM operation.
+    Note that the system is running in SMT=4.
+    
+    The numactl -H command is providing the correct set of CPU:
+    ltczep3-lp4:~ # numactl -H
+    available: 2 nodes (0-1)
+    node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 64 65 66 67 68 69 70 71
+    node 0 size: 7177 MB
+    node 0 free: 4235 MB
+    node 1 cpus: 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47
+    node 1 size: 24508 MB
+    node 1 free: 23539 MB
+    node distances:
+    node   0   1
+      0:  10  40
+      1:  40  10
+    
+    But ppc64_cpu --info is reporting the CPUs 48 to 55 offlined while not
+    reporting at all the CPU 65 to 71:
+    ltczep3-lp4:~ # ppc64_cpu --info
+    Core   0:    0*    1*    2*    3*    4*    5*    6*    7*
+    Core   1:    8*    9*   10*   11*   12*   13*   14*   15*
+    Core   2:   16*   17*   18*   19*   20*   21*   22*   23*
+    Core   3:   24*   25*   26*   27*   28*   29*   30*   31*
+    Core   4:   32*   33*   34*   35*   36*   37*   38*   39*
+    Core   5:   40*   41*   42*   43*   44*   45*   46*   47*
+    Core   6:   48    49    50    51    52    53    54    55
+    
+    This is because it is considering that the CPU id are continuous which is
+    not the case here.
+    
+    To prevent that, when looking for a core, it is now first checking that the
+    physical_id of the first thread in that core is defined (not -1). If that
+    the case this means that CPU/core is present.
+    
+    With that patch applied, ppc64_cpu --info is reporting:
+    ltczep3-lp4:~ # pc64_cpu --info
+    Core   0:    0*    1*    2*    3*    4     5     6     7
+    Core   1:    8*    9*   10*   11*   12    13    14    15
+    Core   2:   16*   17*   18*   19*   20    21    22    23
+    Core   3:   24*   25*   26*   27*   28    29    30    31
+    Core   4:   32*   33*   34*   35*   36    37    38    39
+    Core   5:   40*   41*   42*   43*   44    45    46    47
+    Core   6:   64*   65*   66*   67*   68    69    70    71
+    
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit d604cc779741c29cbdc8da97cbfc1512fd21fc1b
+Author: Likhitha Korrapati <likhitha@linux.ibm.com>
+Date:   Fri Aug 11 00:41:14 2023 -0500
+
+    nvram man page and --help output are not in sync
+    
+    The nvram man page and the output from --help option are not in
+    sync and few of the options are missing in man page.
+    
+    The options that are missing are ascii, dump, nvram-size, zero.
+    These options are added through the commit ids [1], [2].
+    
+    This patch adds the above missing options to the nvram.
+    
+    [1] https://github.com/ibm-power-utilities/powerpc-utils/commit/0e09f4e2898e7dea556479b018a7f4bf12108099
+    [2] https://github.com/ibm-power-utilities/powerpc-utils/commit/976dbe9bb7b01b135cac3e7bbd1dce0cdc88636a
+    
+    Signed-off-by: Likhitha Korrapati <likhitha@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 882335a30d04032d2684e165f70646b368a788b4
+Author: Wen Xiong <wenxiong@linux.ibm.com>
+Date:   Tue Jan 30 10:49:13 2024 -0600
+
+    bootlist: Support multiple dev paths for a nvme boot device
+    
+    Multipath splitter drawer is going to support two physical paths for
+    each nvme device.
+    This patch adds the support for multiple device/of paths for a nvme boot
+    device.
+    
+    For example,
+    #lsslot -c pci
+    U50EE.001.WZS000E-P3-C1-R1  U.2 PCI-E capable, Rev 4, 4x lanes with 2x
+    lanes connected  0581:10:00.0
+    U50EE.001.WZS000E-P3-C1-R2  U.2 PCI-E capable, Rev 4, 4x lanes with 2x
+    lanes connected  0521:10:00.0
+    
+    #nvme list-subsys
+    nvme-subsys1 -
+    NQN=nqn.1994-11.com.samsung:nvme:PM1735a:2.5-inch:S6RUNE0R900042
+                   hostnqn=nqn.2014-08.org.nvmexpress:uuid:3c6c1ace-e9b1-4a17-8ff0-6a84d3dd15f4
+                   iopolicy=numa
+    \
+     +- nvme1 pcie 0523:20:00.0 live
+     +- nvme0 pcie 0583:20:00.0 live
+    
+    # bootlist -m normal nvme1n1
+    # bootlist -m normal -o
+    nvme0
+    nvme1n1
+    #bootlist -m normal -r
+    /pci@800000020000583/pci1014,6bc@0/namespace@1
+    /pci@800000020000523/pci1014,6bc@0/namespace@1
+    
+    Signed-off-by: Wen Xiong <wenxiong@linux.ibm.com>
+    [tyreld: fixup whitespace errors]
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit a6d31caf4eaa453d3ec879f02163b3a515789b85
+Author: Likhitha Korrapati <likhitha@linux.ibm.com>
+Date:   Mon Sep 11 05:23:37 2023 -0500
+
+    powerpc/nvram: Fix Segmentation fault issue in nvram-size.
+    
+    nvram-size option results in segmentation fault when the user
+    specifies value larger than the default nvram size
+    
+    Without the patch:
+    [root@xxx ~]# nvram --nvram-size 1048592
+    nvram: WARNING: expected 1048592 bytes, but only read 15360!
+    Segmentation fault (core dumped)
+    
+    Segmentation fault is caused because the phead->length is becoming 0.
+    And because of this the p_start doesn't get updated which makes the
+    while loop run infinitely resulting in segmentation fault.
+    This patch adds a condition check for phead->length to avoid infinite
+    while loop.
+    
+    With the patch:
+    [root@xxx src]# ./nvram --nvram-size 1048592
+    ./nvram: WARNING: expected 1048592 bytes, but only read 15360!
+    [root@xxx src]# ./nvram --nvram-size 268435456
+    ./nvram: WARNING: expected 268435456 bytes, but only read 15360!
+    [root@xxx src]#
+    
+    Reported-by: Shirisha Ganta <shirisha@linux.ibm.com>
+    Signed-off-by: Likhitha Korrapati <likhitha@linux.ibm.com>
+    [tyreld: fixed up else block]
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 3f72b8326a2fc9a9dffb4b31d0ce3abf12e24751
+Author: Likhitha Korrapati <likhitha@linux.ibm.com>
+Date:   Thu Jan 25 15:44:02 2024 +0530
+
+    powerpc/nvram: fix segmentation fault issue in print-config
+    
+    print-config option in nvram results in segmentation fault when the
+    user provides a very large value.
+    
+    without the patch:
+    [root@xxx powerpc-utils]# nvram --print-config=real-mode?
+    true
+    [root@xxx powerpc-utils]# nvram --print-config=$(perl -e 'p
+    rint "A"x1000000')
+    Segmentation fault (core dumped)
+    
+    The Segmentation fault occurs because the code tries to access memory
+    beyond the bounds of the data at index varlen. varlen is the length of
+    the string provided by the user.
+    
+    This patch adds a condition to check whether the length of the data is
+    greater than varlen to prevent accessing out of bounds.
+    
+    with the patch:
+    [root@xxx powerpc-utils]# ./src/nvram --print-config=real-m
+    ode?
+    true
+    [root@xxx powerpc-utils]# ./src/nvram --print-config=$(perl
+     -e 'print "A"x1000000')
+    
+    Reported-by: Shirisha Ganta <shirisha@linux.ibm.com>
+    Signed-off-by: Likhitha Korrapati <likhitha@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 8a7aa61c5f520df03e53e6f7e1d63b7d5c432376
+Author: Wen Xiong <wenxiong@linux.ibm.com>
+Date:   Wed Nov 15 14:37:43 2023 -0600
+
+    powerpc-utils/scripts/ofpathname: handle nsid of nvme device as hex number
+    
+    Installation fails if nsid of nvme device is greater than 10.
+    
+    The patch fixes the issue and handle nsid of nvme ad a hex number.
+    
+    Signed-off-by: Wen Xiong <wenxiong@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 9caa77e4477a73064a6deea253fd3faea32648fb
+Author: Likhitha Korrapati <likhitha@linux.ibm.com>
+Date:   Fri Nov 17 01:42:29 2023 -0500
+
+    rtas_dbg: Fix the large negative values in rtas_dbg
+    
+    without the patch:
+    [root@xxx powerpc-utils]# rtas_dbg -l ibm,rks-hcalls
+    Could not get rtas token for ibm,indicator-0002
+    Could not get rtas token for ibm,integrated-stop-self
+    Could not get rtas token for ibm,indicator-9005
+    Could not get rtas token for ibm,extended-os-term
+    Could not get rtas token for ibm,indicator-0001
+    Could not get rtas token for ibm,sensor-0009
+    Could not get rtas token for ibm,recoverable-epow3
+    Could not get rtas token for ibm,sensor-9005
+    Could not get rtas token for ibm,change-msix-capable
+    Could not get rtas token for ibm,sensor-0005
+    Could not get rtas token for ibm,sensor-0001
+    ibm,rks-hcalls                          -536870912
+    
+    The large negatives values are due to incompatible format(%d).
+    The data type of the token variable is uint32_t.This patch
+    modifies the format(%u) to align with its data type(uint32_t).
+    
+    with the patch:
+    [root@xxx powerpc-utils]# ./src/rtas_dbg -l ibm,rks-hcalls
+    Could not get rtas token for ibm,indicator-0002
+    Could not get rtas token for ibm,integrated-stop-self
+    Could not get rtas token for ibm,indicator-9005
+    Could not get rtas token for ibm,extended-os-term
+    Could not get rtas token for ibm,indicator-0001
+    Could not get rtas token for ibm,sensor-0009
+    Could not get rtas token for ibm,recoverable-epow3
+    Could not get rtas token for ibm,sensor-9005
+    Could not get rtas token for ibm,change-msix-capable
+    Could not get rtas token for ibm,sensor-0005
+    Could not get rtas token for ibm,sensor-0001
+    ibm,rks-hcalls                          3758096384
+    
+    Reported-by: Shirisha Ganta <shirisha@linux.ibm.com>
+    Signed-off-by: Likhitha Korrapati <likhitha@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit c1d6a1473211e4e470aee8256d613f16a75897d6
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Wed Apr 5 17:49:23 2023 +0200
+
+    drmgr: Add CPU hook in the man page
+    
+    Also fixing few minor typos.
+    
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit d23e7ad0ed939dcd33f97839e0551707c78af77a
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Wed Apr 5 17:49:22 2023 +0200
+
+    drmgr/cpu: add CPU add and remove operation's hooks
+    
+    Call drmgr's hooks before and after a CPU add or remove operation is done.
+    
+    At the PRE phase, the DRC_COUNT hook parameter is set to the desired number
+    of CPU to add or remove. At the POST phase, it is set to the actual number
+    of CPU added or removed.
+    
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 24500fe33ceb84423730cb1ed654efbdc43deba8
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Wed Apr 5 17:49:21 2023 +0200
+
+    drmgr/common: add a DRC_COUNT parameter to the hooks
+    
+    The new DRC_COUNT will be set when running operation on countable items,
+    like adding or removing CPUs.
+    
+    For the migration operation, this doesn't make sense and it is set to 0.
+    
+    Using a signed integer so we can pass signed values, if needed in the
+    future.
+    
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 35a7487f0ec039bf8ea9e3c87f3b176ca1580145
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Wed Apr 5 17:49:20 2023 +0200
+
+    drmgr/common: drmgr: Add action parameter to the hook mechanism
+    
+    The user action is now exported to the hook ran by drmgr.
+    It is exported in the environment variable ACTION.
+    
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit c2922361b9bb2647b862056aa40095cdbfefee2f
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Wed Apr 5 17:49:19 2023 +0200
+
+    drmgr/common: make drc_type_str and hook_phase_name const
+    
+    The drc_type_str and hook_phase_name should be declared as const.
+    No functional changes.
+    
+    Fixes: 372599ed28d6 ("drmgr: introduce a DRC type name table")
+    Fixes: e0928dc5e537 ("drmgr: introducing the hook framework")
+    Suggested-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit dee15756bcb287ccf39a904be07c90107b13844b
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Wed May 3 10:50:15 2023 +0200
+
+    lparstat: Fix offline threads uninitialized entries
+    
+    When some threads are offline, lparstat -E is failing like that:
+    
+    $ ppc64_cpu --info # CPU 20 is offline
+    Core   0:    0*    1*    2*    3*    4*    5*    6*    7*
+    Core   1:    8*    9*   10*   11*   12*   13*   14*   15*
+    Core   2:   16*   17*   18*   19*   20    21*   22*   23*
+    Core   3:   24*   25*   26*   27*   28*   29*   30*   31*
+    Core   4:   32*   33*   34*   35*   36*   37*   38*   39*
+    Core   5:   40*   41*   42*   43*   44*   45*   46*   47*
+    $ lparstat -E
+    Failed to read /sys/devices/system/cpu/cpu0/spurr
+    
+    The message is complaining about CPU0 but the real issue is that in
+    parse_sysfs_values() the test cpu_sysfs_fds[i].spurr >= 0 is valid even if
+    the entry has not been initialized (cpu_sysfs_fds is alloc cleared). So
+    if the number of threads online seen in assign_cpu_sysfs_fds is lower than
+    threads_in_system, the loop in parse_sysfs_values() will read uninitialized
+    entry, where .cpu=0.
+    
+    To prevent that, unset entries in the cpu_sysfs_fds should have the spurr
+    fd set to -1.
+    
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit b2672fa3d462217ccd057a2cd307af2448e78757
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Wed May 3 10:50:14 2023 +0200
+
+    lparstat: report mixed SMT state
+    
+    when SMT state is mixed like this one (CPU 4 is offline):
+    
+    $ ppc64_cpu --info
+    Core   0:    0*    1*    2*    3*    4     5*    6*    7*
+    Core   1:    8*    9*   10*   11*   12*   13*   14*   15*
+    Core   2:   16*   17*   18*   19*   20*   21*   22*   23*
+    Core   3:   24*   25*   26*   27*   28*   29*   30*   31*
+    Core   4:   32*   33*   34*   35*   36*   37*   38*   39*
+    Core   5:   40*   41*   42*   43*   44*   45*   46*   47*
+    $ ppc64_cpu --smt
+    SMT=7: 0
+    SMT=8: 1-5
+    
+    ppc64_cpu --smt is handling that nicely but lparstat failed reporting the
+    SMT state:
+    $ /usr/sbin/lparstat
+    Failed to get smt state
+    
+    System Configuration
+    type=Dedicated mode=Capped smt=Capped lcpu=6 mem=65969728 kB cpus=0 ent=6.00
+    
+    %user  %sys %wait    %idle    physc %entc lbusy   app  vcsw phint
+    ----- ----- -----    -----    ----- ----- ----- ----- ----- -----
+     0.02  0.01  0.00    99.97     3.41 56.83  0.02  0.00 4061778   156
+    
+    Makes lparstat reporting "smt=mixed" in that case.
+    __do_smt is now returning 0 when the SMT state is mixed instead of -1 which
+    is also reported when an error is detected.
+    This doesn't change the call made by ppc64_cpu which is using
+    print_smt_state=true and so is expecting a returned value equal to 0 or -1.
+    
+    With that patch applied, lparstat print that in the above case:
+    $lparstat
+    
+    System Configuration
+    type=Dedicated mode=Capped smt=Mixed lcpu=6 mem=65969728 kB cpus=0 ent=6.00
+    
+    %user  %sys %wait    %idle    physc %entc lbusy   app  vcsw phint
+    ----- ----- -----    -----    ----- ----- ----- ----- ----- -----
+     0.01  0.01  0.00    99.97     3.43 57.17  0.02  0.00 4105654   156
+    
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 73ba26c1240a25e7699449e82cfc09dad10fed80
+Author: Sathvika Vasireddy <sv@linux.ibm.com>
+Date:   Fri Dec 9 15:26:46 2022 +0530
+
+    lparstat: Fix negative values seen while running lparstat with -E option
+    
+    Negative values are seen while running lparstat with -E option.
+    This is because delta_purr value is less than delta_idle_purr.
+    Given that these values are read from different sources, a
+    small variation in the values is possible. So, in such cases,
+    round down delta_idle_purr to delta_purr.
+    
+    Without this patch:
+    =====
+    System Configuration
+    type=Dedicated mode=Capped smt=8 lcpu=240 mem=67033290112 kB cpus=0
+    ent=240.00
+    
+    ---Actual---                 -Normalized-
+    %busy  %idle   Frequency     %busy  %idle
+    ------ ------  ------------- ------ ------
+     -0.03 100.02  3.93GHz[111%]   0.01 110.97
+      0.00 100.00  3.93GHz[111%]   0.01 110.99
+     -0.04 100.03  3.93GHz[111%]   0.01 110.98
+      0.06  99.95  3.93GHz[111%]   0.01 110.99
+      0.02  99.98  3.93GHz[111%]   0.01 110.99
+    =====
+    
+    With this patch:
+    =====
+    System Configuration
+    type=Dedicated mode=Capped smt=8 lcpu=240 mem=67033290112 kB cpus=0
+    ent=240.00
+    
+    ---Actual---                 -Normalized-
+    %busy  %idle   Frequency     %busy  %idle
+    ------ ------  ------------- ------ ------
+      0.03  99.96  3.93GHz[111%]   0.01 110.98
+      0.00 100.00  3.93GHz[111%]   0.01 110.99
+      0.03  99.97  3.93GHz[111%]   0.01 110.99
+      0.00 100.00  3.93GHz[111%]   0.01 110.99
+      0.09  99.90  3.93GHz[111%]   0.01 110.99
+    =====
+    
+    Reported-by: Shirisha Ganta <shirisha.ganta1@ibm.com>
+    Signed-off-by: Sathvika Vasireddy <sv@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
 powerpc-utils-1.3.11
 =====================================================================
 commit fc3b6044401e5625bc825d594f8b89fda49b6596
