@@ -414,7 +414,7 @@ cache_get_dependent_cache(struct cache_info *cache, struct dr_info *dr_info)
 		if (cache->removed)
 			continue;
 
-		if (cache->phandle == cache->l2cache) {
+		if (c->phandle == cache->l2cache) {
 			say(EXTRA_DEBUG, "found cache %s for cache %s\n",
 			    c->name, cache->name);
 			return c;
