@@ -56,6 +56,8 @@
 #define DIAGNOSTICS_RUN_MODE	42
 #define CPU_OFFLINE		-1
 
+#define SYS_SMT_CONTROL "/sys/devices/system/cpu/smt/control"
+
 #ifdef HAVE_LINUX_PERF_EVENT_H
 struct cpu_freq {
 	int offline;
@@ -360,6 +362,20 @@ static int is_dscr_capable(void)
 	return 0;
 }
 
+/*
+ * Depends on kernel's CONFIG_HOTPLUG_CPU
+ */
+static int set_smt_control(int smt_state)
+{
+	if (set_attribute(SYS_SMT_CONTROL, "%d", smt_state)) {
+		/* Silently ignore kernel not supporting this feature */
+		if (errno != ENODEV)
+			perror(SYS_SMT_CONTROL);
+		return -1;
+	}
+	return 0;
+}
+
 static int do_smt(char *state, bool numeric)
 {
 	int rc = 0;
@@ -388,7 +404,9 @@ static int do_smt(char *state, bool numeric)
 			return -1;
 		}
 
-		rc = set_smt_state(smt_state);
+		/* Try using smt/control if failing, fall back to the legacy way */
+		if (set_smt_control(smt_state))
+			rc = set_smt_state(smt_state);
 	}
 
 	return rc;
