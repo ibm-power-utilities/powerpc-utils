@@ -375,7 +375,7 @@ for dev in $($LS -d ${DT}/vdevice/v-scsi* 2> /dev/null) ; do
     # pull the physical location
     IFS= read -r -d $'\0' physloc < "$dev/ibm,loc-code"
     hostphysloc=$physloc
-    connection=$(echo $dev | $SED -e "s!${DT}/vdevice/v-scsi@!!")
+    connection="${dev##*@}" # extract unit address
 
     # find the slot so it can be used in sysfs
     slot="$connection"
@@ -510,7 +510,7 @@ done
 for dev in $($LS -d ${DT}/vdevice/vfc-client* 2> /dev/null) ; do
     # pull the physical location
     IFS= read -r -d $'\0' physloc < "$dev/ibm,loc-code"
-    connection=$(echo $dev | $SED -e "s!${DT}/vdevice/vfc-client@!!")
+    connection="${dev##*@}" # extract unit address
     hostphysloc=$physloc
 
     # find the slot so it can be used in sysfs
