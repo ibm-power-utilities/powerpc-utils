@@ -399,7 +399,8 @@ for dev in $($LS -d ${DT}/vdevice/v-scsi* 2> /dev/null) ; do
 	     scsihost=$($LS -d $host/scsi_host*/ 2> /dev/null)
 	fi
 
-	if [[ $(cat $scsihost/state) == "running" ]] ; then
+	read scsihost_state < "${scsihost}/state"
+	if [[ "$scsihost_state" == "running" ]] ; then
             status=1
 	else
 	    status=0
@@ -456,7 +457,8 @@ for dev in $($LS -d ${DT}/vdevice/v-scsi* 2> /dev/null) ; do
 	    type="vdisk"
 	    physloc=$hostphysloc"-L"$conn
 
-	    if [[ $(cat $target/state) == "running" ]] ; then
+	    read target_state < "${target}/state"
+	    if [[ "$target_state" == "running" ]] ; then
 	         status=1
 	    else
 		 status=0
@@ -535,7 +537,8 @@ for dev in $($LS -d ${DT}/vdevice/vfc-client* 2> /dev/null) ; do
 	     scsihost=$($LS -d $host/scsi_host*/ 2> /dev/null)
 	fi
 
-	if [[ $(cat $scsihost/state) == "running" ]] ; then
+	read scsihost_state < "${scsihost}/state"
+	if [[ "$scsihost_state" == "running" ]] ; then
             status=1
 	else
 	    status=0
@@ -595,7 +598,8 @@ for dev in $($LS -d ${DT}/vdevice/vfc-client* 2> /dev/null) ; do
 		    subclass="fcp"
 		    type="disk"
 
-		    if [[ $(cat $t/$target/state) == "running" ]] ; then
+		    read target_state < "${t}/${target}/state"
+		    if [[ "$target_state" == "running" ]] ; then
 			 status=1
 		    else
 			 status=0
