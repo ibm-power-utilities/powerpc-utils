@@ -442,7 +442,9 @@ for dev in $($LS -d ${DT}/vdevice/v-scsi* 2> /dev/null) ; do
 
 	# loop through the targets for this host. 
 	for t in $($LS -d $host/target* 2> /dev/null); do
-	    target=$(echo $($LS -d $t/$($LS $t | $GREP -v uevent | $GREP -v power | $GREP -v subsystem)))
+	    declare -a target_glob
+	    target_glob=("${t}"/*:*:*:*) # could tighten up w/character class (:digit:)
+	    target="${target_glob[0]}"
 	    if [[ ! -d $target/block ]]; then
 	         name=$(echo $($LS -d $target/block* 2> /dev/null) | $SED -e "s/.*://")
 	    else
