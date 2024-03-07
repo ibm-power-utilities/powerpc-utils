@@ -36,6 +36,7 @@ TR="/usr/bin/tr"
 OD="/usr/bin/od"
 CUT="/usr/bin/cut"
 PSERIES_PLATFORM=$(dirname $0)/pseries_platform
+DT="/proc/device-tree"
 
 # Usage statemnet
 usage()
@@ -302,14 +303,14 @@ show_eth ()
 }
 
 # Look at every vNIC device
-for dev in $($LS -d /proc/device-tree/vdevice/vnic* 2> /dev/null); do
+for dev in $($LS -d ${DT}/vdevice/vnic* 2> /dev/null); do
     # use ofpathname to get the device name (i.e. eth0)
-    name=$($OFPATHNAME -l $(echo $dev | $SED -e "s/\/proc\/device-tree//") 2> /dev/null)
-    connection=$(echo $dev | $SED -e "s/\/proc\/device-tree\/vdevice\/l-lan@//")
+    name=$($OFPATHNAME -l $(echo $dev | $SED -e "s!${DT}!!") 2> /dev/null)
+    connection=$(echo $dev | $SED -e "s!${DT}/vdevice/l-lan@!!")
     parent="vio"
 
     # get the physical location
-    physloc=$(tr -d '\0' < $dev/ibm,loc-code)
+    IFS= read -r -d $'\0' physloc < "$dev/ibm,loc-code"
     uniquetype="adapter/vdevice/IBM,vnic"
     class="adapter"
     subclass="vdevice"
@@ -323,14 +324,14 @@ for dev in $($LS -d /proc/device-tree/vdevice/vnic* 2> /dev/null); do
 done
 
 # Look at every ibmveth (Virtual Ethernet) device 
-for dev in $($LS -d /proc/device-tree/vdevice/l-lan* 2> /dev/null); do 
+for dev in $($LS -d ${DT}/vdevice/l-lan* 2> /dev/null); do 
     # use ofpathname to get the device name (i.e. eth0)
-    name=$($OFPATHNAME -l $(echo $dev | $SED -e "s/\/proc\/device-tree//") 2> /dev/null)
-    connection=$(echo $dev | $SED -e "s/\/proc\/device-tree\/vdevice\/l-lan@//")
+    name=$($OFPATHNAME -l $(echo $dev | $SED -e "s!${DT}!!") 2> /dev/null)
+    connection=$(echo $dev | $SED -e "s!${DT}/vdevice/l-lan@!!")
     parent="vio"
 
     # get the physical location 
-    physloc=$(tr -d '\0' < $dev/ibm,loc-code)
+    IFS= read -r -d $'\0' physloc < "$dev/ibm,loc-code"
     uniquetype="adapter/vdevice/IBM,l-lan"
     class="adapter"
     subclass="vdevice"
@@ -344,15 +345,15 @@ for dev in $($LS -d /proc/device-tree/vdevice/l-lan* 2> /dev/null); do
 done
 
 # Look for PCI ethernet devices
-for pci_dev in $($LS -d /proc/device-tree/pci* 2> /dev/null); do 
+for pci_dev in $($LS -d ${DT}/pci* 2> /dev/null); do 
     for dev in $($LS -d $pci_dev/ethernet* 2> /dev/null); do 
 	# use ofpathname to get the device name (i.e. eth0)
-	name=$($OFPATHNAME -l $(echo $dev | $SED -e "s/\/proc\/device-tree//") 2> /dev/null)
-	connection=$(echo $pci_dev | $SED -e "s/\/proc\/device-tree\/pci@//")
+	name=$($OFPATHNAME -l $(echo $dev | $SED -e "s!${DT}!!") 2> /dev/null)
+	connection=$(echo $pci_dev | $SED -e "s!${DT}/pci@!!")
 	parent="pci"
 
 	# get the physical location 
-	physloc=$(tr -d '\0' < $dev/ibm,loc-code)
+	IFS= read -r -d $'\0' physloc < "$dev/ibm,loc-code"
 	type="$($OD -t x2 $dev/vendor-id $dev/device-id |
 		$CUT -f3,5 -d ' ' -s --output-delimiter='' | tr -d '\0')"
 	uniquetype="adapter/pci/$type"
@@ -370,14 +371,14 @@ done
 
 
 # Look at every ibmvscsi (Virtual SCSI) device
-for dev in $($LS -d /proc/device-tree/vdevice/v-scsi* 2> /dev/null) ; do
+for dev in $($LS -d ${DT}/vdevice/v-scsi* 2> /dev/null) ; do
     # pull the physical location
-    physloc=$(tr -d '\0' < $dev/ibm,loc-code)
+    IFS= read -r -d $'\0' physloc < "$dev/ibm,loc-code"
     hostphysloc=$physloc
-    connection=$(echo $dev | $SED -e "s/\/proc\/device-tree\/vdevice\/v-scsi@//")
+    connection="${dev##*@}" # extract unit address
 
     # find the slot so it can be used in sysfs
-    slot=$(echo $dev | $SED -e "s/\/proc\/device-tree\/vdevice\/v-scsi@//")
+    slot="$connection"
 
     # there is only one host per device, assign it to the path's name
     for host in $($LS -d /sys/devices/vio/$slot/host*) ; do
@@ -398,7 +399,8 @@ for dev in $($LS -d /proc/device-tree/vdevice/v-scsi* 2> /dev/null) ; do
 	     scsihost=$($LS -d $host/scsi_host*/ 2> /dev/null)
 	fi
 
-	if [[ $(cat $scsihost/state) == "running" ]] ; then
+	read scsihost_state < "${scsihost}/state"
+	if [[ "$scsihost_state" == "running" ]] ; then
             status=1
 	else
 	    status=0
@@ -440,7 +442,9 @@ for dev in $($LS -d /proc/device-tree/vdevice/v-scsi* 2> /dev/null) ; do
 
 	# loop through the targets for this host. 
 	for t in $($LS -d $host/target* 2> /dev/null); do
-	    target=$(echo $($LS -d $t/$($LS $t | $GREP -v uevent | $GREP -v power | $GREP -v subsystem)))
+	    declare -a target_glob
+	    target_glob=("${t}"/*:*:*:*) # could tighten up w/character class (:digit:)
+	    target="${target_glob[0]}"
 	    if [[ ! -d $target/block ]]; then
 	         name=$(echo $($LS -d $target/block* 2> /dev/null) | $SED -e "s/.*://")
 	    else
@@ -455,7 +459,8 @@ for dev in $($LS -d /proc/device-tree/vdevice/v-scsi* 2> /dev/null) ; do
 	    type="vdisk"
 	    physloc=$hostphysloc"-L"$conn
 
-	    if [[ $(cat $target/state) == "running" ]] ; then
+	    read target_state < "${target}/state"
+	    if [[ "$target_state" == "running" ]] ; then
 	         status=1
 	    else
 		 status=0
@@ -506,14 +511,14 @@ done
 
 
 # Look at every ibmvfc (Virtual FibreChannel) device
-for dev in $($LS -d /proc/device-tree/vdevice/vfc-client* 2> /dev/null) ; do
+for dev in $($LS -d ${DT}/vdevice/vfc-client* 2> /dev/null) ; do
     # pull the physical location
-    physloc=$(tr -d '\0' < $dev/ibm,loc-code)
-    connection=$(echo $dev | $SED -e "s/\/proc\/device-tree\/vdevice\/vfc-client@//")
+    IFS= read -r -d $'\0' physloc < "$dev/ibm,loc-code"
+    connection="${dev##*@}" # extract unit address
     hostphysloc=$physloc
 
     # find the slot so it can be used in sysfs
-    slot=$(echo $dev | $SED -e "s/\/proc\/device-tree\/vdevice\/vfc-client@//")
+    slot="$connection"
 
     # there is only one host per device, assign it to the path's name
     for host in $($LS -d /sys/devices/vio/$slot/host* 2> /dev/null) ; do
@@ -534,7 +539,8 @@ for dev in $($LS -d /proc/device-tree/vdevice/vfc-client* 2> /dev/null) ; do
 	     scsihost=$($LS -d $host/scsi_host*/ 2> /dev/null)
 	fi
 
-	if [[ $(cat $scsihost/state) == "running" ]] ; then
+	read scsihost_state < "${scsihost}/state"
+	if [[ "$scsihost_state" == "running" ]] ; then
             status=1
 	else
 	    status=0
@@ -594,7 +600,8 @@ for dev in $($LS -d /proc/device-tree/vdevice/vfc-client* 2> /dev/null) ; do
 		    subclass="fcp"
 		    type="disk"
 
-		    if [[ $(cat $t/$target/state) == "running" ]] ; then
+		    read target_state < "${t}/${target}/state"
+		    if [[ "$target_state" == "running" ]] ; then
 			 status=1
 		    else
 			 status=0
