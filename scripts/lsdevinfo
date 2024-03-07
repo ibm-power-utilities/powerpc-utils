@@ -378,7 +378,7 @@ for dev in $($LS -d ${DT}/vdevice/v-scsi* 2> /dev/null) ; do
     connection=$(echo $dev | $SED -e "s!${DT}/vdevice/v-scsi@!!")
 
     # find the slot so it can be used in sysfs
-    slot=$(echo $dev | $SED -e "s!${DT}/vdevice/v-scsi@!!")
+    slot="$connection"
 
     # there is only one host per device, assign it to the path's name
     for host in $($LS -d /sys/devices/vio/$slot/host*) ; do
@@ -514,7 +514,7 @@ for dev in $($LS -d ${DT}/vdevice/vfc-client* 2> /dev/null) ; do
     hostphysloc=$physloc
 
     # find the slot so it can be used in sysfs
-    slot=$(echo $dev | $SED -e "s!${DT}/vdevice/vfc-client@!!")
+    slot="$connection"
 
     # there is only one host per device, assign it to the path's name
     for host in $($LS -d /sys/devices/vio/$slot/host* 2> /dev/null) ; do
