@@ -36,6 +36,7 @@ TR="/usr/bin/tr"
 OD="/usr/bin/od"
 CUT="/usr/bin/cut"
 PSERIES_PLATFORM=$(dirname $0)/pseries_platform
+DT="/proc/device-tree"
 
 # Usage statemnet
 usage()
@@ -302,10 +303,10 @@ show_eth ()
 }
 
 # Look at every vNIC device
-for dev in $($LS -d /proc/device-tree/vdevice/vnic* 2> /dev/null); do
+for dev in $($LS -d ${DT}/vdevice/vnic* 2> /dev/null); do
     # use ofpathname to get the device name (i.e. eth0)
-    name=$($OFPATHNAME -l $(echo $dev | $SED -e "s!/proc/device-tree!!") 2> /dev/null)
-    connection=$(echo $dev | $SED -e "s!/proc/device-tree/vdevice/l-lan@!!")
+    name=$($OFPATHNAME -l $(echo $dev | $SED -e "s!${DT}!!") 2> /dev/null)
+    connection=$(echo $dev | $SED -e "s!${DT}/vdevice/l-lan@!!")
     parent="vio"
 
     # get the physical location
@@ -323,10 +324,10 @@ for dev in $($LS -d /proc/device-tree/vdevice/vnic* 2> /dev/null); do
 done
 
 # Look at every ibmveth (Virtual Ethernet) device 
-for dev in $($LS -d /proc/device-tree/vdevice/l-lan* 2> /dev/null); do 
+for dev in $($LS -d ${DT}/vdevice/l-lan* 2> /dev/null); do 
     # use ofpathname to get the device name (i.e. eth0)
-    name=$($OFPATHNAME -l $(echo $dev | $SED -e "s!/proc/device-tree!!") 2> /dev/null)
-    connection=$(echo $dev | $SED -e "s!/proc/device-tree/vdevice/l-lan@!!")
+    name=$($OFPATHNAME -l $(echo $dev | $SED -e "s!${DT}!!") 2> /dev/null)
+    connection=$(echo $dev | $SED -e "s!${DT}/vdevice/l-lan@!!")
     parent="vio"
 
     # get the physical location 
@@ -344,11 +345,11 @@ for dev in $($LS -d /proc/device-tree/vdevice/l-lan* 2> /dev/null); do
 done
 
 # Look for PCI ethernet devices
-for pci_dev in $($LS -d /proc/device-tree/pci* 2> /dev/null); do 
+for pci_dev in $($LS -d ${DT}/pci* 2> /dev/null); do 
     for dev in $($LS -d $pci_dev/ethernet* 2> /dev/null); do 
 	# use ofpathname to get the device name (i.e. eth0)
-	name=$($OFPATHNAME -l $(echo $dev | $SED -e "s!/proc/device-tree!!") 2> /dev/null)
-	connection=$(echo $pci_dev | $SED -e "s!/proc/device-tree/pci@!!")
+	name=$($OFPATHNAME -l $(echo $dev | $SED -e "s!${DT}!!") 2> /dev/null)
+	connection=$(echo $pci_dev | $SED -e "s!${DT}/pci@!!")
 	parent="pci"
 
 	# get the physical location 
@@ -370,14 +371,14 @@ done
 
 
 # Look at every ibmvscsi (Virtual SCSI) device
-for dev in $($LS -d /proc/device-tree/vdevice/v-scsi* 2> /dev/null) ; do
+for dev in $($LS -d ${DT}/vdevice/v-scsi* 2> /dev/null) ; do
     # pull the physical location
     IFS= read -r -d $'\0' physloc < "$dev/ibm,loc-code"
     hostphysloc=$physloc
-    connection=$(echo $dev | $SED -e "s!/proc/device-tree/vdevice/v-scsi@!!")
+    connection=$(echo $dev | $SED -e "s!${DT}/vdevice/v-scsi@!!")
 
     # find the slot so it can be used in sysfs
-    slot=$(echo $dev | $SED -e "s!/proc/device-tree/vdevice/v-scsi@!!")
+    slot=$(echo $dev | $SED -e "s!${DT}/vdevice/v-scsi@!!")
 
     # there is only one host per device, assign it to the path's name
     for host in $($LS -d /sys/devices/vio/$slot/host*) ; do
@@ -506,14 +507,14 @@ done
 
 
 # Look at every ibmvfc (Virtual FibreChannel) device
-for dev in $($LS -d /proc/device-tree/vdevice/vfc-client* 2> /dev/null) ; do
+for dev in $($LS -d ${DT}/vdevice/vfc-client* 2> /dev/null) ; do
     # pull the physical location
     IFS= read -r -d $'\0' physloc < "$dev/ibm,loc-code"
-    connection=$(echo $dev | $SED -e "s!/proc/device-tree/vdevice/vfc-client@!!")
+    connection=$(echo $dev | $SED -e "s!${DT}/vdevice/vfc-client@!!")
     hostphysloc=$physloc
 
     # find the slot so it can be used in sysfs
-    slot=$(echo $dev | $SED -e "s!/proc/device-tree/vdevice/vfc-client@!!")
+    slot=$(echo $dev | $SED -e "s!${DT}/vdevice/vfc-client@!!")
 
     # there is only one host per device, assign it to the path's name
     for host in $($LS -d /sys/devices/vio/$slot/host* 2> /dev/null) ; do
