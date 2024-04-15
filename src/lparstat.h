@@ -45,7 +45,7 @@ struct cpu_sysfs_file_desc {
 };
 typedef struct cpu_sysfs_file_desc cpu_sysfs_fd;
 
-extern void get_smt_state(struct sysentry *, char *);
+extern void get_processor_type(struct sysentry *, char *);
 extern void get_capped_mode(struct sysentry *, char *);
 extern void get_dedicated_mode(struct sysentry *, char *);
 extern void get_memory_mode(struct sysentry *, char *);
@@ -156,7 +156,7 @@ struct sysentry system_data[] = {
 	 .descr = "Maximum Virtual CPUs"},
 	{.name = "shared_processor_mode",
 	 .descr = "Type",
-	 .get = &get_smt_state},
+	 .get = &get_processor_type},
 	{.name = "slb_size",
 	 .descr = "SLB Entries"},
 	{.name = "MinMem",

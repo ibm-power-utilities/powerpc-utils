@@ -715,7 +715,7 @@ int parse_proc_stat()
 	return 0;
 }
 
-void get_smt_state(struct sysentry *se, char *buf)
+void get_processor_type(struct sysentry *se, char *buf)
 {
 	char *value = "?";
 
