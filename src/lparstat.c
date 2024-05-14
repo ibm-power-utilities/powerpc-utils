@@ -460,7 +460,8 @@ void get_cpu_app(struct sysentry *unused_se, char *buf)
 	se = get_sysentry("pool_idle_time");
 	new_app = strtoll(se->value, NULL, 0);
 	if (se->old_value[0] == '\0') {
-		old_app = 0;
+		se = get_sysentry("boot_pool_idle_time");
+		old_app = strtoll(se->value, NULL, 0);
 	} else {
 		old_app = strtoll(se->old_value, NULL, 0);
 	}
