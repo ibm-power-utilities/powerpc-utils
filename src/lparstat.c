@@ -36,6 +36,7 @@
 #include "lparstat.h"
 #include "pseries_platform.h"
 #include "cpu_info_helpers.h"
+#include <time.h>
 
 #define LPARCFG_FILE	"/proc/ppc64/lparcfg"
 #define SE_NOT_FOUND	"???"
@@ -255,14 +256,17 @@ long long get_delta_value(char *se_name)
 
 void get_time()
 {
-	struct timeval t;
 	struct sysentry *se;
+	struct timespec ts;
+	int err;
 
-	gettimeofday(&t, 0);
+	err = clock_gettime(CLOCK_BOOTTIME, &ts);
+	if (err)
+		return;
 
 	se = get_sysentry("time");
 	sprintf(se->value, "%lld",
-		(long long)t.tv_sec * 1000000LL + (long long)t.tv_usec);
+		(long long)ts.tv_sec);
 }
 
 int get_time_base()
@@ -304,37 +308,11 @@ double get_scaled_tb(void)
 	online_cores = atoi(se->value);
 
 	elapsed = get_delta_value("time");
-	elapsed = elapsed / 1000000.0;
 
 	se = get_sysentry("timebase");
 	timebase = atoi(se->value);
 
 	return (timebase * elapsed) * online_cores;
-}
-
-void get_sys_uptime(struct sysentry *unused_se, char *uptime)
-{
-	FILE *f;
-	char buf[80];
-
-	f = fopen("/proc/uptime", "r");
-	if (!f) {
-		fprintf(stderr, "Could not open /proc/uptime\n");
-		sprintf(uptime, SE_NOT_VALID);
-		return;
-	}
-
-	if ((fgets(buf, 80, f)) != NULL) {
-		char *value;
-
-		value = strchr(buf, ' ');
-		*value = '\0';
-		sprintf(uptime, "%s", buf);
-	} else {
-		sprintf(uptime, SE_NOT_VALID);
-	}
-
-	fclose(f);
 }
 
 int get_nominal_frequency(void)
@@ -403,13 +381,12 @@ void get_cpu_physc(struct sysentry *unused_se, char *buf)
 	delta_purr = get_delta_value("purr");
 
 	se = get_sysentry("tbr");
-	if (se->value[0] != '\0') {
+	if (se->old_value[0] != '\0') {
 		delta_tb = get_delta_value("tbr");
 
 		physc = delta_purr / delta_tb;
 	} else {
 		elapsed = get_delta_value("time");
-		elapsed = elapsed / 1000000.0;
 
 		se = get_sysentry("timebase");
 		timebase = atoi(se->value);
@@ -436,23 +413,9 @@ void get_cpu_app(struct sysentry *unused_se, char *buf)
 {
 	struct sysentry *se;
 	float timebase, app, elapsed_time;
-	long long new_app, old_app, delta_time;
-	char *descr, uptime[32];
+	long long new_app, old_app;
 
-	se = get_sysentry("time");
-	if (se->old_value[0] == '\0') {
-		/* Single report since boot */
-		get_sysdata("uptime", &descr, uptime);
-
-		if (!strcmp(uptime, SE_NOT_VALID)) {
-			sprintf(buf, "-");
-			return;
-		}
-		elapsed_time = atof(uptime);
-	} else {
-		delta_time = get_delta_value("time");
-		elapsed_time = delta_time / 1000000.0;
-	}
+	elapsed_time = get_delta_value("time");
 
 	se = get_sysentry("timebase");
 	timebase = atof(se->value);

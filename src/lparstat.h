@@ -60,7 +60,6 @@ extern void get_cpu_stat(struct sysentry *, char *);
 extern void get_cpu_physc(struct sysentry *, char *);
 extern void get_per_entc(struct sysentry *, char *);
 extern void get_cpu_app(struct sysentry *, char *);
-extern void get_sys_uptime(struct sysentry *, char *);
 extern void get_cpu_util_purr(struct sysentry *unused_se, char *buf);
 extern void get_cpu_idle_purr(struct sysentry *unused_se, char *buf);
 extern void get_cpu_util_spurr(struct sysentry *unused_se, char *buf);
@@ -271,11 +270,6 @@ struct sysentry system_data[] = {
 	/* /proc/interrupts */
 	{.name = "phint",
 	 .descr = "Phantom Interrupts"},
-
-	/* /proc/uptime */
-	{.name = "uptime",
-	 .descr = "System Uptime",
-	 .get = &get_sys_uptime},
 
 	/* /sys/devices/system/cpu/cpu<n>/ */
 	/* Sum of per CPU SPURR registers */
