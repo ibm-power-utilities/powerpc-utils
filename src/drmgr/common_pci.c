@@ -969,7 +969,7 @@ get_node_by_name(const char *drc_name, uint32_t node_type)
 		/* See if the drc index was specified */
 		drc_index = strtoul(drc_name, NULL, 0);
 		if (node->drc_index == drc_index)
-			continue;
+			break;
 
 		for (child = node->children; child; child = child->next) {
 			if (strcmp(drc_name, child->drc_name) == 0)
