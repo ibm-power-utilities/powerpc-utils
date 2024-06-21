@@ -31,6 +31,7 @@
 #include "rtas_calls.h"
 #include "dr.h"
 #include "drpci.h"
+#include "ofdt.h"
 
 static char *sw_error = "Internal software error. Contact your service "
 			"representative.\n";
@@ -367,27 +368,38 @@ static int do_identify(struct dr_node *all_nodes)
  * off, isolated, and the LED is turned off.
  *
  * @param slot
+ * @param partner path or not
  * @returns 0 on success, !0 on failure
  */
-static int add_work(struct dr_node *node)
+static int add_work(struct dr_node *node, bool partner_device)
 {
-	int pow_state;	/* Tells us if power was turned on when	 */
-	int iso_state;	/* Tells us isolation state after 	 */
+	int pow_state = POWER_OFF;	/* Tells us if power was turned */
+					/* on when	 */
+	int iso_state = ISOLATE;	/* Tells us isolation state after */
 	int rc;
 	struct of_node *new_nodes;/* nodes returned from configure_connector */
 
-	/* if we're continuing, set LED_ON and see if a card is really there. */
-	if (process_led(node, LED_ON))
-		return -1;
+	/*
+	 * Already checked the card presence for the original device
+	 * and both multipaths use the same card. So do not need to
+	 * check the card presence again for the partner device.
+	 */
+	if (!partner_device) {
+		/* if we're continuing, set LED_ON and see if a card */
+		/* is really there. */
+		if (process_led(node, LED_ON))
+			return -1;
 
-	say(DEBUG, "is calling card_present\n");
-	rc = card_present(node, &pow_state, &iso_state);
-	if (!rc) {
-		say(ERROR, "No PCI card was detected in the specified "
-		    "PCI slot.\n");
-		rtas_set_indicator(ISOLATION_STATE, node->drc_index, ISOLATE);
-		set_power(node->drc_power, POWER_OFF);
-		return -1;
+		say(DEBUG, "is calling card_present\n");
+		rc = card_present(node, &pow_state, &iso_state);
+		if (!rc) {
+			say(ERROR, "No PCI card was detected in the specified "
+					"PCI slot.\n");
+			rtas_set_indicator(ISOLATION_STATE, node->drc_index,
+					ISOLATE);
+			set_power(node->drc_power, POWER_OFF);
+			return -1;
+		}
 	}
 
 	if (!pow_state) {
@@ -461,7 +473,7 @@ static int add_work(struct dr_node *node)
  * power to a slot off. The prompts the user to insert the new card
  * into the slot.
  */
-static int do_insert_card_work(struct dr_node *node)
+static int do_insert_card_work(struct dr_node *node, bool partner_device)
 {
 	int rc;
 
@@ -495,18 +507,18 @@ static int do_insert_card_work(struct dr_node *node)
 		return -1;
 	}
 
-	if (usr_prompt) {
+	if (usr_prompt && !partner_device) {
 		/* Prompt user to put in card and to press
 		 * Enter to continue or other key to exit.
 		 */
 		if (process_led(node, LED_ACTION))
 			return -1;
 
-		printf("The visual indicator for the specified PCI slot has\n"
-			"been set to the action state. Insert the PCI card\n"
-			"into the identified slot, connect any devices to be\n"
-			"configured and press Enter to continue. Enter x to "
-			"exit.\n");
+		printf("The visual indicator for the PCI slot <%s>\n"
+			"has been set to the action state. Insert the PCI\n"
+			"card into the identified slot, connect any devices\n"
+			"to be configured and press Enter to continue.\n"
+			"Enter x to exit.\n", node->drc_name);
 
 		if (!(getchar() == '\n')) {
 			process_led(node, LED_OFF);
@@ -543,6 +555,58 @@ find_partner_node(struct dr_node *node, struct dr_node *all_nodes)
 	return partner_node;
 }
 
+static int insert_add_work(struct dr_node *node, bool partner_device)
+{
+	int usr_key = USER_CONT;
+	int rc;
+
+	if (!partner_device) {
+		/* Prompt user only if in interactive mode. */
+		if (usr_prompt) {
+			if (usr_slot_identification)
+				usr_key = identify_slot(node);
+
+			if (usr_key == USER_QUIT) {
+				if (node->children == NULL)
+					process_led(node, LED_OFF);
+				else
+					process_led(node, LED_ON);
+				return 0;
+			}
+		}
+
+		if (node->children != NULL) {
+			/* If there's already something here, turn the
+			 * LED on and exit with user error.
+			 */
+			process_led(node, LED_ON);
+			say(ERROR, "The specified PCI slot is already occupied.\n");
+			return -1;
+		}
+	}
+
+	if (!pci_hotplug_only) {
+		rc = do_insert_card_work(node, partner_device);
+		if (rc)
+			return rc;
+	}
+
+	/* Call the routine which determines
+	 * what the user wants and does it.
+	*/
+        rc = add_work(node, partner_device);
+        if (rc)
+                return rc;
+
+	/*
+	 * Need to populate w/ children to retrieve partner device
+	 */
+	if (init_node(node))
+		return -1;
+
+	return 1;
+}
+
 /**
  * do_add
  *
@@ -560,8 +624,7 @@ find_partner_node(struct dr_node *node, struct dr_node *all_nodes)
  */
 static int do_add(struct dr_node *all_nodes)
 {
-	struct dr_node *node;
-	int usr_key = USER_CONT;
+	struct dr_node *node, *partner_node = NULL;
 	int rc;
 
 	node = find_slot(usr_drc_name, 0, all_nodes, 0);
@@ -573,41 +636,19 @@ static int do_add(struct dr_node *all_nodes)
 		return -1;
 	}
 
-	/* Prompt user only if in interactive mode. */
-	if (usr_prompt) {
-		if (usr_slot_identification)
-			usr_key = identify_slot(node);
+	rc = insert_add_work(node, false);
+	if (rc <= 0)
+		return rc;
 
-		if (usr_key == USER_QUIT) {
-			if (node->children == NULL)
-				process_led(node, LED_OFF);
-			else
-				process_led(node, LED_ON);
-			return 0;
-		}
-	}
-
-	if (node->children != NULL) {
-		/* If there's already something here, turn the
-		 * LED on and exit with user error.
-		 */
-		process_led(node, LED_ON);
-		say(ERROR, "The specified PCI slot is already occupied.\n");
-		return -1;
-	}
-
-	if (!pci_hotplug_only) {
-		rc = do_insert_card_work(node);
-		if (rc)
+	partner_node = find_partner_node(node, all_nodes);
+	if (partner_node) {
+		printf("<%s> and <%s> are\nmultipath partner devices. "
+			"So <%s> is\nalso added.\n", node->drc_name,
+			partner_node->drc_name, partner_node->drc_name);
+		rc = insert_add_work(partner_node, true);
+		if (rc <= 0)
 			return rc;
 	}
-
-	/* Call the routine which determines
-	 * what the user wants and does it.
-	 */
-	rc = add_work(node);
-	if (rc)
-		return rc;
 
 	say(DEBUG, "is calling enable_slot to config adapter\n");
 
@@ -615,9 +656,12 @@ static int do_add(struct dr_node *all_nodes)
 	 * qemu pci slots so we let the generic kernel pci code probe the device
 	 * by rescanning the bus in the qemu virtio case.
 	 */
-	if (!pci_virtio)
+	if (!pci_virtio) {
 		set_hp_adapter_status(PHP_CONFIG_ADAPTER, node->drc_name);
-	else
+		if (partner_node)
+			set_hp_adapter_status(PHP_CONFIG_ADAPTER,
+					partner_node->drc_name);
+	} else
 		pci_rescan_bus();
 
 	return 0;
@@ -896,7 +940,7 @@ static int do_replace(struct dr_node *all_nodes)
 		}
 	}
 
-	rc = add_work(repl_node);
+	rc = add_work(repl_node, false);
 	if (rc)
 		return rc;
 
@@ -917,7 +961,7 @@ static int do_replace(struct dr_node *all_nodes)
 		if (remove_work(repl_node, false))
 			return -1;
 
-		rc = add_work(repl_node);
+		rc = add_work(repl_node, false);
 		if (!rc)
 			set_hp_adapter_status(PHP_CONFIG_ADAPTER,
 					      repl_node->drc_name);

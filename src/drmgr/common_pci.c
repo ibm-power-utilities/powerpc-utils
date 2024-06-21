@@ -295,7 +295,7 @@ add_child_node(struct dr_node *parent, char *child_path)
  * @param node
  * @returns 0 on success, !0 otherwise
  */
-static int
+int
 init_node(struct dr_node *node)
 {
 	DIR *d;

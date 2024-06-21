@@ -184,6 +184,7 @@ int get_min_common_depth(void);
 int get_assoc_arrays(const char *dir, struct assoc_arrays *aa,
 		     int min_common_depth);
 int of_associativity_to_node(const char *dir, int min_common_depth);
+int init_node(struct dr_node *);
 
 static inline int aa_index_to_node(struct assoc_arrays *aa, uint32_t aa_index)
 {
