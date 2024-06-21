@@ -650,23 +650,24 @@ drc_index_to_name(uint32_t index, struct dr_connector *drc_list)
 }
 
 /**
- * get_drc_by_name
- * @brief Retrieve a dr_connector with the specified drc_name
+ * search_drc_by_key
+ * @brief Retrieve a dr_connector based on DRC name or DRC index
  *
  * This routine searches the drc lists for a dr_connector with the
- * specified name starting at the specified directory.  If a dr_connector
- * is found the root_dir that the dr_connector was found in is also
- * filled out.
+ * specified name or index starting at the specified directory. If
+ * a dr_connector is found the root_dir that the dr_connector was
+ * found in is also filled out.
  *
- * @param drc_name name of the dr_connector to search for
+ * @param key to serach for the dr_connector
  * @param drc pointer to a drc to point to the found dr_connector
  * @param root_dir pointer to buf to fill in with root directory
  * @param start_dir, directory to start searching
+ * @param key_type whether the key is DRC name or DRC index
  * @returns 0 on success (drc and root_dir filled in), !0 on failure
  */
 int
-get_drc_by_name(char *drc_name, struct dr_connector *drc, char *root_dir,
-		char *start_dir)
+search_drc_by_key(void *key, struct dr_connector *drc, char *root_dir,
+		char *start_dir, int key_type)
 {
         struct dr_connector *drc_list = NULL;
         struct dr_connector *drc_entry;
@@ -681,7 +682,7 @@ get_drc_by_name(char *drc_name, struct dr_connector *drc, char *root_dir,
         if (drc_list == NULL)
 		return -1;
 
-	drc_entry = search_drc_list(drc_list, NULL, DRC_NAME, drc_name);
+	drc_entry = search_drc_list(drc_list, NULL, key_type, key);
 	if (drc_entry != NULL) {
 		memcpy(drc, drc_entry, sizeof(*drc));
 		sprintf(root_dir, "%s", start_dir);
@@ -700,7 +701,8 @@ get_drc_by_name(char *drc_name, struct dr_connector *drc, char *root_dir,
 			continue;
 
 		sprintf(dir_path, "%s/%s", start_dir, de->d_name);
-		rc = get_drc_by_name(drc_name, drc, root_dir, dir_path);
+		rc = search_drc_by_key(key, drc, root_dir, dir_path,
+					key_type);
 		if (rc == 0)
 			break;
 	}
@@ -709,17 +711,57 @@ get_drc_by_name(char *drc_name, struct dr_connector *drc, char *root_dir,
 	return rc;
 }
 
-struct dr_connector *
-get_drc_by_index(uint32_t drc_index, struct dr_connector *drc_list)
+/**
+ * get_drc_by_name
+ * @brief Retrieve a dr_connector with the specified drc_name
+ *
+ * This routine searches the drc lists for a dr_connector with the
+ * specified name starting at the specified directory.  If a dr_connector
+ * is found the root_dir that the dr_connector was found in is also
+ * filled out.
+ *
+ * @param drc_name name of the dr_connector to search for
+ * @param drc pointer to a drc to point to the found dr_connector
+ * @param root_dir pointer to buf to fill in with root directory
+ * @param start_dir, directory to start searching
+ * @returns 0 on success (drc and root_dir filled in), !0 on failure
+ */
+int
+get_drc_by_name(char *drc_name, struct dr_connector *drc, char *root_dir,
+		char *start_dir)
 {
-	struct dr_connector *drc;
+	int rc;
 
-	for (drc = drc_list; drc; drc = drc->next) {
-		if (drc->index == drc_index)
-			return drc;
-	}
+	rc = search_drc_by_key(drc_name, drc, root_dir, start_dir, DRC_NAME);
 
-	return NULL;
+	return rc;
+}
+
+/**
+ * get_drc_by_index
+ * @brief Retrieve a dr_connector with the specified index
+ *
+ * This routine searches the drc lists for a dr_connector with the
+ * specified index starting at the specified directory. If a dr_connector
+ * is found the root_dir that the dr_connector was found in is also
+ * filled out.
+ *
+ * @param index of the dr_connector to search for
+ * @param drc pointer to a drc to point to the found dr_connector
+ * @param root_dir pointer to buf to fill in with root directory
+ * @param start_dir, directory to start searching
+ * @returns 0 on success (drc and root_dir filled in), !0 on failure
+ */
+int
+get_drc_by_index(uint32_t index, struct dr_connector *drc, char *root_dir,
+	char *start_dir)
+{
+	int rc;
+
+	rc = search_drc_by_key((void *)&index, drc, root_dir, start_dir,
+				DRC_INDEX);
+
+	return rc;
 }
 
 /*
