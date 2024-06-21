@@ -877,6 +877,44 @@ static int do_remove(struct dr_node *all_nodes)
 	return 0;
 }
 
+static int replace_add_work(struct dr_node *node, bool partner_device)
+{
+
+	say(DEBUG, "repl_node:path=%s node:path=%s\n",
+	    node->ofdt_path, node->children->ofdt_path);
+
+	/* Prompt user to replace card and to press
+	 * Enter to continue or x to exit. Exiting here
+	 * means the original card has been removed.
+	 */
+	if (usr_prompt && !partner_device) {
+		if (process_led(node, LED_ACTION))
+			return -1;
+
+		printf("The visual indicator for the specified PCI slot <%s>\n"
+			"has been set to the action state. Replace the PCI\n"
+			"card in the identified slot and press Enter to "
+			"continue.\nEnter x to exit. Exiting now leaves the "
+			"PCI slot\nin the removed state.\n",
+			node->drc_name);
+
+		if (!(getchar() == '\n')) {
+			process_led(node, LED_OFF);
+			return 0;
+		}
+	}
+
+	if (add_work(node, partner_device))
+		return -1;
+
+	say(DEBUG, "CONFIGURING the card in node[name=%s, path=%s]\n",
+	    node->drc_name, node->ofdt_path);
+
+	set_hp_adapter_status(PHP_CONFIG_ADAPTER, node->drc_name);
+
+	return 1;
+}
+
 /**
  * do_replace
  * @brief Allows the replacement of an adapter connected to a
@@ -899,12 +937,19 @@ static int do_remove(struct dr_node *all_nodes)
  */
 static int do_replace(struct dr_node *all_nodes)
 {
-	struct dr_node *repl_node;
+	struct dr_node *repl_node, *partner_node = NULL;
 	int rc;
 
 	repl_node = find_slot(usr_drc_name, 0, all_nodes, 0);
 	if (repl_node == NULL)
 		return -1;
+
+	partner_node = find_partner_node(repl_node, all_nodes);
+	if (partner_node)
+		printf("<%s> and <%s> are\nmultipath partner devices. "
+			"So <%s> will\nbe also replaced.\n",
+			repl_node->drc_name, partner_node->drc_name,
+			partner_node->drc_name);
 
 	/* Call the routine which does the work of getting the node info,
 	 * then removing it from the OF device tree.
@@ -912,42 +957,23 @@ static int do_replace(struct dr_node *all_nodes)
 	if (remove_work(repl_node, false))
 		return -1;
 
+	if (partner_node) {
+		if (remove_work(partner_node, true))
+			return -1;
+	}
+
 	if (!repl_node->children) {
 		say(ERROR, "Bad node struct.\n");
 		return -1;
 	}
 
-	say(DEBUG, "repl_node:path=%s node:path=%s\n",
-	    repl_node->ofdt_path, repl_node->children->ofdt_path);
-
-	/* Prompt user to replace card and to press
-	 * Enter to continue or x to exit. Exiting here
-	 * means the original card has been removed.
-	 */
-	if (usr_prompt) {
-		if (process_led(repl_node, LED_ACTION))
-			return -1;
-
-		printf("The visual indicator for the specified PCI slot "
-			"has\nbeen set to the action state. Replace the PCI "
-			"card\nin the identified slot and press Enter to "
-			"continue.\nEnter x to exit. Exiting now leaves the "
-			"PCI slot\nin the removed state.\n");
-
-		if (!(getchar() == '\n')) {
-			process_led(repl_node, LED_OFF);
-			return 0;
-		}
-	}
-
-	rc = add_work(repl_node, false);
-	if (rc)
+	rc = replace_add_work(repl_node, false);
+	if (rc <= 0)
 		return rc;
 
-	say(DEBUG, "CONFIGURING the card in node[name=%s, path=%s]\n",
-	    repl_node->drc_name, repl_node->ofdt_path);
-
-	set_hp_adapter_status(PHP_CONFIG_ADAPTER, repl_node->drc_name);
+	rc = replace_add_work(partner_node, true);
+	if (rc <= 0)
+		return rc;
 
 	if (repl_node->post_replace_processing) {
 		int prompt_save = usr_prompt;
@@ -961,10 +987,23 @@ static int do_replace(struct dr_node *all_nodes)
 		if (remove_work(repl_node, false))
 			return -1;
 
+		partner_node = find_partner_node(repl_node, node);
+		if (partner_node) {
+			if (remove_work(partner_node, true))
+				return -1;
+		}
+
 		rc = add_work(repl_node, false);
 		if (!rc)
 			set_hp_adapter_status(PHP_CONFIG_ADAPTER,
 					      repl_node->drc_name);
+
+		if (partner_node) {
+			rc = add_work(partner_node, true);
+			if (!rc)
+				set_hp_adapter_status(PHP_CONFIG_ADAPTER,
+					partner_node->drc_name);
+		}
 
 		usr_prompt = prompt_save;
 	}
