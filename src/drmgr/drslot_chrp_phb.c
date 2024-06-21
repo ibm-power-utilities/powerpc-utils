@@ -441,8 +441,13 @@ static int acquire_phb(char *drc_name, struct dr_node **phb)
  */
 static int add_phb(void)
 {
-	struct dr_node *phb = NULL;
+	struct dr_node *phb = NULL, *partner_phb = NULL;
+	uint32_t partner_drc_index = 0;
+	char drc_index_str[10];
 	int rc, n_children = 0;
+	struct dr_connector drc;
+	char path[DR_PATH_MAX];
+	int partner_rc = 0;
 
 	phb = get_node_by_name(usr_drc_name, PHB_NODES);
 	if (phb) {
@@ -507,9 +512,39 @@ static int add_phb(void)
 		}
 	}
 
+	if (!rc) {
+		/* Find the multipath partner device index if available */
+		partner_rc = get_my_partner_drc_index(phb, &partner_drc_index);
+		if (!partner_rc && partner_drc_index) {
+			sprintf(drc_index_str, "%d", partner_drc_index);
+			/* If the partner device is already added */
+			partner_phb = get_node_by_name(drc_index_str,
+							PHB_NODES);
+			if (partner_phb) {
+				printf("<%s> has partner device <%s>\n",
+				       phb->drc_name, partner_phb->drc_name);
+			} else {
+				/*
+				 * Find out if the partner device can be
+				 * configured. Get the DRC info for the
+				 * partner DRC index
+				 */
+				partner_rc = get_drc_by_index(partner_drc_index,
+							&drc, path, OFDT_BASE);
+				if (partner_rc)
+					printf("<%s> can have partner "
+						"device but not assigned to "
+						"LPAR yet\n", phb->drc_name);
+			}
+		}
+	}
+
 phb_add_error:
 	if (phb)
 		free_node(phb);
+
+	if (partner_phb)
+		free_node(partner_phb);
 
 	return rc;
 }
