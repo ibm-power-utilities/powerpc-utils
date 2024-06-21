@@ -283,9 +283,11 @@ static int disable_os_hp_children(struct dr_node *phb)
  */
 static int remove_phb(void)
 {
-	struct dr_node *phb;
+	struct dr_node *phb, *partner_phb = NULL;
 	struct dr_node *child;
 	struct dr_node *hp_list = NULL;
+	uint32_t partner_drc_index = 0;
+	char drc_index_str[10];
 	int rc = 0;
 
 	phb = get_node_by_name(usr_drc_name, PHB_NODES);
@@ -303,6 +305,20 @@ static int remove_phb(void)
 	if (phb_has_dlpar_children(phb)) {
 		rc = -1;
 		goto phb_remove_error;
+	}
+
+	/* Find the multipath partner device index if available */
+	rc = get_my_partner_drc_index(phb, &partner_drc_index);
+	if (!rc && partner_drc_index) {
+		sprintf(drc_index_str, "%d", partner_drc_index);
+
+		/* Find the partner phb device */
+		partner_phb = get_node_by_name(drc_index_str, PHB_NODES);
+		if (partner_phb) {
+			printf("Partner adapter location : %s",
+					partner_phb->drc_name);
+			printf(" Partner adapter must be removed\n");
+		}
 	}
 
 	/* Now, disable any hotplug children */
@@ -357,6 +373,9 @@ static int remove_phb(void)
 phb_remove_error:
 	if (phb)
 		free_node(phb);
+
+	if (partner_phb)
+		free_node(partner_phb);
 
 	if (hp_list)
 		free_node(hp_list);
