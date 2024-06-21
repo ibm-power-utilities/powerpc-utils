@@ -26,6 +26,7 @@
 #include <errno.h>
 #include <locale.h>
 #include <librtas.h>
+#include <stdbool.h>
 
 #include "rtas_calls.h"
 #include "dr.h"
@@ -99,9 +100,9 @@ identify_slot(struct dr_node *node)
 	if (process_led(node, LED_ID))
 		return USER_QUIT;
 
-	printf("The visual indicator for the specified PCI slot has\n"
-		"been set to the identify state. Press Enter to continue\n"
-		"or enter x to exit.\n");
+	printf("The visual indicator for the PCI slot <%s>\n"
+		"has been set to the identify state. Press Enter to\n"
+		"continue or enter x to exit.\n", node->drc_name);
 
 	if (getchar() == '\n')
 		return (USER_CONT);
@@ -146,7 +147,8 @@ find_drc_name(uint32_t drc_index, struct dr_node *all_nodes)
  * @returns pointer to slot on success, NULL otherwise
  */
 static struct dr_node *
-find_slot(char *drc_name, struct dr_node *all_nodes)
+find_slot(char *drc_name, uint32_t drc_index,
+		struct dr_node *all_nodes, bool partner)
 {
 	struct dr_node *node;	/* working pointer */
 
@@ -157,11 +159,17 @@ find_slot(char *drc_name, struct dr_node *all_nodes)
 	while (node != NULL) {
 		if (cmp_drcname(node->drc_name, drc_name))
 			break;
+		else if (drc_index && (node->drc_index == drc_index))
+			break;
 		else
 			node = node->next;
 	}
 
-	if ((node == NULL) || (node->skip))
+	/*
+	 * Partner path may not be assigned to LPAR.
+	 * So ignore if can not find the node for the partner.
+	 */
+	if ((!partner && (node == NULL)) || (node && (node->skip)))
 		say(ERROR, "The specified PCI slot is either invalid\n"
 		    "or does not support hot plug operations.\n");
 
@@ -316,7 +324,7 @@ static int do_identify(struct dr_node *all_nodes)
 	int usr_key;
 	int led_state;
 
-	node = find_slot(usr_drc_name, all_nodes);
+	node = find_slot(usr_drc_name, 0, all_nodes, 0);
 	if (node == NULL)
 		return -1;
 
@@ -510,6 +518,32 @@ static int do_insert_card_work(struct dr_node *node)
 }
 
 /**
+ * find_partner_node
+ *
+ * Find the partner DRC index and retrieve the partner node.
+ */
+static struct dr_node *
+find_partner_node(struct dr_node *node, struct dr_node *all_nodes)
+{
+	struct dr_node *partner_node = NULL;
+	uint32_t partner_index = 0;
+	int rc;
+
+	/*
+	 * Expect the partner device only for the PCI node
+	 */
+	if (!node->children)
+		return NULL;
+
+	/* Find the multipath partner device index if available */
+	rc = get_my_partner_drc_index(node->children, &partner_index);
+	if (!rc)
+		partner_node = find_slot(NULL, partner_index, all_nodes, 1);
+
+	return partner_node;
+}
+
+/**
  * do_add
  *
  * Prepares a PCI hot plug slot for adding an adapter, then
@@ -530,7 +564,7 @@ static int do_add(struct dr_node *all_nodes)
 	int usr_key = USER_CONT;
 	int rc;
 
-	node = find_slot(usr_drc_name, all_nodes);
+	node = find_slot(usr_drc_name, 0, all_nodes, 0);
 	if (node == NULL)
 		return -1;
 
@@ -602,50 +636,50 @@ static int do_add(struct dr_node *all_nodes)
  * Open Firmware device tree. The slot is isolated and powered off,
  * and the LED is turned off.
  *
- * @returns pointer slot on success, NULL on failure
+ * @returns 0 on success, -1 on failure
  */
-static struct dr_node *remove_work(struct dr_node *all_nodes)
+static int remove_work(struct dr_node *node, bool partner_device)
 {
-	struct dr_node *node;
 	struct dr_node *child;
 	int rc;
 	int usr_key = USER_CONT;
 
-	node = find_slot(usr_drc_name, all_nodes);
 	if (node == NULL)
-		return NULL;
+		return -1;
 
 	say(DEBUG, "found node: drc name=%s, index=0x%x, path=%s\n",
 	     node->drc_name, node->drc_index, node->ofdt_path);
 
 	if (is_display_adapter(node)) {
 		say(ERROR, "DLPAR of display adapters is not supported.\n");
-		return NULL;
+		return -1;
 	}
 
-	if (usr_prompt) {
-		if (usr_slot_identification)
-			usr_key = identify_slot(node);
+	if (!partner_device) {
+		if (usr_prompt) {
+			if (usr_slot_identification)
+				usr_key = identify_slot(node);
 
-		if (usr_key == USER_QUIT) {
-			if (node->children == NULL)
-				process_led(node, LED_OFF);
-			else
-				process_led(node, LED_ON);
-			return NULL;
+			if (usr_key == USER_QUIT) {
+				if (node->children == NULL)
+					process_led(node, LED_OFF);
+				else
+					process_led(node, LED_ON);
+				return -1;
+			}
 		}
-	}
 
-	/* Turn on the LED while we go do some work. */
-	if (process_led(node, LED_ON))
-		return NULL;
+		/* Turn on the LED while we go do some work. */
+		if (process_led(node, LED_ON))
+			return -1;
 
-	/* Make sure there's something there to remove. */
-	if (node->children == NULL) {
-		process_led(node, LED_OFF);
-		say(ERROR, "There is no configured card to remove from the "
-		    "specified PCI slot.\n");
-		return NULL;
+		/* Make sure there's something there to remove. */
+		if (node->children == NULL) {
+			process_led(node, LED_OFF);
+			say(ERROR, "There is no configured card to remove "
+				"from the specified PCI slot.\n");
+			return -1;
+		}
 	}
 
 	if (!pci_virtio) {
@@ -660,7 +694,7 @@ static struct dr_node *remove_work(struct dr_node *all_nodes)
 			int rc = get_hp_adapter_status(node->drc_name);
 			if (rc != NOT_CONFIG) {
 				say(ERROR, "Unconfig adapter failed.\n");
-				return NULL;
+				return -1;
 			}
 		} else {
 			/* In certain cases such as a complete failure of the
@@ -697,12 +731,12 @@ static struct dr_node *remove_work(struct dr_node *all_nodes)
 			rtas_set_indicator(ISOLATION_STATE, node->drc_index,
 					   ISOLATE);
 			set_power(node->drc_power, POWER_OFF);
-			return NULL;
+			return -1;
 		}
 	}
 
 	if (pci_hotplug_only)
-		return node;
+		return 0;
 
 	/* We have to isolate and power off before
 	 * allowing the user to physically remove
@@ -719,7 +753,7 @@ static struct dr_node *remove_work(struct dr_node *all_nodes)
 			say(ERROR, "%s", sw_error);
 
 		set_power(node->drc_power, POWER_OFF);
-		return NULL;
+		return rc;
 	}
 
 	say(DEBUG, "is calling set_power(POWER_OFF index 0x%x, power_domain "
@@ -733,10 +767,10 @@ static struct dr_node *remove_work(struct dr_node *all_nodes)
 			say(ERROR, "%s", sw_error);
 
 		set_power(node->drc_power, POWER_OFF);
-		return NULL;
+		return rc;
 	}
 
-	return node;
+	return 0;
 }
 
 /**
@@ -759,12 +793,26 @@ static struct dr_node *remove_work(struct dr_node *all_nodes)
  */
 static int do_remove(struct dr_node *all_nodes)
 {
-	struct dr_node *node;
+	struct dr_node *node, *partner_node = NULL;
 
-	/* Remove the specified slot and update the device-tree */
-	node = remove_work(all_nodes);
+	node = find_slot(usr_drc_name, 0, all_nodes, 0);
 	if (node == NULL)
 		return -1;
+
+	partner_node = find_partner_node(node, all_nodes);
+        if (partner_node)
+		printf("<%s> and <%s> are\nmultipath partner devices. "
+			"So <%s> will\nbe also removed.\n", node->drc_name,
+			partner_node->drc_name, partner_node->drc_name);
+
+	/* Remove the specified slot and update the device-tree */
+	if (remove_work(node, false))
+		return -1;
+
+	if (partner_node) {
+		if (remove_work(partner_node, true))
+			return -1;
+	}
 
 	/* Prompt user to remove card and to press
 	 * Enter to continue. Can't exit out of here.
@@ -773,10 +821,10 @@ static int do_remove(struct dr_node *all_nodes)
 		if (process_led(node, LED_ACTION))
 			return -1;
 
-		printf("The visual indicator for the specified PCI slot "
-			"has\nbeen set to the action state. Remove the PCI "
-			"card\nfrom the identified slot and press Enter to "
-			"continue.\n");
+		printf("The visual indicator for the specified PCI "
+			"slot has\nbeen set to the action state. "
+			"Remove the PCI card\nfrom the identified "
+			"slot and press Enter to continue.\n");
 		getchar();
 		if (process_led(node, LED_OFF))
 			return -1;
@@ -810,11 +858,14 @@ static int do_replace(struct dr_node *all_nodes)
 	struct dr_node *repl_node;
 	int rc;
 
+	repl_node = find_slot(usr_drc_name, 0, all_nodes, 0);
+	if (repl_node == NULL)
+		return -1;
+
 	/* Call the routine which does the work of getting the node info,
 	 * then removing it from the OF device tree.
 	 */
-	repl_node = remove_work(all_nodes);
-	if (repl_node == NULL)
+	if (remove_work(repl_node, false))
 		return -1;
 
 	if (!repl_node->children) {
@@ -856,12 +907,16 @@ static int do_replace(struct dr_node *all_nodes)
 
 	if (repl_node->post_replace_processing) {
 		int prompt_save = usr_prompt;
+		struct dr_node *node = repl_node;
 
 		say(DEBUG, "Doing post replacement processing...\n");
 		/* disable prompting for post-processing */
 		usr_prompt = 0;;
 
-		repl_node = remove_work(repl_node);
+		repl_node = find_slot(usr_drc_name, 0, node, 0);
+		if (remove_work(repl_node, false))
+			return -1;
+
 		rc = add_work(repl_node);
 		if (!rc)
 			set_hp_adapter_status(PHP_CONFIG_ADAPTER,
