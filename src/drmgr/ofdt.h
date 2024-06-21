@@ -174,6 +174,7 @@ struct dr_connector *search_drc_list(struct dr_connector *,
 				     struct dr_connector *, int, void *);
 
 int get_my_drc_index(char *, uint32_t *);
+int get_my_partner_drc_index(struct dr_node *, uint32_t *);
 int drc_name_to_index(const char *, struct dr_connector *);
 char * drc_index_to_name(uint32_t, struct dr_connector *);
 int get_drc_by_name(char *, struct dr_connector *, char *, char *);

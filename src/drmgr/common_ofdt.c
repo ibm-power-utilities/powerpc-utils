@@ -610,6 +610,26 @@ get_my_drc_index(char *of_path, uint32_t *index)
 }
 
 /**
+ * get_my_partner_drc_index
+ *
+ * @param of_full_path
+ * @param index
+ * @returns 0 on success, !0 otherwise
+ */
+int get_my_partner_drc_index(struct dr_node *node, uint32_t *index)
+{
+	int rc;
+
+	if (node == NULL)
+		return -1;
+
+	rc = get_ofdt_uint_property(node->ofdt_path,
+				"ibm,multipath-partner-drc", index);
+
+	return rc;
+}
+
+/**
  * drc_name_to_index
  * @brief Find the drc index for the given name
  *
