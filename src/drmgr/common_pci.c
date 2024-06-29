@@ -1434,6 +1434,7 @@ acquire_hp_resource(struct dr_connector *drc, char *of_path)
 			return -1;
 
 		rc = add_device_tree_nodes(of_path, new_nodes);
+		free_of_node(new_nodes);
 		if (rc) {
 			say(ERROR, "add nodes failed for 0x%x\n", drc->index);
 			return rc;

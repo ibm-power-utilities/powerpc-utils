@@ -454,6 +454,7 @@ static int add_work(struct dr_node *node, bool partner_device)
 
 	say(DEBUG, "Adding %s to %s\n", new_nodes->name, node->ofdt_path);
 	rc = add_device_tree_nodes(node->ofdt_path, new_nodes);
+	free_of_node(new_nodes);
 	if (rc) {
 		say(DEBUG, "add_device_tree_nodes failed at %s\n",
 		    node->ofdt_path);
