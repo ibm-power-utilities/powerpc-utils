@@ -515,10 +515,16 @@ void get_cpu_idle_purr(struct sysentry *unused_se, char *buf)
 {
 	double delta_tb, delta_purr, delta_idle_purr;
 	double physc, idle;
+	char *descr;
+	char mode[32];
 
 	delta_tb = get_scaled_tb();
 	delta_purr = get_delta_value("purr");
 	delta_idle_purr = get_delta_value("idle_purr");
+
+	get_sysdata("shared_processor_mode", &descr, mode);
+	if (!strcmp(mode, "Dedicated"))
+		get_sysdata("DedDonMode", &descr, mode);
 
 	/*
 	 * Given that these values are read from different
@@ -528,10 +534,23 @@ void get_cpu_idle_purr(struct sysentry *unused_se, char *buf)
 	 */
 	if (delta_idle_purr > delta_purr)
 		delta_idle_purr = delta_purr;
+        /*
+	 * Round down delta_purr to delta_tb if delta_tb - delta_purr
+	 * error is under -1%.
+	 */
+	if (((delta_tb - delta_purr + delta_idle_purr) / delta_tb * 100) > -1 && ((delta_tb - delta_purr + delta_idle_purr) / delta_tb * 100) < 0)
+		delta_purr = delta_tb;
 
-	physc = (delta_purr - delta_idle_purr) / delta_tb;
-	idle = (delta_purr / delta_tb) - physc;
-	idle *= 100.00;
+	if (!strcmp(mode, "Capped")) {
+		/* For dedicated - capped mode */
+		physc = (delta_purr - delta_idle_purr) / delta_tb;
+		idle = (delta_purr / delta_tb) - physc;
+		idle *= 100.00;
+	} else {
+		/* For shared and dedicated - donate mode */
+		idle = (delta_tb - delta_purr + delta_idle_purr) / delta_tb;
+		idle *= 100.00;
+	}
 
 	sprintf(buf, "%.2f", idle);
 }
@@ -559,14 +578,30 @@ void get_cpu_idle_spurr(struct sysentry *unused_se, char *buf)
 	double delta_tb, delta_spurr, delta_idle_spurr;
 	double physc, idle;
 	double rfreq;
+	char *descr;
+	char mode[32];
 
 	delta_tb = get_scaled_tb();
 	delta_spurr = get_delta_value("spurr");
 	delta_idle_spurr = get_delta_value("idle_spurr");
 
-	physc = (delta_spurr - delta_idle_spurr) / delta_tb;
-	idle = (delta_spurr / delta_tb) - physc;
-	idle *= 100.00;
+	get_sysdata("shared_processor_mode", &descr, mode);
+	if (!strcmp(mode, "Dedicated"))
+		get_sysdata("DedDonMode", &descr, mode);
+
+	if (delta_spurr > delta_tb)
+		delta_spurr = delta_tb;
+
+	if (!strcmp(mode, "Capped")) {
+		/* For dedicated - capped mode */
+		physc = (delta_spurr - delta_idle_spurr) / delta_tb;
+		idle = (delta_spurr / delta_tb) - physc;
+		idle *= 100.00;
+	} else {
+		/* For shared and dedicated - donate mode */
+		idle = (delta_tb - delta_spurr + delta_idle_spurr) / delta_tb;
+		idle *= 100.00;
+	}
 
 	rfreq = round_off_freq();
 	idle += ((idle * rfreq) / 100);
