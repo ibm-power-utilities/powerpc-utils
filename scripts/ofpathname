@@ -1649,10 +1649,14 @@ of2l_vfc()
         link=$PWD
 
         local device_dir=${PWD##/*/}
-        goto_dir $PWD "devspec"
+        goto_dir $PWD "devspec" 0
+	if [[ $? -eq 1 ]]; then
+		continue;
+	fi
         OF_PATH=`$CAT $PWD/devspec`
+
         if [[ -z $OF_PATH ]]; then
-                err $ERR_NO_LOGDEV
+		err $ERR_NO_LOGDEV
         fi
 
         # Skip if this is not the correct FC port
@@ -1727,10 +1731,14 @@ of2l_fc()
 
 	cd $link
         local device_dir=${PWD##/*/}
-        goto_dir $PWD "devspec"
+        goto_dir $PWD "devspec" 0
+	if [[ $? -eq 1 ]]; then
+		continue;
+	fi
         OF_PATH=`$CAT devspec`
+
         if [[ -z $OF_PATH ]]; then
-                err $ERR_NO_LOGDEV
+		err $ERR_NO_LOGDEV;
         fi
 
         # Skip if this is not the correct FC port
