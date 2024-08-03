@@ -536,11 +536,14 @@ static int do_insert_card_work(struct dr_node *node, bool partner_device)
  * Find the partner DRC index and retrieve the partner node.
  */
 static struct dr_node *
-find_partner_node(struct dr_node *node, struct dr_node *all_nodes)
+find_partner_node(struct dr_node *node, struct dr_node *all_nodes,
+		int *dt_entry_present)
 {
 	struct dr_node *partner_node = NULL;
 	uint32_t partner_index = 0;
 	int rc;
+
+	*dt_entry_present = 0;
 
 	/*
 	 * Expect the partner device only for the PCI node
@@ -550,8 +553,20 @@ find_partner_node(struct dr_node *node, struct dr_node *all_nodes)
 
 	/* Find the multipath partner device index if available */
 	rc = get_my_partner_drc_index(node->children, &partner_index);
-	if (!rc)
+	if (!rc) {
 		partner_node = find_slot(NULL, partner_index, all_nodes, 1);
+		/*
+		 * Do not add if the partner entry is already present.
+		 * Nothing to remove if the partner node does not exists.
+		 */
+		if (partner_node && partner_node->children) {
+			uint32_t index;
+			rc = get_my_drc_index(partner_node->children->ofdt_path,
+					&index);
+			if (!rc && (partner_index == index))
+				*dt_entry_present = 1;
+		}
+	}
 
 	return partner_node;
 }
@@ -626,6 +641,7 @@ static int insert_add_work(struct dr_node *node, bool partner_device)
 static int do_add(struct dr_node *all_nodes)
 {
 	struct dr_node *node, *partner_node = NULL;
+	int dt_entry;
 	int rc;
 
 	node = find_slot(usr_drc_name, 0, all_nodes, 0);
@@ -641,8 +657,8 @@ static int do_add(struct dr_node *all_nodes)
 	if (rc <= 0)
 		return rc;
 
-	partner_node = find_partner_node(node, all_nodes);
-	if (partner_node) {
+	partner_node = find_partner_node(node, all_nodes, &dt_entry);
+	if (partner_node && !dt_entry) {
 		printf("<%s> and <%s> are\nmultipath partner devices. "
 			"So <%s> is\nalso added.\n", node->drc_name,
 			partner_node->drc_name, partner_node->drc_name);
@@ -839,16 +855,25 @@ static int remove_work(struct dr_node *node, bool partner_device)
 static int do_remove(struct dr_node *all_nodes)
 {
 	struct dr_node *node, *partner_node = NULL;
+	int dt_entry;
 
 	node = find_slot(usr_drc_name, 0, all_nodes, 0);
 	if (node == NULL)
 		return -1;
 
-	partner_node = find_partner_node(node, all_nodes);
-        if (partner_node)
-		printf("<%s> and <%s> are\nmultipath partner devices. "
-			"So <%s> will\nbe also removed.\n", node->drc_name,
-			partner_node->drc_name, partner_node->drc_name);
+	partner_node = find_partner_node(node, all_nodes, &dt_entry);
+	if (partner_node) {
+		/*
+		 * Remove partner device if exists in the device tree.
+		 */
+		if (dt_entry)
+			printf("<%s> and <%s> are\nmultipath partner devices. "
+				"So <%s> will\nalso be removed.\n",
+				node->drc_name, partner_node->drc_name,
+				partner_node->drc_name);
+		else
+			partner_node = NULL;
+	}
 
 	/* Remove the specified slot and update the device-tree */
 	if (remove_work(node, false))
@@ -939,18 +964,23 @@ static int replace_add_work(struct dr_node *node, bool partner_device)
 static int do_replace(struct dr_node *all_nodes)
 {
 	struct dr_node *repl_node, *partner_node = NULL;
+	int dt_entry;
 	int rc;
 
 	repl_node = find_slot(usr_drc_name, 0, all_nodes, 0);
 	if (repl_node == NULL)
 		return -1;
 
-	partner_node = find_partner_node(repl_node, all_nodes);
-	if (partner_node)
-		printf("<%s> and <%s> are\nmultipath partner devices. "
-			"So <%s> will\nbe also replaced.\n",
-			repl_node->drc_name, partner_node->drc_name,
-			partner_node->drc_name);
+	partner_node = find_partner_node(repl_node, all_nodes, &dt_entry);
+	if (partner_node) {
+		if (dt_entry)
+			printf("<%s> and <%s> are\nmultipath partner devices. "
+				"So <%s> will\nalso be replaced.\n",
+				repl_node->drc_name, partner_node->drc_name,
+				partner_node->drc_name);
+		else
+			partner_node = NULL;
+	}
 
 	/* Call the routine which does the work of getting the node info,
 	 * then removing it from the OF device tree.
@@ -972,9 +1002,11 @@ static int do_replace(struct dr_node *all_nodes)
 	if (rc <= 0)
 		return rc;
 
-	rc = replace_add_work(partner_node, true);
-	if (rc <= 0)
-		return rc;
+	if (partner_node) {
+		rc = replace_add_work(partner_node, true);
+		if (rc <= 0)
+			return rc;
+	}
 
 	if (repl_node->post_replace_processing) {
 		int prompt_save = usr_prompt;
@@ -988,8 +1020,8 @@ static int do_replace(struct dr_node *all_nodes)
 		if (remove_work(repl_node, false))
 			return -1;
 
-		partner_node = find_partner_node(repl_node, node);
-		if (partner_node) {
+		partner_node = find_partner_node(repl_node, node, &dt_entry);
+		if (partner_node && dt_entry) {
 			if (remove_work(partner_node, true))
 				return -1;
 		}
