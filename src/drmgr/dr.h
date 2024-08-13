@@ -188,4 +188,5 @@ static inline int do_kernel_dlpar(const char *cmd, int len)
 {
 	return do_kernel_dlpar_common(cmd, len, 0);
 }
+int do_dt_kernel_dlpar(uint32_t, int);
 #endif

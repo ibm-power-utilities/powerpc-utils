@@ -1619,3 +1619,32 @@ int disable_hp_children(char *drc_name)
 	}
 	return 0;
 }
+
+/*
+ * kernel interface to update device tree nodes.
+ * dlpar dt [add|remove] index <#drc index>
+ */
+int do_dt_kernel_dlpar(uint32_t index, int action)
+{
+	char cmdbuf[256];
+	int offset;
+
+	offset = sprintf(cmdbuf, "%s ", "dt");
+
+	switch (action) {
+	case ADD:
+		offset += sprintf(cmdbuf + offset, "add ");
+		break;
+	case REMOVE:
+		offset += sprintf(cmdbuf + offset, "remove ");
+		break;
+	default:
+		/* Should not happen */
+		say(ERROR, "Invalid action type specified\n");
+		return -EINVAL;
+	}
+
+	offset += sprintf(cmdbuf + offset, "index 0x%x", index);
+
+	return do_kernel_dlpar(cmdbuf, offset);
+}

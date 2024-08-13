@@ -1504,6 +1504,12 @@ int kernel_dlpar_exists(void)
 			if (strstr(buf, "cpu"))
 				return 1;
 			break;
+		case DRC_TYPE_PCI:
+		case DRC_TYPE_PHB:
+		case DRC_TYPE_SLOT:
+			if (strstr(buf, "dt"))
+				return 1;
+			break;
 		default:
 			return 0;
 		}
