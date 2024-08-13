@@ -108,17 +108,16 @@ release_phb(struct dr_node *phb)
 {
 	int rc;
 
-	rc = remove_device_tree_nodes(phb->ofdt_path);
-	if (rc)
-		return rc;
-
-	if (phb->phb_ic_ofdt_path[0] != '\0') {
-		rc = remove_device_tree_nodes(phb->phb_ic_ofdt_path);
-		if (rc)
-			return rc;
+	if (kernel_dlpar_exists())
+		rc = do_dt_kernel_dlpar(phb->drc_index, REMOVE);
+	else {
+		rc = remove_device_tree_nodes(phb->ofdt_path);
+		if (!rc && (phb->phb_ic_ofdt_path[0] != '\0'))
+			rc = remove_device_tree_nodes(phb->phb_ic_ofdt_path);
 	}
 
-	rc = release_drc(phb->drc_index, PHB_DEV);
+	if (!rc)
+		rc = release_drc(phb->drc_index, PHB_DEV);
 
 	return rc;
 }
@@ -390,7 +389,6 @@ phb_remove_error:
 static int acquire_phb(char *drc_name, struct dr_node **phb)
 {
 	struct dr_connector drc;
-	struct of_node *of_nodes;
 	char path[DR_PATH_MAX];
 	int rc;
 
@@ -405,14 +403,20 @@ static int acquire_phb(char *drc_name, struct dr_node **phb)
 	if (rc)
 		return rc;
 
-	of_nodes = configure_connector(drc.index);
-	if (of_nodes == NULL) {
-		release_drc(drc.index, PHB_DEV);
-		return -1;
-	}
+	if (kernel_dlpar_exists()) {
+		rc = do_dt_kernel_dlpar(drc.index, ADD);
+	} else {
+		struct of_node *of_nodes;
 
-	rc = add_device_tree_nodes(path, of_nodes);
-	free_of_node(of_nodes);
+		of_nodes = configure_connector(drc.index);
+		if (of_nodes == NULL) {
+			release_drc(drc.index, PHB_DEV);
+			return -1;
+		}
+
+		rc = add_device_tree_nodes(path, of_nodes);
+		free_of_node(of_nodes);
+	}
 	if (rc) {
 		say(ERROR, "add_device_tree_nodes failed at %s\n", path);
 		release_drc(drc.index, PHB_DEV);

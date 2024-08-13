@@ -1390,7 +1390,6 @@ print_node_list(struct dr_node *first_node)
 static int
 acquire_hp_resource(struct dr_connector *drc, char *of_path)
 {
-	struct of_node *new_nodes;
 	int state;
 	int rc;
 
@@ -1429,12 +1428,21 @@ acquire_hp_resource(struct dr_connector *drc, char *of_path)
 	}
 
 	if (state == PRESENT) {
-		new_nodes = configure_connector(drc->index);
-		if (new_nodes == NULL)
-			return -1;
+		/*
+		 * Use kernel DLPAR interface if it is enabled
+		 */
+		if (kernel_dlpar_exists()) {
+			rc = do_dt_kernel_dlpar(drc->index, ADD);
+		} else {
+			struct of_node *new_nodes;
 
-		rc = add_device_tree_nodes(of_path, new_nodes);
-		free_of_node(new_nodes);
+			new_nodes = configure_connector(drc->index);
+			if (new_nodes == NULL)
+				return -1;
+
+			rc = add_device_tree_nodes(of_path, new_nodes);
+			free_of_node(new_nodes);
+		}
 		if (rc) {
 			say(ERROR, "add nodes failed for 0x%x\n", drc->index);
 			return rc;
@@ -1490,7 +1498,14 @@ release_hp_resource(struct dr_node *node)
 {
 	int rc;
 
-	rc = remove_device_tree_nodes(node->ofdt_path);
+	/*
+	 * Use kernel DLPAR interface if it is enabled
+	 */
+	if (kernel_dlpar_exists())
+		rc = do_dt_kernel_dlpar(node->drc_index, REMOVE);
+	else
+		rc = remove_device_tree_nodes(node->ofdt_path);
+
 	if (rc) {
 		say(ERROR, "failed to remove kernel nodes for index 0x%x\n",
 		    node->drc_index);
