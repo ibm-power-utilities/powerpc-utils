@@ -377,7 +377,6 @@ static int add_work(struct dr_node *node, bool partner_device)
 					/* on when	 */
 	int iso_state = ISOLATE;	/* Tells us isolation state after */
 	int rc;
-	struct of_node *new_nodes;/* nodes returned from configure_connector */
 
 	/*
 	 * Already checked the card presence for the original device
@@ -445,16 +444,26 @@ static int add_work(struct dr_node *node, bool partner_device)
 	 * the return status requires a message, print it out
 	 * and exit, otherwise, add the nodes to the OF tree.
 	 */
-	new_nodes = configure_connector(node->drc_index);
-	if (new_nodes == NULL) {
-		rtas_set_indicator(ISOLATION_STATE, node->drc_index, ISOLATE);
-		set_power(node->drc_power, POWER_OFF);
-		return -1;
+	if (kernel_dlpar_exists()) {
+		rc = do_dt_kernel_dlpar(node->drc_index, ADD);
+	} else {
+		struct of_node *new_nodes; /* nodes returned from */
+					   /* configure_connector */
+
+		new_nodes = configure_connector(node->drc_index);
+		if (new_nodes == NULL) {
+			rtas_set_indicator(ISOLATION_STATE, node->drc_index,
+					ISOLATE);
+			set_power(node->drc_power, POWER_OFF);
+			return -1;
+		}
+
+		say(DEBUG, "Adding %s to %s\n", new_nodes->name,
+				node->ofdt_path);
+		rc = add_device_tree_nodes(node->ofdt_path, new_nodes);
+		free_of_node(new_nodes);
 	}
 
-	say(DEBUG, "Adding %s to %s\n", new_nodes->name, node->ofdt_path);
-	rc = add_device_tree_nodes(node->ofdt_path, new_nodes);
-	free_of_node(new_nodes);
 	if (rc) {
 		say(DEBUG, "add_device_tree_nodes failed at %s\n",
 		    node->ofdt_path);
@@ -786,7 +795,10 @@ static int remove_work(struct dr_node *node, bool partner_device)
 	 * the device tree.
 	 */
 	for (child = node->children; child; child = child->next) {
-		rc = remove_device_tree_nodes(child->ofdt_path);
+		if (kernel_dlpar_exists())
+			rc = do_dt_kernel_dlpar(child->drc_index, REMOVE);
+		else
+			rc = remove_device_tree_nodes(child->ofdt_path);
 		if (rc) {
 			say(ERROR, "%s", sw_error);
 			rtas_set_indicator(ISOLATION_STATE, node->drc_index,
