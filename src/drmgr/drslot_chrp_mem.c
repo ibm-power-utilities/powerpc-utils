@@ -441,7 +441,8 @@ int get_dynamic_reconfig_lmbs_v2(uint64_t lmb_sz,
 {
 	struct drconf_mem_v2 *drmem;
 	uint32_t lmb_sets;
-	int i, rc = 0;
+	unsigned i;
+	int rc;
 
 	lmb_list->drconf_buf_sz = get_property_size(DYNAMIC_RECONFIG_MEM,
 						   "ibm,dynamic-memory-v2");
@@ -471,7 +472,7 @@ int get_dynamic_reconfig_lmbs_v2(uint64_t lmb_sz,
 	for (i = 0; i < lmb_sets; i++) {
 		uint32_t drc_index, seq_lmbs;
 		uint64_t address;
-		int j;
+		unsigned j;
 
 		address = be64toh(drmem->base_addr);
 		drc_index = be32toh(drmem->drc_index);
@@ -741,7 +742,7 @@ static void update_drconf_affinity(struct dr_node *lmb,
 	uint32_t assoc_entries;
 	uint32_t assoc_entry_sz;
 	uint32_t *prop_val;
-	int i;
+	unsigned i;
 
 	/* find the ibm,associativity property */
 	node = lmb->lmb_of_node;

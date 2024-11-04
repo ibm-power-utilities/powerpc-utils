@@ -670,7 +670,7 @@ getsmallvalue(char *p, char *buf)
 static char *
 lookupfield(char *p)
 {
-    int i;
+    unsigned i;
 
     for (i = 0; (i < sizeof(descs) / sizeof(descs[0])); i++) {
 	if (strcmp(p, descs[i].name) == 0)
@@ -1181,7 +1181,7 @@ print_of_config_part(struct nvram *nvram, char *pname)
 {
     struct partition_header	*phead;
     char	*data;
-    int		i;
+    unsigned	i;
 
     phead = nvram_find_partition(nvram, 0, pname, NULL);
     if (phead == NULL) 
@@ -1223,7 +1223,8 @@ print_of_config(struct nvram *nvram, char *config_var, char *pname,
 {
     struct partition_header *phead;
     char *data, terminator;
-    int  i, varlen;
+    int  i;
+    size_t varlen;
     int  rc = -1;
 
     terminator = '\n';
