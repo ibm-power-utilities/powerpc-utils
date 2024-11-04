@@ -1473,7 +1473,8 @@ static int remove_lmb_by_index(uint32_t drc_index)
 static int remove_lmb_from_node(struct ppcnuma_node *node, uint32_t count)
 {
 	struct dr_node *lmb;
-	int err, done = 0, unlinked = 0;
+	int err;
+	unsigned done = 0, unlinked = 0;
 
 	say(DEBUG, "Try removing %d / %d LMBs from node %d\n",
 	    count, node->n_lmbs, node->node_id);
