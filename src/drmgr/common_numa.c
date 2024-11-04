@@ -27,7 +27,7 @@
 #include "drmem.h"		/* for DYNAMIC_RECONFIG_MEM */
 #include "common_numa.h"
 
-struct ppcnuma_node *ppcnuma_fetch_node(struct ppcnuma_topology *numa, int nid)
+struct ppcnuma_node *ppcnuma_fetch_node(struct ppcnuma_topology *numa, unsigned nid)
 {
 	struct ppcnuma_node *node;
 
@@ -67,7 +67,8 @@ static int read_numa_topology(struct ppcnuma_topology *numa)
 {
 	struct bitmask *cpus;
 	struct ppcnuma_node *node;
-	int rc, max_node, nid, i;
+	int rc;
+	unsigned max_node, nid, i;
 
 	if (numa_available() < 0)
 		return -ENOENT;

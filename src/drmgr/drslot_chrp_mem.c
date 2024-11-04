@@ -312,12 +312,14 @@ get_mem_node_lmbs(struct lmb_list_head *lmb_list)
 
 static int link_lmb_to_numa_node(struct dr_node *lmb)
 {
-	int nid;
+	int ret;
+	unsigned nid;
 	struct ppcnuma_node *node;
 
-	nid = aa_index_to_node(&numa.aa, lmb->lmb_aa_index);
-	if (nid == -1)
+	ret = aa_index_to_node(&numa.aa, lmb->lmb_aa_index);
+	if (ret == -1)
 		return 0;
+	nid = ret;
 
 	node = ppcnuma_fetch_node(&numa, nid);
 	if (!node)
@@ -1521,7 +1523,7 @@ static int remove_lmb_from_node(struct ppcnuma_node *node, uint32_t count)
 static void update_cpuless_node_ratio(void)
 {
 	struct ppcnuma_node *node;
-	int nid;
+	unsigned nid;
 
 	/*
 	 * Assumptions:
@@ -1549,7 +1551,7 @@ static void update_cpuless_node_ratio(void)
 static int remove_cpuless_lmbs(uint32_t count)
 {
 	struct ppcnuma_node *node;
-	int nid;
+	unsigned nid;
 	uint32_t total = count, todo, done = 0, this_loop;
 
 	while (count) {
@@ -1593,7 +1595,7 @@ static int remove_cpuless_lmbs(uint32_t count)
 
 static void update_node_ratio(void)
 {
-	int nid;
+	unsigned nid;
 	struct ppcnuma_node *node, *n, **p;
 	uint32_t cpu_ratio, mem_ratio;
 
@@ -1695,7 +1697,7 @@ static void build_numa_topology(void)
 
 static void clear_numa_lmb_links(void)
 {
-	int nid;
+	unsigned nid;
 	struct ppcnuma_node *node;
 
 	ppcnuma_foreach_node(&numa, nid, node)
@@ -1706,7 +1708,7 @@ static int numa_based_remove(uint32_t count)
 {
 	struct lmb_list_head *lmb_list;
 	struct ppcnuma_node *node;
-	int nid;
+	unsigned nid;
 	uint32_t done = 0;
 
 	/*
