@@ -45,7 +45,7 @@ int usr_prompt = 1;
 
 /* user-specified quantity of devices to add/remove */
 /* user-specified quantity of accelerator QoS credits to assign */
-int usr_drc_count = 0;
+unsigned usr_drc_count = 0;
 
 /* user specified drc type to use */
 enum drc_type usr_drc_type = DRC_TYPE_NONE;

@@ -79,7 +79,7 @@ extern int usr_timeout;
 extern char *usr_drc_name;
 extern uint32_t usr_drc_index;
 extern int usr_prompt;
-extern int usr_drc_count;
+extern unsigned usr_drc_count;
 extern enum drc_type usr_drc_type;
 extern char *usr_p_option;
 extern char *usr_t_option;
