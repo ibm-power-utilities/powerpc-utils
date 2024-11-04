@@ -854,7 +854,7 @@ static void report_system_power_mode(void)
 static void setrlimit_open_files(void)
 {
 	struct rlimit old_rlim, new_rlim;
-	int new = threads_in_system + 8;
+	unsigned new = threads_in_system + 8;
 
 	getrlimit(RLIMIT_NOFILE, &old_rlim);
 
