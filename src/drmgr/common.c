@@ -1270,10 +1270,10 @@ int update_sysparm(void)
 			return 1;
 		}
 
-		usr_drc_count = -usr_drc_count;
+		return set_sysparm(linux_parm, curval - usr_drc_count);
+	} else {
+		return set_sysparm(linux_parm, curval + usr_drc_count);
 	}
-	
-	return set_sysparm(linux_parm, curval + usr_drc_count);
 }
 
 int
