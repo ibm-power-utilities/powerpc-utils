@@ -30,7 +30,7 @@
 #include "rtas_calls.h"
 #include "drpci.h"
 
-extern int output_level;
+extern unsigned output_level;
 extern int log_fd;
 
 extern int read_dynamic_memory_v2;
@@ -133,7 +133,7 @@ int cpu_entitlement_capable(void);
 int mem_entitlement_capable(void);
 void print_dlpar_capabilities(void);
 
-void set_output_level(int);
+void set_output_level(unsigned);
 
 int run_hooks(enum drc_type drc_type, enum drmgr_action, enum hook_phase phase,
 	      int drc_count);

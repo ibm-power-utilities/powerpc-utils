@@ -94,7 +94,7 @@ static const char * const hook_action_name[] = {
  * @param level level to set the output level to
  */
 inline void
-set_output_level(int level)
+set_output_level(unsigned level)
 {
 	output_level = level;
 
