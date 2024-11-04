@@ -844,7 +844,7 @@ int get_min_common_depth(void)
 	size = load_property(RTAS_DIRECTORY, ASSOC_REF_POINTS, &p);
 	if (size <= 0)
 		return size;
-	if (size < sizeof(uint32_t)) {
+	if (size < (int)sizeof(uint32_t)) {
 		report_unknown_error(__FILE__, __LINE__);
 		free(p);
 		return -EINVAL;
@@ -884,7 +884,7 @@ int get_assoc_arrays(const char *dir, struct assoc_arrays *aa,
 	}
 
 	/* Sanity check */
-	if (size != (aa->n_arrays * aa->array_sz + 2)) {
+	if ((unsigned)size != (aa->n_arrays * aa->array_sz + 2)) {
 		say(ERROR, "Bad size of the associativity lookup arrays\n");
 		goto out_free;
 	}
