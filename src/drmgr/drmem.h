@@ -24,7 +24,7 @@ struct lmb_list_head {
 	struct dr_node	*last;
 	char		*drconf_buf;
 	int		drconf_buf_sz;
-	int		lmbs_modified;
+	unsigned	lmbs_modified;
 	int		sort;
 	int		lmbs_found;
 };

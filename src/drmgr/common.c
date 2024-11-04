@@ -94,7 +94,7 @@ static const char * const hook_action_name[] = {
  * @param level level to set the output level to
  */
 inline void
-set_output_level(int level)
+set_output_level(unsigned level)
 {
 	output_level = level;
 
@@ -730,7 +730,7 @@ update_property(const char *buf, size_t len)
  * @returns 0 on success, -1 otherwise
  */
 static int
-get_att_prop(const char *path, const char *name, char *buf, size_t buf_sz,
+get_att_prop(const char *path, const char *name, char *buf, ssize_t buf_sz,
 	     const char *attr_type)
 {
 	FILE *fp;
@@ -797,7 +797,7 @@ get_att_prop(const char *path, const char *name, char *buf, size_t buf_sz,
  * @returns 0 on success, !0 otherwise
  */
 int
-get_property(const char *path, const char *property, void *buf, size_t buf_sz)
+get_property(const char *path, const char *property, void *buf, ssize_t buf_sz)
 {
 	return get_att_prop(path, property, buf, buf_sz, NULL);
 }
@@ -814,7 +814,7 @@ get_property(const char *path, const char *property, void *buf, size_t buf_sz)
  */
 int
 get_int_attribute(const char *path, const char *attribute, void *buf,
-		  size_t buf_sz)
+		  ssize_t buf_sz)
 {
 	return get_att_prop(path, attribute, buf, buf_sz, "%i");
 }
@@ -831,7 +831,7 @@ get_int_attribute(const char *path, const char *attribute, void *buf,
  */
 int
 get_str_attribute(const char *path, const char *attribute, void *buf,
-		  size_t buf_sz)
+		  ssize_t buf_sz)
 {
 	return get_att_prop(path, attribute, buf, buf_sz, "%s");
 }
@@ -1270,10 +1270,10 @@ int update_sysparm(void)
 			return 1;
 		}
 
-		usr_drc_count = -usr_drc_count;
+		return set_sysparm(linux_parm, curval - usr_drc_count);
+	} else {
+		return set_sysparm(linux_parm, curval + usr_drc_count);
 	}
-	
-	return set_sysparm(linux_parm, curval + usr_drc_count);
 }
 
 int

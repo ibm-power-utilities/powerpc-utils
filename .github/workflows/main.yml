@@ -86,7 +86,7 @@ jobs:
 
     - name: configure
       run: |
-       ./configure --prefix=/usr --host=${{ matrix.host }} --enable-werror --build=x86_64-linux-gnu CFLAGS='-O2 -g'
+       ./configure --prefix=/usr --host=${{ matrix.host }} --enable-werror --build=x86_64-linux-gnu CFLAGS='-O2 -g -Wextra -Wno-error=unused-parameter -Wno-error=nonnull'
 
     - name: Collect config.log
       if: ${{ failure() }}

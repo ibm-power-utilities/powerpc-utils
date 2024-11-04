@@ -312,12 +312,14 @@ get_mem_node_lmbs(struct lmb_list_head *lmb_list)
 
 static int link_lmb_to_numa_node(struct dr_node *lmb)
 {
-	int nid;
+	int ret;
+	unsigned nid;
 	struct ppcnuma_node *node;
 
-	nid = aa_index_to_node(&numa.aa, lmb->lmb_aa_index);
-	if (nid == -1)
+	ret = aa_index_to_node(&numa.aa, lmb->lmb_aa_index);
+	if (ret == -1)
 		return 0;
+	nid = ret;
 
 	node = ppcnuma_fetch_node(&numa, nid);
 	if (!node)
@@ -439,7 +441,8 @@ int get_dynamic_reconfig_lmbs_v2(uint64_t lmb_sz,
 {
 	struct drconf_mem_v2 *drmem;
 	uint32_t lmb_sets;
-	int i, rc = 0;
+	unsigned i;
+	int rc;
 
 	lmb_list->drconf_buf_sz = get_property_size(DYNAMIC_RECONFIG_MEM,
 						   "ibm,dynamic-memory-v2");
@@ -469,7 +472,7 @@ int get_dynamic_reconfig_lmbs_v2(uint64_t lmb_sz,
 	for (i = 0; i < lmb_sets; i++) {
 		uint32_t drc_index, seq_lmbs;
 		uint64_t address;
-		int j;
+		unsigned j;
 
 		address = be64toh(drmem->base_addr);
 		drc_index = be32toh(drmem->drc_index);
@@ -739,7 +742,7 @@ static void update_drconf_affinity(struct dr_node *lmb,
 	uint32_t assoc_entries;
 	uint32_t assoc_entry_sz;
 	uint32_t *prop_val;
-	int i;
+	unsigned i;
 
 	/* find the ibm,associativity property */
 	node = lmb->lmb_of_node;
@@ -1470,7 +1473,8 @@ static int remove_lmb_by_index(uint32_t drc_index)
 static int remove_lmb_from_node(struct ppcnuma_node *node, uint32_t count)
 {
 	struct dr_node *lmb;
-	int err, done = 0, unlinked = 0;
+	int err;
+	unsigned done = 0, unlinked = 0;
 
 	say(DEBUG, "Try removing %d / %d LMBs from node %d\n",
 	    count, node->n_lmbs, node->node_id);
@@ -1521,7 +1525,7 @@ static int remove_lmb_from_node(struct ppcnuma_node *node, uint32_t count)
 static void update_cpuless_node_ratio(void)
 {
 	struct ppcnuma_node *node;
-	int nid;
+	unsigned nid;
 
 	/*
 	 * Assumptions:
@@ -1549,7 +1553,7 @@ static void update_cpuless_node_ratio(void)
 static int remove_cpuless_lmbs(uint32_t count)
 {
 	struct ppcnuma_node *node;
-	int nid;
+	unsigned nid;
 	uint32_t total = count, todo, done = 0, this_loop;
 
 	while (count) {
@@ -1593,7 +1597,7 @@ static int remove_cpuless_lmbs(uint32_t count)
 
 static void update_node_ratio(void)
 {
-	int nid;
+	unsigned nid;
 	struct ppcnuma_node *node, *n, **p;
 	uint32_t cpu_ratio, mem_ratio;
 
@@ -1695,7 +1699,7 @@ static void build_numa_topology(void)
 
 static void clear_numa_lmb_links(void)
 {
-	int nid;
+	unsigned nid;
 	struct ppcnuma_node *node;
 
 	ppcnuma_foreach_node(&numa, nid, node)
@@ -1706,7 +1710,7 @@ static int numa_based_remove(uint32_t count)
 {
 	struct lmb_list_head *lmb_list;
 	struct ppcnuma_node *node;
-	int nid;
+	unsigned nid;
 	uint32_t done = 0;
 
 	/*

@@ -386,7 +386,7 @@ print_sys_part_id(void)
 
 	close(fd);
 
-	strncpy(tttt, model+4, 4);
+	memcpy(tttt, model+4, 4);
 	tttt[4] = '\0';
 
 	fd = open("/proc/device-tree/ibm,partition-no", O_RDONLY);
