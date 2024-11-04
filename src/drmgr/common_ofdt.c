@@ -857,7 +857,7 @@ int get_min_common_depth(void)
 }
 
 int get_assoc_arrays(const char *dir, struct assoc_arrays *aa,
-		     int min_common_depth)
+		     unsigned min_common_depth)
 {
 	int size;
 	int rc;
@@ -908,7 +908,7 @@ out_free:
  * Read the associativity property and return the node id matching the
  * min_common_depth entry.
  */
-int of_associativity_to_node(const char *dir, int min_common_depth)
+int of_associativity_to_node(const char *dir, unsigned min_common_depth)
 {
 	int size;
 	uint32_t *prop;
