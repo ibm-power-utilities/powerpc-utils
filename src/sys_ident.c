@@ -364,7 +364,7 @@ print_sys_part_id(void)
 	temp[2] = '\0';
 	prefix = atoi(temp);
 
-	strncpy(cc, sys_id+6, 2);
+	memcpy(cc, sys_id+6, 2);
 	cc[2] = '\0';
 
 	strncpy(sssss, sys_id+8, 5);
@@ -386,7 +386,7 @@ print_sys_part_id(void)
 
 	close(fd);
 
-	strncpy(tttt, model+4, 4);
+	memcpy(tttt, model+4, 4);
 	tttt[4] = '\0';
 
 	fd = open("/proc/device-tree/ibm,partition-no", O_RDONLY);
