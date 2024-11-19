@@ -1,5 +1,673 @@
 powerpc-utils-1.3.12
 =====================================================================
+commit 15cdce114295d5e7d8cdcab06b38095c474e521b
+Author: Michal Suchanek <msuchanek@suse.de>
+Date:   Mon Apr 8 16:05:39 2024 +0200
+
+    ppc64_cpu: Clean up sysfs smt/control error handling
+    
+    When the kernel does not support the sysfs interface do not report an
+    error, fall back to the old method silently.
+    
+    Suggested-by: Nathan Lynch<nathanl@linux.ibm.com>
+    Signed-off-by: Michal Suchanek <msuchanek@suse.de>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit b0816b404e021e620843c9f0b6107a53f6fd64f6
+Author: Laurent Dufour <ldufour@linux.ibm.com>
+Date:   Thu Aug 10 11:29:55 2023 +0200
+
+    ppc64_cpu: Support partial SMT level through SYS FS smt/control files
+    
+    The next kernel release will support partial SMT level [1] though the SYS
+    FS file "devices/system/cpu/smt/control". This allows the SMT level to be
+    recorded in the kernel. With the current SMT level stored in the kernel,
+    when a new CPU is added, only the necessary threads are brought online.
+    
+    The legacy way to active threads through the SYS FS files
+    'devices/system/cpu/cpu<n>/online', is still used in the case the new SYS
+    FS API is not available. This allows compatibility with the previous kernel
+    versions.
+    
+    [1] https://lore.kernel.org/linuxppc-dev/20230705145143.40545-1-ldufour@linux.ibm.com/
+    
+    Signed-off-by: Laurent Dufour <ldufour@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit bb766caa49f4aef036208023290f16ce7b1cf05d
+Author: Haren Myneni <haren@linux.ibm.com>
+Date:   Tue Aug 13 14:40:26 2024 -0700
+
+    drmgr/SLOT: Add kernel interface support for device tree update
+    
+    Use the following kernel interfaces for SLOT device type to update
+    the device tree if this feature is enabled in the kernel.
+    
+    dt add index <DRC index>  --> for IO add
+    dt remove index <DRC index> --> for IO remove
+    
+    Signed-off-by: Haren Myneni <haren@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit a2d1b70cbc90ba41f16281c48e973309469f5d02
+Author: Haren Myneni <haren@linux.ibm.com>
+Date:   Tue Aug 13 14:40:25 2024 -0700
+
+    drmgr/pci: Add kernel interface support for device tree update
+    
+    Use the following kernel interfaces for PCI device type to update
+    the device tree if this feature is enabled in the kernel.
+    
+    dt add index <DRC index>  --> for IO add
+    dt remove index <DRC index> --> for IO remove
+    
+    Signed-off-by: Haren Myneni <haren@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 9aaa1a625da9de1ca758c4eb8442589b46927acb
+Author: Haren Myneni <haren@linux.ibm.com>
+Date:   Tue Aug 13 14:40:24 2024 -0700
+
+    drmgr/phb: Add kernel interface support for device tree update
+    
+    Use the following kernel interfaces for PHB device type to update
+    the device tree if this feature is enabled in the kernel.
+    
+    dt add index <DRC index>  --> for IO add
+    dt remove index <DRC index> --> for IO remove
+    
+    Signed-off-by: Haren Myneni <haren@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 9ea191d15f4b279923a4c83a94b83436c79e3482
+Author: Haren Myneni <haren@linux.ibm.com>
+Date:   Tue Aug 13 14:40:23 2024 -0700
+
+    drmgr/pci: Enable in-kernel functionality to update device tree
+    
+    drmgr updates the device tree by writing to /proc/ppc64/ofdt. Also
+    invokes configure_connector RTAS call to retrieve new device nodes
+    for IO ADD. But this functionality need /dev/mem access which is
+    restricted under system lockdown.
+    
+    The kernel updates provided a sysfs file (/sys/kernel/dlpar) that
+    will allow drmgr command invoke the following interfaces to update
+    the device tree.
+    
+    dt add index <DRC index> ---> To add new device nodes to the device
+    tree which is used for IO ADD.
+    
+    dt remove index <DRC index> ---> To remove device nodes for IO
+    REMOVE
+    
+    This patch checks the kernel interface for the availability of
+    device tree update feature and adds do_dt_kernel_dlpar() to invoke
+    the above kernel interfaces.
+    
+    Signed-off-by: Haren Myneni <haren@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit dcaf1a2dea57738f197719452ee0c332998bf167
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Wed Sep 18 16:11:01 2024 -0700
+
+    CI: update artifact actions to v4
+    
+    GitHub has deprecated v1 and v2 of the artifact actions. As such update
+    the CI to the latest artifact version.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 06c9922a774a6c096acbc69664646386c9e185b5
+Author: Haren Myneni <haren@linux.ibm.com>
+Date:   Fri Aug 2 18:39:06 2024 -0700
+
+    drmgr/pci: Do not add partner device if exists in the device tree
+    
+    For PCI hotplug interface, the partner device will be added or
+    removed if configured with the primary device add / remove.
+    Whereas for PHB interface, drmgr notifies the user to add / remove
+    partner device if configured with the primary device. So there is
+    a possibility of partner PCI node exists in the device tree when
+    PCI interface for ADD is executed. The current ADD code in
+    drslot_chrp_pci.c does not check whether the partner device node
+    is present and may add / enable partner device again which may give
+    EEH errors.
+    
+    See the following sequence to get this scenario:
+    drmgr -r -c phb -s "PHB 1336"   --> Remove primary PHB node
+    drmgr -r -c pci -s "U50EE.001.WZS000E-P3-C24-R2" --> Remove
+    partner PCI node
+    drmgr -a -c phb -s "PHB 1336"  --> Add primary PHB node
+    drmgr -a -c pci -s "U50EE.001.WZS000E-P3-C24-R2"  --> Add partner
+    PCI node and can try to add primary PCI node again. In this case
+    "U50EE.001.WZS000E-P3-C24-R1".
+    
+    This patch fixes the issue by checking the device node in the
+    device tree and add the device if does not present and remove
+    only if the corresponding device node exists.
+    
+    Fixes: 4e6670df0da2b92 ("drmgr/pci: Add multipath partner device support for hotplug add")
+    Signed-off-by: Haren Myneni <haren@linux.ibm.com>
+    [tyreld: fixed up white space and replace/remove phrasing]
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit a56028561ad9c01b5d3a767e50455c561e09191c
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Fri Jul 26 16:17:47 2024 -0700
+
+    ofpathname: skip devices with no devspec when coorelating FC OF paths
+    
+    When using ofpathname to find the logical device associated to a Fibre
+    Channel or Virtual Fibre Channel OF path an ERR_NO_SYSFS_DEVINFO error
+    can be returned if a device with no devspec attribute is in the list of
+    devices to cross reference.
+    
+    If a device with no devspec is found simply skip it an continue the
+    for-loop device search.
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit a67eb56089ede9abc19ccc287bd4117967e76164
+Author: Shrikanth Hegde <sshegde@linux.ibm.com>
+Date:   Mon Apr 15 23:21:36 2024 +0530
+
+    lparstat: Rename getter for processor type
+    
+    Processor type in lparstat shows whether its in Dedicated Mode or in Shared
+    Mode. Getter function for the same has been defined as get_smt_state. That's
+    the wrong name for it. Rename it to get_processor_type().
+    
+    No Function change.
+    
+    Signed-off-by: Shrikanth Hegde <sshegde@linux.ibm.com>
+    [tyreld: reword commit message]
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 9572f8c2022fed9783f0f606cbe778ffe0d93fef
+Author: Shrikanth Hegde <sshegde@linux.ibm.com>
+Date:   Tue May 14 20:46:44 2024 +0530
+
+    lparstat: Use CLOCK_BOOTTIME for get_time interface and Deprecate get_sys_upttime
+    
+    "time" is used in lparstat.c to find the time elapsed either since boot
+    or between two intervals. But it is using gettimeofday which returns the
+    time elapsed since Epoch. This works for intervals calculations but it
+    doesn't work for since boot reports.
+    
+    Instead use the CLOCK_BOOTTIME interface to get the elapsed time. This
+    fixes physc, utilization based on purr being wrong since boot.
+    
+    Remove "uptime" interface since there are no users of it. One can get
+    the system uptime by calling "time" itself.
+    
+    =============================== ::Test:: ==========================
+    reboot
+    stress-ng --cpu=$(nproc) -t 600
+    sleep 600
+    
+    Results::
+    ==================== Shared LPAR ==================================
+    System Configuration
+    type=Shared mode=Uncapped smt=8 lcpu=12 mem=15573440 kB cpus=37 ent=12.00
+    
+    lparstat -E                     <-- Observe utilization values
+    ====== 6.9-rc1 and lparstat 1.3.10 =============
+    ---Actual---                 -Normalized-
+    %busy  %idle   Frequency     %busy  %idle
+    ------ ------  ------------- ------ ------
+      0.00   0.00  3.87GHz[106%]   0.00   0.00
+    
+    ==== With this patch and patch 2/3 =============
+    ---Actual---                 -Normalized-
+    %busy  %idle   Frequency     %busy  %idle
+    ------ ------  ------------- ------ ------
+     38.72   0.11  3.87GHz[106%]  41.04   0.12
+    
+    lparstat                                <-- Observe physc values
+    ====== 6.9-rc1 and lparstat 1.3.10  ===================================
+    %user  %sys %wait    %idle    physc %entc lbusy   app  vcsw phint
+    ----- ----- -----    -----    ----- ----- ----- ----- ----- -----
+    47.48  0.01  0.00    52.51     0.00  0.00 47.49 69099.72 541547    21
+    
+    === With this patch and this patch ================================ ===
+    %user  %sys %wait    %idle    physc %entc lbusy   app  vcsw phint
+    ----- ----- -----    -----    ----- ----- ----- ----- ----- -----
+    47.48  0.01  0.00    52.51     5.73 47.75 47.49 31.21 541753    21
+    
+    ==================== Dedicated LPAR ==================================
+    System Configuration
+    type=Dedicated mode=Capped smt=8 lcpu=12 mem=15573248 kB cpus=0 ent=12.00
+    
+    ::lparstat -E::                 <-- Observe utilization values.
+    ======= 6.9-rc1 and lparstat 1.3.10 =============
+    ---Actual---                 -Normalized-
+    %busy  %idle   Frequency     %busy  %idle
+    ------ ------  ------------- ------ ------
+      0.00   0.00  3.87GHz[106%]   0.00   0.00
+    
+    === With this patch and powerpc-utils patch to do the above equation ===
+    ---Actual---                 -Normalized-
+    %busy  %idle   Frequency     %busy  %idle
+    ------ ------  ------------- ------ ------
+     48.87  51.51  3.87GHz[106%]  51.81  54.60
+    
+    ::lparstat::                            <-- Observe physc values.
+    ======= 6.9-rc1 and lparstat 1.3.10 =============
+    %user  %sys %wait    %idle    physc %entc lbusy   app  vcsw phint
+    ----- ----- -----    -----    ----- ----- ----- ----- ----- -----
+    48.38  0.01  0.00    51.61     0.03  0.25 48.39  0.00 344661     8
+    
+    === With this patch and powerpc-utils patch to do the above equation ===
+    %user  %sys %wait    %idle    physc %entc lbusy   app  vcsw phint
+    ----- ----- -----    -----    ----- ----- ----- ----- ----- -----
+    48.38  0.01  0.00    51.61    12.05 100.42 48.39  0.00 344877     8
+    
+    =============================================================================
+    
+    Interval based lparstat values are same. With this patch the physc and
+    busy purr/idle purr values show correctly for since boot reports.
+    
+    Note: this patch doesn't fix the idle purr being incorrect. That is
+    currently being investigated.
+    
+    Signed-off-by: Shrikanth Hegde <sshegde@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 81c51b59aacaa66d90d571ee19a2deeda1d45271
+Author: Shrikanth Hegde <sshegde@linux.ibm.com>
+Date:   Tue May 14 20:46:43 2024 +0530
+
+    lparstat: app: Use pic value at boot for accurate boot time reporting
+    
+    When there are no options specified for lparstat, it is expected to
+    give reports since LPAR(Logical Partition) boot. APP(Available Physical
+    Processors) is an indicator for available cores in an Shared Processor
+    LPAR(SPLPAR). APP is derived using pool_idle_time which is obtained
+    using H_PIC call.
+    
+    The interval based reports show correct APP value while since boot
+    report shows very high APP values. This happens because in that case APP
+    is obtained by dividing pool idle time by LPAR uptime. Since pool idle
+    time is reported by the PowerVM hypervisor since its boot, it need not
+    align with LPAR boot.
+    
+    To fix that use the boot pool idle time added newly in the lparcfg as
+    below.
+    
+    APP = (pool idle time - boot pool idle time) / (uptime * timebase)
+    
+    *This depends on "powerpc/pseries: Add pool idle time at LPAR boot" be
+    merged into kernel*
+    
+    Results:  (Observe APP values)
+    ========================================================================
+    lparstat
+    System Configuration
+    type=Shared mode=Uncapped smt=8 lcpu=12 mem=15573440 kB cpus=37 ent=12.00
+    
+    reboot
+    stress-ng --cpu=$(nproc) -t 600
+    sleep 600
+    So in this case app is expected to close to 37-6=31.
+    
+    ====== 6.9-rc1 and lparstat 1.3.10  =============
+    %user  %sys %wait    %idle    physc %entc lbusy   app  vcsw phint
+    ----- ----- -----    -----    ----- ----- ----- ----- ----- -----
+    47.48  0.01  0.00    52.51     0.00  0.00 47.49 69099.72 541547    21
+    
+    === With this patch and this patch to do the above equation ===
+    %user  %sys %wait    %idle    physc %entc lbusy   app  vcsw phint
+    ----- ----- -----    -----    ----- ----- ----- ----- ----- -----
+    47.48  0.01  0.00    52.51     5.73 47.75 47.49 31.21 541753    21
+    
+    Signed-off-by: Shrikanth Hegde <sshegde@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 2af8c0b9a285e8a6104560d0f482819e56060443
+Author: Saket Kumar Bhaskar <skb99@linux.ibm.com>
+Date:   Thu Jul 18 00:39:24 2024 +0530
+
+    lparstat: Fix Idle and busy PURR/SPURR
+    
+    lparstat -E gives %busy and %idle for actual(PURR based) and normalized
+    (SPURR based).Idle and busy PURR/SPURR values are not adding upto 100%
+    in case of dedicated-donate and shared partitions, with the present
+    formula. Because of this, users might get a false impression of resource
+    utilisation. This is expected because a core can be in either
+    idle or busy state out of total of 100(core's shared resource can
+    either be consumed or be left idle). When lpar is in dedicated-donate
+    or shared,the purr values are not being counted when the CPU is ceded.
+    The idle_purr is calculated by taking snapshots of purr values at
+    every idle entry and idle exit. So, when a CPU is ceded, the calculation
+    for idle_purr will be wrong as purr is not being counted.
+    
+    Before Change:
+    |-----------------------------------------------------------------|
+    |                     Dedicated-donate (8 cores) :                |
+    |----------------------|---------------------|--------------------|
+    |                      |       Actual        |      Normalized    |
+    |  Stress-ng threads   |---------------------|--------------------|
+    |                      |  %busy   |  %idle   |  %busy  |  %idle   |
+    |----------------------|----------|----------|---------|----------|
+    |  0 threads           |  0.02    |  0.05    |  0.02   |  0.05    |
+    |----------------------|----------|----------|---------|----------|
+    |  8 threads           |  32.64   |  17.37   |  35.25  |  18.77   |
+    |----------------------|----------|----------|---------|----------|
+    |  16 threads          |  58.61   |  16.42   |  63.29  |  17.74   |
+    |----------------------|----------|----------|---------|----------|
+    |  24 threads          |  78.14   |  21.86   |  84.39  |  23.61   |
+    |----------------------|----------|----------|---------|----------|
+    |  32 threads          |  83.60   |  16.40   |  90.30  |  17.71   |
+    |----------------------|----------|----------|---------|----------|
+    |  40 threads          |  91.90   |  6.94    |  98.31  |  7.46    |
+    |----------------------|----------|----------|---------|----------|
+    |  48 threads          |  96.08   |  3.92    |  102.79 |  4.21    |
+    |----------------------|----------|----------|---------|----------|
+    |  56 threads          |  98.42   |  1.57    |  105.31 |  1.69    |
+    |----------------------|----------|----------|---------|----------|
+    |  64 threads          |  100.00  |  0.00    |  106.00 |  0.00    |
+    |----------------------|----------|----------|---------|----------|
+    
+    |-----------------------------------------------------------------|
+    |                     Shared Capped (8 VP / 4 EC) :               |
+    |----------------------|---------------------|--------------------|
+    |                      |       Actual        |      Normalized    |
+    |  Stress-ng threads   |---------------------|--------------------|
+    |                      |  %busy   |  %idle   |  %busy  |  %idle   |
+    |----------------------|----------|----------|---------|----------|
+    |  0 threads           |  0.04    |  0.18    |  0.03   |  0.19    |
+    |----------------------|----------|----------|---------|----------|
+    |  8 threads           |  35.90   |  14.09   |  38.77  |  15.21   |
+    |----------------------|----------|----------|---------|----------|
+    |  16 threads          |  35.25   |  14.84   |  38.08  |  16.02   |
+    |----------------------|----------|----------|---------|----------|
+    |  24 threads          |  40.13   |  9.73    |  42.93  |  10.43   |
+    |----------------------|----------|----------|---------|----------|
+    |  32 threads          |  44.13   |  5.73    |  47.22  |  6.14    |
+    |----------------------|----------|----------|---------|----------|
+    |  40 threads          |  46.47   |  3.42    |  50.18  |  3.69    |
+    |----------------------|----------|----------|---------|----------|
+    |  48 threads          |  48.03   |  1.83    |  51.39  |  1.96    |
+    |----------------------|----------|----------|---------|----------|
+    |  56 threads          |  49.04   |  0.86    |  52.47  |  0.93    |
+    |----------------------|----------|----------|---------|----------|
+    |  64 threads          |  49.87   |  0.00    |  53.36  |  0.00    |
+    |----------------------|----------|----------|---------|----------|
+    
+    This commit, rather than considering delta_idle_purr for calculation of
+    idle ticks, takes (delta_tb - delta_purr + delta_idle_purr) as total
+    ticks for which the CPUs were idle. Here, since delta_idle_purr will
+    also contain some idle ticks, thats why it is added to the formula.
+    Since, the output was correct for dedicated capped mode, changes has
+    been made only for shared and dedicated-donate mode.
+    Further, no changes has been made for calculation of %busy.
+    
+    Similar changes has been done for SPURR.
+    
+    After Change:
+    
+    |-----------------------------------------------------------------|
+    |                     Dedicated-donate (8 cores) :                |
+    |----------------------|---------------------|--------------------|
+    |                      |       Actual        |      Normalized    |
+    |  Stress-ng threads   |---------------------|--------------------|
+    |                      |  %busy   |  %idle   |  %busy  |  %idle   |
+    |----------------------|----------|----------|---------|----------|
+    |  0 threads           |  0.02    |  99.98   |  0.02   |  100.04  |
+    |----------------------|----------|----------|---------|----------|
+    |  8 threads           |  35.97   |  64.03   |  38.84  |  61.51   |
+    |----------------------|----------|----------|---------|----------|
+    |  16 threads          |  58.60   |  41.40   |  63.28  |  37.08   |
+    |----------------------|----------|----------|---------|----------|
+    |  24 threads          |  78.14   |  21.86   |  84.39  |  23.61   |
+    |----------------------|----------|----------|---------|----------|
+    |  32 threads          |  83.60   |  16.41   |  90.29  |  17.71   |
+    |----------------------|----------|----------|---------|----------|
+    |  40 threads          |  92.96   |  7.04    |  100.39 |  7.61    |
+    |----------------------|----------|----------|---------|----------|
+    |  48 threads          |  96.08   |  3.92    |  103.77 |  4.24    |
+    |----------------------|----------|----------|---------|----------|
+    |  56 threads          |  98.42   |  1.58    |  105.31 |  1.68    |
+    |----------------------|----------|----------|---------|----------|
+    |  64 threads          |  100.00  |  0.00    |  107.00 |  0.00    |
+    |----------------------|----------|----------|---------|----------|
+    
+    |-----------------------------------------------------------------|
+    |                     Shared Capped (8 VP / 4 EC) :               |
+    |----------------------|---------------------|--------------------|
+    |                      |       Actual        |      Normalized    |
+    |  Stress-ng threads   |---------------------|--------------------|
+    |                      |  %busy   |  %idle   |  %busy  |  %idle   |
+    |----------------------|----------|----------|---------|----------|
+    |  0 threads           |  0.03    |  99.97   |  0.19   |  99.44   |
+    |----------------------|----------|----------|---------|----------|
+    |  8 threads           |  35.91   |  64.09   |  38.78  |  61.58   |
+    |----------------------|----------|----------|---------|----------|
+    |  16 threads          |  36.83   |  63.17   |  39.78  |  60.55   |
+    |----------------------|----------|----------|---------|----------|
+    |  24 threads          |  40.16   |  59.84   |  43.37  |  56.95   |
+    |----------------------|----------|----------|---------|----------|
+    |  32 threads          |  44.47   |  55.53   |  48.02  |  52.38   |
+    |----------------------|----------|----------|---------|----------|
+    |  40 threads          |  46.55   |  53.45   |  50.27  |  50.04   |
+    |----------------------|----------|----------|---------|----------|
+    |  48 threads          |  48.13   |  51.87   |  52.48  |  47.82   |
+    |----------------------|----------|----------|---------|----------|
+    |  56 threads          |  49.01   |  50.99   |  52.93  |  47.41   |
+    |----------------------|----------|----------|---------|----------|
+    |  64 threads          |  49.90   |  50.10   |  53.40  |  46.19   |
+    |----------------------|----------|----------|---------|----------|
+    
+    Before Change:
+    %idle = delta_idle_purr / delta_tb * 100
+    
+    After Change:
+    %idle = (delta_tb - delta_purr + delta_idle_purr) / delta_tb * 100
+    
+    Signed-off-by: Saket Kumar Bhaskar <skb99@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 5db2df531f9c242b13ef6520814c99685144c6d4
+Author: Haren Myneni <haren@linux.ibm.com>
+Date:   Sat Jun 29 14:14:10 2024 -0700
+
+    drmgr: Free nodes returned from configure_connector
+    
+    of_nodes returned from configure_connector should be freed after
+    updating the device tree and is missing in acquire_hp_resource()
+    and add_work(). This patch calls free_of_node() in these functions.
+    
+    Signed-off-by: Haren Myneni <haren@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit d4ff349fbfdffe2d82c618b40131954cd70de4a3
+Author: Tyrel Datwyler <tyreld@linux.ibm.com>
+Date:   Fri Jul 26 15:19:32 2024 -0700
+
+    ci: update checkout@v3 action to checkout@v4
+    
+    Node.js 16 actions are deprecated. Update checkout action to v4 which
+    uses Node.js 20. In response to the following warning:
+    
+    The following actions uses Node.js version which is deprecated and will
+    be forced to run on node20: actions/checkout@v3. For more info:
+    https://github.blog/changelog/2024-03-07-github-actions-all-actions-will-run-on-node20-instead-of-node16-by-default/
+    
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit f40a63b15c5639df93405b925a4dde740d9bfa23
+Author: Haren Myneni <haren@linux.ibm.com>
+Date:   Fri Jun 21 15:45:58 2024 -0700
+
+    drmgr/pci: Add multipath partner device support for hotplug replace
+    
+    If the PCI device has multipath partner device, its device node
+    contains "ibm,multipath-partner-drc" property which gives the DRC
+    index of the partner device.
+    So for the replace operation, the following steps will be executed:
+    - Find the device based on the partner DRC index of the requested
+      device
+    - Remove the requested device
+    - Remove the partner path
+    - Add the new device based on user input
+    - Find the device based on the partner DRC index of the new device
+    - Add the partner path of the new device
+    
+    Since both paths will be using the same slot, LED indicators and
+    the slot identification will be done only for the primary device
+    in both removal and add operations.
+    
+    Signed-off-by: Haren Myneni <haren@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 4e6670df0da2b92a33dd880ce987823358f298bf
+Author: Haren Myneni <haren@linux.ibm.com>
+Date:   Fri Jun 21 15:45:20 2024 -0700
+
+    drmgr/pci: Add multipath partner device support for hotplug add
+    
+    If the PCI device has multipath partner device, the firmware
+    provides partner DRC index in "ibm,multipath-partner-drc"
+    property and this property is available in the PCI device node.
+    So when the PCI device add is initiated, both paths will be
+    added if the partner path is also configured and enabled with
+    the following steps:
+    
+    - Identify slot and notify user to add the device
+    - Add the path and enable for the specified device
+    - Find the partner path DRC index from "ibm,multipath-partner-drc"
+      property for the specified device
+    - Add the partner path if it is also configured
+    - Notify user about adding partner path
+    
+    Since both paths will be using the same slot, LED indicators and
+    the slot identification will be done only for the primary device.
+    
+    Signed-off-by: Haren Myneni <haren@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 1f8b5ef8092a8466bdcb29604939ae7193b79ba0
+Author: Haren Myneni <haren@linux.ibm.com>
+Date:   Fri Jun 21 15:44:36 2024 -0700
+
+    drmgr/pci: Add multipath partner device support for hotplug remove
+    
+    If the PCI device has multipath partner device, its device node
+    contains "ibm,multipath-partner-drc" property which gives the
+    DRC index of the partner device. For the hotplug removal, if
+    the partner path is also configured, both paths must be
+    removed before instructing the user to remove the device from
+    identified slot.
+    
+    So the following steps will be executed for the removal:
+    - Find the partner path DRC index from "ibm,multipath-partner-drc"
+      property
+    - Remove the primary path
+    - Remove the partner path if it is configured.
+    - Notify user to remove PCI card from the specified slot.
+    
+    Since both paths will be using the same slot, LED indicators and
+    the slot identification will be done only for the primary device.
+    
+    Signed-off-by: Haren Myneni <haren@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit fe0c826464620fde9124f903d97102bb4237afa7
+Author: Haren Myneni <haren@linux.ibm.com>
+Date:   Fri Jun 21 15:43:24 2024 -0700
+
+    drmgr/phb: Add multipath partner device support for hotplug add
+    
+    The PHB node can have "ibm,multipath-partner-drc" property
+    which means the device can be also configured with multipath
+    partner path. This property provides the DRC index of the
+    partner device. So for the hotplug add, both paths should be
+    added and the following steps will be executed for the PHB add:
+    
+    - Add the specified PHB device
+    - Find the partner path DRC index from "ibm,multipath-partner-drc"
+      property for the specified device
+    - If the node has this property and the partner path is
+      already added, notify user about the partner device.
+    - If the node has this property and the partner path can be
+      configured, notify user to configure and add the partner
+      device.
+    
+    Signed-off-by: Haren Myneni <haren@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 8751abf3cf0eb2733162931a6b38db4431699ebd
+Author: Haren Myneni <haren@linux.ibm.com>
+Date:   Fri Jun 21 15:42:45 2024 -0700
+
+    drmgr/phb: Add multipath partner device support for remove
+    
+    The PHB node can have "ibm,multipath-partner-drc" property
+    which means the device can be also configured with multipath
+    partner path. This property provides the DRC index of the
+    partner device. For the hotplug removal, both paths should
+    be removed and the following steps will be executed:
+    
+    - Find the partner path DRC index from "ibm,multipath-partner-drc"
+      property for the specified device
+    - If the partner path is configured, notify user about the
+      removal of partner path if available. Then the user should issue
+      issue separate drmgr command to remove the partner path.
+    - Remove the primary path
+    
+    Signed-off-by: Haren Myneni <haren@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit aa5feef7c7657fb764d732e831c9f7c7b9820498
+Author: Haren Myneni <haren@linux.ibm.com>
+Date:   Fri Jun 21 15:41:46 2024 -0700
+
+    drmgr: Introduce get_my_partner_drc_index()
+    
+    get_my_partner_drc_index() is called to retrieve DRC index from the
+    "ibm,multipath-partner-drc" property. This property is available
+    in the parent device node if the device has miltipath partner device.
+    "ibm,multipath-partner-drc" has the DRC index of the partner device.
+    
+    Signed-off-by: Haren Myneni <haren@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 3a7e77497d2dcf84b5d6525cdfb6e59dfea7ffbb
+Author: Haren Myneni <haren@linux.ibm.com>
+Date:   Fri Jun 21 15:40:56 2024 -0700
+
+    drmgr: Retrieve dr_connector with the specified DRC index
+    
+    search_drc_list() provides the search based on the key type such
+    as DRC_NAME, DRC_TYPE, DRC_INDEX or DRC_POWERDOMAIN. But the
+    current code has get_drc_by_index() which looks in to the DRC list
+    passed to this function instead of all DRC lists and is not used
+    right now.
+    
+    This patch modifies get_drc_by_index() and the corresponding
+    changes such that it retrieves dr_connector with the specified DRC
+    index as does in the case of get_drc_by_name().
+    
+    Signed-off-by: Haren Myneni <haren@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+commit 1dc1ecf7dce7825d352b045c98aa51711b58aaca
+Author: Haren Myneni <haren@linux.ibm.com>
+Date:   Fri Jun 21 15:39:42 2024 -0700
+
+    drmgr: Return from get_node_by_name() if matched DRC index
+    
+    get_node_by_name() should return dr_node if the DRC name or DRC
+    index is matched. But the current code returns only if the DRC
+    name is matched. This patch fixes this issue and returns dr_node
+    if the index is matched.
+    
+    Signed-off-by: Haren Myneni <haren@linux.ibm.com>
+    Signed-off-by: Tyrel Datwyler <tyreld@linux.ibm.com>
+
+powerpc-utils-1.3.12
+=====================================================================
 commit 2f0bdb051fe70fbd6cb608ea1b63a75223dc44a4
 Author: Tyrel Datwyler <tyreld@linux.ibm.com>
 Date:   Tue Feb 6 16:58:12 2024 -0800
