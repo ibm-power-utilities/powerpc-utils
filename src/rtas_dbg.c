@@ -182,7 +182,7 @@ struct rtas_token *get_rtas_token_by_name(char *name,
 	return NULL;
 }
 
-struct rtas_token *get_rtas_token_by_value(int value,
+struct rtas_token *get_rtas_token_by_value(unsigned value,
 					   struct rtas_token *tok_list)
 {
 	struct rtas_token *tok;
@@ -269,7 +269,7 @@ int main(int argc, char *argv[])
 	}
 
 	if ((dbg_arg[0] >= '0') && (dbg_arg[0] <= '9'))
-		tok = get_rtas_token_by_value(strtol(dbg_arg, NULL, 0),
+		tok = get_rtas_token_by_value(strtoul(dbg_arg, NULL, 0),
 					      tok_list);
 	else
 		tok = get_rtas_token_by_name(dbg_arg, tok_list);

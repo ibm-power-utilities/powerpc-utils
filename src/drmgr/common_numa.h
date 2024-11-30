@@ -46,10 +46,10 @@ struct ppcnuma_topology {
 
 int ppcnuma_get_topology(struct ppcnuma_topology *numa);
 struct ppcnuma_node *ppcnuma_fetch_node(struct ppcnuma_topology *numa,
-					int node_id);
+					unsigned node_id);
 
-static inline int ppcnuma_next_node(struct ppcnuma_topology *numa, int nid,
-				    struct ppcnuma_node **node)
+static inline unsigned ppcnuma_next_node(struct ppcnuma_topology *numa, unsigned nid,
+				         struct ppcnuma_node **node)
 {
 	for (nid++; nid <= numa->node_max; nid++)
 		if (numa->nodes[nid]) {

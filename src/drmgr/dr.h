@@ -30,7 +30,7 @@
 #include "rtas_calls.h"
 #include "drpci.h"
 
-extern int output_level;
+extern unsigned output_level;
 extern int log_fd;
 
 extern int read_dynamic_memory_v2;
@@ -79,7 +79,7 @@ extern int usr_timeout;
 extern char *usr_drc_name;
 extern uint32_t usr_drc_index;
 extern int usr_prompt;
-extern int usr_drc_count;
+extern unsigned usr_drc_count;
 extern enum drc_type usr_drc_type;
 extern char *usr_p_option;
 extern char *usr_t_option;
@@ -110,9 +110,9 @@ int add_device_tree_nodes(char *, struct of_node *);
 int remove_device_tree_nodes(const char *path);
 
 int update_property(const char *, size_t);
-int get_property(const char *, const char *, void *, size_t);
-int get_int_attribute(const char *, const char *, void *, size_t);
-int get_str_attribute(const char *, const char *, void *, size_t);
+int get_property(const char *, const char *, void *, ssize_t);
+int get_int_attribute(const char *, const char *, void *, ssize_t);
+int get_str_attribute(const char *, const char *, void *, ssize_t);
 int get_ofdt_uint_property(const char *, const char *, uint *);
 int get_property_size(const char *, const char *);
 int signal_handler(int, int, struct sigcontext *);
@@ -133,7 +133,7 @@ int cpu_entitlement_capable(void);
 int mem_entitlement_capable(void);
 void print_dlpar_capabilities(void);
 
-void set_output_level(int);
+void set_output_level(unsigned);
 
 int run_hooks(enum drc_type drc_type, enum drmgr_action, enum hook_phase phase,
 	      int drc_count);

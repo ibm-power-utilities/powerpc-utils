@@ -1050,7 +1050,7 @@ get_bus_id(char *loc_code)
 	DIR *d;
 	struct dirent *ent;
 	char *dir = "/sys/bus/pci/slots";
-	int inlen;
+	size_t inlen;
 	char *ptr;
 
 	/* Strip any newline from the input location */

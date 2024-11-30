@@ -231,7 +231,7 @@ struct dr_node *get_available_cpu(struct dr_info *dr_info)
  * @param nr_cpus
  * @returns 0 on success, !0 otherwise
  */
-static int add_cpus(struct dr_info *dr_info, int *count)
+static int add_cpus(struct dr_info *dr_info, unsigned *count)
 {
 	int rc = -1;
 	struct dr_node *cpu = NULL;
@@ -285,7 +285,7 @@ static int add_cpus(struct dr_info *dr_info, int *count)
  * @param nr_cpus
  * @returns 0 on success, !0 otherwise
  */
-static int remove_cpus(struct dr_info *dr_info, int *count)
+static int remove_cpus(struct dr_info *dr_info, unsigned *count)
 {
 	int rc = 0;
 	struct dr_node *cpu;
@@ -405,7 +405,8 @@ int valid_cpu_options(void)
 int drslot_chrp_cpu(void)
 {
 	struct dr_info dr_info;
-	int rc, count = 0;
+	int rc;
+	unsigned count = 0;
 
 	if (! cpu_dlpar_capable()) {
 		say(ERROR, "CPU DLPAR capability is not enabled on this "

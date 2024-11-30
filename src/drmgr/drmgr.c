@@ -32,7 +32,7 @@
 
 #define DRMGR_ARGS	"ac:d:Iimnp:P:Qq:Rrs:w:t:hCVH"
 
-int output_level = 1; /* default to lowest output level */
+unsigned output_level = 1; /* default to lowest output level */
 
 int log_fd = 0;
 int action_cnt = 0;
@@ -202,7 +202,7 @@ int parse_options(int argc, char *argv[])
 			display_capabilities = 1;
 			break;
 		    case 'd':
-			set_output_level(atoi(optarg));
+			set_output_level(strtoul(optarg, NULL, 10));
 			break;
 		    case 'I':
 			usr_slot_identification = 0;

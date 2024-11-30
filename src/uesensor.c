@@ -422,6 +422,8 @@ main (int argc, char **argv)
 	}
 
 	if (text || numerical) {
+		unsigned i;
+
 		/* Print the status/value of all sensors */
 		fd = open(PATH_RTAS_SENSORS, O_RDONLY);
 
