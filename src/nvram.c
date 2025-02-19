@@ -903,9 +903,9 @@ dump_rtas_event_entry(char *data, int len)
 {
     void *rtas_event;
     void *handle;
-    void *(*parse_rtas_event)();
-    void (*rtas_print_event)();
-    void (*cleanup_rtas_event)();
+    void *(*parse_rtas_event)(char*, int);
+    void (*rtas_print_event)(FILE *, struct rtas_event *, int);
+    void (*cleanup_rtas_event)(struct rtas_event *);
 
     handle = dlopen("/usr/lib/librtasevent.so", RTLD_LAZY);
     if (handle == NULL)
