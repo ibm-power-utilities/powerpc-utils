@@ -1206,6 +1206,7 @@ ofpathname_to_logical()
         usb           )  of2l_usb ;;
         nvme          )  of2l_nvme ;;
         nvmf          )  of2l_nvmf ;;
+	pci*          )  of2l_pci ;;
     esac
 
     if [[ -z $LOGICAL_DEVNAME ]]; then
@@ -1223,6 +1224,51 @@ ofpathname_to_logical()
     if [[ `get_link "/dev/cdrom"` = $LOGICAL_DEVNAME ]]; then
         LOGICAL_DEVNAME="cdrom"
     fi
+
+    echo $LOGICAL_DEVNAME
+}
+
+#
+# of2l_pci
+# Conversion routine for OF path => logical name for pci devices
+#
+
+of2l_pci() {
+    # Example: DEVNAME=/pci@800000020000048/pci15b3,1003@0
+    # You may want to extract the PCI address and try to find a matching device
+
+    # Extract PCI address.
+    local pci_addr
+    pci_addr=$(echo "$DEVICE" | grep -o '[0-9a-fA-F]\{4\},[0-9a-fA-F]\{4\}@[0-9]\+')
+
+    if [[ -z "$pci_addr" ]]; then
+        # Could not extract PCI address
+        LOGICAL_DEVNAME=""
+        return
+    fi
+
+    # Try to find the corresponding device in /sys/bus/pci/devices
+    for sysdev in /sys/bus/pci/devices/*; do
+        if grep -qi "$pci_addr" "$sysdev/uevent" 2>/dev/null; then
+            # Try to find a block device under this PCI device
+            for blockdev in "$sysdev"/block/*; do
+                if [[ -b "/dev/$(basename "$blockdev")" ]]; then
+                    LOGICAL_DEVNAME="/dev/$(basename "$blockdev")"
+                    return
+                fi
+            done
+            # Or try to find a network device
+            for netdev in "$sysdev"/net/*; do
+                if [[ -d "$netdev" ]]; then
+                    LOGICAL_DEVNAME="$(basename "$netdev")"
+                    return
+                fi
+            done
+        fi
+    done
+
+    # If nothing found
+    LOGICAL_DEVNAME=""
 
     echo $LOGICAL_DEVNAME
 }
