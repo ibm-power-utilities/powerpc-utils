@@ -197,6 +197,10 @@ struct sysentry system_data[] = {
 	 .descr = "Secondary VIOS Partition ID"},
 	{.name = "cmo_page_size",
 	 .descr = "Physical Page Size"},
+	{.name = "resource_group_number",
+	 .descr = "Resource Group Number"},
+	{.name = "resource_group_active_processors",
+	 .descr = "Active Processors in Resource Group"},
 
 	/* /proc/meminfo */
 	{.name = "MemTotal",
@@ -344,6 +348,8 @@ char *iflag_entries[] = {
 	"unallocated_io_mapping_entitlement",
 	"entitled_memory_group_number",
 	"DesVarCapWt",
+	"resource_group_number",
+	"resource_group_active_processors",
 	NULL
 };
 
