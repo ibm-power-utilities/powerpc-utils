@@ -886,6 +886,8 @@ dump_errlog(struct nvram *nvram)
     return 0;
 }
 
+struct rtas_event;
+
 /**
  * dump_rtas_event_entry
  * @brief Dump event-scan data.
@@ -901,11 +903,11 @@ dump_errlog(struct nvram *nvram)
 int
 dump_rtas_event_entry(char *data, int len)
 {
-    void *rtas_event;
+    struct rtas_event *rtas_event;
     void *handle;
-    void *(*parse_rtas_event)();
-    void (*rtas_print_event)();
-    void (*cleanup_rtas_event)();
+    struct rtas_event *(*parse_rtas_event)(char *, int);
+    int (*rtas_print_event)(FILE *, struct rtas_event *, int);
+    int (*cleanup_rtas_event)(struct rtas_event *);
 
     handle = dlopen("/usr/lib/librtasevent.so", RTLD_LAZY);
     if (handle == NULL)
