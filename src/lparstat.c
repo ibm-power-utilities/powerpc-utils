@@ -785,13 +785,8 @@ void get_active_cpus_in_pool(struct sysentry *se, char *buf)
 {
 	struct sysentry *tmp;
 
-	tmp = get_sysentry("physical_procs_allocated_to_virtualization");
-	if (tmp) {
-		sprintf(buf, "%d", atoi(tmp->value));
-	} else {
-		tmp = get_sysentry("pool_capacity");
-		sprintf(buf, "%d", atoi(tmp->value)/100);
-	}
+	tmp = get_sysentry("pool_capacity");
+	sprintf(buf, "%d", atoi(tmp->value)/100);
 }
 
 void get_memory_mode(struct sysentry *se, char *buf)
