@@ -1,6 +1,7 @@
 [Unit]
 Description=ppc64 set SMT off
 Before=libvirt-bin.service
+After=network.target
 
 [Service]
 Type=oneshot

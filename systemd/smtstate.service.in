@@ -3,7 +3,7 @@ Description=SMT automatic initialization service
 Documentation=man:smtstate(8)
 Conflicts=shutdown.target
 Before=shutdown.target
-After=sysinit.target
+After=network.target
 DefaultDependencies=no
 
 [Service]
