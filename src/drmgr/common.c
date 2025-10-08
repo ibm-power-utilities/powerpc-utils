@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <signal.h>
+#include <assert.h>
 #include <errno.h>
 #include <dirent.h>
 #ifdef __GLIBC__
@@ -770,7 +771,10 @@ get_att_prop(const char *path, const char *name, char *buf, ssize_t buf_sz,
 		break;
 
 	    case 's':	/* sysfs */
-		rc = fscanf(fp, attr_type, (int *)buf);
+		if (attr_type)
+			rc = fscanf(fp, attr_type, (int *)buf);
+		else
+			rc = -1;	/* glibc behavior but not guaranteed by POSIX */
 		break;
 	}
 
