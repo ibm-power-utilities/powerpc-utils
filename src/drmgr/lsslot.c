@@ -291,7 +291,7 @@ insert_print_node(struct dr_node *node)
 		print_list = pnode;
 		return;
 	}
-	
+
 	if (loc_code_cmp(print_list->node->drc_name,
 			 pnode->node->drc_name) > 0) {
 		/* The location code for the new node is less than that
@@ -328,7 +328,7 @@ insert_print_node(struct dr_node *node)
 /**
  * print_drslot_line
  * @brief print a SLOT entry
- * 
+ *
  * @param pnode print_node to print
  * @param fmt output format string
  */
@@ -349,7 +349,7 @@ print_drslot_line(struct print_node *pnode, char *fmt)
 	/* If no node info, then it is an empty node */
 	if (node->dev_type == HEA_DEV) {
 		struct dr_node *port = node->children;
-		
+
 		if (!port) {
 			printf("Empty\n");
 		} else {
@@ -586,7 +586,7 @@ int lsslot_chrp_pci(void)
 	for (node = all_nodes; node; node = node->next) {
 		if (! node->is_owned || node->skip)
 			continue;
-		
+
 		if (usr_drc_name) {
 			if (cmp_drcname(node->drc_name, usr_drc_name))
 				insert_print_node(node);
@@ -683,7 +683,7 @@ int lsslot_chrp_phb(void)
 		struct dr_node *child;
 		char *name;
 		int printed_count = 0;
-		
+
 		if (usr_drc_name && strcmp(usr_drc_name, phb->drc_name))
 			continue;
 
@@ -804,7 +804,6 @@ int lsslot_chrp_mem(void)
 	if (lmb_list == NULL || lmb_list->lmbs == NULL)
 		return -1;
 
-	
 	if (lmb_list->drconf_buf) {
 		print_drconf_mem(lmb_list);
 	} else {
@@ -825,7 +824,7 @@ int lsslot_chrp_mem(void)
 
 			printf("%-5s  %c ", lmb->drc_name,
 			       lmb->is_removable ? 'Y' : 'N');
-		
+
 			for (scn = lmb->lmb_mem_scns; scn; scn = scn->next) {
 				if (first) {
 					printf(" %s",
