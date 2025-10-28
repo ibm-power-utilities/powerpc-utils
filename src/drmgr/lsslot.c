@@ -674,7 +674,7 @@ int lsslot_chrp_phb(void)
 
 	phb_list = get_dlpar_nodes(PHB_NODES);
 	if (phb_list == NULL)
-		return -1;
+		return 0;
 
 	/* display header */
 	printf("%-10s%-20s %s\n", "PHB name", "OFDT Name", "Slot(s) Connected");
