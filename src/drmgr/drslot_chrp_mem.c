@@ -1565,10 +1565,15 @@ static int remove_cpuless_lmbs(uint32_t count)
 				continue;
 
 			todo = (count * node->ratio) / 100;
-			todo = min(todo, node->n_lmbs);
-			/* Fix rounded value to 0 */
-			if (!todo && node->n_lmbs)
+			 /*
+			  * Fix rounded value to 0 and fix if a 0 ratio has
+			  * been processed
+			  */
+			if ((!todo && node->n_lmbs) || (count - this_loop < todo))
 				todo = (count - this_loop);
+
+			/* Donot request more than available */
+			todo = min(todo, node->n_lmbs);
 
 			if (todo)
 				todo = remove_lmb_from_node(node, todo);
@@ -1583,7 +1588,13 @@ static int remove_cpuless_lmbs(uint32_t count)
 		if (!this_loop)
 			break;
 
-		count -= this_loop;
+		/*
+		 * Should not happen, but in case prevent integer overflow
+		 */
+		if (this_loop < count)
+			count -= this_loop;
+		else
+			count = 0;
 	}
 
 	say(DEBUG, "%d / %d LMBs removed from the CPU less nodes\n",
