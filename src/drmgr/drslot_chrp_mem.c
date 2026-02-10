@@ -1502,7 +1502,7 @@ static int remove_lmb_from_node(struct ppcnuma_node *node, uint32_t count)
 	if (node->n_cpus)
 		numa.lmb_count -= unlinked;
 	else
-		numa.cpuless_node_count -= unlinked;
+		numa.cpuless_lmb_count -= unlinked;
 
 	if (!node->n_lmbs) {
 		node->ratio = 0; /* for sanity only */
