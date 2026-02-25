@@ -18,42 +18,42 @@
 #
 # Author Brian King <brking@linux.vnet.ibm.com>
 #
-# ls-vdev - This utility provides the HMC or IVM with name information for
-# 	    virtual scsi adapters and devices
+# ls-vscsi - This utility provides the HMC or IVM with name information for
+# 	     virtual scsi devices
 #
 
-LSVDEV="ls-vdev"
-VERSION="0.1"
+LSVSCSI="ls-vscsi"
+CAT="/bin/cat"
 LS="/bin/ls"
-GREP="/bin/grep"
 SED="/bin/sed"
 PSERIES_PLATFORM=$(dirname $0)/pseries_platform
 
 usage()
 {
-    echo "Usage: $LSVDEV"
-    echo "Provide information on Virtual SCSI adapters and devices"
-    echo ""
-    echo "Optional arguments."
-    echo "  -V	Display version information and exit"
-    echo "  -h	Display this help information and exit"
-    echo ""
+    echo "Usage: $LSVSCSI"
+    echo "Provide information on Virtual devices"
+	echo ""
+	echo "Optional arguments."
+	echo "  -V  Display version information and exit"
+	echo "  -h  Display this help information and exit"
+	echo ""
 }
 
 show_version()
 {
-    echo "$LSVDEV: Version $VERSION"
+    echo "$LSVSCSI: Version @VERSION@"
     echo "Written by: Brian King <brking@linux.vnet.ibm.com>"
 }
 
 . $PSERIES_PLATFORM
 if [[ $platform != $PLATFORM_PSERIES_LPAR ]]; then
-	echo "$LSVDEV: is not supported on the $platform_name platform"
-	exit 1
+     echo "$LSVSCSI: is not supported on the $platform_name platform"
+     exit 1
 fi
 
 while getopts ":Vh" flag ; do
     case "$flag" in
+
         V) show_version
                         exit 0 ;;
 
@@ -64,27 +64,19 @@ while getopts ":Vh" flag ; do
     esac
 done
 
+
 # Look at every ibmvscsi (Virtual SCSI) device
 for dev in $($LS -d /proc/device-tree/vdevice/v-scsi* 2> /dev/null) ; do
+    # pull the physical location
+    physloc=$(tr -d '\0' < $dev/ibm,loc-code)
+
     # find the slot so it can be used in sysfs
     slot=$(echo $dev | $SED -e "s/\/proc\/device-tree\/vdevice\/v-scsi@//")
 
     # there is only one host per device, assign it to the path's name
-    for host in $($LS -d /sys/devices/vio/$slot/host* 2> /dev/null) ; do
-	parent=$(echo $host | $SED -e "s/.*\///")
-	host=$($LS -d /sys/devices/vio/$slot/host*/)
-
-        # loop through the targets for this host.
-	for t in $($LS -d $host/target* 2> /dev/null); do
-	    target=$(echo $($LS -d $t/$($LS $t | $GREP -v uevent | $GREP -v power | $GREP -v subsystem)))
-	    if [[ ! -d $target/block ]]; then
-	         name=$(echo $($LS -d $target/block*) | $SED -e "s/.*://")
-	    else
-	         name=$($LS $target/block)
-	    fi
-
-	    echo "$parent $name"
-        done
+    for host in $($LS -d /sys/devices/vio/$slot/host*) ; do
+	name=$(echo $host | $SED -e "s/.*\///")
+	echo "$name $physloc"
     done
 done
 

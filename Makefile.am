@@ -69,6 +69,9 @@ EXTRA_DIST += systemd/smt_off.service.in \
 	man/smtstate.8
 endif
 
+EXTRA_DIST += scripts/ls-vdev.in scripts/ls-veth.in scripts/ls-vscsi.in \
+	      scripts/lsdevinfo.in scripts/ofpathname.in
+
 sbin_PROGRAMS += src/nvram src/lsprop src/lparstat src/ppc64_cpu src/vcpustat
 
 pseries_platform_SOURCES = src/common/pseries_platform.c src/common/pseries_platform.h

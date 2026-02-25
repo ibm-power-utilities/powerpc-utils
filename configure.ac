@@ -118,4 +118,6 @@ LOCAL_CHECK_FLAGS
 AC_CONFIG_FILES([Makefile powerpc-utils.spec systemd/smt_off.service])
 AC_CONFIG_FILES([systemd/smtstate.service scripts/smtstate])
 AC_CONFIG_FILES([systemd/hcn-init.service.in])
+AC_CONFIG_FILES([scripts/ls-vdev scripts/ls-veth scripts/ls-vscsi])
+AC_CONFIG_FILES([scripts/lsdevinfo scripts/ofpathname])
 AC_OUTPUT

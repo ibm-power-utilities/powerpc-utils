@@ -27,7 +27,6 @@
 #
 
 OFPATHNAME="ofpathname"
-VERSION="0.5"
 FIND=/usr/bin/find
 CAT=/bin/cat
 LSPROP=/sbin/lsprop
@@ -60,7 +59,7 @@ usage()
 
 show_version()
 {
-    echo "$OFPATHNAME: Version $VERSION"
+    echo "$OFPATHNAME: Version @VERSION@"
     echo "Written by: Nathan Fontenot <nfont@linux.vnet.ibm.com>"
 }
 

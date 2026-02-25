@@ -18,12 +18,12 @@
 #
 # Author Brian King <brking@linux.vnet.ibm.com>
 #
-# ls-vscsi - This utility provides the HMC or IVM with name information for
-# 	     virtual scsi devices
+# ls-veth - This utility provides the HMC or IVM with name information for
+# 	    virtual ethernet devices
 #
 
-LSVSCSI="ls-vscsi"
-VERSION="0.1"
+LSVETH="ls-veth"
+OFPATHNAME="/usr/sbin/ofpathname"
 CAT="/bin/cat"
 LS="/bin/ls"
 SED="/bin/sed"
@@ -31,30 +31,29 @@ PSERIES_PLATFORM=$(dirname $0)/pseries_platform
 
 usage()
 {
-    echo "Usage: $LSVSCSI"
-    echo "Provide information on Virtual devices"
-	echo ""
-	echo "Optional arguments."
-	echo "  -V  Display version information and exit"
-	echo "  -h  Display this help information and exit"
-	echo ""
+    echo "Usage: $LSVETH "
+    echo "Provide information on Virtual Ethernet devices"
+    echo ""
+    echo "Optional arguments."
+    echo "  -V	Display version information and exit"
+    echo "  -h	Display this help information and exit"
+    echo ""
 }
 
 show_version()
 {
-    echo "$LSVSCSI: Version $VERSION"
+    echo "$LSVETH: Version @VERSION@"
     echo "Written by: Brian King <brking@linux.vnet.ibm.com>"
 }
 
 . $PSERIES_PLATFORM
 if [[ $platform != $PLATFORM_PSERIES_LPAR ]]; then
-     echo "$LSVSCSI: is not supported on the $platform_name platform"
-     exit 1
+      echo "$LSVETH: is not supported on the $platform_name platform"
+      exit 1
 fi
 
 while getopts ":Vh" flag ; do
     case "$flag" in
-
         V) show_version
                         exit 0 ;;
 
@@ -65,20 +64,15 @@ while getopts ":Vh" flag ; do
     esac
 done
 
+# Look at every ibmveth (Virtual Ethernet) device
+for dev in $($LS -d /proc/device-tree/vdevice/l-lan* 2> /dev/null); do
+    # use ofpathname to get the device name (i.e. eth0)
+    name=$($OFPATHNAME -l $(echo $dev | $SED -e "s/\/proc\/device-tree//"))
 
-# Look at every ibmvscsi (Virtual SCSI) device
-for dev in $($LS -d /proc/device-tree/vdevice/v-scsi* 2> /dev/null) ; do
-    # pull the physical location
+    # get the physical location
     physloc=$(tr -d '\0' < $dev/ibm,loc-code)
 
-    # find the slot so it can be used in sysfs
-    slot=$(echo $dev | $SED -e "s/\/proc\/device-tree\/vdevice\/v-scsi@//")
-
-    # there is only one host per device, assign it to the path's name
-    for host in $($LS -d /sys/devices/vio/$slot/host*) ; do
-	name=$(echo $host | $SED -e "s/.*\///")
-	echo "$name $physloc"
-    done
+    echo "$name $physloc"
 done
 
 exit 0
