@@ -26,7 +26,6 @@
 #
 
 LSDEVINFO="lsdevinfo"
-VERSION="0.1"
 OFPATHNAME="/usr/sbin/ofpathname"
 CAT="/bin/cat"
 LS="/bin/ls"
@@ -57,7 +56,7 @@ usage()
 
 show_version()
 {
-    echo "$LSDEVINFO: Version $VERSION"
+    echo "$LSDEVINFO: Version @VERSION@"
     echo "Written by: Santiago Leon <sleon@ec.ibm.com>"
 }
 

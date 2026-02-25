@@ -48,8 +48,6 @@
 #include <errno.h>
 #include "cpu_info_helpers.h"
 
-#define PPC64_CPU_VERSION	"1.2"
-
 #define DSCR_DEFAULT_PATH "/sys/devices/system/cpu/dscr_default"
 
 #define DIAGNOSTICS_RUN_MODE	42
@@ -1559,7 +1557,7 @@ int main(int argc, char *argv[])
 	else if (!strcmp(action, "info"))
 		rc = do_info();
 	else if (!strcmp(action, "version"))
-		printf("ppc64_cpu: version %s\n", PPC64_CPU_VERSION);
+		printf("ppc64_cpu: version %s\n", VERSION);
 	else
 		usage();
 
