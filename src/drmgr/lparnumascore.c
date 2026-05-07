@@ -39,9 +39,9 @@
 
 #define NUMA_NO_NODE	-1
 
-int output_level = 0;
+unsigned output_level = 0;
 int log_fd = 0;
-int min_common_depth;
+unsigned min_common_depth;
 int read_dynamic_memory_v2 = 1;
 
 static bool check_node(char *syspath, int node)
@@ -249,7 +249,7 @@ static int parse_options(int argc, char *argv[])
 			}
 			break;
 		case 'd':
-			set_output_level(atoi(optarg));
+			set_output_level(strtoul(optarg, NULL, 10));
 			break;
 		case 'h':
 			usage();
@@ -276,6 +276,8 @@ static int parse_options(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
+	int rc;
+
 	if (parse_options(argc, argv))
 		exit(1);
 
@@ -290,9 +292,10 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	min_common_depth = get_min_common_depth();
-	if (min_common_depth < 0)
+	rc = get_min_common_depth();
+	if (rc < 0)
 		exit(1);
+	min_common_depth = rc;
 
 	switch (usr_drc_type) {
 	case DRC_TYPE_CPU:

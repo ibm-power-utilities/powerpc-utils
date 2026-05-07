@@ -33,7 +33,7 @@
 
 #include "options.c"
 
-int output_level = 0;
+unsigned output_level = 0;
 int log_fd = 0;
 
 int read_dynamic_memory_v2 = 1;
@@ -435,7 +435,7 @@ static void parse_options(int argc, char *argv[])
 			break;
 
 		    case 'd':
-			set_output_level(atoi(optarg));
+			set_output_level(strtoul(optarg, NULL, 10));
 			break;
 
 		    case 'F':

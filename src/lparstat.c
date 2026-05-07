@@ -139,7 +139,7 @@ static int assign_cpu_sysfs_fds(int threads_in_system)
 	char sysfs_file_path[SYSFS_PATH_MAX];
 
 	cpu_sysfs_fds =
-		(cpu_sysfs_fd*)calloc(sizeof(cpu_sysfs_fd), threads_in_system);
+		(cpu_sysfs_fd*)calloc(threads_in_system, sizeof(cpu_sysfs_fd));
 	if (!cpu_sysfs_fds) {
 		fprintf(stderr, "Failed to allocate memory for sysfs file descriptors\n");
 		return -1;

@@ -79,11 +79,6 @@ int dracc_chrp_acc(void)
 		return -1;
 	}
 
-	if (usr_drc_count < 0) {
-		say(ERROR, "Invalid QoS credit count %d\n", usr_drc_count);
-		return -1;
-	}
-
 	fd = open(SYSFS_VAS_QOSCREDIT_FILE, O_WRONLY);
 	if (fd < 0) {
 		say(ERROR, "Could not open \"%s\" to write QoS credits\n",
