@@ -160,11 +160,33 @@ static struct dr_node *get_available_cpu_by_index(struct dr_info *dr_info)
 	return cpu;
 }
 
+/*
+ * Scan all CPUs from the last one for the next available CPU.
+ * Used only for non-NUMA based CPU removal.
+ */
+static struct dr_node *get_next_cpu(struct dr_info *dr_info)
+{
+	struct dr_node *cpu = NULL;
+	struct thread *t;
+
+	/* Find the first cpu with an online thread */
+	for (cpu = dr_info->all_cpus; cpu; cpu = cpu->next) {
+		if (cpu->unusable)
+			continue;
+
+		for (t = cpu->cpu_threads; t; t = t->next) {
+			if (get_thread_state(t) == ONLINE)
+				return cpu;
+		}
+	}
+
+	return NULL;
+}
+
 static struct dr_node *get_next_available_cpu(struct dr_info *dr_info)
 {
 	struct dr_node *cpu = NULL;
 	struct dr_node *survivor = NULL;
-	struct thread *t;
 	
 	if (usr_action == ADD) {
 		for (cpu = dr_info->all_cpus; cpu; cpu = cpu->next) {
@@ -177,15 +199,7 @@ static struct dr_node *get_next_available_cpu(struct dr_info *dr_info)
 		cpu = survivor;
 	} else if (usr_action == REMOVE) {
 		/* Find the first cpu with an online thread */
-		for (cpu = dr_info->all_cpus; cpu; cpu = cpu->next) {
-			if (cpu->unusable)
-				continue;
-
-			for (t = cpu->cpu_threads; t; t = t->next) {
-				if (get_thread_state(t) == ONLINE)
-					return cpu;
-			}
-		}
+		cpu = get_next_cpu(dr_info);
 	}
 
 	if (!cpu)
