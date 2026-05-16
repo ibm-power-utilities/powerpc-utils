@@ -30,6 +30,7 @@ struct ppcnuma_node {
 	unsigned int	ratio;
 	struct dr_node	*lmbs;			/* linked by lmb_numa_next */
 	struct ppcnuma_node *ratio_next;
+	struct bitmask *cpus;
 };
 
 struct ppcnuma_topology {
@@ -48,6 +49,7 @@ extern int numa_enabled;
 extern struct ppcnuma_topology numa;
 void build_numa_topology(void);
 void order_numa_node_ratio_list(void);
+void free_numa_topology(void);
 
 struct ppcnuma_node *ppcnuma_fetch_node(struct ppcnuma_topology *numa,
 					int node_id);

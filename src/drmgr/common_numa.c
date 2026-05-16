@@ -84,9 +84,6 @@ static int read_numa_topology(struct ppcnuma_topology *numa)
 
 	rc = 0;
 
-	/* In case of allocation error, the libnuma is calling exit() */
-	cpus = numa_allocate_cpumask();
-
 	for (nid = 0; nid <= max_node; nid++) {
 
 		if (!numa_bitmask_isbitset(numa_nodes_ptr, nid))
@@ -98,19 +95,23 @@ static int read_numa_topology(struct ppcnuma_topology *numa)
 			break;
 		}
 
+		/* In case of allocation error, the libnuma is calling exit() */
+		cpus = numa_allocate_cpumask();
+
 		rc = numa_node_to_cpus(nid, cpus);
-		if (rc < 0)
+		if (rc < 0) {
+			numa_bitmask_free(cpus);
 			break;
+		}
 
 		/* Count the CPUs in that node */
 		for (i = 0; i < cpus->size; i++)
 			if (numa_bitmask_isbitset(cpus, i))
 				node->n_cpus++;
 
+		node->cpus = cpus;
 		numa->cpu_count += node->n_cpus;
 	}
-
-	numa_bitmask_free(cpus);
 
 	if (rc) {
 		ppcnuma_foreach_node(numa, nid, node)
@@ -158,6 +159,20 @@ void build_numa_topology(void)
 		return;
 
 	numa_enabled = 1;
+}
+
+void free_numa_topology(void)
+{
+	struct ppcnuma_node *node;
+	int nid;
+
+	ppcnuma_foreach_node(&numa, nid, node) {
+		if (node) {
+			if (node->cpus)
+				numa_bitmask_free(node->cpus);
+			free(node);
+		}
+	}
 }
 
 void order_numa_node_ratio_list(void)

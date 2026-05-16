@@ -1731,9 +1731,10 @@ int do_mem_kernel_dlpar(void)
 	if (usr_action == REMOVE && usr_drc_count && !usr_drc_index) {
 		build_numa_topology();
 		if (numa_enabled) {
-			if (!numa_based_remove(usr_drc_count))
+			rc = numa_based_remove(usr_drc_count);
+			free_numa_topology();
+			if (!rc)
 				return 0;
-
 			/*
 			 * If the NUMA based removal failed, lets try the legacy
 			 * way.
