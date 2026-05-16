@@ -28,6 +28,7 @@
 #include <errno.h>
 #include "dr.h"
 #include "ofdt.h"
+#include "drmem.h"
 
 #define RTAS_DIRECTORY		"/proc/device-tree/rtas"
 #define CHOSEN_DIRECTORY	"/proc/device-tree/chosen"
@@ -932,3 +933,19 @@ int of_associativity_to_node(const char *dir, int min_common_depth)
 	return be32toh(prop[min_common_depth]);
 }
 
+int get_dynamic_lmb_size(uint64_t *lmb_sz)
+{
+	int rc = 0;
+	uint64_t sz;
+
+	rc = get_property(DYNAMIC_RECONFIG_MEM, "ibm,lmb-size",
+				&sz, sizeof(sz));
+	if (rc) {
+		say(DEBUG, "Could not retrieve drconf LMB size\n");
+		return rc;
+	}
+
+	/* convert for LE systems */
+	*lmb_sz = be64toh(sz);
+	return 0;
+}

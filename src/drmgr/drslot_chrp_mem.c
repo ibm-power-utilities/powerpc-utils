@@ -506,16 +506,9 @@ get_dynamic_reconfig_lmbs(struct lmb_list_head *lmb_list)
 	uint64_t lmb_sz;
 	int rc = 0;
 
-	rc = get_property(DYNAMIC_RECONFIG_MEM, "ibm,lmb-size",
-			  &lmb_sz, sizeof(lmb_sz));
-
-	/* convert for LE systems */
-	lmb_sz = be64toh(lmb_sz);
-
-	if (rc) {
-		say(DEBUG, "Could not retrieve drconf LMB size\n");
+	rc = get_dynamic_lmb_size(&lmb_sz);
+	if (rc)
 		return rc;
-	}
 
 	if (stat(DYNAMIC_RECONFIG_MEM_V1, &sbuf) == 0) {
 		rc = get_dynamic_reconfig_lmbs_v1(lmb_sz, lmb_list);

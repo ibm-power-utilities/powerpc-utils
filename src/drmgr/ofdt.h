@@ -185,6 +185,7 @@ int get_assoc_arrays(const char *dir, struct assoc_arrays *aa,
 		     int min_common_depth);
 int of_associativity_to_node(const char *dir, int min_common_depth);
 int init_node(struct dr_node *);
+int get_dynamic_lmb_size(uint64_t *lmb_sz);
 
 static inline int aa_index_to_node(struct assoc_arrays *aa, uint32_t aa_index)
 {
