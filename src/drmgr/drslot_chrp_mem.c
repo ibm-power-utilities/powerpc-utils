@@ -38,9 +38,6 @@ static char *state_strs[] = {"offline", "online"};
 
 static char *usagestr = "-c mem {-a | -r} {-q <quantity> -p {variable_weight | ent_capacity} | {-q <quantity> | -s [<drc_name> | <drc_index>]}}";
 
-static struct ppcnuma_topology numa;
-static int numa_enabled = 0;
-
 /**
  * mem_usage
  * @brief return usage string
@@ -1605,7 +1602,7 @@ static int remove_cpuless_lmbs(uint32_t count)
 static void update_node_ratio(void)
 {
 	int nid;
-	struct ppcnuma_node *node, *n, **p;
+	struct ppcnuma_node *node;
 	uint32_t cpu_ratio, mem_ratio;
 
 	/*
@@ -1626,18 +1623,7 @@ static void update_node_ratio(void)
 		node->ratio = (cpu_ratio * 9 + mem_ratio) / 10;
 	}
 
-	/* Create an ordered link of the nodes */
-	ppcnuma_foreach_node(&numa, nid, node) {
-		if (!node->n_lmbs || !node->n_cpus)
-			continue;
-
-		p = &numa.ratio;
-		for (n = numa.ratio;
-		     n && n->ratio < node->ratio; n = n->ratio_next)
-			p = &n->ratio_next;
-		*p = node;
-		node->ratio_next = n;
-	}
+	order_numa_node_ratio_list();
 }
 
 /*
@@ -1691,17 +1677,6 @@ static int remove_cpu_lmbs(uint32_t count)
 	say(DEBUG, "%d / %d LMBs removed from the CPU nodes\n",
 	    done, total);
 	return done;
-}
-
-static void build_numa_topology(void)
-{
-	int rc;
-
-	rc = ppcnuma_get_topology(&numa);
-	if (rc)
-		return;
-
-	numa_enabled = 1;
 }
 
 static void clear_numa_lmb_links(void)

@@ -27,6 +27,9 @@
 #include "drmem.h"		/* for DYNAMIC_RECONFIG_MEM */
 #include "common_numa.h"
 
+int numa_enabled = 0;
+struct ppcnuma_topology numa;
+
 struct ppcnuma_node *ppcnuma_fetch_node(struct ppcnuma_topology *numa, int nid)
 {
 	struct ppcnuma_node *node;
@@ -118,7 +121,7 @@ static int read_numa_topology(struct ppcnuma_topology *numa)
 	return rc;
 }
 
-int ppcnuma_get_topology(struct ppcnuma_topology *numa)
+static int ppcnuma_get_topology(struct ppcnuma_topology *numa)
 {
 	int rc;
 
@@ -144,4 +147,36 @@ int ppcnuma_get_topology(struct ppcnuma_topology *numa)
 		return -1;
 
 	return 0;
+}
+
+void build_numa_topology(void)
+{
+	int rc;
+
+	rc = ppcnuma_get_topology(&numa);
+	if (rc)
+		return;
+
+	numa_enabled = 1;
+}
+
+void order_numa_node_ratio_list(void)
+{
+	int nid;
+	struct ppcnuma_node *node, *n, **p;
+
+	numa.ratio = NULL;
+
+	/* Create an ordered link of the nodes */
+	ppcnuma_foreach_node(&numa, nid, node) {
+		if (!node->n_lmbs || !node->n_cpus)
+			continue;
+
+		p = &numa.ratio;
+		for (n = numa.ratio;
+			n && n->ratio < node->ratio; n = n->ratio_next)
+			p = &n->ratio_next;
+		*p = node;
+		node->ratio_next = n;
+	}
 }

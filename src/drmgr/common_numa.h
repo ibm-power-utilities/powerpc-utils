@@ -44,7 +44,11 @@ struct ppcnuma_topology {
 	struct assoc_arrays	aa;
 };
 
-int ppcnuma_get_topology(struct ppcnuma_topology *numa);
+extern int numa_enabled;
+extern struct ppcnuma_topology numa;
+void build_numa_topology(void);
+void order_numa_node_ratio_list(void);
+
 struct ppcnuma_node *ppcnuma_fetch_node(struct ppcnuma_topology *numa,
 					int node_id);
 
