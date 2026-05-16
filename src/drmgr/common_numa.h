@@ -38,6 +38,7 @@ struct ppcnuma_topology {
 	unsigned int		lmb_count;
 	unsigned int		cpuless_node_count;
 	unsigned int		cpuless_lmb_count;
+	unsigned int		memless_cpu_count;
 	unsigned int		node_count, node_min, node_max;
 	struct ppcnuma_node	*nodes[MAX_NUMNODES];
 	struct ppcnuma_node	*ratio;

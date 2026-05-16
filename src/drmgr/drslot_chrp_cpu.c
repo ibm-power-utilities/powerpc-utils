@@ -26,10 +26,14 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <librtas.h>
+#include <numa.h>
 #include "dr.h"
 #include "drcpu.h"
 #include "drpci.h"
 #include "ofdt.h"
+#include "common_numa.h"
+
+#define	DEFAULT_LMB_SIZE	0x10000000	/* 256MB */
 
 struct cpu_operation;
 typedef int (cpu_op_func_t) (void);
@@ -395,6 +399,43 @@ static int smt_threads_func(struct dr_info *dr_info)
 	return rc;
 }
 
+/*
+ * Per node CPUs are defined as part of build_numa_topology().
+ * This function calculates number of LMBs per node based on
+ * node mememory / lmb-size.
+ * n_cpus and n_lmbs are used to determine node ratio.
+ */
+static int cpu_update_numa_config(void)
+{
+	struct ppcnuma_node *node;
+	unsigned long long node_size;
+	int rc, nid;
+	uint64_t lmb_sz;
+
+	rc = get_dynamic_lmb_size(&lmb_sz);
+	/*
+	 * Use the default value if lmb-size property is not available.
+	 * For CPU removal, node ratio will be calculated based on
+	 * total n_lmbs per CPU.
+	 */
+	if (rc)
+		lmb_sz = DEFAULT_LMB_SIZE;
+
+	ppcnuma_foreach_node(&numa, nid, node) {
+		node_size = numa_node_size(nid, 0);
+		/*
+		 * Node has memory
+		 * n_lmbs = Total memory / lmb-size
+		 */
+		if (node_size) {
+			node->n_lmbs = node_size / lmb_sz;
+		} else
+			numa.memless_cpu_count += node->n_cpus;
+	}
+
+	return 0;
+}
+
 int valid_cpu_options(void)
 {
 	/* default to a quantity of 1 */
@@ -442,6 +483,15 @@ int drslot_chrp_cpu(void)
 		return -1;
 	}
 
+	/*
+	 * Maintain NUMA aware hotplug only for remove and with count request.
+	 */
+	if (usr_drc_count && (usr_action == REMOVE)) {
+		build_numa_topology();
+		if (numa_enabled)
+			cpu_update_numa_config();
+	}
+
 	/* If a user specifies a drc name, the quantity to add/remove is
 	 * one. Enforce that here so the loops in add/remove code behave
 	 * accordingly.
@@ -472,6 +522,9 @@ int drslot_chrp_cpu(void)
 
 	if (usr_action == ADD || usr_action == REMOVE)
 		run_hooks(DRC_TYPE_CPU, usr_action, HOOK_POST, count);
+
+	if ((usr_action == REMOVE) && numa_enabled)
+		free_numa_topology();
 
 	free_cpu_drc_info(&dr_info);
 	return rc;
