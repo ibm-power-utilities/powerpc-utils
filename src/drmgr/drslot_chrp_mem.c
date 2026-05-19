@@ -1478,6 +1478,9 @@ static int remove_lmb_from_node(struct ppcnuma_node *node, uint32_t count)
 	    count, node->n_lmbs, node->node_id);
 
 	for (lmb = node->lmbs; lmb && done < count; lmb = lmb->lmb_numa_next) {
+		if (numa_mem_timeout)
+			break;
+
 		unlinked++;
 		err = remove_lmb_by_index(lmb->drc_index);
 		if (err)
@@ -1563,6 +1566,9 @@ static int remove_cpuless_lmbs(uint32_t count)
 
 		this_loop = 0;
 		ppcnuma_foreach_node(&numa, nid, node) {
+			if (numa_mem_timeout)
+				break;
+
 			if (!node->n_lmbs || node->n_cpus)
 				continue;
 
@@ -1656,6 +1662,9 @@ static int remove_cpu_lmbs(uint32_t count)
 
 		this_loop = 0;
 		ppcnuma_foreach_node_by_ratio(&numa, node) {
+			if (numa_mem_timeout)
+				break;
+
 			if (!node->n_lmbs || !node->n_cpus)
 				continue;
 
@@ -1739,14 +1748,13 @@ static int numa_based_remove(uint32_t count)
 	 */
 	lmb_list = get_lmbs(LMB_NORMAL_SORT);
 	if (lmb_list == NULL) {
-		clear_numa_lmb_links();
-		return -1;
+		rc = -1;
+		goto out_clear;
 	}
 
 	if (!numa.node_count) {
-		clear_numa_lmb_links();
-		free_lmbs(lmb_list);
-		return -EINVAL;
+		rc = -EINVAL;
+		goto out_free;
 	}
 
 	ppcnuma_foreach_node(&numa, nid, node) {
@@ -1759,11 +1767,12 @@ static int numa_based_remove(uint32_t count)
 
 	done += remove_cpu_lmbs(count);
 
-	report_resource_count(done);
-
-	clear_numa_lmb_links();
+out_free:
 	free_lmbs(lmb_list);
-	return 0;
+out_clear:
+	clear_numa_lmb_links();
+	report_resource_count(done);
+	return rc;
 }
 
 int do_mem_kernel_dlpar(void)
