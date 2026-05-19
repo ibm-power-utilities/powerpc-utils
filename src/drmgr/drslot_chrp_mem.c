@@ -26,6 +26,9 @@
 #include <dirent.h>
 #include <inttypes.h>
 #include <time.h>
+#include <signal.h>
+#include <unistd.h>
+#include <stdbool.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include "dr.h"
@@ -35,6 +38,7 @@
 
 uint64_t block_sz_bytes = 0;
 static char *state_strs[] = {"offline", "online"};
+sig_atomic_t numa_mem_timeout = 0;
 
 static char *usagestr = "-c mem {-a | -r} {-q <quantity> -p {variable_weight | ent_capacity} | {-q <quantity> | -s [<drc_name> | <drc_index>]}}";
 
@@ -48,6 +52,14 @@ void
 mem_usage(char **pusage)
 {
 	*pusage = usagestr;
+}
+
+/*
+ * SIGALRM handler for drmgr timeout
+ */
+void mem_timeout_handler(int sig)
+{
+	numa_mem_timeout = 1;
 }
 
 /**
@@ -1681,12 +1693,44 @@ static void clear_numa_lmb_links(void)
 		node->lmbs = NULL;
 }
 
+/*
+ * Setup SIGALRM signal based on timeout value passed by the user
+ * (with -w option). In the case of LMB removal, the kernel
+ * interface can run longer until all pages in LMB are isolated
+ * and can return to the user space if any pending signals.
+ * This SIGALRM signal can exit the kernel in case LMB removal
+ * is taking longer than timeout.
+ */
+static int drmem_timer_setup(void)
+{
+	struct sigaction sigact;
+
+	if (!usr_timeout)
+		return 0;
+
+	sigact.sa_handler = mem_timeout_handler;
+	sigemptyset(&sigact.sa_mask);
+	sigact.sa_flags = 0;
+	if (sigaction(SIGALRM, &sigact, NULL))
+		return -1;
+
+	alarm(usr_timeout);
+	return 0;
+}
+
 static int numa_based_remove(uint32_t count)
 {
 	struct lmb_list_head *lmb_list;
 	struct ppcnuma_node *node;
-	int nid;
+	int nid, rc = 0;
 	uint32_t done = 0;
+
+	/*
+	 * Enable alarm signal handler for usr_timeout
+	 */
+	rc = drmem_timer_setup();
+	if (rc)
+		return rc;
 
 	/*
 	 * Read the LMBs
