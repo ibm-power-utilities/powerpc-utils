@@ -786,11 +786,13 @@ static char *power_mode(uint64_t mode)
 {
 	switch (mode) {
 	case 0x0001:
-		return "Dynamic, Favor Performance\n";
+		return "Maximum Performance\n";
 	case 0x0002:
-		return "None\n";
+		return "Nominal\n";
 	case 0x0003:
-		return "Static\n";
+		return "Static Power Saver\n";
+	case 0x0004:
+		return "Dynamic Performance\n";
 	case 0x00ff:
 		return "Dynamic, Favor Power\n";
 	default:
