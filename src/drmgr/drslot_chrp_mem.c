@@ -39,6 +39,16 @@
 uint64_t block_sz_bytes = 0;
 static char *state_strs[] = {"offline", "online"};
 sig_atomic_t numa_mem_timeout = 0;
+sig_atomic_t lmb_rm_timeout = 0;
+struct itimerspec lmb_tval;
+struct sigevent lmb_sevent;
+timer_t lmb_timer;
+
+/*
+ * Timer to generate SIGUSR1 signal for each LMB removal
+ * kernel request
+ */
+#define LMB_REMOVAL_TIMER_SECS	30
 
 static char *usagestr = "-c mem {-a | -r} {-q <quantity> -p {variable_weight | ent_capacity} | {-q <quantity> | -s [<drc_name> | <drc_index>]}}";
 
@@ -60,6 +70,16 @@ mem_usage(char **pusage)
 void mem_timeout_handler(int sig)
 {
 	numa_mem_timeout = 1;
+}
+
+/*
+ * SIGUSR1 handler for LMB removal timeout and used
+ * only for NUMA based memory removal
+ */
+void lmb_rm_timeout_handler(int sig)
+{
+	if (sig == SIGUSR1)
+		lmb_rm_timeout = 1;
 }
 
 /**
@@ -1461,12 +1481,46 @@ int valid_mem_options(void)
 static int remove_lmb_by_index(uint32_t drc_index)
 {
 	char cmdbuf[128];
-	int offset;
+	int offset, rc;
 
 	offset = sprintf(cmdbuf, "memory remove index 0x%x", drc_index);
 
-	return do_kernel_dlpar_common(cmdbuf, offset,
-				      1 /* Don't report error */);
+	/*
+	 * The kernel interface removes LMB only after all pages are
+	 * isolated. So sometimes the kernel waits forever to isolate
+	 * pages and the drmgr can not make any progress. The kernel
+	 * returns to the user space for any pending signals.
+	 *
+	 * Setup 30 secs timer and generate SIGUSR1 signal in case
+	 * the kernel request takes longer than 30 secs.
+	 */
+	lmb_rm_timeout = 0;
+	lmb_tval.it_value.tv_sec = LMB_REMOVAL_TIMER_SECS;
+	if (timer_settime(lmb_timer, 0, &lmb_tval, NULL)) {
+		say(ERROR, "Set LMB removal timer failed %s\n",
+				strerror(errno));
+		return -errno;
+	}
+
+	rc = do_kernel_dlpar_common(cmdbuf, offset,
+					1 /* Don't report error */);
+
+	/*
+	 * Disable the timer in case if the kernel request returned
+	 * before 30 secs interval.
+	 */
+	lmb_tval.it_value.tv_sec = 0;
+	lmb_tval.it_value.tv_nsec = 0;
+	/*
+	 * The caller of this function expects the return value 0 for
+	 * LMB remove success and failure for other values. The success
+	 * return is considered to increment the number of LMBs removed
+	 * which is used to report the total removed LMBs to HMC.
+	 * So do not consider the failure of disable timer.
+	 */
+	timer_settime(lmb_timer, 0, &lmb_tval, NULL);
+
+	return rc;
 }
 
 static int remove_lmb_from_node(struct ppcnuma_node *node, uint32_t count)
@@ -1483,10 +1537,16 @@ static int remove_lmb_from_node(struct ppcnuma_node *node, uint32_t count)
 
 		unlinked++;
 		err = remove_lmb_by_index(lmb->drc_index);
-		if (err)
-			say(WARN, "Can't remove LMB node:%d index:0x%x: %s\n",
-			    node->node_id, lmb->drc_index, strerror(-err));
-		else
+		if (err) {
+			if (lmb_rm_timeout)
+				say(WARN, "LMB remove timeout. node:%d index:0x%x: %s\n",
+					node->node_id, lmb->drc_index,
+					strerror(-err));
+			else
+				say(WARN, "Can't remove LMB node:%d index:0x%x: %s\n",
+					node->node_id, lmb->drc_index,
+					strerror(-err));
+		} else
 			done++;
 	}
 
@@ -1707,12 +1767,33 @@ static void clear_numa_lmb_links(void)
  * (with -w option). In the case of LMB removal, the kernel
  * interface can run longer until all pages in LMB are isolated
  * and can return to the user space if any pending signals.
- * This SIGALRM signal can exit the kernel in case LMB removal
- * is taking longer than timeout.
+ * It may cause drmgr waiting forever on 1 LMB removal and can not
+ * make progress further. So setup SIGUSR1 30 secs timer for each
+ * LMB kernel removal request.
+ *
+ * This SIGUSR1 signal is used to exit drmgr in case if the complete
+ * memory removal process takes longer than the timeout value.
  */
 static int drmem_timer_setup(void)
 {
-	struct sigaction sigact;
+	struct sigaction sigact, lmb_sigact;
+
+	lmb_sigact.sa_handler = lmb_rm_timeout_handler;
+	sigemptyset(&lmb_sigact.sa_mask);
+	lmb_sigact.sa_flags = 0;
+	if (sigaction(SIGUSR1, &lmb_sigact, NULL))
+		return -1;
+
+	lmb_sevent.sigev_notify = SIGEV_SIGNAL;
+	lmb_sevent.sigev_signo = SIGUSR1;
+	lmb_sevent.sigev_value.sival_ptr = &lmb_timer;
+	if (timer_create(CLOCK_MONOTONIC, &lmb_sevent, &lmb_timer))
+		return -1;
+
+	lmb_tval.it_value.tv_sec = LMB_REMOVAL_TIMER_SECS;
+	lmb_tval.it_value.tv_nsec = 0;
+	lmb_tval.it_interval.tv_sec = 0;
+	lmb_tval.it_interval.tv_nsec = 0;
 
 	if (!usr_timeout)
 		return 0;
@@ -1770,6 +1851,7 @@ static int numa_based_remove(uint32_t count)
 out_free:
 	free_lmbs(lmb_list);
 out_clear:
+	timer_delete(lmb_timer);
 	clear_numa_lmb_links();
 	report_resource_count(done);
 	return rc;

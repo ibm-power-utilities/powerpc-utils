@@ -937,6 +937,7 @@ sig_setup(void)
 	sigdelset(&sigset, SIGALRM);
 	sigdelset(&sigset, SIGQUIT);
 	sigdelset(&sigset, SIGABRT);
+	sigdelset(&sigset, SIGUSR1);
 
 	/* Now block all remaining signals */
 	rc = sigprocmask(SIG_SETMASK, &sigset, NULL);
