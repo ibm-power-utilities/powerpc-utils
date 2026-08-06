@@ -1115,7 +1115,7 @@ void print_system_configuration(void)
 	if (o_legacy)
 		offset += sprintf(buf + offset, "lcpu=%d ", active_proc*smt);
 	else
-		offset += sprintf(buf + offset, "lcpu=%s ", value);
+		offset += sprintf(buf + offset, "vcpu=%s ", value);
 	get_sysdata("MemTotal", &descr, value);
 	offset += sprintf(buf + offset, "mem=%s ", value);
 	get_sysdata("active_cpus_in_pool", &descr, value);

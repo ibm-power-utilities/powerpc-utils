@@ -29,13 +29,16 @@ smt
 Indicates whether simultaneous multi-threading is enabled or disabled in the partition. If SMT is enabled, the number of SMT threads is displayed.
 .TP
 lcpu
-Number of online logical processors.
+Number of online logical SMT threads. This is reported when using the --legacy flag.
+.TP
+vcpu
+Number of online virtual processor cores.
 .TP
 mem
 Online Memory Capacity.
 .TP
 cpus
-Number of online physical processors in the pool.
+Number of online physical processor cores in the pool.
 .RS
 This attribute is referred as
 .B psize
