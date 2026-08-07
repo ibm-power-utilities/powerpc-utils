@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <dirent.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -54,6 +55,7 @@
 #define CPU_OFFLINE		-1
 
 #define SYS_SMT_CONTROL "/sys/devices/system/cpu/smt/control"
+#define SYS_RCU_EXPEDITED "/sys/kernel/rcu_expedited"
 
 #ifdef HAVE_LINUX_PERF_EVENT_H
 struct cpu_freq {
@@ -90,8 +92,13 @@ enum energy_freq_attrs {
 static int threads_per_cpu = 0;
 static int cpus_in_system = 0;
 static int threads_in_system = 0;
+static int original_rcu_expedited = -1;
+static int rcu_cleanup_registered;
+static volatile sig_atomic_t rcu_cleanup_needed;
 
 static int do_info(void);
+static int set_smt_state(int smt_state);
+static int set_smt_control(int smt_state);
 
 static int sysattr_is_readable(char *attribute)
 {
@@ -126,6 +133,74 @@ static int set_attribute(const char *path, const char *fmt, int value)
 
 close:
 	close(fd);
+	return rc;
+}
+
+static int get_rcu_expedited(void)
+{
+	int value;
+
+	if (get_attribute(SYS_RCU_EXPEDITED, "%d", &value))
+		return -1;
+
+	return value;
+}
+
+static void restore_rcu_expedited(void)
+{
+	int saved_errno = errno;
+
+	if (rcu_cleanup_needed && original_rcu_expedited >= 0) {
+		set_attribute(SYS_RCU_EXPEDITED, "%d", original_rcu_expedited);
+		rcu_cleanup_needed = 0;
+	}
+
+	errno = saved_errno;
+}
+
+static void rcu_signal_handler(int signum)
+{
+	restore_rcu_expedited();
+
+	signal(signum, SIG_DFL);
+	kill(getpid(), signum);
+}
+
+static void setup_rcu_cleanup_handlers(void)
+{
+	if (rcu_cleanup_registered)
+		return;
+
+	atexit(restore_rcu_expedited);
+	signal(SIGTERM, rcu_signal_handler);
+	signal(SIGINT, rcu_signal_handler);
+	signal(SIGABRT, rcu_signal_handler);
+	signal(SIGSEGV, rcu_signal_handler);
+	rcu_cleanup_registered = 1;
+}
+
+static int set_smt_with_rcu_expedited(int smt_state)
+{
+	int rc, saved_errno;
+
+	if (original_rcu_expedited == -1) {
+		original_rcu_expedited = get_rcu_expedited();
+		if (original_rcu_expedited >= 0)
+			setup_rcu_cleanup_handlers();
+	}
+
+	if (original_rcu_expedited >= 0 &&
+	    set_attribute(SYS_RCU_EXPEDITED, "%d", 1) == 0)
+		rcu_cleanup_needed = 1;
+
+	rc = set_smt_control(smt_state);
+	if (rc == -2)
+		rc = set_smt_state(smt_state);
+
+	saved_errno = errno;
+	restore_rcu_expedited();
+	errno = saved_errno;
+
 	return rc;
 }
 
@@ -446,9 +521,7 @@ static int do_smt(char *state, bool numeric)
 			return -1;
 		}
 
-		/* Try using smt/control if failing, fall back to the legacy way */
-		if ((rc = set_smt_control(smt_state)) == -2)
-			rc = set_smt_state(smt_state);
+		rc = set_smt_with_rcu_expedited(smt_state);
 	}
 
 	return rc;
