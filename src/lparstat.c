@@ -1126,7 +1126,7 @@ void print_system_configuration(void)
 		offset += sprintf(buf + offset, "cpus=%s ", value);
 	}
 	get_sysdata("DesEntCap", &descr, value);
-	offset += sprintf(buf + offset, "ent=%s ", value);
+	sprintf(buf + offset, "ent=%s ", value);
 
 	fprintf(stdout, "\nSystem Configuration\n%s\n\n", buf);
 }
