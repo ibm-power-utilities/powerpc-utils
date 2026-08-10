@@ -86,7 +86,7 @@ int __sysattr_is_writeable(char *attribute, int threads_in_system)
 int cpu_physical_id(int thread)
 {
 	char path[SYSFS_PATH_MAX];
-	int rc, physical_id;
+	int rc, physical_id = 0;
 
 	sprintf(path, SYSFS_CPUDIR"/physical_id", thread);
 	rc = get_attribute(path, "%d", &physical_id);
