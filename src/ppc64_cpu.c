@@ -1248,6 +1248,9 @@ static int do_cores_on(char *state)
 		}
 	}
 
+	if (cpus_in_system <= 0)
+		return -EINVAL;
+
 	core_state = calloc(cpus_in_system, sizeof(int));
 	if (!core_state)
 		return -ENOMEM;
