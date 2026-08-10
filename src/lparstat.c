@@ -727,7 +727,7 @@ int parse_proc_stat()
 
 void get_processor_type(struct sysentry *se, char *buf)
 {
-	char *value = "?";
+	char *value;
 
 	if (se->value[0] == '1')
 		value = "Shared";
