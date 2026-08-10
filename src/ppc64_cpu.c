@@ -901,8 +901,10 @@ static int report_platform_energy_freq_mode(struct energy_freq_info *eq)
 
 		sprintf(file_name, "%s/%d/value", path, id);
 		f = fopen(file_name, "r");
-		if (!f)
+		if (!f) {
+			closedir(dirp);
 			return -1;
+		}
 		if (fgets(val_buf, 64, f) == NULL)
 			return -1;
 		fclose(f);
@@ -911,8 +913,10 @@ static int report_platform_energy_freq_mode(struct energy_freq_info *eq)
 		if (has_str_val(id)) {
 			sprintf(file_name, "%s/%d/value_desc", path, id);
 			f = fopen(file_name, "r");
-			if (!f || fgets(val_buf, 64, f) == NULL)
+			if (!f || fgets(val_buf, 64, f) == NULL) {
+				closedir(dirp);
 				return -1;
+			}
 			fclose(f);
 		}
 
