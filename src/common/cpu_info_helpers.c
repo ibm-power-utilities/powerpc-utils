@@ -298,6 +298,7 @@ int get_present_core_list(int **present_cores, int *num_present_cores, int threa
 
         *present_cores = cores;
         *num_present_cores = core_count;
+	fclose(fp);
         free(line);
         return 0;
 
