@@ -215,6 +215,8 @@ void process_stats(int interval, int count)
 
 	if (!stats1 || !stats2) {
 		fprintf(stderr, "Error allocating memory for stats\n");
+		free(stats1);
+		free(stats2);
 		return;
 	}
 
