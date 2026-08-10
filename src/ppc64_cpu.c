@@ -887,6 +887,8 @@ static int report_platform_energy_freq_mode(struct energy_freq_info *eq)
 	if (stat(path, &s) || !S_ISDIR(s.st_mode))
 		return -1;
 	dirp = opendir(path);
+	if (!dirp)
+		return -1;
 
 	while ((entry = readdir(dirp)) != NULL) {
 		char val_buf[64], file_name[64];
