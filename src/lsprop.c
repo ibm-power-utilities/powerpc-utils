@@ -249,9 +249,11 @@ void lsprop(FILE *f, char *name)
     }
     printf("\n");
     if (n == maxbytes) {
+	if (!ferror(f)) {
 	while ((i = fread(buf, 1, maxbytes, f)) > 0)
 	    n += i;
 	if (n > maxbytes)
 	    printf("\t\t [%d bytes total]\n", n);
-    }
+    	}
+	}
 }
