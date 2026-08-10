@@ -89,6 +89,7 @@ int cpu_physical_id(int thread)
 	int rc, physical_id;
 
 	sprintf(path, SYSFS_CPUDIR"/physical_id", thread);
+	errno = 0;
 	rc = get_attribute(path, "%d", &physical_id);
 
 	/* This attribute does not exist in kernels without hotplug enabled */
