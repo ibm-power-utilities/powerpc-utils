@@ -394,6 +394,7 @@ static int is_dscr_capable(void)
  */
 static int set_smt_control(int smt_state)
 {
+	errno = 0;
 	if (set_attribute(SYS_SMT_CONTROL, "%d", smt_state)) {
 		switch (errno) {
 			case ENOENT:
