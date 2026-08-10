@@ -299,6 +299,7 @@ static int set_one_smt_state(int thread, int online_threads)
 	for (i = 0; i < threads_per_cpu; i++) {
 		snprintf(path, SYSFS_PATH_MAX, SYSFS_CPUDIR"/%s", thread + i,
 			 "online");
+		errno = 0;
 		if (i < online_threads)
 			rc = online_thread(path);
 		else
