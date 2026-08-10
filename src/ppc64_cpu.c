@@ -1152,6 +1152,7 @@ static int do_online_cores(char *cores, int state)
 		printf("Bad or inconsistent SMT state: use ppc64_cpu --smt=on|off to set all\n"
 				"cores to have the same number of online threads to continue.\n");
 		do_info();
+		free(core_state);
 		free(present_cores);
 		return -1;
 	}
