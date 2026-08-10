@@ -1424,7 +1424,7 @@ update_of_config_var(struct nvram *nvram, char *config_var, char *pname)
     }
     
     /* write the partition out to nvram */
-    for (rc = 0, len = 0; len < part_size; len += rc) {
+    for (len = 0; len < part_size; len += rc) {
 	rc = write(nvram->fd, new_part + len, part_size - len);
 	if (rc <= 0)
 	    break;
