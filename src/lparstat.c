@@ -808,18 +808,22 @@ void get_name(const char *file, char *buf)
 {
 	FILE *f;
 	char tmpbuf[64];
-	int rc;
+	size_t rc;
 
 	f = fopen(file, "r");
 	if(!f) {
 		sprintf(buf, "%c", '\0');
 		return;
 	}
-	rc = fread(tmpbuf, 64, 1, f);
+	rc = fread(tmpbuf, 1, sizeof(tmpbuf) - 1, f);
 	fclose(f);
 
-	if (!rc)
-		sprintf(buf, "%s", tmpbuf);
+	if (rc > 0) {
+		tmpbuf[rc] = '\0';
+		snprintf(buf, SYSDATA_VALUE_SZ, "%s", tmpbuf);
+	} else {
+		buf[0] = '\0';
+	}
 }
 
 void get_node_name(struct sysentry *se, char *buf)
