@@ -64,6 +64,8 @@ extern void get_cpu_util_purr(struct sysentry *unused_se, char *buf);
 extern void get_cpu_idle_purr(struct sysentry *unused_se, char *buf);
 extern void get_cpu_util_spurr(struct sysentry *unused_se, char *buf);
 extern void get_cpu_idle_spurr(struct sysentry *uunused_se, char *buf);
+extern void get_vcsw(struct sysentry *unused_se, char *buf);
+extern void get_phint(struct sysentry *unused_se, char *buf);
 
 struct sysentry system_data[] = {
 	/* System Names */
@@ -143,7 +145,8 @@ struct sysentry system_data[] = {
 	{.name = "entitled_proc_capacity_available",
 	 .descr = "Entitled Capacity of Pool"},
 	{.name = "dispatches",
-	 .descr = "Virtual Processor Dispatch Counter"},
+	 .descr = "Virtual Processor Dispatch Counter",
+	 .get = &get_vcsw},
 	{.name = "dispatch_dispersions",
 	 .descr = "Virtual Processor Dispersions"},
 	{.name = "purr",
@@ -273,7 +276,8 @@ struct sysentry system_data[] = {
 
 	/* /proc/interrupts */
 	{.name = "phint",
-	 .descr = "Phantom Interrupts"},
+	 .descr = "Phantom Interrupts",
+	 .get = &get_phint},
 
 	/* /sys/devices/system/cpu/cpu<n>/ */
 	/* Sum of per CPU SPURR registers */

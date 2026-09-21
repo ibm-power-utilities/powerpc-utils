@@ -443,6 +443,16 @@ void get_cpu_app(struct sysentry *unused_se, char *buf)
 	sprintf(buf, "%.2f", app);
 }
 
+void get_vcsw(struct sysentry *unused_se, char *buf)
+{
+	sprintf(buf, "%lld", get_delta_value("dispatches"));
+}
+
+void get_phint(struct sysentry *unused_se, char *buf)
+{
+	sprintf(buf, "%lld", get_delta_value("phint"));
+}
+
 static double round_off_freq(void)
 {
 	double effective_freq, nominal_freq, freq;
