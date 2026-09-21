@@ -768,15 +768,26 @@ static void check_threads(struct cpu_freq *cpu_freqs, int max_thread)
 static void *soak(void *arg)
 {
 	unsigned int cpu = (long)arg;
-	cpu_set_t cpumask;
+	cpu_set_t *cpumask;
+	size_t cpumask_size;
 
-	CPU_ZERO(&cpumask);
-	CPU_SET(cpu, &cpumask);
-
-	if (sched_setaffinity(0, sizeof(cpumask), &cpumask)) {
-		perror("sched_setaffinity");
+	cpumask = CPU_ALLOC(cpu + 1);
+	if (!cpumask) {
+		perror("CPU_ALLOC");
 		pthread_exit(NULL);
 	}
+	cpumask_size = CPU_ALLOC_SIZE(cpu + 1);
+
+	CPU_ZERO_S(cpumask_size, cpumask);
+	CPU_SET_S(cpu, cpumask_size, cpumask);
+
+	if (sched_setaffinity(0, cpumask_size, cpumask)) {
+		perror("sched_setaffinity");
+		CPU_FREE(cpumask);
+		pthread_exit(NULL);
+	}
+
+	CPU_FREE(cpumask);
 
 	while (1)
 		; /* Do Nothing */
@@ -958,10 +969,7 @@ static int do_cpu_frequency(int sleep_time)
 
 	setrlimit_open_files();
 
-	max_thread = MIN(threads_in_system, CPU_SETSIZE);
-	if (max_thread < threads_in_system)
-		printf("ppc64_cpu currently supports up to %d CPUs\n",
-			CPU_SETSIZE);
+	max_thread = threads_in_system;
 
 	cpu_freqs = calloc(max_thread, sizeof(*cpu_freqs));
 	if (!cpu_freqs)
