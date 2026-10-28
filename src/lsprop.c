@@ -110,15 +110,15 @@ int main(int ac, char **av)
 
 void lsdir(char *name)
 {
-    DIR *d;
-    struct dirent *de;
+    struct dirent **namelist;
+    int nentries, i;
     char *p, *q;
     struct stat sb;
     FILE *f;
     int np = 0;
 
-    d = opendir(name);
-    if (d == NULL) {
+    nentries = scandir(name, &namelist, NULL, alphasort);
+    if (nentries < 0) {
 	perror(name);
 	return;
     }
@@ -126,7 +126,9 @@ void lsdir(char *name)
     p = malloc(strlen(name) + 520);
     if (p == 0) {
 	fprintf(stderr, "%s: virtual memory exhausted\n", name);
-	closedir(d);
+	for (i = 0; i < nentries; ++i)
+	    free(namelist[i]);
+	free(namelist);
 	return;
     }
     strcpy(p, name);
@@ -138,7 +140,8 @@ void lsdir(char *name)
     else
 	*q++ = '/';
 
-    while ((de = readdir(d)) != NULL) {
+    for (i = 0; i < nentries; ++i) {
+	struct dirent *de = namelist[i];
 	if (strcmp(de->d_name, ".") == 0 || strcmp(de->d_name, "..") == 0)
 	    continue;
 	strcpy(q, de->d_name);
@@ -159,8 +162,8 @@ void lsdir(char *name)
     }
 
     if (recurse) {
-	rewinddir(d);
-	while ((de = readdir(d)) != NULL) {
+	for (i = 0; i < nentries; ++i) {
+	    struct dirent *de = namelist[i];
 	    if (strcmp(de->d_name, ".") == 0 || strcmp(de->d_name, "..") == 0)
 		continue;
 	    strcpy(q, de->d_name);
@@ -177,8 +180,11 @@ void lsdir(char *name)
 	    }
 	}
     }
+
     free(p);
-    closedir(d);
+    for (i = 0; i < nentries; ++i)
+	free(namelist[i]);
+    free(namelist);
 }
 
 void lsprop(FILE *f, char *name)
