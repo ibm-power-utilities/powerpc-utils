@@ -29,6 +29,7 @@ use Getopt::Long;
 use File::Basename;
 
 $re_decode = $ENV{RTAS_EVENT_DECODE} || "/usr/sbin/rtas_event_decode";
+my @re_decode_args;
 
 #
 # usage statement
@@ -55,10 +56,14 @@ sub handle_rtas_event()
 {
 	my ($event_no) = @_;
 
-	$re_decode_args = "$re_decode_args -n $event_no";
-	
-	# create the pipe to rtas_event_decode
-	open EVENT_DECODE, "| $re_decode $re_decode_args";
+	# The event number comes from the input data, never pass it to a shell.
+	die "Invalid RTAS event number\n"
+		unless defined($event_no) && $event_no =~ /\A\d+\z/;
+
+	my @cmd = ($re_decode, @re_decode_args, "-n", $event_no);
+
+	# create the pipe to rtas_event_decode, list form avoids the shell
+	open(EVENT_DECODE, "|-", @cmd) or die "Failed to exec $re_decode: $!\n";
 
 	while(<$fh>) {
 		($crud, $data) = split (/RTAS/);
@@ -110,7 +115,8 @@ usage() if $help_flag;
 # get a reference to our input filehandle
 if ($filename) {
 	if (-e $filename) {
-		open INPUT_FILE, $filename;
+		open(INPUT_FILE, "<", $filename)
+			or die "Cannot open $filename: $!\n";
 		$fh = \*INPUT_FILE;
 		$close_input_file = 1;
 	} else {
@@ -122,15 +128,19 @@ if ($filename) {
 }
 
 # create the arg list to rtas_event_decode
-$re_decode_args = "$re_decode_args -d" if $debug_flag;
-$re_decode_args = "$re_decode_args -v" if $verbose;
-$re_decode_args = "$re_decode_args -w $width" if $width;
+push @re_decode_args, "-d" if $debug_flag;
+push @re_decode_args, "-v" if $verbose;
+push @re_decode_args, "-w", $width if $width;
 
 while (<$fh>) {
 	if (/RTAS event begin/) { 
 		# found the beginning of an RTAS event, process it.
 		($crud, $data) = split (/RTAS:/);
 		($this_event_no, $d) = split (' ', $data);
+		if (!defined($this_event_no) || $this_event_no !~ /\A\d+\z/) {
+			print STDERR "rtas_dump: skipping RTAS event with invalid event number\n";
+			next;
+		}
 		if ($event_no) {
 			if ($event_no == $this_event_no) {
 				$rtas_str = $rtas_str . "RTAS:" . $data;
