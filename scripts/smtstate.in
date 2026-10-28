@@ -18,8 +18,17 @@
 # Simple script designed to save and restore the SMT state.
 
 readonly SMT_STATE=/var/lib/powerpc-utils/smt.state
-readonly SMT_STATE_BKP=/tmp/smt.state.backup
 readonly PPC64CPU=@sbindir@/ppc64_cpu
+
+# Backup of the state file, created by update_state() and removed on exit.
+SMT_STATE_BKP=""
+
+cleanup_backup() {
+    if [ -n "$SMT_STATE_BKP" ]
+    then
+        rm -f -- "$SMT_STATE_BKP"
+    fi
+}
 
 update_state() {
     # sanity check
@@ -33,8 +42,18 @@ update_state() {
         return
     fi
 
-    # create a temporary backup
-    cp -p $SMT_STATE $SMT_STATE_BKP
+    # create a temporary backup next to the state file, in a directory only
+    # root can write to, so an unprivileged user cannot plant a symlink
+    SMT_STATE_BKP=$(mktemp "$SMT_STATE.XXXXXX")
+    if [ $? -ne 0 ]
+    then
+        SMT_STATE_BKP=""
+        logger -t ${0##*/}[$$] "Error creating backup of $SMT_STATE"
+        exit 1
+    fi
+    trap cleanup_backup EXIT
+
+    cp -p -- "$SMT_STATE" "$SMT_STATE_BKP"
     if [ $? -ne 0 ]
     then
         logger -t ${0##*/}[$$] "Error saving $SMT_STATE_BKP"
@@ -43,16 +62,13 @@ update_state() {
 
     # update SMT state file
     local current_smt=$($PPC64CPU --smt -n | cut -d= -f2)
-    sed -i "s/SMT_VALUE=[0-9]/SMT_VALUE=$current_smt/" $SMT_STATE
+    sed -i "s/SMT_VALUE=[0-9]/SMT_VALUE=$current_smt/" "$SMT_STATE"
     if [ $? -ne 0 ]
     then
         logger -t ${0##*/}[$$] "Error updating $SMT_STATE"
-        cp -p $SMT_STATE_BKP $SMT_STATE
-        rm $SMT_STATE_BKP
+        cp -p -- "$SMT_STATE_BKP" "$SMT_STATE"
         exit 1
     fi
-
-    rm $SMT_STATE_BKP
 }
 
 set_smt() {
